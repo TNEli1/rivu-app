@@ -1,41 +1,47 @@
 const mongoose = require('mongoose');
 
-const BudgetSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+const budgetSchema = mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: 'User',
+    },
+    category: {
+      type: String,
+      required: [true, 'Please provide a category name'],
+    },
+    amount: {
+      type: Number,
+      required: [true, 'Please provide a budget amount'],
+      min: [0, 'Budget amount cannot be negative'],
+    },
+    currentSpent: {
+      type: Number,
+      default: 0,
+      min: [0, 'Spent amount cannot be negative'],
+    },
+    color: {
+      type: String,
+      default: '#00C2A8', // Default color for budget categories
+    },
+    icon: {
+      type: String,
+      default: 'ri-money-dollar-circle-line', // Default icon class
+    },
+    month: {
+      type: Date,
+      default: Date.now,
+    },
   },
-  category: {
-    type: String,
-    required: [true, 'Category is required'],
-    trim: true
-  },
-  amount: {
-    type: Number,
-    required: [true, 'Budget amount is required'],
-    min: [0, 'Budget amount cannot be negative']
-  },
-  currentSpent: {
-    type: Number,
-    default: 0,
-    min: 0
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
+  {
+    timestamps: true,
   }
-});
+);
 
-// Virtual for percent used
-BudgetSchema.virtual('percentUsed').get(function() {
-  if (this.amount === 0) return 0;
-  return Math.min(100, Math.round((this.currentSpent / this.amount) * 100));
-});
+// Create an index on userId and category for faster lookups
+budgetSchema.index({ userId: 1, category: 1 }, { unique: true });
 
-// Include virtuals when converting to JSON
-BudgetSchema.set('toJSON', { virtuals: true });
-
-const Budget = mongoose.model('Budget', BudgetSchema);
+const Budget = mongoose.model('Budget', budgetSchema);
 
 module.exports = Budget;

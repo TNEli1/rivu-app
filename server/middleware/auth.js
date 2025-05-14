@@ -1,21 +1,14 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// JSON Web Token secret key
-const JWT_SECRET = process.env.JWT_SECRET || 'rivu-app-secret-key';
+// JWT secret - in production, this should be stored in an environment variable
+const JWT_SECRET = process.env.JWT_SECRET || 'rivu-secret-key-change-in-production';
 
-// Generate JWT token
-const generateToken = (userId) => {
-  return jwt.sign({ id: userId }, JWT_SECRET, {
-    expiresIn: '30d', // Token expires in 30 days
-  });
-};
-
-// Protect routes middleware
+// Middleware to protect routes
 const protect = async (req, res, next) => {
   let token;
 
-  // Check for token in the Authorization header
+  // Check for token in Authorization header
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
       // Get token from header
@@ -24,32 +17,30 @@ const protect = async (req, res, next) => {
       // Verify token
       const decoded = jwt.verify(token, JWT_SECRET);
 
-      // Get user from the token
+      // Get user from token (exclude password)
       req.user = await User.findById(decoded.id).select('-password');
+
+      if (!req.user) {
+        return res.status(401).json({ message: 'Not authorized, user not found' });
+      }
 
       next();
     } catch (error) {
       console.error('Authentication error:', error);
-      return res.status(401).json({ message: 'Not authorized, token failed' });
-    }
-  }
-
-  // Check for token in cookies
-  if (!token && req.cookies && req.cookies.token) {
-    try {
-      token = req.cookies.token;
-      const decoded = jwt.verify(token, JWT_SECRET);
-      req.user = await User.findById(decoded.id).select('-password');
-      next();
-    } catch (error) {
-      console.error('Cookie authentication error:', error);
-      return res.status(401).json({ message: 'Not authorized, token failed' });
+      res.status(401).json({ message: 'Not authorized, token failed' });
     }
   }
 
   if (!token) {
-    return res.status(401).json({ message: 'Not authorized, no token' });
+    res.status(401).json({ message: 'Not authorized, no token' });
   }
 };
 
-module.exports = { protect, generateToken, JWT_SECRET };
+// Generate JWT for a user
+const generateToken = (id) => {
+  return jwt.sign({ id }, JWT_SECRET, {
+    expiresIn: '30d', // Token expires in 30 days
+  });
+};
+
+module.exports = { protect, generateToken };
