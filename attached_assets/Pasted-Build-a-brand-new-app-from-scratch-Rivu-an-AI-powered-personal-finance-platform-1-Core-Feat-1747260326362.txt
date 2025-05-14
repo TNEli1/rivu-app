@@ -1,0 +1,68 @@
+Build a brand-new app from scratch: Rivu — an AI-powered personal finance platform.
+
+⸻
+
+1. Core Features
+
+A. Budgeting
+	•	Allow users to create/edit/delete budget categories (e.g. Rent, Food, Subscriptions)
+	•	Track how much is spent in each category vs. budget
+	•	Visualize category usage with progress bars
+
+B. Transactions
+	•	Simulate transaction history with realistic data
+	•	Let users assign transactions to categories
+	•	Calculate total spent per category + remaining balance
+
+C. Rivu Score
+	•	Score ranges from 0 to 100, based on:
+	•	% of budget categories staying under budget
+	•	% of savings goals completed (optional dummy logic)
+	•	Weekly user activity
+	•	Display in a circular ring with animated fill and color (green/yellow/red)
+	•	Include a visual breakdown of score factors
+
+D. AI Coaching (Smart Advice)
+	•	Use the OpenAI API to generate personalized finance tips based on user behavior
+	•	Display GPT advice in a coaching panel or advice section
+	•	Add fallback text if API fails (e.g., “You’re doing great — keep it up!”)
+
+⸻
+
+2. UI Design Requirements
+	•	Use TailwindCSS
+	•	Dark mode default
+	•	Color palette:
+	•	Background: #121212
+	•	Text: #F2F2F2
+	•	Accent: #00C2A8 (teal-green)
+	•	Highlights: #D0F500, #2F80ED, #FF4D4F
+	•	Rounded cards, light shadows, minimalistic design
+	•	Smooth animations for transitions, hover states, and score updates
+	•	Mobile-responsive layout
+
+⸻
+
+3. Technical Setup
+	•	Frontend: React with TailwindCSS
+	•	Backend: Simulated with Node-style API structure (no database needed for now)
+	•	Plaid: Simulated integration
+	•	Preload dummy accounts and transactions
+	•	Structure app logic and JSON responses like real Plaid transactions
+	•	Make it easy to swap in live Plaid keys later
+	•	OpenAI: Integrate GPT for coaching (use test keys for now)
+
+⸻
+
+4. Quality Expectations
+	•	All components should be visually clean, formatted correctly, and responsive
+	•	Do not include any features not listed above
+	•	Simulate demo user accounts on first login
+	•	No placeholders, null values, or broken states
+	•	Ensure navigation is smooth and routes are functional
+
+⸻
+
+This is a focused MVP for user demo, investor review, and future backend integration.
+
+Let me know once the app is up so I can review and deploy it.
