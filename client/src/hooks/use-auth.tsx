@@ -8,6 +8,15 @@ import {
 import { apiRequest } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
+type Demographics = {
+  ageRange?: string;
+  incomeBracket?: string;
+  goals?: string[];
+  riskTolerance?: string;
+  experienceLevel?: string;
+  completed?: boolean;
+};
+
 type User = {
   _id: string;
   username: string;
@@ -16,6 +25,11 @@ type User = {
   lastName: string;
   profilePicture?: string;
   token?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  lastLogin?: string;
+  loginCount?: number;
+  demographics?: Demographics;
 };
 
 type AuthContextType = {

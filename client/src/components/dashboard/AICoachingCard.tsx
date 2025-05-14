@@ -3,26 +3,41 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FinanceAdvice, getFinanceAdvice } from "@/lib/openai";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function AICoachingCard() {
-  const [messages, setMessages] = useState<FinanceAdvice[]>([
-    {
-      message: "Based on your recent spending patterns, I noticed you've spent more than usual on entertainment this month. Consider setting a stricter budget for this category next month to help improve your savings rate.",
-      timestamp: new Date(),
-    },
-    {
-      message: "Your monthly food expenses are well-managed. I recommend maintaining your current budget for this category and potentially reallocating any savings to your emergency fund.",
-      timestamp: new Date(),
-    }
-  ]);
+  const { user } = useAuth();
+  const [messages, setMessages] = useState<FinanceAdvice[]>([]);
   const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const initialLoadCompleted = useRef(false);
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  // Auto-fetch advice when component loads
+  const { isLoading: isInitialAdviceLoading } = useQuery({
+    queryKey: ['/api/advice', 'initial'],
+    queryFn: async () => {
+      if (!user || initialLoadCompleted.current) return null;
+      
+      try {
+        const advice = await getFinanceAdvice();
+        setMessages(prev => [...prev, advice]);
+        initialLoadCompleted.current = true;
+        return advice;
+      } catch (error) {
+        console.error("Failed to get initial advice:", error);
+        return null;
+      }
+    },
+    refetchOnWindowFocus: false,
+    refetchInterval: false,
+    enabled: !!user
+  });
 
   useEffect(() => {
     scrollToBottom();

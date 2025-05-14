@@ -1,5 +1,6 @@
 import React from "react";
 import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
 
 type NavItem = {
   title: string;
@@ -7,15 +8,17 @@ type NavItem = {
   icon: string;
 };
 
-const mobileNavItems: NavItem[] = [
-  { title: "Home", href: "/", icon: "ri-dashboard-fill" },
-  { title: "Budget", href: "/budget", icon: "ri-wallet-3-line" },
-  { title: "Transactions", href: "/transactions", icon: "ri-exchange-dollar-line" },
-  { title: "Profile", href: "/profile", icon: "ri-user-line" },
-];
-
 export default function MobileNav() {
   const [location, setLocation] = useLocation();
+  const { user } = useAuth();
+
+  // Create nav items based on authentication status
+  const mobileNavItems: NavItem[] = [
+    { title: "Home", href: "/", icon: "ri-dashboard-fill" },
+    { title: "Budget", href: "/budget", icon: "ri-wallet-3-line" },
+    { title: "Transactions", href: "/transactions", icon: "ri-exchange-dollar-line" },
+    { title: "Account", href: "/account", icon: "ri-user-line" },
+  ];
 
   // Handle navigation manually to avoid nesting issues with Link
   const handleNavigation = (href: string) => {
@@ -39,7 +42,14 @@ export default function MobileNav() {
               isActive ? "text-primary" : "text-muted-foreground"
             }`}
           >
-            <i className={`${iconClass} text-xl`}></i>
+            {/* Show initials in the account icon if user is logged in */}
+            {item.href === "/account" && user ? (
+              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs text-primary">
+                {(user.firstName?.charAt(0) || user.username.charAt(0) || "?").toUpperCase()}
+              </div>
+            ) : (
+              <i className={`${iconClass} text-xl`}></i>
+            )}
             <span className="text-xs mt-1">{item.title}</span>
           </div>
         );
