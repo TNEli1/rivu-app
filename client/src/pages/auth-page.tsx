@@ -3,14 +3,106 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useState, useEffect } from "react";
 import { Redirect } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
+
 
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const [activeTab, setActiveTab] = useState("login");
+  const [password, setPassword] = useState("");
+  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [passwordFeedback, setPasswordFeedback] = useState<{
+    message: string;
+    isValid: boolean;
+    checks: {
+      hasMinLength: boolean;
+      hasUppercase: boolean;
+      hasLowercase: boolean;
+      hasNumber: boolean;
+      hasSpecialChar: boolean;
+    };
+  }>({
+    message: "",
+    isValid: false,
+    checks: {
+      hasMinLength: false,
+      hasUppercase: false,
+      hasLowercase: false,
+      hasNumber: false,
+      hasSpecialChar: false
+    }
+  });
+
+  // Calculate password strength when password changes
+  useEffect(() => {
+    if (!password) {
+      setPasswordStrength(0);
+      setPasswordFeedback({
+        message: "",
+        isValid: false,
+        checks: {
+          hasMinLength: false,
+          hasUppercase: false,
+          hasLowercase: false,
+          hasNumber: false,
+          hasSpecialChar: false
+        }
+      });
+      return;
+    }
+
+    // Check for various password requirements
+    const hasMinLength = password.length >= 8;
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasLowercase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[^A-Za-z0-9]/.test(password);
+
+    // Calculate number of criteria met (out of 5)
+    const criteriaCount = [hasMinLength, hasUppercase, hasLowercase, hasNumber, hasSpecialChar].filter(Boolean).length;
+    
+    // Calculate strength as percentage (0-100)
+    const strength = Math.max(0, Math.min(100, (criteriaCount / 5) * 100));
+    
+    // Set strength and feedback
+    setPasswordStrength(strength);
+    
+    let message = "";
+    let isValid = false;
+    
+    if (strength < 40) {
+      message = "Weak password";
+    } else if (strength < 80) {
+      message = "Moderate password";
+      isValid = hasMinLength; // At least valid if it has minimum length
+    } else {
+      message = "Strong password";
+      isValid = true;
+    }
+    
+    setPasswordFeedback({
+      message,
+      isValid,
+      checks: {
+        hasMinLength,
+        hasUppercase,
+        hasLowercase,
+        hasNumber,
+        hasSpecialChar
+      }
+    });
+  }, [password]);
+
+  // Helper to get strength color
+  const getStrengthColor = () => {
+    if (passwordStrength < 40) return "bg-red-500";
+    if (passwordStrength < 80) return "bg-yellow-500";
+    return "bg-green-500";
+  };
 
   // Redirect to dashboard if user is already logged in
   if (user) {
@@ -168,13 +260,91 @@ export default function AuthPage() {
                         name="password" 
                         type="password" 
                         placeholder="••••••••" 
-                        required 
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className={password ? (passwordFeedback.isValid ? "border-green-500" : "border-red-500") : ""}
                       />
+                      
+                      {/* Password strength meter */}
+                      {password && (
+                        <div className="space-y-2 mt-2">
+                          <div className="flex justify-between items-center text-xs">
+                            <span>Password strength</span>
+                            <span className={
+                              passwordStrength < 40 ? "text-red-500" : 
+                              passwordStrength < 80 ? "text-yellow-500" : 
+                              "text-green-500"
+                            }>
+                              {passwordFeedback.message}
+                            </span>
+                          </div>
+                          <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-1.5 ${getStrengthColor()}`} 
+                              style={{ width: `${passwordStrength}%` }} 
+                            />
+                          </div>
+                          
+                          {/* Password requirements */}
+                          <div className="grid grid-cols-1 gap-1.5 mt-2">
+                            <div className="flex items-center text-xs">
+                              {passwordFeedback.checks.hasMinLength ? 
+                                <CheckCircle2 className="h-3.5 w-3.5 text-green-500 mr-1.5" /> : 
+                                <XCircle className="h-3.5 w-3.5 text-red-500 mr-1.5" />
+                              }
+                              <span className={passwordFeedback.checks.hasMinLength ? "text-green-500" : "text-muted-foreground"}>
+                                At least 8 characters
+                              </span>
+                            </div>
+                            
+                            <div className="flex items-center text-xs">
+                              {passwordFeedback.checks.hasUppercase ? 
+                                <CheckCircle2 className="h-3.5 w-3.5 text-green-500 mr-1.5" /> : 
+                                <XCircle className="h-3.5 w-3.5 text-red-500 mr-1.5" />
+                              }
+                              <span className={passwordFeedback.checks.hasUppercase ? "text-green-500" : "text-muted-foreground"}>
+                                Contains uppercase letter
+                              </span>
+                            </div>
+                            
+                            <div className="flex items-center text-xs">
+                              {passwordFeedback.checks.hasLowercase ? 
+                                <CheckCircle2 className="h-3.5 w-3.5 text-green-500 mr-1.5" /> : 
+                                <XCircle className="h-3.5 w-3.5 text-red-500 mr-1.5" />
+                              }
+                              <span className={passwordFeedback.checks.hasLowercase ? "text-green-500" : "text-muted-foreground"}>
+                                Contains lowercase letter
+                              </span>
+                            </div>
+                            
+                            <div className="flex items-center text-xs">
+                              {passwordFeedback.checks.hasNumber ? 
+                                <CheckCircle2 className="h-3.5 w-3.5 text-green-500 mr-1.5" /> : 
+                                <XCircle className="h-3.5 w-3.5 text-red-500 mr-1.5" />
+                              }
+                              <span className={passwordFeedback.checks.hasNumber ? "text-green-500" : "text-muted-foreground"}>
+                                Contains number
+                              </span>
+                            </div>
+                            
+                            <div className="flex items-center text-xs">
+                              {passwordFeedback.checks.hasSpecialChar ? 
+                                <CheckCircle2 className="h-3.5 w-3.5 text-green-500 mr-1.5" /> : 
+                                <XCircle className="h-3.5 w-3.5 text-red-500 mr-1.5" />
+                              }
+                              <span className={passwordFeedback.checks.hasSpecialChar ? "text-green-500" : "text-muted-foreground"}>
+                                Contains special character
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <Button 
                       type="submit" 
                       className="w-full" 
-                      disabled={registerMutation.isPending}
+                      disabled={registerMutation.isPending || (password.length > 0 && !passwordFeedback.isValid)}
                     >
                       {registerMutation.isPending ? (
                         <>
@@ -185,6 +355,16 @@ export default function AuthPage() {
                         "Create Account"
                       )}
                     </Button>
+                    
+                    {/* Show message if password doesn't meet requirements */}
+                    {password.length > 0 && !passwordFeedback.isValid && (
+                      <Alert variant="destructive" className="mt-2">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          Password doesn't meet security requirements
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </form>
                 </CardContent>
                 <CardFooter className="flex justify-center">
