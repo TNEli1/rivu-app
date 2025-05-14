@@ -326,15 +326,38 @@ export const updateDemographics = async (req: any, res: any) => {
       });
     }
     
-    // For testing - in actual use, this would update the MongoDB User model
-    // Return mock updated demographics
+    // Import User model dynamically
+    const { default: User } = await import('../models/User.js');
+    
+    // Find user by ID
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ 
+        message: 'User not found',
+        code: 'USER_NOT_FOUND'
+      });
+    }
+    
+    // Update demographics
     const updatedDemographics = {
       ...demographics,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date()
     };
     
+    // Ensure the completed flag is set if provided
+    if (demographics.completed !== undefined) {
+      updatedDemographics.completed = demographics.completed;
+    }
+    
+    // Update user demographics
+    user.demographics = updatedDemographics;
+    
+    // Save changes
+    await user.save();
+    
     res.json({
-      demographics: updatedDemographics
+      demographics: user.demographics
     });
   } catch (error: any) {
     console.error('Update demographics error:', error);
@@ -352,11 +375,30 @@ export const updateLoginMetrics = async (req: any, res: any) => {
   try {
     const userId = req.user.id;
     
-    // For testing - in actual use, this would update the MongoDB User model
-    // Return mock updated login metrics
+    // Import User model dynamically
+    const { default: User } = await import('../models/User.js');
+    
+    // Find user by ID
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ 
+        message: 'User not found',
+        code: 'USER_NOT_FOUND'
+      });
+    }
+    
+    // Update login metrics
+    user.lastLogin = new Date();
+    user.loginCount = (user.loginCount || 0) + 1;
+    
+    // Save changes
+    await user.save();
+    
+    // Return updated metrics
     const loginMetrics = {
-      lastLogin: new Date().toISOString(),
-      loginCount: 6
+      lastLogin: user.lastLogin,
+      loginCount: user.loginCount
     };
     
     res.json(loginMetrics);
