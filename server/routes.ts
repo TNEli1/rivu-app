@@ -23,40 +23,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const apiPath = '/api';
     console.log(`⚙️ Setting up MongoDB API routes at ${apiPath}...`);
     
-    // Register the auth module routes here (register, login, etc.)
-    app.post(`${apiPath}/register`, (req, res) => {
-      // Forward to controller - this module must be loaded in routes.js
-      // This function effectively serves as a bridge to the CommonJS modules
-      return import('./controllers/userController.js')
-        .then(module => {
-          // Call the registerUser function from the controller
-          const registerUser = module.default?.registerUser || module.registerUser;
-          if (typeof registerUser === 'function') {
-            return registerUser(req, res);
-          }
-          throw new Error('registerUser function not found in controller');
-        })
-        .catch(err => {
-          console.error('Error in /register route:', err);
-          res.status(500).json({ message: 'Server error processing registration' });
-        });
-    });
+    // Import our TypeScript controller
+    // We need to move this import to the top of the file
+    const userControllerModule = await import('./controllers-ts/userController');
+    const userController = userControllerModule.default;
 
-    // Login route with similar bridging technique
-    app.post(`${apiPath}/login`, (req, res) => {
-      return import('./controllers/userController.js')
-        .then(module => {
-          const loginUser = module.default?.loginUser || module.loginUser;
-          if (typeof loginUser === 'function') {
-            return loginUser(req, res);
-          }
-          throw new Error('loginUser function not found in controller');
-        })
-        .catch(err => {
-          console.error('Error in /login route:', err);
-          res.status(500).json({ message: 'Server error processing login' });
-        });
-    });
+    // Register auth routes with our TypeScript controller
+    app.post(`${apiPath}/register`, userController.registerUser);
+    app.post(`${apiPath}/login`, userController.loginUser);
+    app.post(`${apiPath}/logout`, userController.protect, userController.logoutUser);
+    app.get(`${apiPath}/user`, userController.protect, userController.getUserProfile);
+    app.put(`${apiPath}/user`, userController.protect, userController.updateUserProfile);
+    app.put(`${apiPath}/user/demographics`, userController.protect, userController.updateDemographics);
+    app.post(`${apiPath}/user/login-metric`, userController.protect, userController.updateLoginMetrics);
     
     console.log('✅ Auth routes (MongoDB) successfully mounted at /api');
   } catch (error) {

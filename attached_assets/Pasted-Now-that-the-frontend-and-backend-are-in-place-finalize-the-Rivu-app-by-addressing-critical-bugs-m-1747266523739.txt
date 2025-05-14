@@ -1,0 +1,84 @@
+Now that the frontend and backend are in place, finalize the Rivu app by addressing critical bugs, missing logic, and broken or incomplete components. This version must be fully functional, production-ready, and free of any demo data or placeholder logic.
+
+⸻
+
+A. CRITICAL BUG FIXES
+
+1. Login/Register Bug
+	•	Problem: Logging in currently uses a test/demo user
+	•	Fix:
+	•	Remove all hardcoded fallback users in the /api/auth/login controller
+	•	Ensure it only logs in valid users from MongoDB using email + password
+
+2. “Don’t have an account? Register” Button
+	•	Problem: Button on the login page does not redirect to /register
+	•	Fix:
+	•	Make sure clicking the button redirects correctly
+	•	The /register route must be rendered via React Router and fully functional
+
+3. Survey Not Triggering
+	•	Add surveyCompleted: Boolean to the User model (default: false)
+	•	After user registers, if surveyCompleted === false, redirect to /survey
+	•	Once submitted or skipped, update surveyCompleted = true in MongoDB
+	•	Do not show survey again
+
+⸻
+
+B. BUILD & FIX THE FOLLOWING PAGES
+
+Create the following React Router pages and ensure all data is dynamically pulled from the logged-in user’s MongoDB data. No static or demo content should appear.
+
+Route	Required Features
+/dashboard	Show Rivu Score, recent advice, and summary cards
+/budget	List budget categories, allow edits, show progress bars
+/transactions	Show list of transactions, allow category assignment, filter by category/date
+/insights	Show AI-generated feedback based on spending and goals
+/account	Show user profile (name, email, account created), allow profile updates (optional)
+/settings	Dark mode toggle, optional change password, logout button
+
+•	Each page must be fully styled, fully functional, and route correctly from the sidebar
+	•	404 errors must not occur
+	•	All pages must load real data — no mockups or placeholder text
+
+⸻
+
+C. Forgot Password Flow
+	•	Build a working “Forgot Password” flow:
+	•	Input: email
+	•	Simulate sending reset link (console log is fine)
+	•	Route: /reset-password/:token
+	•	Allow password update on form submit
+
+⸻
+
+D. Remove All Demo Data and Fallbacks
+	•	Completely remove any test users, test budgets, test transactions, or hardcoded sample data
+	•	App should load ONLY user-specific data from MongoDB
+	•	Advice must be generated using GPT via OPENAI_API_KEY
+	•	Budget + transaction data must come from real user entries
+
+⸻
+
+E. Add Plaid Test Button (For Now)
+	•	On a /connect-bank page or modal:
+	•	Show “Link Bank Account” button
+	•	On click, simulate a Plaid Link flow
+	•	Save simulated account details (e.g., bankName, accountType, last4) to the user’s MongoDB record
+	•	Display a success message or linked account info
+
+⸻
+
+F. Global Button Audit
+	•	Fix all buttons and forms throughout the app
+	•	Every visible button on every page must either:
+	•	Be fully functional, or
+	•	Be visibly disabled with a clear tooltip or message
+	•	This includes login/register, form submits, nav links, logout, edit/save buttons, etc.
+
+⸻
+
+G. Final QA Rules
+	•	All frontend components must fetch and display real user data
+	•	All routes should load without errors
+	•	All features (survey, auth, AI advice, budget, transactions) must function with real input
+	•	App should now behave like a fully working production build — ready for user onboarding, demos, or investor review
