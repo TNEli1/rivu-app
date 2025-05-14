@@ -14,11 +14,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup CORS
   app.use(cors());
   
-  // Use MongoDB models for database operations when connected
-  // Otherwise fall back to in-memory storage
-  
-  // API routes will be added directly here for now
-  // We'll implement MongoDB routes in future updates
+  // Import and use the API routes from routes-ts/api
+  try {
+    // Import the TypeScript version of our API routes
+    const apiRoutes = (await import('./routes-ts/api')).default;
+    app.use('/api', apiRoutes);
+    console.log('✅ API routes (TypeScript) mounted at /api');
+  } catch (error) {
+    console.error('⚠️ Error loading TypeScript API routes:', error);
+    console.log('⚠️ Falling back to in-memory API routes');
+    
+    // Fall back to in-memory API if MongoDB routes fail to load
+  }
   
   // Current user helper (kept for compatibility with existing code)
   const getCurrentUserId = () => 1; // Always return the demo user for now

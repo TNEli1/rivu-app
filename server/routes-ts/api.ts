@@ -1,10 +1,9 @@
-const express = require('express');
-const router = express.Router();
-const { protect } = require('../middleware/auth');
-const cookieParser = require('cookie-parser');
+import express from 'express';
+import { protect } from '../middleware/auth.js';
+import cookieParser from 'cookie-parser';
 
-// Import controllers
-const {
+// Import controllers (with .js extension for ESM compatibility)
+import {
   registerUser,
   loginUser,
   getUserProfile,
@@ -13,31 +12,33 @@ const {
   updateLoginMetrics,
   logoutUser,
   loginLimiter
-} = require('../controllers/userController');
+} from '../controllers/userController.js';
 
-const {
+import {
   getBudgets,
   createBudget,
   updateBudget,
   deleteBudget
-} = require('../controllers/budgetController');
+} from '../controllers/budgetController.js';
 
-const {
+import {
   getTransactions,
   createTransaction,
   updateTransaction,
   deleteTransaction
-} = require('../controllers/transactionController');
+} from '../controllers/transactionController.js';
 
-const {
+import {
   getGoals,
   createGoal,
   updateGoal,
   deleteGoal
-} = require('../controllers/goalController');
+} from '../controllers/goalController.js';
 
-const { getRivuScore } = require('../controllers/rivuScoreController');
-const { getAdvice } = require('../controllers/adviceController');
+import { getRivuScore } from '../controllers/rivuScoreController.js';
+import { getAdvice } from '../controllers/adviceController.js';
+
+const router = express.Router();
 
 // Use cookie parser to read JWT cookies
 router.use(cookieParser());
@@ -100,6 +101,4 @@ router.get('/plaid/transactions', protect, (req, res) => {
   getTransactions(req, res);
 });
 
-// Export the router both as a CommonJS module and as ES Module for compatibility
-module.exports = router;
 export default router;

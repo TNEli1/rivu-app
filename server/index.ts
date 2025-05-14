@@ -21,16 +21,29 @@ app.set('trust proxy', 1);
 // Global rate limiter to prevent abuse
 const globalRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500, // Limit each IP to 500 requests per windowMs
+  max: process.env.NODE_ENV === 'production' ? 500 : 2000, // Stricter in production
   message: {
     message: 'Too many requests from this IP, please try again after 15 minutes'
   },
   standardHeaders: true,
   legacyHeaders: false,
+  // Skip rate limiting in development mode when special header is present
+  skip: (req, res) => process.env.NODE_ENV !== 'production' && req.get('X-Skip-Rate-Limit') === 'development'
 });
 
-// Apply global rate limiting
-app.use(globalRateLimit);
+// Apply global rate limiting based on environment
+if (process.env.NODE_ENV === 'production') {
+  // Always apply in production
+  app.use(globalRateLimit);
+  console.log('✅ Production rate limiting enabled');
+} else {
+  // In development, apply but with higher limits
+  app.use(globalRateLimit);
+  console.log('⚠️ Development rate limiting enabled (relaxed limits)');
+  console.log('   To bypass: Include X-Skip-Rate-Limit: development header');
+}
+
+// Remove the explicit import since we'll use registerRoutes to handle this
 
 // Configure CORS
 const corsOptions = {

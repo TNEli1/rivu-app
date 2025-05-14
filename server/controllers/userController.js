@@ -10,15 +10,18 @@ const rateLimit = require('express-rate-limit');
 // Email validation regex
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
-// Rate limiter for login attempts (5 per minute per IP)
+// Rate limiter for login attempts
+// In production: 5 attempts per minute
+// In development: 1000 attempts per 15 minutes for easier testing
 const loginLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 5, // 5 requests per window
+  windowMs: process.env.NODE_ENV === 'production' ? 60 * 1000 : 15 * 60 * 1000, // 1 minute in prod, 15 minutes in dev
+  max: process.env.NODE_ENV === 'production' ? 5 : 1000, // 5 in prod, 1000 in dev
   message: {
-    message: 'Too many login attempts from this IP, please try again after a minute'
+    message: 'Too many login attempts from this IP. Try again later.'
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req, res) => process.env.NODE_ENV !== 'production' && req.get('X-Skip-Rate-Limit') === 'development', // Special header to bypass in dev
 });
 
 // Password validation function
