@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
+import crypto from 'crypto';
 
 // JWT Secret Key
 const JWT_SECRET = process.env.JWT_SECRET || 'rivu_jwt_secret_dev_key';
@@ -458,6 +459,163 @@ export const protect = (req: any, res: any, next: any) => {
 };
 
 // Export a default object with all functions for compatibility with ESM
+/**
+ * @desc    Generate a password reset token
+ */
+export const forgotPassword = async (req: any, res: any) => {
+  try {
+    const { email } = req.body;
+    
+    // Validate email
+    if (!email) {
+      return res.status(400).json({
+        message: 'Please provide an email address',
+        code: 'INVALID_INPUT'
+      });
+    }
+    
+    // Import User model dynamically
+    const { default: User } = await import('../models/User.js');
+    
+    // For security reasons, don't reveal if user exists or not
+    const user = await User.findOne({ email });
+    if (!user) {
+      // Still return 200 even if user not found to prevent email enumeration
+      return res.status(200).json({
+        message: 'If an account with that email exists, a password reset link has been sent.',
+        code: 'RESET_EMAIL_SENT'
+      });
+    }
+    
+    // Generate a reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    
+    // Hash the token for storage
+    const resetTokenHashed = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
+    
+    // Save the hashed token with expiration
+    user.resetPasswordToken = resetTokenHashed;
+    user.resetPasswordExpires = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+    
+    await user.save();
+    
+    // In a real app, send email with reset link, for development return token
+    // You would use Nodemailer or similar to send an actual email
+    if (process.env.NODE_ENV === 'development') {
+      return res.status(200).json({
+        message: 'Password reset token generated (Development mode)',
+        resetToken,
+        resetUrl: `${req.protocol}://${req.get('host')}/reset-password/${resetToken}`,
+        code: 'RESET_TOKEN_GENERATED'
+      });
+    }
+    
+    // Production response (would actually send email in production)
+    res.status(200).json({
+      message: 'If an account with that email exists, a password reset link has been sent.',
+      code: 'RESET_EMAIL_SENT'
+    });
+  } catch (error: any) {
+    console.error('Error in forgot password:', error);
+    res.status(500).json({
+      message: 'Password reset failed',
+      code: 'SERVER_ERROR'
+    });
+  }
+};
+
+/**
+ * @desc    Reset password with token
+ */
+export const resetPassword = async (req: any, res: any) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+    
+    if (!token || !password) {
+      return res.status(400).json({
+        message: 'Missing token or new password',
+        code: 'INVALID_INPUT'
+      });
+    }
+    
+    // Hash the token for comparison
+    const resetTokenHashed = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+    
+    // Import User model dynamically
+    const { default: User } = await import('../models/User.js');
+    
+    // Find user with matching token and valid expiration
+    const user = await User.findOne({
+      resetPasswordToken: resetTokenHashed,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+    
+    if (!user) {
+      return res.status(400).json({
+        message: 'Invalid or expired reset token',
+        code: 'INVALID_RESET_TOKEN'
+      });
+    }
+    
+    // Validate password strength
+    if (password.length < 8) {
+      return res.status(400).json({
+        message: 'Password must be at least 8 characters',
+        code: 'WEAK_PASSWORD'
+      });
+    }
+    
+    // Set new password and clear reset token fields
+    user.password = await bcrypt.hash(password, 12);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    
+    await user.save();
+    
+    // Generate a new token
+    const userForToken = {
+      id: user._id,
+      username: user.username
+    };
+    
+    const newToken = jwt.sign(
+      userForToken, 
+      process.env.JWT_SECRET || 'fallback_secret',
+      { expiresIn: '2h' }
+    );
+    
+    const freshUserObj = {
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      token: newToken,
+      demographics: user.demographics || {}
+    };
+    
+    res.status(200).json({
+      message: 'Password reset successful',
+      ...freshUserObj,
+      code: 'PASSWORD_RESET_SUCCESS'
+    });
+    
+  } catch (error: any) {
+    console.error('Error in reset password:', error);
+    res.status(500).json({
+      message: 'Password reset failed',
+      code: 'SERVER_ERROR'
+    });
+  }
+};
+
 export default {
   registerUser,
   loginUser,
@@ -466,6 +624,8 @@ export default {
   updateDemographics,
   updateLoginMetrics,
   logoutUser,
+  forgotPassword,
+  resetPassword,
   loginLimiter,
   protect
 };
