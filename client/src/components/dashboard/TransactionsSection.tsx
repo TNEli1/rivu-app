@@ -1,0 +1,271 @@
+import React, { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { formatCurrency, formatDate, getCategoryIconAndColor } from "@/lib/utils";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+
+export type Transaction = {
+  id: string;
+  amount: number;
+  date: string;
+  merchant: string;
+  category: string;
+  account: string;
+  type: "income" | "expense";
+};
+
+export default function TransactionsSection() {
+  const [activeTab, setActiveTab] = useState<"all" | "income" | "expenses">("all");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [newTransaction, setNewTransaction] = useState({
+    amount: "",
+    merchant: "",
+    category: "",
+    account: "Credit Card",
+  });
+
+  // Fetch transactions
+  const { data: transactions = [], isLoading, refetch } = useQuery({
+    queryKey: ["/api/transactions"],
+  });
+
+  // Fetch categories for the select dropdown
+  const { data: categories = [] } = useQuery({
+    queryKey: ["/api/budget-categories"],
+  });
+
+  // Create a new transaction
+  const createMutation = useMutation({
+    mutationFn: async (transactionData: {
+      amount: number;
+      merchant: string;
+      category: string;
+      account: string;
+    }) => {
+      return apiRequest("POST", "/api/transactions", transactionData);
+    },
+    onSuccess: () => {
+      refetch();
+      setIsAddDialogOpen(false);
+      setNewTransaction({
+        amount: "",
+        merchant: "",
+        category: "",
+        account: "Credit Card",
+      });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = parseFloat(newTransaction.amount);
+    
+    if (newTransaction.merchant && !isNaN(amount) && amount > 0 && newTransaction.category) {
+      createMutation.mutate({
+        amount,
+        merchant: newTransaction.merchant,
+        category: newTransaction.category,
+        account: newTransaction.account,
+      });
+    }
+  };
+
+  // Filter transactions based on active tab
+  const filteredTransactions = transactions.filter((transaction: Transaction) => {
+    if (activeTab === "all") return true;
+    if (activeTab === "income") return transaction.type === "income";
+    if (activeTab === "expenses") return transaction.type === "expense";
+    return true;
+  });
+
+  return (
+    <Card className="bg-card rounded-xl">
+      <CardContent className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-foreground">Recent Transactions</h2>
+          <div className="flex items-center space-x-2">
+            <Button 
+              variant="ghost" 
+              className="text-primary hover:underline text-sm font-medium"
+              onClick={() => setIsAddDialogOpen(true)}
+            >
+              Add
+            </Button>
+            <Button variant="ghost" className="text-primary hover:underline text-sm font-medium">
+              View All
+            </Button>
+          </div>
+        </div>
+
+        {/* Transactions Tab Navigation */}
+        <div className="border-b border-border mb-6">
+          <div className="flex -mb-px">
+            <button
+              className={`py-2 px-4 text-sm font-medium ${activeTab === "all" ? "tab-active" : "text-muted-foreground hover:text-foreground"}`}
+              onClick={() => setActiveTab("all")}
+            >
+              All
+            </button>
+            <button
+              className={`py-2 px-4 text-sm font-medium ${activeTab === "income" ? "tab-active" : "text-muted-foreground hover:text-foreground"}`}
+              onClick={() => setActiveTab("income")}
+            >
+              Income
+            </button>
+            <button
+              className={`py-2 px-4 text-sm font-medium ${activeTab === "expenses" ? "tab-active" : "text-muted-foreground hover:text-foreground"}`}
+              onClick={() => setActiveTab("expenses")}
+            >
+              Expenses
+            </button>
+          </div>
+        </div>
+
+        {/* Transaction List */}
+        {isLoading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="flex items-center justify-between p-3 animate-pulse">
+                <div className="flex items-center">
+                  <div className="w-10 h-10 bg-muted rounded-lg mr-3"></div>
+                  <div>
+                    <div className="h-4 bg-muted rounded w-24 mb-2"></div>
+                    <div className="h-3 bg-muted rounded w-32"></div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="h-4 bg-muted rounded w-16 mb-2"></div>
+                  <div className="h-3 bg-muted rounded w-20"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredTransactions.map((transaction: Transaction) => {
+              const { icon, color } = getCategoryIconAndColor(transaction.merchant) || 
+                                      getCategoryIconAndColor(transaction.category);
+              const isIncome = transaction.type === "income";
+              
+              return (
+                <div key={transaction.id} className="flex items-center justify-between p-3 hover:bg-background/40 rounded-lg transition-colors">
+                  <div className="flex items-center">
+                    <div className={`w-10 h-10 ${color.split(' ')[0]} rounded-lg flex items-center justify-center mr-3`}>
+                      <i className={`${icon} ${color.split(' ')[1]}`}></i>
+                    </div>
+                    <div>
+                      <p className="font-medium">{transaction.merchant}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(new Date(transaction.date))} • {transaction.category}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className={`font-medium ${isIncome ? 'text-[#00C2A8]' : 'text-[#FF4D4F]'}`}>
+                      {isIncome ? '+' : '-'}{formatCurrency(Math.abs(transaction.amount))}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{transaction.account}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Add Transaction Dialog */}
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Transaction</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit}>
+              <div className="space-y-4 py-2">
+                <div className="space-y-2">
+                  <Label htmlFor="transaction-amount">Amount</Label>
+                  <Input
+                    id="transaction-amount"
+                    placeholder="Enter amount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={newTransaction.amount}
+                    onChange={(e) => setNewTransaction({ ...newTransaction, amount: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="transaction-merchant">Merchant</Label>
+                  <Input
+                    id="transaction-merchant"
+                    placeholder="e.g., Starbucks"
+                    value={newTransaction.merchant}
+                    onChange={(e) => setNewTransaction({ ...newTransaction, merchant: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="transaction-category">Category</Label>
+                  <Select 
+                    value={newTransaction.category} 
+                    onValueChange={(value) => setNewTransaction({ ...newTransaction, category: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category: { id: string, name: string }) => (
+                        <SelectItem key={category.id} value={category.name}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="transaction-account">Account</Label>
+                  <Select 
+                    value={newTransaction.account} 
+                    onValueChange={(value) => setNewTransaction({ ...newTransaction, account: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select account" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Credit Card">Credit Card</SelectItem>
+                      <SelectItem value="Checking">Checking</SelectItem>
+                      <SelectItem value="Savings">Savings</SelectItem>
+                      <SelectItem value="Cash">Cash</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter className="mt-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsAddDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={
+                    !newTransaction.amount || 
+                    !newTransaction.merchant ||
+                    !newTransaction.category ||
+                    createMutation.isPending
+                  }
+                >
+                  {createMutation.isPending ? "Adding..." : "Add Transaction"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </CardContent>
+    </Card>
+  );
+}

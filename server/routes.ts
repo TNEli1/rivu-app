@@ -1,0 +1,316 @@
+import type { Express } from "express";
+import { createServer, type Server } from "http";
+import { storage } from "./storage";
+import { z } from "zod";
+import OpenAI from "openai";
+
+// Initialize OpenAI client
+const openai = new OpenAI({ 
+  apiKey: process.env.OPENAI_API_KEY || 'sample-key' 
+});
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Current user helper - in a real app, this would use auth
+  const getCurrentUserId = () => 1; // Always return the demo user for now
+
+  // Budget Categories API
+  app.get("/api/budget-categories", async (req, res) => {
+    const userId = getCurrentUserId();
+    const categories = await storage.getBudgetCategories(userId);
+    res.json(categories);
+  });
+
+  app.post("/api/budget-categories", async (req, res) => {
+    const schema = z.object({
+      name: z.string().min(1, "Category name is required"),
+      budgetAmount: z.number().positive("Budget amount must be positive"),
+    });
+
+    try {
+      const validated = schema.parse(req.body);
+      const userId = getCurrentUserId();
+      
+      const newCategory = await storage.createBudgetCategory({
+        userId,
+        name: validated.name,
+        budgetAmount: validated.budgetAmount,
+      });
+      
+      res.status(201).json(newCategory);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid input", error });
+    }
+  });
+
+  app.put("/api/budget-categories/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID" });
+    }
+    
+    const schema = z.object({
+      name: z.string().optional(),
+      budgetAmount: z.number().positive().optional(),
+      spentAmount: z.number().optional(),
+    });
+
+    try {
+      const validated = schema.parse(req.body);
+      const userId = getCurrentUserId();
+      
+      const category = await storage.getBudgetCategory(id);
+      if (!category || category.userId !== userId) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+      
+      const updatedCategory = await storage.updateBudgetCategory(id, validated);
+      res.json(updatedCategory);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid input", error });
+    }
+  });
+
+  app.delete("/api/budget-categories/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID" });
+    }
+    
+    const userId = getCurrentUserId();
+    const category = await storage.getBudgetCategory(id);
+    
+    if (!category || category.userId !== userId) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+    
+    const success = await storage.deleteBudgetCategory(id);
+    if (success) {
+      res.status(204).send();
+    } else {
+      res.status(500).json({ message: "Failed to delete category" });
+    }
+  });
+
+  // Transactions API
+  app.get("/api/transactions", async (req, res) => {
+    const userId = getCurrentUserId();
+    const transactions = await storage.getTransactions(userId);
+    res.json(transactions);
+  });
+
+  app.post("/api/transactions", async (req, res) => {
+    const schema = z.object({
+      amount: z.number().positive("Amount must be positive"),
+      merchant: z.string().min(1, "Merchant is required"),
+      category: z.string().min(1, "Category is required"),
+      account: z.string().min(1, "Account is required"),
+    });
+
+    try {
+      const validated = schema.parse(req.body);
+      const userId = getCurrentUserId();
+      
+      // Determine transaction type based on category
+      const type = validated.category.toLowerCase() === 'income' ? 'income' : 'expense';
+      
+      const newTransaction = await storage.createTransaction({
+        userId,
+        amount: validated.amount,
+        merchant: validated.merchant,
+        category: validated.category,
+        account: validated.account,
+        type,
+      });
+      
+      res.status(201).json(newTransaction);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid input", error });
+    }
+  });
+
+  app.put("/api/transactions/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID" });
+    }
+    
+    const schema = z.object({
+      amount: z.number().positive().optional(),
+      merchant: z.string().optional(),
+      category: z.string().optional(),
+      account: z.string().optional(),
+      type: z.enum(['income', 'expense']).optional(),
+    });
+
+    try {
+      const validated = schema.parse(req.body);
+      const userId = getCurrentUserId();
+      
+      const transaction = await storage.getTransaction(id);
+      if (!transaction || transaction.userId !== userId) {
+        return res.status(404).json({ message: "Transaction not found" });
+      }
+      
+      const updatedTransaction = await storage.updateTransaction(id, validated);
+      res.json(updatedTransaction);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid input", error });
+    }
+  });
+
+  app.delete("/api/transactions/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID" });
+    }
+    
+    const userId = getCurrentUserId();
+    const transaction = await storage.getTransaction(id);
+    
+    if (!transaction || transaction.userId !== userId) {
+      return res.status(404).json({ message: "Transaction not found" });
+    }
+    
+    const success = await storage.deleteTransaction(id);
+    if (success) {
+      res.status(204).send();
+    } else {
+      res.status(500).json({ message: "Failed to delete transaction" });
+    }
+  });
+
+  // Rivu Score API
+  app.get("/api/rivu-score", async (req, res) => {
+    const userId = getCurrentUserId();
+    const rivuScore = await storage.getRivuScore(userId);
+    
+    if (!rivuScore) {
+      // Calculate score if it doesn't exist
+      await storage.calculateRivuScore(userId);
+      const newScore = await storage.getRivuScore(userId);
+      return res.json({
+        score: newScore?.score || 0,
+        factors: [
+          { 
+            name: "Budget Adherence", 
+            percentage: newScore?.budgetAdherence || 0, 
+            rating: getRating(newScore?.budgetAdherence || 0), 
+            color: "bg-[#00C2A8]" 
+          },
+          { 
+            name: "Savings Goal Progress", 
+            percentage: newScore?.savingsProgress || 0, 
+            rating: getRating(newScore?.savingsProgress || 0), 
+            color: "bg-[#2F80ED]" 
+          },
+          { 
+            name: "Weekly Activity", 
+            percentage: newScore?.weeklyActivity || 0, 
+            rating: getRating(newScore?.weeklyActivity || 0), 
+            color: "bg-[#D0F500]" 
+          },
+        ]
+      });
+    }
+    
+    res.json({
+      score: rivuScore.score,
+      factors: [
+        { 
+          name: "Budget Adherence", 
+          percentage: rivuScore.budgetAdherence, 
+          rating: getRating(rivuScore.budgetAdherence), 
+          color: "bg-[#00C2A8]" 
+        },
+        { 
+          name: "Savings Goal Progress", 
+          percentage: rivuScore.savingsProgress, 
+          rating: getRating(rivuScore.savingsProgress), 
+          color: "bg-[#2F80ED]" 
+        },
+        { 
+          name: "Weekly Activity", 
+          percentage: rivuScore.weeklyActivity, 
+          rating: getRating(rivuScore.weeklyActivity), 
+          color: "bg-[#D0F500]" 
+        },
+      ]
+    });
+  });
+
+  // Financial advice API using OpenAI
+  app.post("/api/advice", async (req, res) => {
+    try {
+      const userId = getCurrentUserId();
+      const transactions = await storage.getTransactions(userId);
+      const categories = await storage.getBudgetCategories(userId);
+      const rivuScore = await storage.getRivuScore(userId);
+      
+      // Extract relevant financial information
+      const financialContext = {
+        rivuScore: rivuScore?.score,
+        budgetCategories: categories.map(c => ({
+          name: c.name,
+          budgeted: c.budgetAmount,
+          spent: c.spentAmount,
+          percentUsed: ((parseFloat(c.spentAmount.toString()) / parseFloat(c.budgetAmount.toString())) * 100).toFixed(0) + '%'
+        })),
+        recentTransactions: transactions.slice(0, 5).map(t => ({
+          date: new Date(t.date).toLocaleDateString(),
+          merchant: t.merchant,
+          amount: t.amount,
+          category: t.category,
+          type: t.type
+        }))
+      };
+      
+      const userPrompt = req.body.prompt || '';
+      
+      let prompt = 'As an AI financial coach, analyze this user\'s financial data and provide personalized advice:';
+      prompt += '\n\nFinancial Context: ' + JSON.stringify(financialContext, null, 2);
+      
+      if (userPrompt) {
+        prompt += `\n\nThe user is asking: "${userPrompt}"`;
+      }
+      
+      prompt += '\n\nProvide specific, actionable financial advice based on the user\'s spending patterns, budget adherence, and Rivu score. Keep your response concise (1-2 short paragraphs) and easy to understand.';
+      
+      try {
+        // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        const response = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [{ role: "user", content: prompt }],
+          max_tokens: 300,
+        });
+        
+        const message = response.choices[0].message.content || 
+          "I notice some trends in your spending. Consider reviewing your budget categories and adjust as needed to improve your financial health.";
+        
+        res.json({ message });
+      } catch (error) {
+        console.error("OpenAI API error:", error);
+        // Fallback message if API fails
+        res.json({ 
+          message: "You're doing great — keep it up! Continue tracking your expenses to improve your financial health."
+        });
+      }
+    } catch (error) {
+      console.error("Server error:", error);
+      res.status(500).json({ 
+        message: "I'm having trouble analyzing your finances right now. Please try again later."
+      });
+    }
+  });
+
+  const httpServer = createServer(app);
+  return httpServer;
+}
+
+// Helper function to get rating text based on percentage
+function getRating(percentage: number): string {
+  if (percentage >= 90) return "Excellent";
+  if (percentage >= 70) return "Good";
+  if (percentage >= 50) return "Fair";
+  if (percentage >= 30) return "Poor";
+  return "Needs Improvement";
+}
