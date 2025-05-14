@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import MobileNav from "@/components/layout/MobileNav";
 import StatCards from "@/components/dashboard/StatCards";
@@ -8,8 +8,37 @@ import RivuScoreCard from "@/components/dashboard/RivuScoreCard";
 import AICoachingCard from "@/components/dashboard/AICoachingCard";
 import QuickActionsCard from "@/components/dashboard/QuickActionsCard";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
+import { useLocation } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
+  
+  // Track user login for engagement metrics
+  useEffect(() => {
+    if (user) {
+      // Update last login and increment login count
+      const updateLoginMetrics = async () => {
+        try {
+          await apiRequest('POST', '/api/user/login-metric', {
+            lastLogin: new Date(),
+          });
+        } catch (error) {
+          console.error('Failed to update login metrics:', error);
+        }
+      };
+      
+      updateLoginMetrics();
+      
+      // Check if user needs to complete onboarding
+      if (user.demographics && !user.demographics.completed) {
+        setLocation('/onboarding');
+      }
+    }
+  }, [user, setLocation]);
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen">
       {/* Sidebar - Desktop only */}
@@ -27,6 +56,16 @@ export default function Dashboard() {
             <i className="ri-menu-line text-xl"></i>
           </Button>
         </header>
+        
+        {/* Welcome Message */}
+        <div className="mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+            Welcome, {user?.firstName || user?.username || 'there'}!
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Here's your financial overview for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+          </p>
+        </div>
 
         {/* Welcome Section */}
         <section className="mb-8">
