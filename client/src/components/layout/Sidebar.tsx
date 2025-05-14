@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 
 type NavItem = {
   title: string;
@@ -16,7 +16,12 @@ const navItems: NavItem[] = [
 ];
 
 export default function Sidebar() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
+
+  // Handle navigation manually instead of using Link
+  const handleNavigation = (href: string) => {
+    setLocation(href);
+  };
 
   return (
     <aside className="hidden md:flex flex-col w-64 bg-card border-r border-border p-6 fixed h-full">
@@ -31,14 +36,15 @@ export default function Sidebar() {
             const isActive = location === item.href;
             return (
               <li className="mb-4" key={item.href}>
-                <Link href={item.href}>
-                  <div className={`flex items-center px-4 py-3 rounded-lg cursor-pointer ${
+                <div 
+                  onClick={() => handleNavigation(item.href)}
+                  className={`flex items-center px-4 py-3 rounded-lg cursor-pointer ${
                     isActive ? "bg-primary/10 text-primary" : "hover:bg-card/80 text-foreground"
-                  }`}>
-                    <i className={`${item.icon} mr-3 text-xl`}></i>
-                    <span className="font-medium">{item.title}</span>
-                  </div>
-                </Link>
+                  }`}
+                >
+                  <i className={`${item.icon} mr-3 text-xl`}></i>
+                  <span className="font-medium">{item.title}</span>
+                </div>
               </li>
             );
           })}
