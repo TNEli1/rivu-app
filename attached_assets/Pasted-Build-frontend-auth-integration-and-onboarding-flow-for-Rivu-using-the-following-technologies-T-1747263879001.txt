@@ -1,0 +1,85 @@
+Build frontend auth integration and onboarding flow for Rivu using the following technologies:
+
+⸻
+
+Tech Stack (DO NOT SUBSTITUTE)
+	•	Frontend: React + TailwindCSS
+	•	Backend: Node.js + Express
+	•	Database: MongoDB Atlas (already connected)
+	•	Auth: JWT-based (via Authorization: Bearer <token>)
+	•	AI Coaching: OpenAI API via OPENAI_API_KEY (already stored in secrets)
+	•	Financial Data: Simulated Plaid structure — no live API calls yet
+
+⸻
+
+1. Auth Pages
+	•	Register Page:
+	•	Inputs: name, email, password
+	•	POST to /api/auth/register
+	•	On success, store JWT token (cookie or localStorage) and redirect to dashboard
+	•	Login Page:
+	•	Inputs: email, password
+	•	POST to /api/auth/login
+	•	On success, store JWT and redirect to dashboard
+
+⸻
+
+2. Token Handling
+	•	Save token in localStorage or secure cookie
+	•	For all protected routes, include:
+
+Authorization: Bearer <token>
+
+3. Route Protection
+	•	Block access to:
+	•	Budget page
+	•	Transactions
+	•	Rivu Score
+	•	AI Advice
+	•	Redirect unauthenticated users to login
+	•	After logout, clear token and redirect to login
+
+⸻
+
+4. Navigation UI
+	•	Show logged-in user’s name in the header or sidebar
+	•	Add logout button
+	•	Add optional user account page (email, date joined, score)
+
+One-Time Demographics Survey (After Signup)
+	•	Redirect new users to a survey page after registration
+	•	Include optional fields:
+	•	Age range
+	•	Income bracket
+	•	Financial goals (multi-select)
+	•	Risk tolerance
+	•	Budgeting experience level
+	•	Store under users.demographics
+	•	Add “Skip for now” button
+	•	Do not show this survey again after submission or skip
+
+6. Auto-Track Engagement
+	•	On each login, update:
+
+lastLogin: Date
+loginCount: Number
+
+•	Used to power Rivu Score engagement logic
+
+⸻
+
+7. MongoDB Schema Rules
+	•	Use timestamps: true in all models (User, Budget, Transaction, Goal)
+	•	Only use MongoDB Atlas — do not switch to Replit DB
+
+⸻
+
+8. Advice Autoload
+	•	On dashboard load, auto-fetch GPT advice (POST /api/advice) based on budget + score
+	•	Display the latest coaching message in the welcome area
+
+⸻
+
+DO NOT hardcode demo users or fallback logic. All functionality should be tied to real user data stored in MongoDB.
+
+Let me know once this is implemented and tested so we can move to final QA and deployment.

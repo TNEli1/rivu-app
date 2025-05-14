@@ -1,0 +1,89 @@
+Now that the backend (MongoDB, JWT auth, API routes) is complete and connected, implement full frontend authentication and user account management for Rivu.
+
+⸻
+
+1. Build Authentication Pages
+	•	Create a Register Page:
+	•	Fields: name, email, password
+	•	Submit via POST /api/auth/register
+	•	On success, store returned JWT token and redirect to dashboard
+	•	Create a Login Page:
+	•	Fields: email, password
+	•	Submit via POST /api/auth/login
+	•	On success, store JWT token and redirect to dashboard
+
+⸻
+
+2. Store Auth Token
+	•	Save JWT in localStorage or as a cookie (preferred)
+	•	Include token in headers for all authenticated API requests:
+
+Authorization: Bearer <token>
+
+3. Protect Routes
+	•	Prevent access to budget, transactions, advice, and Rivu Score routes unless the user is authenticated
+	•	Redirect unauthenticated users to login
+
+⸻
+
+4. Add Navigation / Account UI
+	•	Show “Welcome, [User Name]” in header or sidebar once logged in
+	•	Include Logout button to clear token and redirect to login page
+	•	Add basic user account page (email, created date, maybe Rivu Score)
+
+⸻
+
+5. Final Check
+	•	Confirm login persists after refresh
+	•	Display user-specific data (budgets, goals, transactions) after login
+	•	All POST/GET calls should include the user’s JWT and return user-specific results only
+
+Demographics & Onboarding Survey (Optional After Signup)
+	•	After a user registers, redirect them to a one-time onboarding survey page
+	•	Questions (all optional):
+	•	Age range (dropdown)
+	•	Income bracket (dropdown)
+	•	Financial goals (multi-select: savings, debt, investing, etc.)
+	•	Risk tolerance (low / medium / high)
+	•	Experience level with budgeting (novice / intermediate / expert)
+	•	Store survey responses in the users collection under a demographics field:
+
+demographics: {
+  ageRange: "",
+  incomeBracket: "",
+  goals: [],
+  riskTolerance: "",
+  experienceLevel: ""
+}
+
+•	Include a “Skip for now” option
+	•	Only show this survey once, immediately after account creation
+
+Track User Engagement for Rivu Score
+	•	Each time a user logs in, update a field like:
+
+lastLogin: Date
+loginCount: Number
+
+This will fuel the “weekly engagement” component of the Rivu Score
+	•	Add logic in your auth middleware or login controller to update this automatically
+
+⸻
+
+8. Add createdAt and updatedAt Timestamps
+	•	In your Mongo models (User, Budget, Transaction, Goal), include:
+
+timestamps: true
+
+This auto-tracks creation and update times for free and will be helpful for:
+	•	Activity logs
+	•	Sorting transactions/goals
+	•	Long-term user analytics
+
+⸻
+
+9. Optional: Trigger Advice on Dashboard Load
+	•	On first dashboard load after login, auto-trigger GET /api/advice
+	•	Display latest coaching tip as part of the welcome panel
+
+This makes Rivu feel “alive” from the first moment — like your AI coach is already watching out for you.
