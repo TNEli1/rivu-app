@@ -1,13 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
+const cookieParser = require('cookie-parser');
 
 // Import controllers
 const {
   registerUser,
   loginUser,
   getUserProfile,
-  logoutUser
+  updateUserProfile,
+  updateDemographics,
+  updateLoginMetrics,
+  logoutUser,
+  loginLimiter
 } = require('../controllers/userController');
 
 const {
@@ -34,11 +39,17 @@ const {
 const { getRivuScore } = require('../controllers/rivuScoreController');
 const { getAdvice } = require('../controllers/adviceController');
 
-// Auth Routes
+// Use cookie parser to read JWT cookies
+router.use(cookieParser());
+
+// Auth Routes with rate limiting for login
 router.post('/register', registerUser);
-router.post('/login', loginUser);
-router.post('/logout', logoutUser);
+router.post('/login', loginLimiter, loginUser); // Apply rate limiting to login route
+router.post('/logout', protect, logoutUser);    // Require authentication for logout
 router.get('/user', protect, getUserProfile);
+router.put('/user', protect, updateUserProfile);
+router.put('/user/demographics', protect, updateDemographics);
+router.post('/user/login-metric', protect, updateLoginMetrics);
 
 // Budget Routes
 router.route('/budgets')
