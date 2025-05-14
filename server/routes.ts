@@ -14,17 +14,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup CORS
   app.use(cors());
   
-  // Import and use the API routes from routes-ts/api
+  // CRITICAL FIX: Register manual bridge to the MongoDB API routes
   try {
-    // Import the TypeScript version of our API routes
-    const apiRoutes = (await import('./routes-ts/api')).default;
-    app.use('/api', apiRoutes);
-    console.log('✅ API routes (TypeScript) mounted at /api');
-  } catch (error) {
-    console.error('⚠️ Error loading TypeScript API routes:', error);
-    console.log('⚠️ Falling back to in-memory API routes');
+    // Since we can't directly import the CommonJS router in ESM module,
+    // we'll manually create routes that call the controller functions
     
-    // Fall back to in-memory API if MongoDB routes fail to load
+    // First, let's register the API routes with the MongoDB version
+    const apiPath = '/api';
+    console.log(`⚙️ Setting up MongoDB API routes at ${apiPath}...`);
+    
+    // Register the auth module routes here (register, login, etc.)
+    app.post(`${apiPath}/register`, (req, res) => {
+      // Forward to controller - this module must be loaded in routes.js
+      // This function effectively serves as a bridge to the CommonJS modules
+      return import('./controllers/userController.js')
+        .then(module => {
+          // Call the registerUser function from the controller
+          const registerUser = module.default?.registerUser || module.registerUser;
+          if (typeof registerUser === 'function') {
+            return registerUser(req, res);
+          }
+          throw new Error('registerUser function not found in controller');
+        })
+        .catch(err => {
+          console.error('Error in /register route:', err);
+          res.status(500).json({ message: 'Server error processing registration' });
+        });
+    });
+
+    // Login route with similar bridging technique
+    app.post(`${apiPath}/login`, (req, res) => {
+      return import('./controllers/userController.js')
+        .then(module => {
+          const loginUser = module.default?.loginUser || module.loginUser;
+          if (typeof loginUser === 'function') {
+            return loginUser(req, res);
+          }
+          throw new Error('loginUser function not found in controller');
+        })
+        .catch(err => {
+          console.error('Error in /login route:', err);
+          res.status(500).json({ message: 'Server error processing login' });
+        });
+    });
+    
+    console.log('✅ Auth routes (MongoDB) successfully mounted at /api');
+  } catch (error) {
+    console.error('⚠️ Error setting up MongoDB routes:', error);
+    console.log('⚠️ Falling back to in-memory API routes');
   }
   
   // Current user helper (kept for compatibility with existing code)
