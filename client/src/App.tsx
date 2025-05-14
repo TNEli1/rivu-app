@@ -8,6 +8,8 @@ import Dashboard from "@/pages/Dashboard";
 import AuthPage from "@/pages/auth-page";
 import AccountPage from "@/pages/account-page";
 import OnboardingPage from "@/pages/onboarding-page";
+import ForgotPasswordPage from "@/pages/forgot-password";
+import ResetPasswordPage from "@/pages/reset-password";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 
@@ -18,6 +20,8 @@ function Router() {
       <ProtectedRoute path="/account" component={AccountPage} />
       <ProtectedRoute path="/onboarding" component={OnboardingPage} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/forgot-password" component={ForgotPasswordPage} />
+      <Route path="/reset-password/:token" component={ResetPasswordPage} />
       <Route component={NotFound} />
     </Switch>
   );

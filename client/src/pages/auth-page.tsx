@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useState, useEffect } from "react";
-import { Redirect } from "wouter";
+import { Redirect, Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
 
@@ -153,7 +153,11 @@ export default function AuthPage() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label htmlFor="login-password">Password</Label>
-                        <Button variant="link" className="p-0 h-auto text-xs">
+                        <Button 
+                          variant="link" 
+                          className="p-0 h-auto text-xs"
+                          onClick={() => window.location.href = "/forgot-password"}
+                        >
                           Forgot password?
                         </Button>
                       </div>
