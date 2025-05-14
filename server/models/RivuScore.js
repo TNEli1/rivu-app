@@ -1,48 +1,55 @@
 const mongoose = require('mongoose');
 
-const RivuScoreSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    unique: true
+const rivuScoreSchema = mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: 'User',
+      unique: true,
+    },
+    score: {
+      type: Number,
+      required: true,
+      min: [0, 'Score cannot be negative'],
+      max: [100, 'Score cannot be more than 100'],
+    },
+    // Score factors with their individual percentages
+    budgetAdherence: {
+      type: Number,
+      required: true,
+      min: [0, 'Budget adherence cannot be negative'],
+      max: [100, 'Budget adherence cannot be more than 100'],
+    },
+    savingsProgress: {
+      type: Number,
+      required: true,
+      min: [0, 'Savings progress cannot be negative'],
+      max: [100, 'Savings progress cannot be more than 100'],
+    },
+    weeklyActivity: {
+      type: Number,
+      required: true,
+      min: [0, 'Weekly activity cannot be negative'],
+      max: [100, 'Weekly activity cannot be more than 100'],
+    },
   },
-  score: {
-    type: Number,
-    required: true,
-    min: 0,
-    max: 100
-  },
-  budgetAdherence: {
-    type: Number,
-    required: true,
-    min: 0,
-    max: 100
-  },
-  savingsProgress: {
-    type: Number,
-    required: true,
-    min: 0,
-    max: 100
-  },
-  weeklyActivity: {
-    type: Number,
-    required: true,
-    min: 0,
-    max: 100
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
+  {
+    timestamps: true,
   }
-});
+);
 
-// Virtual for factor data
-RivuScoreSchema.virtual('factors').get(function() {
+// Helper function to get rating text based on percentage
+function getRating(percentage) {
+  if (percentage >= 90) return "Excellent";
+  if (percentage >= 70) return "Good";
+  if (percentage >= 50) return "Fair";
+  if (percentage >= 30) return "Poor";
+  return "Needs Improvement";
+}
+
+// Define virtual property for ratings
+rivuScoreSchema.virtual('factors').get(function() {
   return [
     { 
       name: "Budget Adherence", 
@@ -61,22 +68,14 @@ RivuScoreSchema.virtual('factors').get(function() {
       percentage: this.weeklyActivity, 
       rating: getRating(this.weeklyActivity), 
       color: "bg-[#D0F500]" 
-    }
+    },
   ];
 });
 
-// Include virtuals when converting to JSON
-RivuScoreSchema.set('toJSON', { virtuals: true });
+// Ensure virtuals are included when converting to JSON
+rivuScoreSchema.set('toJSON', { virtuals: true });
+rivuScoreSchema.set('toObject', { virtuals: true });
 
-// Helper function to get rating text
-function getRating(percentage) {
-  if (percentage >= 90) return "Excellent";
-  if (percentage >= 70) return "Good";
-  if (percentage >= 50) return "Fair";
-  if (percentage >= 30) return "Poor";
-  return "Needs Improvement";
-}
-
-const RivuScore = mongoose.model('RivuScore', RivuScoreSchema);
+const RivuScore = mongoose.model('RivuScore', rivuScoreSchema);
 
 module.exports = RivuScore;

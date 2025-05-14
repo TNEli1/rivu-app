@@ -3,14 +3,24 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import OpenAI from "openai";
+import cors from "cors";
 
 // Initialize OpenAI client
 const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY || 'sample-key' 
+  apiKey: process.env.OPENAI_API_KEY 
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Current user helper - in a real app, this would use auth
+  // Setup CORS
+  app.use(cors());
+  
+  // Use MongoDB models for database operations when connected
+  // Otherwise fall back to in-memory storage
+  
+  // API routes will be added directly here for now
+  // We'll implement MongoDB routes in future updates
+  
+  // Current user helper (kept for compatibility with existing code)
   const getCurrentUserId = () => 1; // Always return the demo user for now
 
   // Budget Categories API

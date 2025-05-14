@@ -18,27 +18,29 @@ const getBudgets = async (req, res) => {
 // @access  Private
 const createBudget = async (req, res) => {
   try {
-    const { category, amount } = req.body;
+    const { category, amount, color, icon } = req.body;
 
     if (!category || !amount) {
       return res.status(400).json({ message: 'Please provide category and amount' });
     }
 
-    // Check if budget category already exists for this user
+    // Check if budget for this category already exists
     const existingBudget = await Budget.findOne({ 
       userId: req.user._id, 
-      category: category 
+      category 
     });
-
+    
     if (existingBudget) {
-      return res.status(400).json({ message: 'Budget category already exists' });
+      return res.status(400).json({ message: 'Budget for this category already exists' });
     }
 
     const budget = await Budget.create({
       userId: req.user._id,
       category,
       amount,
-      currentSpent: 0
+      currentSpent: 0,
+      color: color || '#00C2A8', // Default color
+      icon: icon || 'ri-money-dollar-circle-line', // Default icon
     });
 
     res.status(201).json(budget);
@@ -53,7 +55,8 @@ const createBudget = async (req, res) => {
 // @access  Private
 const updateBudget = async (req, res) => {
   try {
-    const { category, amount } = req.body;
+    const { category, amount, currentSpent, color, icon } = req.body;
+
     const budget = await Budget.findById(req.params.id);
 
     if (!budget) {
@@ -65,9 +68,24 @@ const updateBudget = async (req, res) => {
       return res.status(401).json({ message: 'Not authorized' });
     }
 
+    // If changing category, ensure new category doesn't already exist
+    if (category && category !== budget.category) {
+      const existingBudget = await Budget.findOne({ 
+        userId: req.user._id, 
+        category 
+      });
+      
+      if (existingBudget) {
+        return res.status(400).json({ message: 'Budget for this category already exists' });
+      }
+    }
+
     // Update fields
-    if (category) budget.category = category;
-    if (amount) budget.amount = amount;
+    if (category !== undefined) budget.category = category;
+    if (amount !== undefined) budget.amount = amount;
+    if (currentSpent !== undefined) budget.currentSpent = currentSpent;
+    if (color !== undefined) budget.color = color;
+    if (icon !== undefined) budget.icon = icon;
 
     const updatedBudget = await budget.save();
     res.json(updatedBudget);
