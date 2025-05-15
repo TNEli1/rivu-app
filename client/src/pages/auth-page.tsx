@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { Redirect, Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
+import MobileHeader from "@/components/layout/MobileHeader";
 
 
 export default function AuthPage() {
@@ -111,8 +112,13 @@ export default function AuthPage() {
 
   return (
     <div className="flex min-h-screen">
+      {/* Mobile Header - only visible on mobile */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white p-4 shadow-md">
+        <MobileHeader />
+      </div>
+      
       {/* Left side - Auth form */}
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-8 pt-16 md:pt-8">
         <div className="mx-auto w-full max-w-md">
           <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">

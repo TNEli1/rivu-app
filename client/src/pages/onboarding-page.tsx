@@ -113,7 +113,12 @@ export default function OnboardingPage() {
   
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-8">
-      <div className="w-full max-w-3xl mx-auto my-auto">
+      {/* Mobile Header - only visible on mobile */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white p-4 shadow-md">
+        <MobileHeader />
+      </div>
+      
+      <div className="w-full max-w-3xl mx-auto my-auto pt-16 md:pt-0">
         <Card className="shadow-lg">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl sm:text-3xl">Welcome to Rivu!</CardTitle>
