@@ -98,7 +98,7 @@ export default function TransactionsPage() {
     amount: "",
     merchant: "",
     category: "",
-    account: ACCOUNTS[0],
+    account: "",
     source: 'manual',
   });
   
@@ -328,9 +328,7 @@ export default function TransactionsPage() {
       amount: "",
       merchant: "",
       category: "",
-      account: ACCOUNTS[0],
-      customCategory: undefined,
-      customAccount: undefined,
+      account: "",
       source: 'manual',
     });
   };
@@ -957,101 +955,43 @@ export default function TransactionsPage() {
             
             <div className="space-y-2">
               <Label htmlFor="edit-category">Category</Label>
-              {formData.category === 'Other' ? (
-                <div className="space-y-2">
-                  <Input 
-                    id="edit-customCategory" 
-                    placeholder="Enter custom category" 
-                    value={formData.customCategory || ''}
-                    onChange={(e) => setFormData({
-                      ...formData, 
-                      customCategory: e.target.value,
-                      category: e.target.value || 'Other'
-                    })}
-                  />
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm"
-                    className="w-full"
-                    onClick={() => setFormData({...formData, category: '', customCategory: ''})}
-                  >
-                    Select from list instead
-                  </Button>
-                </div>
-              ) : (
-                <Select 
-                  value={formData.category} 
-                  onValueChange={(value) => setFormData({
+              <div className="space-y-2">
+                <Input 
+                  id="edit-category" 
+                  placeholder="Enter category (e.g., Groceries, Utilities)" 
+                  value={formData.category}
+                  onChange={(e) => setFormData({
                     ...formData, 
-                    category: value,
-                    customCategory: value === 'Other' ? '' : undefined
+                    category: e.target.value
                   })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {formData.type === 'income' && (
-                      <SelectItem value="Income">Income</SelectItem>
-                    )}
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.name}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="Other">Enter custom category</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
+                  autoComplete="off"
+                />
+                {categories.length > 0 && (
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Suggestions: {categories.slice(0, 3).map(cat => cat.name).join(', ')}
+                    {categories.length > 3 && ', and more'}
+                  </div>
+                )}
+              </div>
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="edit-account">Account</Label>
-              {formData.account === 'Other' ? (
-                <div className="space-y-2">
-                  <Input 
-                    id="edit-customAccount" 
-                    placeholder="Enter custom account" 
-                    value={formData.customAccount || ''}
-                    onChange={(e) => setFormData({
-                      ...formData, 
-                      customAccount: e.target.value,
-                      account: e.target.value || 'Other'
-                    })}
-                  />
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm"
-                    className="w-full"
-                    onClick={() => setFormData({...formData, account: ACCOUNTS[0], customAccount: ''})}
-                  >
-                    Select from list instead
-                  </Button>
-                </div>
-              ) : (
-                <Select 
-                  value={formData.account} 
-                  onValueChange={(value) => setFormData({
+              <div className="space-y-2">
+                <Input 
+                  id="edit-account" 
+                  placeholder="Enter account (e.g., Checking, Credit Card)" 
+                  value={formData.account}
+                  onChange={(e) => setFormData({
                     ...formData, 
-                    account: value,
-                    customAccount: value === 'Other' ? '' : undefined
+                    account: e.target.value
                   })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select account" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ACCOUNTS.map((account) => (
-                      <SelectItem key={account} value={account}>
-                        {account}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="Other">Enter custom account</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
+                  autoComplete="off"
+                />
+                <div className="text-xs text-muted-foreground mt-1">
+                  Common accounts: Checking, Savings, Credit Card, Cash
+                </div>
+              </div>
             </div>
             
             <div className="flex justify-end">
