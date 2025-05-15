@@ -4,6 +4,7 @@ import MobileNav from "@/components/layout/MobileNav";
 import StatCards from "@/components/dashboard/StatCards";
 import BudgetSection from "@/components/dashboard/BudgetSection";
 import TransactionsSection from "@/components/dashboard/TransactionsSection";
+import GoalsSection from "@/components/dashboard/GoalsSection";
 import RivuScoreCard from "@/components/dashboard/RivuScoreCard";
 import AICoachingCard from "@/components/dashboard/AICoachingCard";
 import QuickActionsCard from "@/components/dashboard/QuickActionsCard";
@@ -84,10 +85,13 @@ export default function Dashboard() {
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Budget and Transactions */}
+          {/* Left Column - Budget, Goals and Transactions */}
           <div className="lg:col-span-2 space-y-6">
             <BudgetSection />
-            <TransactionsSection />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <GoalsSection />
+              <TransactionsSection />
+            </div>
           </div>
 
           {/* Right Column - Rivu Score and AI Coaching */}
