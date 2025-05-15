@@ -347,7 +347,7 @@ export default function GoalsPage() {
     <div className="container mx-auto py-6 space-y-6">
       {/* Back to Dashboard Button */}
       <div className="mb-2">
-        <Link to="/dashboard">
+        <Link to="/">
           <Button variant="ghost" className="p-0 hover:bg-transparent">
             <ArrowLeft className="h-5 w-5 mr-1" />
             <span>Back to Dashboard</span>
