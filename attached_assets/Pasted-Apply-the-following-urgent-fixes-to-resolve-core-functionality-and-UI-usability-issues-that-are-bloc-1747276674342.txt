@@ -1,0 +1,57 @@
+Apply the following urgent fixes to resolve core functionality and UI usability issues that are blocking Rivu from going live:
+
+⸻
+
+A. BUDGET – MANUAL “AMOUNT SPENT” FIELD STILL MISSING
+
+Issue:
+	•	User can add categories, but there’s still no way to input “amount spent” for each one
+
+Fix:
+	•	On the /budget page, under each budget category:
+	•	Add a numeric field labeled: Amount Spent
+	•	When updated:
+	•	Save this value to the user’s MongoDB budget record
+	•	Recalculate the percentage used and update:
+	•	Progress bar
+	•	Budget summary on dashboard
+	•	Rivu Score if applicable
+
+const percentUsed = (spent / limit) * 100;
+
+B. TRANSACTION FORM – VALIDATION ERRORS BLOCKING ENTRY
+
+Issue:
+	•	When manually entering a transaction, the form throws errors even when fields are filled
+
+Fix:
+	•	Review validation logic in both frontend and backend:
+	•	Frontend: ensure required fields (e.g., description, amount) are not failing due to empty checks on optional inputs
+	•	Backend: confirm controller accepts custom categories and accounts, not just predefined enums
+	•	Allow custom text in category, description, and account fields
+	•	Return validation error messages that explain the issue (e.g., “Amount must be greater than 0”)
+
+⸻
+
+C. LIGHT MODE – STILL UNREADABLE
+
+Issue:
+	•	Light mode still uses excessive white space, low contrast, and invisible inputs — making it visually broken and hard to use
+
+Fix: Replace Light Mode with this Color Scheme:
+
+Element	Hex Value	Description
+Background	#f7f9fc	Soft light gray (not pure white)
+Card Background	#ffffff	With subtle shadow (box-shadow)
+Text (Primary)	#1c1e21	Very dark gray, almost black
+Text (Secondary)	#4b4b4b	Muted gray for subtitles and labels
+Borders/Inputs	#d1d5db	Mid-gray for consistent contrast
+Primary Button	#2563eb	Professional blue
+Accent	#3c82f6	For hover states and highlights
+Error/Invalid	#ef4444	For warnings and failed validations
+
+Apply consistent padding, card shadows, and border radius to match dark mode style quality.
+
+Also:
+	•	Test all form fields, charts, nav links, and input fields in light mode
+	•	Avoid full white-on-white — background contrast must exist

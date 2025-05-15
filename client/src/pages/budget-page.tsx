@@ -226,6 +226,19 @@ export default function BudgetPage() {
                     onChange={(e) => setFormData({...formData, budgetAmount: e.target.value})}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="spent">Amount Spent</Label>
+                  <Input 
+                    id="spent" 
+                    type="number" 
+                    placeholder="0.00" 
+                    value={formData.spentAmount}
+                    onChange={(e) => setFormData({...formData, spentAmount: e.target.value})}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Enter how much you've already spent in this category
+                  </p>
+                </div>
                 <div className="flex justify-end">
                   <Button 
                     type="submit" 
@@ -364,9 +377,33 @@ export default function BudgetPage() {
                     </div>
                   </div>
                   
-                  <p className="text-lg font-bold mb-4">
-                    {formatCurrency(spent)} <span className="text-sm font-normal text-muted-foreground">of {formatCurrency(budget)}</span>
-                  </p>
+                  <div className="mb-4">
+                    <div className="flex justify-between items-center">
+                      <p className="text-lg font-bold">
+                        {formatCurrency(spent)} <span className="text-sm font-normal text-muted-foreground">of {formatCurrency(budget)}</span>
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-8" 
+                        onClick={() => {
+                          const newSpent = prompt('Enter amount spent:', spent.toString());
+                          if (newSpent !== null && !isNaN(parseFloat(newSpent))) {
+                            updateMutation.mutate({
+                              id: category.id,
+                              updates: {
+                                name: category.name,
+                                budgetAmount: category.budgetAmount,
+                                spentAmount: newSpent
+                              }
+                            });
+                          }
+                        }}
+                      >
+                        Update Spent
+                      </Button>
+                    </div>
+                  </div>
                   
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">

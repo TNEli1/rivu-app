@@ -150,13 +150,33 @@ export default function TransactionsPage() {
         account = data.customAccount;
       }
       
+      // Perform client-side validation
+      if (!data.amount || isNaN(parseFloat(data.amount)) || parseFloat(data.amount) <= 0) {
+        throw new Error("Please enter a valid amount greater than 0");
+      }
+      
+      if (!data.date) {
+        throw new Error("Please select a valid date");
+      }
+      
+      if (!category) {
+        throw new Error("Please select or enter a category");
+      }
+      
+      if (!account) {
+        throw new Error("Please select or enter an account");
+      }
+      
+      // Remove unnecessary fields before sending to API
+      const { customCategory, customAccount, ...cleanData } = data;
+      
       const res = await apiRequest('POST', '/api/transactions', {
-        ...data,
+        ...cleanData,
         category,
         account,
         amount: parseFloat(data.amount),
         date: new Date(data.date).toISOString(),
-        type: data.type || 'expense', // Ensure type is included
+        type: data.type || 'expense',
       });
       return res.json();
     },
@@ -185,29 +205,50 @@ export default function TransactionsPage() {
       const updates = {...data.updates};
       
       // Process custom fields
+      let category = updates.category;
+      let account = updates.account;
+      
       if (updates.category === 'Other' && updates.customCategory) {
+        category = updates.customCategory;
         updates.category = updates.customCategory;
       }
       
       if (updates.account === 'Other' && updates.customAccount) {
+        account = updates.customAccount;
         updates.account = updates.customAccount;
       }
       
+      // Perform validation
+      if (updates.amount && (isNaN(parseFloat(updates.amount)) || parseFloat(updates.amount) <= 0)) {
+        throw new Error("Please enter a valid amount greater than 0");
+      }
+      
+      if (updates.date && isNaN(new Date(updates.date).getTime())) {
+        throw new Error("Please select a valid date");
+      }
+      
+      if (category === '') {
+        throw new Error("Please select or enter a category");
+      }
+      
+      if (account === '') {
+        throw new Error("Please select or enter an account");
+      }
+      
       // Remove custom fields before sending to API
-      delete updates.customCategory;
-      delete updates.customAccount;
+      const { customCategory, customAccount, ...cleanUpdates } = updates;
       
       // Convert amount to string if present
-      if (updates.amount) {
-        updates.amount = updates.amount.toString();
+      if (cleanUpdates.amount) {
+        cleanUpdates.amount = cleanUpdates.amount.toString();
       }
       
       // Convert date to ISO string if present
-      if (updates.date) {
-        updates.date = new Date(updates.date).toISOString();
+      if (cleanUpdates.date) {
+        cleanUpdates.date = new Date(cleanUpdates.date).toISOString();
       }
       
-      const res = await apiRequest('PUT', `/api/transactions/${data.id}`, updates);
+      const res = await apiRequest('PUT', `/api/transactions/${data.id}`, cleanUpdates);
       return res.json();
     },
     onSuccess: () => {
