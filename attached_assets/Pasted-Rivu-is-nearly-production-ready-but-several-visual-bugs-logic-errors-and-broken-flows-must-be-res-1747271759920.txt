@@ -1,0 +1,110 @@
+Rivu is nearly production-ready, but several visual bugs, logic errors, and broken flows must be resolved. These issues should be addressed in a clean, final pass to polish the app and ensure reliability, performance, and usability.
+
+⸻
+
+A. CHART + UI DISPLAY FIXES
+
+1. Pie Chart Overlap
+	•	Fix layout in the “Spending by Category” chart
+	•	Ensure text labels and legend do not overlap
+	•	Text must be readable and positioned dynamically
+	•	Support mobile responsiveness
+
+2. Light Mode is Unusable
+	•	Improve light mode theme:
+	•	Text is currently unreadable
+	•	Add clear contrast between background, text, and cards
+	•	Match styling quality of dark mode
+
+3. Green/Red Trend Arrows
+	•	For metrics like “Monthly spending is up 4%” or “Savings is down 3%”:
+	•	Add:
+	•	Green arrow + percentage if value is increasing positively (e.g. savings, income)
+	•	Red arrow + percentage if value is increasing negatively (e.g. spending)
+	•	Use dynamic color and icon logic based on trend direction
+
+⸻
+
+B. DATA FLOW + LOGIC FIXES
+
+4. Transactions Logic
+	•	Transactions must not be auto-created
+	•	Data should only come from:
+	•	Manual user input via “Add Transaction” button
+	•	Linked Plaid account (sandbox for now)
+	•	If no transactions exist:
+	•	Show: “No transactions available. Link a bank or add manually.”
+
+5. Budget Logic
+	•	Budgets should also not load automatically
+	•	Only display user-created budget categories
+	•	If none exist:
+	•	Show: “No budgets created. Start by adding a category.”
+
+⸻
+
+C. Onboarding Flow Fixes
+
+6. Skip Survey Button
+	•	The survey itself must include a functional “Skip this step” or “Do not show again” button
+	•	When clicked:
+	•	Immediately set surveyCompleted = true in MongoDB
+	•	Redirect to /dashboard
+	•	Remove the “Skip onboarding survey” toggle from /settings — it’s redundant and confusing
+
+⸻
+
+D. AI Coach UI and UX Improvements
+
+7. AI Coach Box (ChatGPT Panel)
+	•	Issues:
+	•	Visual layout is clunky
+	•	Responses lag significantly
+	•	User’s messages disappear after submission
+	•	Fixes:
+	•	Improve box styling to match modern chatbot UX (rounded bubbles, padding, spacing)
+	•	Show user’s own message immediately on screen
+	•	Stream in assistant’s reply smoothly (even if delayed)
+	•	Add loading spinner or “Coach is typing…” while GPT API is responding
+	•	Keep chat history scrollable and persistent during session
+
+⸻
+
+E. Broken / Non-Functional UI Elements
+
+8. Quick Action Buttons
+	•	These currently do nothing — fix or remove:
+	•	If kept, each button must perform a real action:
+	•	“Add Budget” → navigate to /budget with form open
+	•	“Add Transaction” → navigate to /transactions with form open
+	•	Otherwise, remove them completely
+
+⸻
+
+F. Rivu Score Logic
+	•	Confirm that Rivu Score is based only on available data:
+	•	If user has no budgets, transactions, or goals → score should default to 0
+	•	Do not fake or inflate the score
+	•	Score must update live as goals are met, budgets are used, etc.
+	•	If no score data exists:
+	•	Show a clean placeholder or explanation:
+“Your Rivu Score will appear once you’ve added a budget or linked a bank.”
+
+⸻
+
+G. Final QA Enhancements
+
+Additional fixes to include:
+	•	Ensure all route transitions are smooth, without screen flashes or state resets
+	•	Add error boundaries or fallback UIs for GPT failures or API errors
+	•	Add tooltips or hover labels to buttons/icons where relevant
+	•	Ensure all API calls are debounced or throttled to avoid spamming GPT or backend
+	•	Validate mobile responsiveness on all primary pages (dashboard, transactions, budget, account)
+
+⸻
+
+H. Deployment Readiness
+	•	Once complete:
+	•	Remove all console.log() or test output in frontend/backend
+	•	Confirm no broken links, blank pages, or “coming soon” placeholders exist
+	•	Prepare the app for final QA + deployment setup

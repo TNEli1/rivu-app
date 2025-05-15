@@ -293,21 +293,7 @@ export default function SettingsPage() {
                   />
                 </div>
                 
-                <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                  <div className="flex flex-col">
-                    <div className="flex items-center space-x-2">
-                      <ClipboardCheck className="h-5 w-5" />
-                      <span>Skip Onboarding Survey</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground mt-1 ml-7">
-                      You won't be prompted to complete the survey on login
-                    </span>
-                  </div>
-                  <Switch 
-                    checked={skipSurvey} 
-                    onCheckedChange={toggleSkipSurvey} 
-                  />
-                </div>
+
               </Card>
               
               {/* Security Settings */}
