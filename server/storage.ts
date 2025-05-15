@@ -132,10 +132,16 @@ export class MemStorage implements IStorage {
     // Make sure we have the required type field
     const typeValue = transaction.type || 'expense';
     
+    // Convert amount to string if it's a number
+    const amount = typeof transaction.amount === 'number' 
+      ? transaction.amount.toString() 
+      : transaction.amount;
+    
     const newTransaction: Transaction = {
       ...transaction,
       id,
       type: typeValue, // Ensure type is a string and not undefined
+      amount, // Ensure amount is a string
       date: new Date(),
       createdAt: new Date(),
     };
@@ -228,18 +234,22 @@ export class MemStorage implements IStorage {
     let totalCategories = categories.length;
     let categoriesUnderBudget = 0;
     
-    for (const category of categories) {
-      const spent = parseFloat(category.spentAmount.toString());
-      const budget = parseFloat(category.budgetAmount.toString());
-      
-      if (spent <= budget) {
-        categoriesUnderBudget++;
+    // Check if we have any budget categories to calculate adherence
+    if (totalCategories > 0) {
+      for (const category of categories) {
+        const spent = parseFloat(category.spentAmount.toString());
+        const budget = parseFloat(category.budgetAmount.toString());
+        
+        if (spent <= budget) {
+          categoriesUnderBudget++;
+        }
       }
     }
     
+    // If no categories, set to 0 as there's nothing to adhere to yet
     const budgetAdherence = totalCategories > 0 
       ? Math.round((categoriesUnderBudget / totalCategories) * 100)
-      : 100;
+      : 0;
     
     // Get transactions to calculate user activity
     const transactions = await this.getTransactions(userId);
@@ -275,13 +285,22 @@ export class MemStorage implements IStorage {
       savingsProgress = Math.min(Math.round(savingsRate * 100), 100);
     }
     
-    // If no data, score should be 0
-    const hasData = categories.length > 0 || transactions.length > 0 || loginCount > 0;
+    // Determine if we have enough data to calculate a meaningful score
+    const hasTransactionData = transactions.length > 0;
+    const hasBudgetData = categories.length > 0;
+    const hasEngagementData = loginCount > 0;
     
-    // Calculate overall score (weighted average)
-    const score = hasData ? Math.round(
-      (budgetAdherence * 0.5) + (savingsProgress * 0.3) + (weeklyActivity * 0.2)
-    ) : 0;
+    let score = 0;
+    
+    // Only calculate a score if we have some data to work with
+    if (hasTransactionData || hasBudgetData) {
+      score = Math.round(
+        (budgetAdherence * 0.5) + (savingsProgress * 0.3) + (weeklyActivity * 0.2)
+      );
+    } else if (hasEngagementData) {
+      // Give a starting score just for logging in if no other data
+      score = 10;
+    }
     
     // Create or update the Rivu score
     await this.createOrUpdateRivuScore({
@@ -299,7 +318,7 @@ export class MemStorage implements IStorage {
     await this.calculateRivuScore(userId);
   }
 
-  // Initialize demo data
+  // Initialize demo data with just a user (no budget/transactions)
   private initializeDemoData(): void {
     // Create demo user
     const demoUser: User = {
@@ -316,94 +335,14 @@ export class MemStorage implements IStorage {
     };
     this.users.set(demoUser.id, demoUser);
     
-    // Create budget categories
-    const budgetCategoriesData = [
-      { name: 'Food & Dining', budgetAmount: "600", spentAmount: "486" },
-      { name: 'Rent/Mortgage', budgetAmount: "1200", spentAmount: "1200" },
-      { name: 'Transportation', budgetAmount: "300", spentAmount: "127" },
-      { name: 'Entertainment', budgetAmount: "150", spentAmount: "192" },
-      { name: 'Shopping', budgetAmount: "350", spentAmount: "321" },
-    ];
-    
-    for (const categoryData of budgetCategoriesData) {
-      const category: BudgetCategory = {
-        id: this.categoryId++,
-        userId: demoUser.id,
-        name: categoryData.name,
-        budgetAmount: categoryData.budgetAmount,
-        spentAmount: categoryData.spentAmount,
-        createdAt: new Date(),
-      };
-      this.budgetCategories.set(category.id, category);
-    }
-    
-    // Create transactions
-    const transactionsData = [
-      { 
-        merchant: 'Starbucks', 
-        amount: 5.42, 
-        category: 'Food & Dining', 
-        account: 'Credit Card',
-        date: new Date(2023, 6, 24), // July 24, 2023
-        type: 'expense'
-      },
-      { 
-        merchant: 'Amazon', 
-        amount: 34.76, 
-        category: 'Shopping', 
-        account: 'Credit Card',
-        date: new Date(2023, 6, 22), // July 22, 2023
-        type: 'expense'
-      },
-      { 
-        merchant: 'Acme Corp. Salary', 
-        amount: 2125.00, 
-        category: 'Income', 
-        account: 'Direct Deposit',
-        date: new Date(2023, 6, 15), // July 15, 2023
-        type: 'income'
-      },
-      { 
-        merchant: 'Uber', 
-        amount: 12.85, 
-        category: 'Transportation', 
-        account: 'Credit Card',
-        date: new Date(2023, 6, 13), // July 13, 2023
-        type: 'expense'
-      },
-      { 
-        merchant: 'Parkside Apartments', 
-        amount: 1200.00, 
-        category: 'Rent/Mortgage', 
-        account: 'Bank Transfer',
-        date: new Date(2023, 6, 1), // July 1, 2023
-        type: 'expense'
-      },
-    ];
-    
-    for (const transactionData of transactionsData) {
-      const transaction: Transaction = {
-        id: this.transactionId++,
-        userId: demoUser.id,
-        merchant: transactionData.merchant,
-        amount: transactionData.amount,
-        category: transactionData.category,
-        account: transactionData.account,
-        date: transactionData.date,
-        type: transactionData.type as 'income' | 'expense',
-        createdAt: new Date(),
-      };
-      this.transactions.set(transaction.id, transaction);
-    }
-    
-    // Create initial Rivu score
+    // Create initial empty Rivu score
     const rivuScore: RivuScore = {
       id: this.scoreId++,
       userId: demoUser.id,
-      score: 75,
-      budgetAdherence: 80,
-      savingsProgress: 60,
-      weeklyActivity: 95,
+      score: 0,
+      budgetAdherence: 0,
+      savingsProgress: 0,
+      weeklyActivity: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
