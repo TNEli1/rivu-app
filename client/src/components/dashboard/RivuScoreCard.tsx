@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 type ScoreFactor = {
@@ -84,6 +86,11 @@ export default function RivuScoreCard() {
                   <div className="h-10 w-16 bg-muted rounded mb-1"></div>
                   <div className="h-4 w-20 bg-muted rounded"></div>
                 </div>
+              ) : hasNoRealData ? (
+                <>
+                  <span className="text-lg font-medium text-muted-foreground">No Data</span>
+                  <span className="text-xs text-muted-foreground mt-1 text-center px-4">Add transactions to see your score</span>
+                </>
               ) : (
                 <>
                   <span className="text-4xl font-bold">{score}</span>
@@ -105,8 +112,23 @@ export default function RivuScoreCard() {
                   <div className="h-4 w-20 bg-muted rounded"></div>
                 </div>
               ))
+            ) : hasNoRealData ? (
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground">
+                  Your Rivu Score is calculated based on your spending habits, budget adherence, and financial activity.
+                </p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-3"
+                  onClick={() => window.location.href = '/transactions?action=add'}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Transaction
+                </Button>
+              </div>
             ) : (
-              scoreFactors.map((factor, index) => (
+              scoreFactors && scoreFactors.map((factor, index) => (
                 <div className="flex items-center justify-between" key={index}>
                   <div className="flex items-center">
                     <div className={`w-2 h-2 rounded-full ${factor.color} mr-2`}></div>
