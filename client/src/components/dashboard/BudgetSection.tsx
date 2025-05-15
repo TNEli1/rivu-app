@@ -36,6 +36,7 @@ export default function BudgetSection() {
   const [newCategory, setNewCategory] = useState({ name: "", budgetAmount: "" });
   const [editingCategory, setEditingCategory] = useState<BudgetCategory | null>(null);
   const [newSpentAmount, setNewSpentAmount] = useState("");
+  const [newBudgetAmount, setNewBudgetAmount] = useState("");
   
   // Fetch budget categories
   const { data: categories = [], isLoading, refetch } = useQuery<BudgetCategory[]>({
@@ -66,12 +67,23 @@ export default function BudgetSection() {
     }
   });
   
-  // Update spent amount
+  // Update budget category
   const updateSpentMutation = useMutation({
-    mutationFn: async ({ id, spentAmount }: { id: string, spentAmount: number }) => {
-      const res = await apiRequest("PUT", `/api/budget-categories/${id}`, { 
-        spentAmount 
-      });
+    mutationFn: async ({ 
+      id, 
+      spentAmount, 
+      budgetAmount 
+    }: { 
+      id: string, 
+      spentAmount: number,
+      budgetAmount?: number 
+    }) => {
+      const updateData: { spentAmount: number, budgetAmount?: number } = { spentAmount };
+      if (budgetAmount !== undefined) {
+        updateData.budgetAmount = budgetAmount;
+      }
+      
+      const res = await apiRequest("PUT", `/api/budget-categories/${id}`, updateData);
       return res.json();
     },
     onSuccess: () => {
