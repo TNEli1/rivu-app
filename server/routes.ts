@@ -24,18 +24,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log(`⚙️ Setting up MongoDB API routes at ${apiPath}...`);
     
     // Import our TypeScript controller
-    // We need to move this import to the top of the file
-    const userControllerModule = await import('./controllers-ts/userController');
-    const userController = userControllerModule.default;
+    // Get all the individual exports from userController
+    const {
+      registerUser,
+      loginUser,
+      logoutUser,
+      getUserProfile,
+      updateUserProfile,
+      updateDemographics,
+      updateLoginMetrics,
+      protect,
+      forgotPassword,
+      resetPassword
+    } = await import('./controllers-ts/userController');
 
     // Register auth routes with our TypeScript controller
-    app.post(`${apiPath}/register`, userController.registerUser);
-    app.post(`${apiPath}/login`, userController.loginUser);
-    app.post(`${apiPath}/logout`, userController.protect, userController.logoutUser);
-    app.get(`${apiPath}/user`, userController.protect, userController.getUserProfile);
-    app.put(`${apiPath}/user`, userController.protect, userController.updateUserProfile);
-    app.put(`${apiPath}/user/demographics`, userController.protect, userController.updateDemographics);
-    app.post(`${apiPath}/user/login-metric`, userController.protect, userController.updateLoginMetrics);
+    app.post(`${apiPath}/register`, registerUser);
+    app.post(`${apiPath}/login`, loginUser);
+    app.post(`${apiPath}/logout`, protect, logoutUser);
+    app.get(`${apiPath}/user`, protect, getUserProfile);
+    app.put(`${apiPath}/user`, protect, updateUserProfile);
+    app.put(`${apiPath}/user/demographics`, protect, updateDemographics);
+    app.post(`${apiPath}/user/login-metric`, protect, updateLoginMetrics);
+    app.post(`${apiPath}/forgot-password`, forgotPassword);
+    app.post(`${apiPath}/reset-password/:token`, resetPassword);
     
     console.log('✅ Auth routes (MongoDB) successfully mounted at /api');
   } catch (error) {
