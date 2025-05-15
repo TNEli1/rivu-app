@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, calculatePercentage, getProgressColor } from "@/lib/utils";
-import { Loader2, PlusCircle, Pencil, Trash2 } from "lucide-react";
+import { Loader2, PlusCircle, Pencil, Trash2, PieChart } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   AlertDialog,
@@ -281,10 +281,16 @@ export default function BudgetPage() {
             ))}
           </div>
         ) : categories.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground mb-4">You haven't created any budget categories yet.</p>
+          <div className="text-center py-8 px-6 max-w-md mx-auto">
+            <div className="text-6xl mb-4 opacity-50 flex justify-center">
+              <PieChart />
+            </div>
+            <h3 className="text-lg font-medium mb-2">No budgets created</h3>
+            <p className="text-muted-foreground mb-6">
+              No budgets created. Start by adding a category to track your spending.
+            </p>
             <Button 
-              variant="outline"
+              className="bg-primary hover:bg-primary/90 text-white"
               onClick={() => setIsAddDialogOpen(true)}
             >
               <PlusCircle className="mr-2 h-4 w-4" /> Create your first category

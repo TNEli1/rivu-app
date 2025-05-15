@@ -18,7 +18,9 @@ import {
   Calendar, 
   Search,
   ChevronDown,
-  FilterX 
+  FilterX,
+  Link2,
+  CreditCard
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
@@ -574,14 +576,33 @@ export default function TransactionsPage() {
                   </Button>
                 </div>
               ) : (
-                <div>
-                  <p className="text-muted-foreground mb-4">You haven't recorded any transactions yet.</p>
-                  <Button 
-                    variant="outline"
-                    onClick={() => setIsAddDialogOpen(true)}
-                  >
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add your first transaction
-                  </Button>
+                <div className="px-6 max-w-md mx-auto">
+                  <div className="text-6xl mb-4 opacity-50 flex justify-center">
+                    <CreditCard />
+                  </div>
+                  <h3 className="text-lg font-medium mb-2">No transactions available</h3>
+                  <p className="text-muted-foreground mb-6">
+                    No transactions available. Link a bank account or add transactions manually.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <Button 
+                      variant="outline"
+                      onClick={() => setIsAddDialogOpen(true)}
+                    >
+                      <PlusCircle className="mr-2 h-4 w-4" /> Add manually
+                    </Button>
+                    <Button 
+                      className="bg-primary hover:bg-primary/90 text-white"
+                      onClick={() => {
+                        toast({
+                          title: "Coming soon",
+                          description: "Bank linking functionality will be available soon.",
+                        });
+                      }}
+                    >
+                      <Link2 className="mr-2 h-4 w-4" /> Link bank account
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
