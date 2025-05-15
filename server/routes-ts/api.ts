@@ -147,7 +147,12 @@ async function initializeRoutes() {
       }
     });
     
-    // Simulated Plaid Route
+    // Plaid Integration Routes
+    router.post('/plaid/link-token', protect, createLinkToken);
+    router.post('/plaid/exchange-token', protect, exchangePublicToken);
+    router.get('/plaid/accounts', protect, getConnectedAccounts);
+    
+    // Simulated Plaid Transactions (temp until full integration)
     router.get('/plaid/transactions', protect, (req, res) => {
       // This is a placeholder for future Plaid integration
       // For now, it returns the user's existing transactions

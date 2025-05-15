@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { apiRequest, getQueryFn } from "@/lib/queryClient";
 import Sidebar from "@/components/layout/Sidebar";
 import MobileNav from "@/components/layout/MobileNav";
 import { Button } from "@/components/ui/button";
@@ -56,6 +56,12 @@ export default function SettingsPage() {
     newPassword: "",
     confirmPassword: "",
   });
+  
+  // Fetch connected bank accounts
+  const { data: connectedAccounts = [], refetch: refetchAccounts } = useQuery({
+    queryKey: ['/api/plaid/accounts'],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+  });
 
   // Password change mutation
   const changePasswordMutation = useMutation({
@@ -107,13 +113,15 @@ export default function SettingsPage() {
         });
         
         return exchangeRes.json();
-      } catch (error) {
+      } catch (error: any) {
         console.error("Plaid connection error:", error);
-        throw new Error("Bank connection failed. " + error.message);
+        throw new Error("Bank connection failed. " + (error.message || "Unknown error"));
       }
     },
     onSuccess: () => {
       setIsConnectBankOpen(false);
+      // Refresh the list of connected accounts
+      refetchAccounts();
       toast({
         title: "Bank account connected",
         description: "Your bank account has been successfully linked.",
@@ -274,10 +282,28 @@ export default function SettingsPage() {
               <div className="border-t pt-6">
                 <h3 className="font-medium mb-4">Connected Accounts</h3>
                 
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>You don't have any connected accounts yet.</p>
-                  <p className="mt-2">Connect a bank account to get started.</p>
-                </div>
+                {connectedAccounts.length > 0 ? (
+                  <div className="space-y-4">
+                    {connectedAccounts.map((account: any) => (
+                      <div key={account.id} className="border rounded-lg p-4 flex justify-between items-center">
+                        <div>
+                          <div className="font-medium">{account.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {account.type} · Connected {new Date(account.lastUpdated).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm">
+                          Refresh
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>You don't have any connected accounts yet.</p>
+                    <p className="mt-2">Connect a bank account to get started.</p>
+                  </div>
+                )}
               </div>
             </Card>
           </TabsContent>
