@@ -25,9 +25,8 @@ export async function getFinanceAdvice(
     };
   } catch (error) {
     console.error("Error fetching AI advice:", error);
-    return {
-      message: "You're doing great — keep it up! Continue tracking your expenses to improve your financial health.",
-      timestamp: new Date(),
-    };
+    throw new Error(
+      "Unable to fetch personalized advice. Please try again later or contact support if the problem persists."
+    );
   }
 }

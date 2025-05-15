@@ -18,8 +18,11 @@ export default function AICoachingCard() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // State to track advice errors
+  const [hasError, setHasError] = useState(false);
+  
   // Auto-fetch advice when component loads
-  const { isLoading: isInitialAdviceLoading } = useQuery({
+  const { isLoading: isInitialAdviceLoading, error: initialAdviceError } = useQuery({
     queryKey: ['/api/advice', 'initial'],
     queryFn: async () => {
       if (!user || initialLoadCompleted.current) return null;
@@ -28,15 +31,18 @@ export default function AICoachingCard() {
         const advice = await getFinanceAdvice();
         setMessages(prev => [...prev, advice]);
         initialLoadCompleted.current = true;
+        setHasError(false);
         return advice;
       } catch (error) {
         console.error("Failed to get initial advice:", error);
-        return null;
+        setHasError(true);
+        throw error; // Let React Query handle the error
       }
     },
     refetchOnWindowFocus: false,
     refetchInterval: false,
-    enabled: !!user
+    enabled: !!user,
+    retry: 1  // Only retry once to avoid multiple error messages
   });
 
   useEffect(() => {

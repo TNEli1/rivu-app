@@ -23,9 +23,51 @@ const getAdvice = async (req, res) => {
       RivuScore.findOne({ userId }).lean()
     ]);
 
-    // Format financial data for the prompt
+    // Calculate actual metrics for structured format
+    const rivuScoreValue = rivuScore ? rivuScore.score : 0;
+    
+    // Calculate budget adherence
+    const budgetsMetCount = budgets.filter(b => b.currentSpent <= b.amount).length;
+    const budgetGoalsMetPercentage = budgets.length > 0 
+      ? Math.round((budgetsMetCount / budgets.length) * 100) 
+      : 0;
+    
+    // Calculate savings progress
+    const totalSavingsProgress = goals.length > 0
+      ? goals.reduce((total, goal) => {
+          const progress = goal.targetAmount > 0 
+            ? (goal.savedAmount / goal.targetAmount) * 100 
+            : 0;
+          return total + progress;
+        }, 0) / goals.length
+      : 0;
+    
+    // Calculate goals completed
+    const completedGoals = goals.filter(g => g.savedAmount >= g.targetAmount).length;
+    
+    // Determine engagement level based on transaction count
+    let weeklyEngagement = "Low";
+    if (transactions.length >= 10) weeklyEngagement = "High";
+    else if (transactions.length >= 5) weeklyEngagement = "Medium";
+    
+    // Format in the exact required structure
+    const structuredUserData = `
+User Rivu Score: ${rivuScoreValue}  
+Budget Goals Met: ${budgetGoalsMetPercentage}%  
+Savings Progress: ${Math.round(totalSavingsProgress)}%  
+Weekly Engagement: ${weeklyEngagement}  
+Goals Completed: ${completedGoals} out of ${goals.length}  
+`;
+
+    // For context, include detailed financial data
     const financialContext = {
-      rivuScore: rivuScore ? rivuScore.score : null,
+      rivuScore: rivuScoreValue,
+      budgetGoalsMet: `${budgetGoalsMetPercentage}%`,
+      savingsProgress: `${Math.round(totalSavingsProgress)}%`,
+      weeklyEngagement,
+      goalsCompleted: `${completedGoals} out of ${goals.length}`,
+      
+      // Additional details for context
       budgets: budgets.map(budget => ({
         category: budget.category,
         budgeted: budget.amount,
@@ -49,7 +91,8 @@ const getAdvice = async (req, res) => {
 
     // Construct the prompt
     let aiPrompt = 'As an AI financial coach, analyze this user\'s financial data and provide personalized advice:';
-    aiPrompt += '\n\nFinancial Context: ' + JSON.stringify(financialContext, null, 2);
+    aiPrompt += '\n\nUser Financial Summary: ' + structuredUserData;
+    aiPrompt += '\n\nDetailed Financial Context: ' + JSON.stringify(financialContext, null, 2);
     
     if (prompt) {
       aiPrompt += `\n\nThe user is asking: "${prompt}"`;
