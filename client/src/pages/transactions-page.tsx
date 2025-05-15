@@ -152,6 +152,7 @@ export default function TransactionsPage() {
       }
       
       // Perform client-side validation
+      // Required fields: description (merchant), category, account, amount
       if (!data.amount || isNaN(parseFloat(data.amount)) || parseFloat(data.amount) <= 0) {
         throw new Error("Please enter a valid amount greater than 0");
       }
@@ -160,9 +161,25 @@ export default function TransactionsPage() {
         throw new Error("Please enter a description for the transaction");
       }
       
+      if (!data.category) {
+        throw new Error("Please select a category for the transaction");
+      }
+      
+      if (!data.account) {
+        throw new Error("Please select an account for the transaction");
+      }
+      
       // Date is optional, will default to today if not provided
-      if (data.date && isNaN(new Date(data.date).getTime())) {
+      const currentDate = new Date().toISOString().split('T')[0];
+      if (!data.date) {
+        data.date = currentDate;
+      } else if (isNaN(new Date(data.date).getTime())) {
         throw new Error("Please select a valid date");
+      }
+      
+      // Type is optional, default to expense
+      if (!data.type) {
+        data.type = 'expense';
       }
       
       // Remove unnecessary fields before sending to API
@@ -217,16 +234,33 @@ export default function TransactionsPage() {
       }
       
       // Perform validation
-      if (updates.amount && (isNaN(parseFloat(updates.amount)) || parseFloat(updates.amount) <= 0)) {
+      // Required fields check for updates
+      if (updates.amount !== undefined && (isNaN(parseFloat(updates.amount)) || parseFloat(updates.amount) <= 0)) {
         throw new Error("Please enter a valid amount greater than 0");
       }
       
-      if (updates.merchant && !updates.merchant.trim()) {
+      if (updates.merchant !== undefined && !updates.merchant.trim()) {
         throw new Error("Please enter a description for the transaction");
       }
       
-      if (updates.date && isNaN(new Date(updates.date).getTime())) {
+      if (updates.category !== undefined && !updates.category) {
+        throw new Error("Please select a category for the transaction");
+      }
+      
+      if (updates.account !== undefined && !updates.account) {
+        throw new Error("Please select an account for the transaction");
+      }
+      
+      // Date is optional, will default to current date if not provided
+      if (updates.date === '') {
+        updates.date = new Date().toISOString().split('T')[0];
+      } else if (updates.date && isNaN(new Date(updates.date).getTime())) {
         throw new Error("Please select a valid date");
+      }
+      
+      // Type is optional, default to expense
+      if (!updates.type) {
+        updates.type = 'expense';
       }
       
       // Remove custom fields before sending to API
@@ -302,24 +336,71 @@ export default function TransactionsPage() {
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.amount || !formData.merchant || !formData.category) {
+    
+    // Ensure required fields are filled
+    if (!formData.amount || !formData.merchant || !formData.category || !formData.account) {
       toast({
         title: "Validation error",
-        description: "Please fill in all required fields.",
+        description: "Please fill in all required fields: description, category, account, and amount.",
         variant: "destructive",
       });
       return;
     }
-    addMutation.mutate(formData);
+    
+    // Validate amount is > 0
+    if (isNaN(parseFloat(formData.amount)) || parseFloat(formData.amount) <= 0) {
+      toast({
+        title: "Validation error",
+        description: "Amount must be a positive number greater than zero.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Ensure we have defaults for optional fields
+    const submissionData = {
+      ...formData,
+      type: formData.type || 'expense',
+      date: formData.date || new Date().toISOString().split('T')[0]
+    };
+    
+    addMutation.mutate(submissionData);
   };
 
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTransaction) return;
     
+    // Ensure required fields are filled
+    if (!formData.amount || !formData.merchant || !formData.category || !formData.account) {
+      toast({
+        title: "Validation error",
+        description: "Please fill in all required fields: description, category, account, and amount.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validate amount is > 0
+    if (isNaN(parseFloat(formData.amount)) || parseFloat(formData.amount) <= 0) {
+      toast({
+        title: "Validation error",
+        description: "Amount must be a positive number greater than zero.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Ensure we have defaults for optional fields
+    const submissionData = {
+      ...formData,
+      type: formData.type || 'expense',
+      date: formData.date || new Date().toISOString().split('T')[0]
+    };
+    
     updateMutation.mutate({
       id: selectedTransaction.id,
-      updates: formData
+      updates: submissionData
     });
   };
 
