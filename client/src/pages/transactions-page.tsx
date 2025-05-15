@@ -68,12 +68,13 @@ type TransactionFormData = {
   type: 'expense' | 'income';
   date: string;
   amount: string;
-  merchant: string;
+  merchant: string; // This is the required description field
   category: string;
   account: string;
   // Additional fields for custom entry
   customCategory?: string;
   customAccount?: string;
+  notes?: string;
 };
 
 // List of accounts (in a real app, this would come from the database)
@@ -155,16 +156,13 @@ export default function TransactionsPage() {
         throw new Error("Please enter a valid amount greater than 0");
       }
       
-      if (!data.date) {
+      if (!data.merchant.trim()) {
+        throw new Error("Please enter a description for the transaction");
+      }
+      
+      // Date is optional, will default to today if not provided
+      if (data.date && isNaN(new Date(data.date).getTime())) {
         throw new Error("Please select a valid date");
-      }
-      
-      if (!category) {
-        throw new Error("Please select or enter a category");
-      }
-      
-      if (!account) {
-        throw new Error("Please select or enter an account");
       }
       
       // Remove unnecessary fields before sending to API
@@ -223,16 +221,12 @@ export default function TransactionsPage() {
         throw new Error("Please enter a valid amount greater than 0");
       }
       
+      if (updates.merchant && !updates.merchant.trim()) {
+        throw new Error("Please enter a description for the transaction");
+      }
+      
       if (updates.date && isNaN(new Date(updates.date).getTime())) {
         throw new Error("Please select a valid date");
-      }
-      
-      if (category === '') {
-        throw new Error("Please select or enter a category");
-      }
-      
-      if (account === '') {
-        throw new Error("Please select or enter an account");
       }
       
       // Remove custom fields before sending to API

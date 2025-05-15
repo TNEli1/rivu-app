@@ -18,11 +18,11 @@ const transactionSchema = mongoose.Schema(
     },
     category: {
       type: String,
-      required: [true, 'Please provide a category'],
+      default: 'Uncategorized',
     },
     account: {
       type: String,
-      required: [true, 'Please provide an account'],
+      default: 'Cash',
     },
     type: {
       type: String,

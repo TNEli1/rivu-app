@@ -1,0 +1,84 @@
+Apply the following final fixes to ensure Rivu is stable, functional, and user-ready. Every feature must use real user data, with no broken logic or placeholders remaining.
+
+⸻
+
+A. TRANSACTION FORM – FIX VALIDATION ERROR
+
+Issue:
+	•	Manual transaction entry is throwing validation errors even when fields are correctly filled
+
+Fix:
+	•	Confirm required fields are:
+	•	description (text)
+	•	amount (positive number)
+	•	date (optional default to today)
+	•	Allow optional or custom entries for:
+	•	category
+	•	account
+	•	Backend should:
+	•	Accept all manually entered values
+	•	Return clear validation errors (e.g., “Amount must be greater than 0”)
+	•	Save to the correct user in MongoDB
+
+⸻
+
+B. LIGHT/DARK MODE – PERSISTENCE + SETTINGS
+
+Fixes to Apply:
+	1.	Theme Preference Persistence
+	•	When user chooses dark/light mode:
+	•	Store the choice in localStorage or user profile
+	•	Apply consistently across all pages, including after login
+	2.	Toggle in Settings Page
+	•	Add a toggle switch under /settings
+	•	Live update the theme on toggle
+	•	Optionally, save to user’s profile in MongoDB for cross-device consistency
+
+⸻
+
+C. PLAID INTEGRATION – CONFIRM IT WORKS
+
+Fix:
+	•	The “Connect Bank Account” button must trigger Plaid Link flow
+	•	Authenticate using sandbox credentials
+	•	Upon success:
+	•	Save access_token and account_id to the user’s record in MongoDB
+	•	Display a proper confirmation:
+“Bank account successfully linked.”
+	•	If it fails:
+	•	Display:
+“Bank connection failed. No token received.”
+	•	Remove “Feature coming soon” or any fake logic
+
+⸻
+
+D. BUDGETING – ADD “AMOUNT SPENT” OPTION
+
+Fix:
+	•	On both the /budget page and dashboard budget section:
+	•	For each category, include a numeric field: Amount Spent
+	•	When user enters a value:
+	•	Save to MongoDB
+	•	Recalculate budget usage %
+	•	Update:
+	•	Progress bar
+	•	Budget summary
+	•	Rivu Score, if applicable
+
+limit: 400
+spent: 160
+progress = 40%
+
+•	Value should persist across sessions and sync to dashboard
+
+E. Final Expectations
+	•	No fake or static data remains in:
+	•	Rivu Score
+	•	Budget
+	•	Transactions
+	•	Bank connections
+	•	All data must come from authenticated MongoDB user context
+	•	All form input must work across themes and be responsive
+
+
+Account settings shows rivu score 75, remove it

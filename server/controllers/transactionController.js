@@ -22,23 +22,36 @@ const getTransactions = async (req, res) => {
 // @access  Private
 const createTransaction = async (req, res) => {
   try {
-    const { amount, merchant, category, account, type = 'expense' } = req.body;
+    const { amount, merchant, category, account, type = 'expense', date, notes } = req.body;
 
-    if (!amount || !merchant || !category || !account) {
+    // Validate required fields with specific error messages
+    if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
       return res.status(400).json({ 
-        message: 'Please provide amount, merchant, category, and account' 
+        message: 'Amount must be a positive number greater than 0' 
       });
     }
 
-    const transaction = await Transaction.create({
+    if (!merchant) {
+      return res.status(400).json({ 
+        message: 'Please provide a description for the transaction' 
+      });
+    }
+
+    // Create transaction with validated data
+    const transactionData = {
       userId: req.user._id,
-      amount,
+      amount: parseFloat(amount),
       merchant,
-      category,
-      account,
       type,
-      date: new Date(),
-    });
+      date: date ? new Date(date) : new Date(),
+      notes
+    };
+
+    // Add optional fields if provided
+    if (category) transactionData.category = category;
+    if (account) transactionData.account = account;
+
+    const transaction = await Transaction.create(transactionData);
 
     // If this is an expense transaction, update the budget spent amount
     if (type === 'expense') {
