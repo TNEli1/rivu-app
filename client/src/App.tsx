@@ -12,6 +12,7 @@ import BudgetPage from "@/pages/budget-page";
 import TransactionsPage from "@/pages/transactions-page";
 import InsightsPage from "@/pages/insights-page";
 import SettingsPage from "@/pages/settings-page";
+import GoalsPage from "@/pages/goals-page";
 import ForgotPasswordPage from "@/pages/forgot-password";
 import ResetPasswordPage from "@/pages/reset-password";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -24,6 +25,7 @@ function Router() {
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/budget" component={BudgetPage} />
       <ProtectedRoute path="/transactions" component={TransactionsPage} />
+      <ProtectedRoute path="/goals" component={GoalsPage} />
       <ProtectedRoute path="/insights" component={InsightsPage} />
       <ProtectedRoute path="/account" component={AccountPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
