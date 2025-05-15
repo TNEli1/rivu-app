@@ -1,0 +1,78 @@
+A. SAVINGS GOALS SYSTEM (NEW MODULE)
+
+Requirements:
+	•	Create a new “Savings Goals” section accessible from both:
+	•	The main dashboard
+	•	A dedicated /goals page or module
+
+Functionality:
+	•	Users must be able to:
+	•	Add a new savings goal:
+	•	Fields: name, target amount, target date (optional)
+	•	Delete any goal
+	•	Update amount saved toward the goal at any time
+
+Backend:
+	•	Save all goal data to MongoDB
+	•	Calculate and store:
+	•	% progress toward each goal
+	•	Monthly breakdown (saved this month vs. previous months)
+
+⸻
+
+B. RIVU SCORE – LOGIC & AI SYNC
+
+Fixes:
+	1.	Score Logic Validation
+	•	Ensure Rivu Score updates based on:
+	•	Budget adherence
+	•	Savings progress
+	•	Weekly login engagement
+	•	Score should show 0 if no qualifying data
+	•	Score must update in real-time
+	2.	AI Coach Awareness
+	•	Inject the actual calculated Rivu Score into the AI Coach’s context so it can:
+	•	Respond with accurate insights
+	•	Avoid displaying hardcoded or fake values
+	•	GPT prompt should receive:
+rivuScore, budgetProgress, savingsGoalProgress
+
+⸻
+
+C. MONTHLY TRACKING & INSIGHTS
+
+Fixes:
+	•	In /insights > Monthly Trends:
+	•	Chart labeled “Monthly Income vs Expenses” must:
+	•	Pull real transaction data (manual + Plaid)
+	•	Group by month (e.g., Jan, Feb, Mar…)
+	•	Include both:
+	•	Total income per month
+	•	Total expenses per month
+	•	Apply similar monthly tracking to:
+	•	Budget history
+	•	Savings goal progress
+	•	Rivu Score history (if needed)
+
+⸻
+
+D. UI CLEANUP – REMOVE DEMO OR STATIC LOGIC
+
+Fixes:
+	1.	Remove from Settings:
+	•	The toggle to “Skip Onboarding Survey”
+	2.	Remove from Account Settings Page:
+	•	The section near the Logout button that describes or hardcodes the Rivu Score
+	3.	Ensure all data shown across settings, dashboard, and insights is live
+	•	Remove any static text about score, status, or placeholders
+
+⸻
+
+E. RECOMMENDED FINAL ADDITION (Optional but Smart)
+
+AI Context Refresh Logic
+	•	Add a background check or update hook that ensures:
+	•	GPT always has the latest Rivu Score + key financial indicators
+	•	Example: refresh AI input data after user adds goal, updates budget, or links a bank
+
+This keeps advice relevant without needing user to reload the app

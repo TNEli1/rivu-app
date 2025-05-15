@@ -1,103 +1,153 @@
 const Goal = require('../models/Goal');
+const User = require('../models/User');
+const asyncHandler = require('express-async-handler');
+const mongoose = require('mongoose');
 
-// @desc    Get all goals for a user
-// @route   GET /api/goals
-// @access  Private
-const getGoals = async (req, res) => {
-  try {
-    const goals = await Goal.find({ userId: req.user._id });
-    res.json(goals);
-  } catch (error) {
-    console.error('Error fetching goals:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+/**
+ * @desc    Get all user goals
+ * @route   GET /api/goals
+ * @access  Private
+ */
+const getGoals = asyncHandler(async (req, res) => {
+  const goals = await Goal.find({ user: req.user._id }).sort({ createdAt: -1 });
+  res.json(goals);
+});
+
+/**
+ * @desc    Get a single goal by ID
+ * @route   GET /api/goals/:id
+ * @access  Private
+ */
+const getGoalById = asyncHandler(async (req, res) => {
+  const goal = await Goal.findOne({ 
+    _id: req.params.id,
+    user: req.user._id
+  });
+
+  if (!goal) {
+    res.status(404);
+    throw new Error('Goal not found');
   }
-};
 
-// @desc    Create a new goal
-// @route   POST /api/goals
-// @access  Private
-const createGoal = async (req, res) => {
-  try {
-    const { name, targetAmount, targetDate } = req.body;
+  res.json(goal);
+});
 
-    if (!name || !targetAmount) {
-      return res.status(400).json({ message: 'Please provide goal name and target amount' });
-    }
+/**
+ * @desc    Create a new goal
+ * @route   POST /api/goals
+ * @access  Private
+ */
+const createGoal = asyncHandler(async (req, res) => {
+  const { name, targetAmount, targetDate } = req.body;
 
-    const goal = await Goal.create({
-      userId: req.user._id,
-      name,
-      targetAmount,
-      savedAmount: 0,
-      targetDate: targetDate || null
-    });
-
-    res.status(201).json(goal);
-  } catch (error) {
-    console.error('Error creating goal:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+  if (!name || !targetAmount) {
+    res.status(400);
+    throw new Error('Please provide a name and target amount');
   }
-};
 
-// @desc    Update a goal
-// @route   PUT /api/goals/:id
-// @access  Private
-const updateGoal = async (req, res) => {
+  const goal = await Goal.create({
+    name,
+    targetAmount: parseFloat(targetAmount),
+    targetDate: targetDate || null,
+    currentAmount: 0,
+    user: req.user._id
+  });
+
+  // Update Rivu score
   try {
-    const { name, targetAmount, savedAmount, targetDate } = req.body;
-
-    const goal = await Goal.findById(req.params.id);
-
-    if (!goal) {
-      return res.status(404).json({ message: 'Goal not found' });
-    }
-
-    // Check if goal belongs to user
-    if (goal.userId.toString() !== req.user._id.toString()) {
-      return res.status(401).json({ message: 'Not authorized' });
-    }
-
-    // Update fields
-    if (name !== undefined) goal.name = name;
-    if (targetAmount !== undefined) goal.targetAmount = targetAmount;
-    if (savedAmount !== undefined) goal.savedAmount = savedAmount;
-    if (targetDate !== undefined) goal.targetDate = targetDate;
-
-    const updatedGoal = await goal.save();
-    res.json(updatedGoal);
+    await updateRivuScore(req.user._id);
   } catch (error) {
-    console.error('Error updating goal:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Error updating Rivu score:', error);
   }
-};
 
-// @desc    Delete a goal
-// @route   DELETE /api/goals/:id
-// @access  Private
-const deleteGoal = async (req, res) => {
+  res.status(201).json(goal);
+});
+
+/**
+ * @desc    Update a goal
+ * @route   PUT /api/goals/:id
+ * @access  Private
+ */
+const updateGoal = asyncHandler(async (req, res) => {
+  const goal = await Goal.findOne({
+    _id: req.params.id,
+    user: req.user._id
+  });
+
+  if (!goal) {
+    res.status(404);
+    throw new Error('Goal not found');
+  }
+
+  // Update basic properties
+  if (req.body.name) goal.name = req.body.name;
+  if (req.body.targetAmount) goal.targetAmount = parseFloat(req.body.targetAmount);
+  if (req.body.targetDate) goal.targetDate = req.body.targetDate;
+
+  // If a savings amount update is included
+  if (req.body.amountToAdd !== undefined) {
+    const amountToAdd = parseFloat(req.body.amountToAdd);
+    
+    // Update the total saved amount
+    goal.currentAmount += amountToAdd;
+    
+    // Update monthly tracking
+    goal.updateMonthlySavings(amountToAdd);
+  }
+
+  await goal.save();
+
+  // Update Rivu score
   try {
-    const goal = await Goal.findById(req.params.id);
-
-    if (!goal) {
-      return res.status(404).json({ message: 'Goal not found' });
-    }
-
-    // Check if goal belongs to user
-    if (goal.userId.toString() !== req.user._id.toString()) {
-      return res.status(401).json({ message: 'Not authorized' });
-    }
-
-    await goal.remove();
-    res.json({ message: 'Goal removed' });
+    await updateRivuScore(req.user._id);
   } catch (error) {
-    console.error('Error deleting goal:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Error updating Rivu score:', error);
   }
+
+  res.json(goal);
+});
+
+/**
+ * @desc    Delete a goal
+ * @route   DELETE /api/goals/:id
+ * @access  Private
+ */
+const deleteGoal = asyncHandler(async (req, res) => {
+  const goal = await Goal.findOne({
+    _id: req.params.id,
+    user: req.user._id
+  });
+
+  if (!goal) {
+    res.status(404);
+    throw new Error('Goal not found');
+  }
+
+  await goal.deleteOne();
+
+  // Update Rivu score
+  try {
+    await updateRivuScore(req.user._id);
+  } catch (error) {
+    console.error('Error updating Rivu score:', error);
+  }
+
+  res.status(200).json({ message: 'Goal removed' });
+});
+
+/**
+ * @desc    Update Rivu Score for a user considering savings goals
+ * @access  Private (internal function)
+ */
+const updateRivuScore = async (userId) => {
+  const { default: calculateRivuScore } = require('./rivuScoreController');
+  await calculateRivuScore(userId);
 };
 
 module.exports = {
   getGoals,
+  getGoalById,
   createGoal,
   updateGoal,
-  deleteGoal,
+  deleteGoal
 };

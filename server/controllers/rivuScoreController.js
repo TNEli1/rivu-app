@@ -9,7 +9,7 @@ const Transaction = require('../models/Transaction');
 const getRivuScore = async (req, res) => {
   try {
     // Check if score exists, if not, calculate it
-    let rivuScore = await RivuScore.findOne({ userId: req.user._id });
+    let rivuScore = await RivuScore.findOne({ user: req.user._id });
     
     if (!rivuScore) {
       // Calculate score from scratch
@@ -18,7 +18,8 @@ const getRivuScore = async (req, res) => {
     
     res.json({
       score: rivuScore.score,
-      factors: rivuScore.factors
+      factors: rivuScore.factors,
+      lastUpdated: rivuScore.updatedAt
     });
   } catch (error) {
     console.error('Error getting Rivu Score:', error);
@@ -30,7 +31,7 @@ const getRivuScore = async (req, res) => {
 async function calculateRivuScore(userId) {
   try {
     // Calculate budget adherence (% of categories staying under budget)
-    const budgets = await Budget.find({ userId });
+    const budgets = await Budget.find({ user: userId });
     
     let budgetAdherence = 0;
     if (budgets.length > 0) {
@@ -45,11 +46,11 @@ async function calculateRivuScore(userId) {
       budgetAdherence = Math.round((underBudgetCount / budgets.length) * 100);
     } else {
       // Default value if no budgets exist
-      budgetAdherence = 100;
+      budgetAdherence = 0;
     }
     
     // Calculate savings goal progress
-    const goals = await Goal.find({ userId });
+    const goals = await Goal.find({ user: userId });
     
     let savingsProgress = 0;
     if (goals.length > 0) {
@@ -57,7 +58,7 @@ async function calculateRivuScore(userId) {
       
       for (const goal of goals) {
         const progress = goal.targetAmount > 0 
-          ? (goal.savedAmount / goal.targetAmount) * 100 
+          ? (goal.currentAmount / goal.targetAmount) * 100 
           : 0;
         totalProgress += Math.min(progress, 100);
       }
@@ -65,7 +66,7 @@ async function calculateRivuScore(userId) {
       savingsProgress = Math.round(totalProgress / goals.length);
     } else {
       // Default value if no goals exist
-      savingsProgress = 60;
+      savingsProgress = 0;
     }
     
     // Calculate weekly activity score
@@ -73,16 +74,16 @@ async function calculateRivuScore(userId) {
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     
     const recentTransactions = await Transaction.find({
-      userId,
+      user: userId,
       date: { $gte: oneWeekAgo }
     });
     
     // Activity score based on number of recent transactions
     let weeklyActivity = Math.min(recentTransactions.length * 10, 100);
     
-    // If no transactions, default to 50
+    // If no transactions, default to 0
     if (recentTransactions.length === 0) {
-      weeklyActivity = 50;
+      weeklyActivity = 0;
     }
     
     // Calculate overall score (weighted average)
@@ -94,23 +95,27 @@ async function calculateRivuScore(userId) {
     );
     
     // Create or update the score record
-    let rivuScore = await RivuScore.findOne({ userId });
+    let rivuScore = await RivuScore.findOne({ user: userId });
     
     if (rivuScore) {
       rivuScore.score = score;
-      rivuScore.budgetAdherence = budgetAdherence;
-      rivuScore.savingsProgress = savingsProgress;
-      rivuScore.weeklyActivity = weeklyActivity;
+      rivuScore.factors = {
+        budgetAdherence,
+        savingsProgress,
+        weeklyActivity
+      };
       rivuScore.updatedAt = new Date();
       
       await rivuScore.save();
     } else {
       rivuScore = await RivuScore.create({
-        userId,
+        user: userId,
         score,
-        budgetAdherence,
-        savingsProgress,
-        weeklyActivity
+        factors: {
+          budgetAdherence,
+          savingsProgress,
+          weeklyActivity
+        }
       });
     }
     
