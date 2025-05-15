@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, invalidateRelatedQueries } from "@/lib/queryClient";
 import { formatCurrency, getProgressColor } from "@/lib/utils";
 import { Goal, GoalFormData, GoalContributionData } from "@/types/goal";
 import { Calendar } from "@/components/ui/calendar";
@@ -86,8 +86,9 @@ export default function GoalsPage() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/goals'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
+      // Use helper function to invalidate all related queries
+      invalidateRelatedQueries('goal');
+      
       toast({
         title: "Goal created",
         description: "Your savings goal has been created successfully!",
@@ -111,8 +112,9 @@ export default function GoalsPage() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/goals'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
+      // Use helper function to invalidate all related queries
+      invalidateRelatedQueries('goal');
+      
       toast({
         title: "Goal updated",
         description: "Your savings goal has been updated successfully!",
@@ -137,8 +139,9 @@ export default function GoalsPage() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/goals'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
+      // Use helper function to invalidate all related queries
+      invalidateRelatedQueries('goal');
+      
       toast({
         title: "Contribution added",
         description: "Your contribution has been added to the goal!",
@@ -163,8 +166,9 @@ export default function GoalsPage() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/goals'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
+      // Use helper function to invalidate all related queries
+      invalidateRelatedQueries('goal');
+      
       toast({
         title: "Goal deleted",
         description: "Your savings goal has been deleted.",
