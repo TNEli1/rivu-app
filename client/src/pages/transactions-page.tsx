@@ -638,7 +638,7 @@ export default function TransactionsPage() {
                 <div className="flex justify-end">
                   <Button 
                     type="submit" 
-                    disabled={addMutation.isPending}
+                    disabled={!formData.amount || !formData.merchant || !formData.category || !formData.account || addMutation.isPending}
                   >
                     {addMutation.isPending ? (
                       <>
@@ -1074,7 +1074,7 @@ export default function TransactionsPage() {
             <div className="flex justify-end">
               <Button 
                 type="submit" 
-                disabled={updateMutation.isPending}
+                disabled={!formData.amount || !formData.merchant || !formData.category || !formData.account || updateMutation.isPending}
               >
                 {updateMutation.isPending ? (
                   <>
