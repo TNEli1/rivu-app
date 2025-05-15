@@ -30,6 +30,7 @@ type User = {
   lastName: string;
   profilePicture?: string;
   token?: string;
+  themePreference?: 'light' | 'dark';
   createdAt?: string;
   updatedAt?: string;
   lastLogin?: string;

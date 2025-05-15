@@ -32,7 +32,8 @@ async function initializeRoutes() {
       registerUser, loginUser, getUserProfile, 
       updateUserProfile, updateDemographics, 
       updateLoginMetrics, logoutUser,
-      forgotPassword, resetPassword
+      forgotPassword, resetPassword,
+      updateThemePreference
     } = userController;
     
     const budgetController = await importController('../controllers/budgetController.js');
@@ -72,6 +73,7 @@ async function initializeRoutes() {
     router.put('/user', protect, updateUserProfile);
     router.put('/user/demographics', protect, updateDemographics);
     router.post('/user/login-metric', protect, updateLoginMetrics);
+    router.put('/user/theme-preference', protect, updateThemePreference);
     
     // Password reset routes
     router.post('/forgot-password', forgotPassword);
