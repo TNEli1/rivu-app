@@ -180,6 +180,7 @@ export const loginUser = async (req: any, res: any) => {
         firstName: user.firstName,
         lastName: user.lastName,
         profilePicture: user.profilePicture,
+        themePreference: user.themePreference,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
         lastLogin: user.lastLogin,
@@ -230,6 +231,53 @@ export const getUserProfile = async (req: any, res: any) => {
     console.error('Get profile error:', error);
     res.status(500).json({ 
       message: error.message || 'Server error retrieving profile',
+      code: 'SERVER_ERROR'
+    });
+  }
+};
+
+/**
+ * @desc    Update user theme preference
+ */
+export const updateThemePreference = async (req: any, res: any) => {
+  try {
+    const userId = req.user.id;
+    const { themePreference } = req.body;
+    
+    if (!themePreference || (themePreference !== 'light' && themePreference !== 'dark')) {
+      return res.status(400).json({ 
+        message: 'Valid theme preference required (light or dark)',
+        code: 'VALIDATION_ERROR'
+      });
+    }
+    
+    // Import User model dynamically
+    const { default: User } = await import('../models/User.js');
+    
+    // Find user by ID
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ 
+        message: 'User not found',
+        code: 'USER_NOT_FOUND'
+      });
+    }
+    
+    // Update theme preference
+    user.themePreference = themePreference;
+    
+    // Save updates
+    await user.save();
+    
+    // Return updated theme preference
+    res.json({
+      themePreference: user.themePreference
+    });
+  } catch (error: any) {
+    console.error('Update theme preference error:', error);
+    res.status(500).json({ 
+      message: error.message || 'Server error updating theme preference',
       code: 'SERVER_ERROR'
     });
   }

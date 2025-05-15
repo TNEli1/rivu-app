@@ -54,6 +54,13 @@ const userSchema = new mongoose.Schema(
     lockUntil: {
       type: Date,
     },
+    // UI preferences
+    themePreference: {
+      type: String,
+      enum: ['light', 'dark'],
+      default: 'dark'
+    },
+    
     // Fields for password reset functionality
     demographics: {
       ageRange: String,
