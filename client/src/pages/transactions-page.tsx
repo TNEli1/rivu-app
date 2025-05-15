@@ -123,7 +123,7 @@ export default function TransactionsPage() {
     mutationFn: async (data: TransactionFormData) => {
       const res = await apiRequest('POST', '/api/transactions', {
         ...data,
-        amount: parseFloat(data.amount),
+        amount: data.amount.toString(),
         date: new Date(data.date).toISOString(),
       });
       return res.json();
@@ -152,9 +152,9 @@ export default function TransactionsPage() {
     mutationFn: async (data: { id: number, updates: Partial<TransactionFormData> }) => {
       const updates = {...data.updates};
       
-      // Convert amount to number if present
+      // Convert amount to string if present
       if (updates.amount) {
-        updates.amount = parseFloat(updates.amount);
+        updates.amount = updates.amount.toString();
       }
       
       // Convert date to ISO string if present

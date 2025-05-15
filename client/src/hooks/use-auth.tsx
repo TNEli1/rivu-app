@@ -17,6 +17,7 @@ type Demographics = {
   riskTolerance?: string;
   experienceLevel?: string;
   completed?: boolean;
+  skipPermanently?: boolean;
   updatedAt?: string;
 };
 
@@ -82,6 +83,7 @@ type UpdateDemographicsData = {
     riskTolerance?: string;
     experienceLevel?: string;
     completed?: boolean;
+    skipPermanently?: boolean;
   }
 };
 
