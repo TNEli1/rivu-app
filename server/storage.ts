@@ -95,7 +95,7 @@ export class MemStorage implements IStorage {
     const newCategory: BudgetCategory = {
       ...category,
       id,
-      spentAmount: 0,
+      spentAmount: "0", // Make sure it's a string to match the BudgetCategory type
       createdAt: new Date(),
     };
     this.budgetCategories.set(id, newCategory);
@@ -128,9 +128,14 @@ export class MemStorage implements IStorage {
 
   async createTransaction(transaction: InsertTransaction): Promise<Transaction> {
     const id = this.transactionId++;
+    
+    // Make sure we have the required type field
+    const typeValue = transaction.type || 'expense';
+    
     const newTransaction: Transaction = {
       ...transaction,
       id,
+      type: typeValue, // Ensure type is a string and not undefined
       date: new Date(),
       createdAt: new Date(),
     };
@@ -144,7 +149,7 @@ export class MemStorage implements IStorage {
         const currentSpent = parseFloat(category.spentAmount.toString());
         const transAmount = parseFloat(transaction.amount.toString());
         await this.updateBudgetCategory(category.id, {
-          spentAmount: currentSpent + transAmount
+          spentAmount: (currentSpent + transAmount).toString()
         });
       }
     }
@@ -305,17 +310,19 @@ export class MemStorage implements IStorage {
       firstName: 'Jamie',
       lastName: 'Smith',
       avatarInitials: 'JS',
+      loginCount: 0,
+      lastLogin: null,
       createdAt: new Date(),
     };
     this.users.set(demoUser.id, demoUser);
     
     // Create budget categories
     const budgetCategoriesData = [
-      { name: 'Food & Dining', budgetAmount: 600, spentAmount: 486 },
-      { name: 'Rent/Mortgage', budgetAmount: 1200, spentAmount: 1200 },
-      { name: 'Transportation', budgetAmount: 300, spentAmount: 127 },
-      { name: 'Entertainment', budgetAmount: 150, spentAmount: 192 },
-      { name: 'Shopping', budgetAmount: 350, spentAmount: 321 },
+      { name: 'Food & Dining', budgetAmount: "600", spentAmount: "486" },
+      { name: 'Rent/Mortgage', budgetAmount: "1200", spentAmount: "1200" },
+      { name: 'Transportation', budgetAmount: "300", spentAmount: "127" },
+      { name: 'Entertainment', budgetAmount: "150", spentAmount: "192" },
+      { name: 'Shopping', budgetAmount: "350", spentAmount: "321" },
     ];
     
     for (const categoryData of budgetCategoriesData) {
