@@ -425,7 +425,7 @@ export const logoutUser = (req: any, res: any) => {
 /**
  * @desc    Generate a password reset token
  */
-export const forgotPassword = async (req: any, res: any) => {
+const forgotPassword = async (req: any, res: any) => {
   try {
     const { email } = req.body;
     
@@ -494,7 +494,7 @@ export const forgotPassword = async (req: any, res: any) => {
 /**
  * @desc    Reset password with token
  */
-export const resetPassword = async (req: any, res: any) => {
+const resetPassword = async (req: any, res: any) => {
   try {
     const resetToken = req.params.token;
     const { password } = req.body;
@@ -605,7 +605,7 @@ export const protect = (req: any, res: any, next: any) => {
 };
 
 // Export a default object with all functions for compatibility with ESM
-export const forgotPassword = async (req: any, res: any) => {
+const _forgotPasswordDuplicate = async (req: any, res: any) => {
   try {
     const { email } = req.body;
     
@@ -671,9 +671,9 @@ export const forgotPassword = async (req: any, res: any) => {
 };
 
 /**
- * @desc    Reset password with token
+ * @desc    Reset password with token (duplicate)
  */
-export const resetPassword = async (req: any, res: any) => {
+const _resetPasswordDuplicate = async (req: any, res: any) => {
   try {
     const { token } = req.params;
     const { password } = req.body;
