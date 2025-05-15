@@ -19,21 +19,25 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      // In a real app, this would send a request to the API
-      // Since we're simulating for now, just log to console
-      console.log(`Password reset email would be sent to: ${email}`);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Send request to the API
+      const response = await apiRequest("POST", "/api/forgot-password", { email });
+      const data = await response.json();
       
       // Set submitted status to true to show success view
       setSubmitted(true);
+      
+      // Check if we're in development mode - show the reset URL
+      if (data.resetToken) {
+        console.log("Development mode - reset token:", data.resetToken);
+        console.log("Reset URL:", data.resetUrl);
+      }
       
       toast({
         title: "Email sent",
         description: "If an account exists with this email, you'll receive a reset link.",
       });
     } catch (error) {
+      console.error("Password reset error:", error);
       toast({
         title: "Error",
         description: "There was an error sending the reset email. Please try again.",

@@ -50,22 +50,19 @@ export default function ResetPasswordPage() {
   // Validate token when component mounts
   useEffect(() => {
     const validateToken = async () => {
-      // In a real app, this would verify the token with the API
-      // For now, we'll simulate a token validation
+      // We'll verify the token silently - the backend will validate it when we reset the password
       setValidating(true);
       
       try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // For demo purposes, we'll consider all tokens valid except for "invalid"
-        const isValid = token && token !== "invalid";
+        // For now, we'll assume the token is valid (real validation happens on submit)
+        // In a real app, we might want to validate the token separately
+        const isValid = !!token && token.length > 10;
         setTokenValid(isValid);
         
         if (!isValid) {
           toast({
-            title: "Invalid or expired link",
-            description: "This password reset link is invalid or has expired.",
+            title: "Invalid link format",
+            description: "This password reset link appears to be invalid.",
             variant: "destructive",
           });
         }
@@ -190,23 +187,37 @@ export default function ResetPasswordPage() {
     setLoading(true);
 
     try {
-      // In a real app, this would send the new password to the API
-      console.log(`Password would be reset with token: ${token}`);
+      // Send the new password to the API
+      const response = await apiRequest(
+        "POST", 
+        `/api/reset-password/${token}`, 
+        { password }
+      );
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Show success view
-      setSubmitted(true);
-      
-      toast({
-        title: "Password reset successfully",
-        description: "Your password has been updated. You can now log in with your new password.",
-      });
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Store the token if provided
+        if (data.token) {
+          localStorage.setItem("token", data.token);
+        }
+        
+        // Show success view
+        setSubmitted(true);
+        
+        toast({
+          title: "Password reset successfully",
+          description: "Your password has been updated. You can now log in with your new password.",
+        });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to reset password");
+      }
     } catch (error) {
+      console.error("Reset password error:", error);
       toast({
         title: "Error",
-        description: "There was an error resetting your password. Please try again.",
+        description: error instanceof Error ? error.message : "There was an error resetting your password. Please try again.",
         variant: "destructive",
       });
     } finally {
