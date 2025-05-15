@@ -79,6 +79,9 @@ router.route('/transactions/:id')
   .put(protect, updateTransaction)
   .delete(protect, deleteTransaction);
 
+// Route to mark a transaction as not a duplicate
+router.put('/transactions/:id/not-duplicate', protect, markAsNotDuplicate);
+
 // Goal Routes
 router.route('/goals')
   .get(protect, getGoals)
@@ -94,9 +97,24 @@ router.get('/rivu-score', protect, getRivuScore);
 // AI Advice Route
 router.post('/advice', protect, getAdvice);
 
-// Simulated Plaid Route
+// Plaid Routes
+const {
+  createLinkToken,
+  exchangePublicToken,
+  getConnectedAccounts,
+  refreshAccountData,
+  disconnectAccount
+} = require('../controllers/plaidController');
+
+router.post('/plaid/link-token', protect, createLinkToken);
+router.post('/plaid/exchange-token', protect, exchangePublicToken);
+router.get('/plaid/accounts', protect, getConnectedAccounts);
+router.post('/plaid/refresh/:id', protect, refreshAccountData);
+router.delete('/plaid/disconnect/:id', protect, disconnectAccount);
+
+// Get transactions from Plaid
 router.get('/plaid/transactions', protect, (req, res) => {
-  // This is a placeholder for future Plaid integration
+  // This is a placeholder for future Plaid integration with real-time transaction syncing
   // For now, it returns the user's existing transactions
   getTransactions(req, res);
 });

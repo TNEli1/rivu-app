@@ -818,17 +818,15 @@ export default function TransactionsPage() {
                     >
                       <PlusCircle className="mr-2 h-4 w-4" /> Add manually
                     </Button>
-                    <Button 
+                    <PlaidLinkButton 
                       className="bg-primary hover:bg-primary/90 text-white"
-                      onClick={() => {
+                      onSuccess={() => {
                         toast({
-                          title: "Coming soon",
-                          description: "Bank linking functionality will be available soon.",
+                          title: "Bank connected successfully",
+                          description: "Your bank account has been connected. Transactions will be synced automatically.",
                         });
                       }}
-                    >
-                      <Link2 className="mr-2 h-4 w-4" /> Link bank account
-                    </Button>
+                    />
                   </div>
                 </div>
               )}
@@ -872,13 +870,25 @@ export default function TransactionsPage() {
                                   variant="ghost" 
                                   size="sm" 
                                   className="mt-1 h-7 text-xs"
-                                  onClick={(e) => {
+                                  onClick={async (e) => {
                                     e.stopPropagation();
-                                    // Here we'll add logic to mark as not duplicate
-                                    toast({
-                                      title: "Marked as not duplicate",
-                                      description: "This transaction will no longer be flagged as a duplicate."
-                                    });
+                                    try {
+                                      await apiRequest('PUT', `/api/transactions/${transaction.id}/not-duplicate`);
+                                      
+                                      // Invalidate and refetch transactions
+                                      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+                                      
+                                      toast({
+                                        title: "Marked as not duplicate",
+                                        description: "This transaction will no longer be flagged as a duplicate."
+                                      });
+                                    } catch (error) {
+                                      toast({
+                                        title: "Error",
+                                        description: "Failed to mark transaction as not duplicate.",
+                                        variant: "destructive"
+                                      });
+                                    }
                                   }}
                                 >
                                   Not a duplicate
