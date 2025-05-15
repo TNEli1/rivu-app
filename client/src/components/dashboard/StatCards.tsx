@@ -45,7 +45,10 @@ function StatCard({
 }: StatCardProps) {
   const isPositive = change >= 0;
   const changeTextColor = isPositive ? "text-[#00C2A8]" : "text-[#FF4D4F]";
-  const changeIcon = isPositive ? "ri-arrow-up-line" : "ri-arrow-down-line";
+  const hasData = typeof value === 'number' && (value > 0 || title === 'Active Goals');
+  
+  // Check if we have real progress data
+  const hasProgressData = progressPercent !== undefined && progressPercent > 0;
 
   return (
     <Card className="bg-card p-6 rounded-xl card-hover">
@@ -56,9 +59,9 @@ function StatCard({
             <Skeleton className="h-8 w-24" />
           ) : (
             <h3 className="text-2xl font-bold text-foreground">
-              {typeof value === 'number' && !isNaN(value) 
+              {hasData 
                 ? (title === 'Active Goals' ? value : formatCurrency(value))
-                : '$0'}
+                : (title === 'Active Goals' ? '0' : '$0')}
             </h3>
           )}
         </div>
@@ -70,11 +73,17 @@ function StatCard({
         <Skeleton className="h-4 w-28" />
       ) : (
         <div className="flex items-center">
-          <span className={`${changeTextColor} text-sm font-medium`}>
-            {change > 0 ? "+" : ""}
-            {change}%
-          </span>
-          <span className="text-muted-foreground text-sm ml-2">{changeText}</span>
+          {hasData ? (
+            <>
+              <span className={`${changeTextColor} text-sm font-medium`}>
+                {change > 0 ? "+" : ""}
+                {change}%
+              </span>
+              <span className="text-muted-foreground text-sm ml-2">{changeText}</span>
+            </>
+          ) : (
+            <span className="text-muted-foreground text-sm">No data available</span>
+          )}
         </div>
       )}
       {progressPercent !== undefined && (
@@ -86,11 +95,11 @@ function StatCard({
               <div className="w-full bg-border/40 rounded-full h-1.5">
                 <div
                   className="bg-[#2F80ED] h-1.5 rounded-full"
-                  style={{ width: `${progressPercent}%` }}
+                  style={{ width: `${hasProgressData ? progressPercent : 0}%` }}
                 ></div>
               </div>
               <span className="text-muted-foreground text-sm ml-2">
-                {progressPercent}%
+                {progressPercent || 0}%
               </span>
             </>
           )}

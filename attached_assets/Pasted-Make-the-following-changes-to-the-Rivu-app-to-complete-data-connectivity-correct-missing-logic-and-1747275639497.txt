@@ -1,0 +1,86 @@
+Make the following changes to the Rivu app to complete data connectivity, correct missing logic, and finalize all core user-facing budget and transaction features. No fake data, placeholders, or disconnected UI elements should remain.
+
+⸻
+
+A. DASHBOARD BOXES (TOP FOUR CARDS)
+	•	The four data boxes at the top of the dashboard currently display no real data
+	•	These boxes must either:
+	1.	Pull real, relevant metrics (e.g. total spending, total saved, budget used, active goals)
+	2.	Or be removed entirely
+	•	Each box must:
+	•	Load actual MongoDB user data
+	•	Refresh automatically if data changes
+	•	Show helpful empty state if no data exists
+
+⸻
+
+B. MANUAL TRANSACTION ENTRY FIXES
+	•	On the “Add Transaction” form:
+	•	Users must be able to manually enter the following fields:
+	•	Description (required)
+	•	Category (optional suggestions okay, but user must be able to enter custom values)
+	•	Account (optional but editable)
+
+Acceptable UX:
+	•	Auto-suggest values for description/category/account
+	•	But allow full manual override via input fields
+	•	Store these values in the MongoDB transactions collection linked to the current user
+
+⸻
+
+C. BUDGET PAGE + DASHBOARD BUDGET WIDGET
+
+1. Budget Category Deletion
+	•	Currently, categories can be added but not deleted
+	•	Add the ability to delete individual categories from both:
+	•	/budget page
+	•	Budget section on the dashboard
+	•	On deletion:
+	•	Update user’s budget data in MongoDB
+	•	Remove the category from UI summary and charts
+	•	Adjust budget totals and progress bar accordingly
+
+2. Manual “Amount Spent” Field
+	•	Add an editable “amount spent” field to each category row
+	•	This lets users manually enter how much they’ve spent per category, even if no transactions are linked
+	•	Use this field to:
+	•	Calculate how much of the budget has been used
+	•	Update the progress bar accordingly
+	•	Sync with Rivu Score and dashboard budget widget
+
+category: "Food"
+limit: $300
+spent: $150
+→ Progress = 50%
+
+D. GLOBAL EXPECTATIONS
+	•	All features must:
+	•	Work on real MongoDB user data
+	•	Show “no data” fallback states when appropriate
+	•	Include delete/edit buttons where applicable
+	•	Sync across dashboard and detail pages (budget, transactions, goals)
+	•	Remove any hardcoded UI that is not tied to backend logic
+
+PLAID CONNECTION MESSAGING FIX
+	•	The Plaid Link system currently shows “Feature coming soon” even when sandbox is active
+
+Fix:
+	•	If no access_token is returned → show:
+“Connection failed — no token received. Try again.”
+	•	If access_token exists and a sandbox account is linked:
+“Bank account linked successfully.”
+	•	Do not display “Coming Soon” — this is a live feature in testing, and messages should reflect the actual response
+
+⸻
+
+E. LIGHT MODE COLOR SCHEME (REDESIGN)
+
+Current light mode is unusable. Replace with:
+	•	Background: #f5f7fa (soft off-white)
+	•	Cards/Containers: #ffffff with subtle shadows
+	•	Primary Text: #1b1f3b (dark navy)
+	•	Secondary Text: #4f5d75
+	•	Buttons/Accents: #274c77 or #3c6997 (cool, professional dark blues)
+	•	Inputs/Borders: #dbe2ef
+
+Apply this light mode across all pages and components with the same care and polish as the current dark mode.

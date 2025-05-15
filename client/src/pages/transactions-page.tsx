@@ -71,6 +71,9 @@ type TransactionFormData = {
   merchant: string;
   category: string;
   account: string;
+  // Additional fields for custom entry
+  customCategory?: string;
+  customAccount?: string;
 };
 
 // List of accounts (in a real app, this would come from the database)
@@ -229,6 +232,8 @@ export default function TransactionsPage() {
       merchant: "",
       category: "",
       account: ACCOUNTS[0],
+      customCategory: undefined,
+      customAccount: undefined,
     });
   };
 
@@ -386,45 +391,104 @@ export default function TransactionsPage() {
                 
                 <div className="space-y-2">
                   <Label htmlFor="category">Category</Label>
-                  <Select 
-                    value={formData.category} 
-                    onValueChange={(value) => setFormData({...formData, category: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {formData.type === 'income' && (
-                        <SelectItem value="Income">Income</SelectItem>
-                      )}
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.name}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                      {/* Allow for custom categories */}
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {formData.category === 'Other' ? (
+                    <div className="space-y-2">
+                      <Input 
+                        id="customCategory" 
+                        placeholder="Enter custom category" 
+                        value={formData.customCategory || ''}
+                        onChange={(e) => setFormData({
+                          ...formData, 
+                          customCategory: e.target.value,
+                          category: e.target.value || 'Other'
+                        })}
+                      />
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        className="w-full"
+                        onClick={() => setFormData({...formData, category: '', customCategory: ''})}
+                      >
+                        Select from list instead
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <Select 
+                        value={formData.category} 
+                        onValueChange={(value) => setFormData({
+                          ...formData, 
+                          category: value,
+                          customCategory: value === 'Other' ? '' : undefined
+                        })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {formData.type === 'income' && (
+                            <SelectItem value="Income">Income</SelectItem>
+                          )}
+                          {categories.map((category) => (
+                            <SelectItem key={category.id} value={category.name}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                          {/* Allow for custom categories */}
+                          <SelectItem value="Other">Enter custom category</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="account">Account</Label>
-                  <Select 
-                    value={formData.account} 
-                    onValueChange={(value) => setFormData({...formData, account: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select account" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ACCOUNTS.map((account) => (
-                        <SelectItem key={account} value={account}>
-                          {account}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {formData.account === 'Other' ? (
+                    <div className="space-y-2">
+                      <Input 
+                        id="customAccount" 
+                        placeholder="Enter custom account" 
+                        value={formData.customAccount || ''}
+                        onChange={(e) => setFormData({
+                          ...formData, 
+                          customAccount: e.target.value,
+                          account: e.target.value || 'Other'
+                        })}
+                      />
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        className="w-full"
+                        onClick={() => setFormData({...formData, account: ACCOUNTS[0], customAccount: ''})}
+                      >
+                        Select from list instead
+                      </Button>
+                    </div>
+                  ) : (
+                    <Select 
+                      value={formData.account} 
+                      onValueChange={(value) => setFormData({
+                        ...formData, 
+                        account: value,
+                        customAccount: value === 'Other' ? '' : undefined
+                      })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select account" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ACCOUNTS.map((account) => (
+                          <SelectItem key={account} value={account}>
+                            {account}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="Other">Enter custom account</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
                 
                 <div className="flex justify-end">
