@@ -14,6 +14,9 @@ export default function AccountPage() {
   const { toast } = useToast();
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [username, setUsername] = useState(user?.username || "");
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [usernameError, setUsernameError] = useState("");
   
   if (!user) {
     return <div>Loading...</div>;
@@ -27,14 +30,61 @@ export default function AccountPage() {
       })
     : 'N/A';
   
-  const handleProfileUpdate = (e: React.FormEvent) => {
+  // Check if username is unique
+  const checkUsernameUnique = async (newUsername: string) => {
+    // Only check if username is different from current username
+    if (newUsername === user.username) {
+      return true;
+    }
+    
+    try {
+      setIsCheckingUsername(true);
+      setUsernameError("");
+      
+      // Call the API endpoint to check username availability
+      const res = await fetch(`/api/check-username?username=${encodeURIComponent(newUsername)}`);
+      const data = await res.json();
+      
+      if (!res.ok) {
+        setUsernameError(data.message || "Error checking username");
+        return false;
+      }
+      
+      return data.available;
+    } catch (error) {
+      setUsernameError("Error checking username availability");
+      return false;
+    } finally {
+      setIsCheckingUsername(false);
+    }
+  };
+  
+  const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     const formData = new FormData(e.target as HTMLFormElement);
+    
+    const newUsername = formData.get('username') as string;
+    
+    // Only validate username if it changed
+    if (newUsername !== user.username) {
+      // Check username uniqueness
+      const isUnique = await checkUsernameUnique(newUsername);
+      
+      if (!isUnique) {
+        toast({
+          title: "Username not available",
+          description: "Please choose a different username",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
     
     const profileData = {
       firstName: formData.get('firstName') as string || undefined,
       lastName: formData.get('lastName') as string || undefined,
       email: formData.get('email') as string || undefined,
+      username: newUsername !== user.username ? newUsername : undefined,
     };
     
     updateProfileMutation.mutate(profileData);
@@ -128,14 +178,29 @@ export default function AccountPage() {
               
               <div className="space-y-2">
                 <Label htmlFor="username">Username</Label>
-                <Input 
-                  id="username" 
-                  defaultValue={user.username} 
-                  disabled 
-                />
-                <p className="text-sm text-muted-foreground">
-                  Username cannot be changed
-                </p>
+                <div className="relative">
+                  <Input 
+                    id="username"
+                    name="username"
+                    value={username}
+                    onChange={(e) => {
+                      setUsername(e.target.value);
+                      setUsernameError(""); // Clear error when typing
+                    }}
+                  />
+                  {isCheckingUsername && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                {usernameError ? (
+                  <p className="text-sm text-destructive">{usernameError}</p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Choose a unique username
+                  </p>
+                )}
               </div>
               
               <Button type="submit" disabled={updateProfileMutation.isPending}>

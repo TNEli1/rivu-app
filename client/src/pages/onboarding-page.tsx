@@ -43,6 +43,9 @@ export default function OnboardingPage() {
     if (formData.get('goal-retirement')) selectedGoals.push('retirement');
     if (formData.get('goal-homebuying')) selectedGoals.push('homebuying');
     
+    // Check if the "Do not show again" checkbox is checked
+    const skipPermanently = (document.getElementById('skip-permanently') as HTMLInputElement)?.checked;
+    
     const demographicsData = {
       demographics: {
         ageRange: formData.get('ageRange') as string,
@@ -50,7 +53,8 @@ export default function OnboardingPage() {
         goals: selectedGoals,
         riskTolerance: formData.get('riskTolerance') as string,
         experienceLevel: formData.get('experienceLevel') as string,
-        completed: true
+        completed: true,
+        skipPermanently: skipPermanently
       }
     };
     
@@ -79,11 +83,14 @@ export default function OnboardingPage() {
     }
   };
   
-  const handleSkip = () => {
+  const handleSkip = (skipPermanently = false) => {
     setLoading(true);
     
     apiRequest('PUT', '/api/user/demographics', {
-      demographics: { completed: true }
+      demographics: { 
+        completed: true,
+        skipPermanently: skipPermanently
+      }
     }).then(() => {
       // Invalidate user data cache
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
@@ -227,28 +234,41 @@ export default function OnboardingPage() {
               </div>
             </form>
           </CardContent>
-          <CardFooter className="flex flex-col sm:flex-row justify-between space-y-3 sm:space-y-0">
-            <Button 
-              variant="outline" 
-              onClick={handleSkip} 
-              disabled={loading}
-            >
-              Skip for now
-            </Button>
-            <Button 
-              type="submit" 
-              form="onboarding-form" 
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Save & Continue"
-              )}
-            </Button>
+          <CardFooter className="flex flex-col space-y-3">
+            {/* Do not show again checkbox */}
+            <div className="flex items-center space-x-2 w-full mb-2">
+              <Checkbox id="skip-permanently" />
+              <Label htmlFor="skip-permanently" className="text-sm cursor-pointer">
+                Do not show this survey again
+              </Label>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row justify-between w-full space-y-3 sm:space-y-0">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  const skipPermanently = (document.getElementById('skip-permanently') as HTMLInputElement)?.checked;
+                  handleSkip(skipPermanently);
+                }}
+                disabled={loading}
+              >
+                Skip for now
+              </Button>
+              <Button 
+                type="submit" 
+                form="onboarding-form" 
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save & Continue"
+                )}
+              </Button>
+            </div>
           </CardFooter>
         </Card>
       </div>
