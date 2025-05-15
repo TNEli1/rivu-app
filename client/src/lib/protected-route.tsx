@@ -32,10 +32,11 @@ export function ProtectedRoute({
   }
 
   // If user has not completed onboarding and is trying to access a page other than onboarding
-  // redirect to onboarding page
+  // redirect to onboarding page, but only if they haven't chosen to skip permanently
   if (
     user.demographics && 
     !user.demographics.completed && 
+    !user.demographics.skipPermanently &&
     path !== "/onboarding"
   ) {
     return (

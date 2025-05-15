@@ -351,6 +351,11 @@ export const updateDemographics = async (req: any, res: any) => {
       updatedDemographics.completed = demographics.completed;
     }
     
+    // Handle "Do not show again" option
+    if (demographics.skipPermanently !== undefined) {
+      updatedDemographics.skipPermanently = demographics.skipPermanently;
+    }
+    
     // Update user demographics
     user.demographics = updatedDemographics;
     

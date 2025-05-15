@@ -110,6 +110,38 @@ async function initializeRoutes() {
     // AI Advice Route
     router.post('/advice', protect, getAdvice);
     
+    // Username uniqueness check endpoint
+    router.get('/check-username', async (req, res) => {
+      try {
+        const username = req.query.username as string;
+        
+        if (!username) {
+          return res.status(400).json({ 
+            message: "Username parameter is required", 
+            available: false 
+          });
+        }
+        
+        // Import User model dynamically
+        const { default: User } = await import('../models/User.js');
+        
+        // Check if username exists
+        const existingUser = await User.findOne({ username });
+        
+        // If no user with that username exists, it's available
+        res.json({ 
+          available: !existingUser,
+          message: existingUser ? "Username is already taken" : "Username is available"
+        });
+      } catch (error) {
+        console.error("Error checking username:", error);
+        res.status(500).json({ 
+          message: "Error checking username availability",
+          available: false
+        });
+      }
+    });
+    
     // Simulated Plaid Route
     router.get('/plaid/transactions', protect, (req, res) => {
       // This is a placeholder for future Plaid integration
