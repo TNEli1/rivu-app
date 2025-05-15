@@ -1,0 +1,123 @@
+1. Fix “Transaction” Button on Dashboard (Page Not Found)
+
+Issue:
+Clicking the Transaction button on the dashboard leads to a “404 Page Not Found” error.
+
+Fix Instructions:
+	•	Inspect the route the button is trying to link to. Confirm whether it points to:
+
+/transactions
+
+or some other route.
+
+	•	Confirm the actual frontend route is properly defined in your React router (or routing system), e.g.:
+
+<Route path="/transactions" element={<TransactionsPage />} />
+
+•	If the button uses href or navigate, confirm it exactly matches the registered route.
+	•	Also ensure:
+	•	The route component is correctly exported/imported
+	•	There are no typos in filenames (e.g., TransactionsPage.jsx vs transactionsPage.tsx)
+
+⸻
+
+2. Scan Entire Dashboard UI for Broken Links and Routing Bugs
+
+Run a pass through every dashboard button, link, and nav item. Validate:
+	•	All navigate() or Link to statements match an existing registered route
+	•	All destination components are properly imported
+	•	There are no dynamic route mismatches (e.g., /transactions/:id without a defined base path)
+
+⸻
+
+3. Add Error Boundaries + Fallback UI
+
+Wrap dashboard routes in an error boundary component to prevent silent React crashes and give useful feedback if something breaks.
+
+<ErrorBoundary fallback={<div>Something went wrong. Please reload.</div>}>
+  <Dashboard />
+</ErrorBoundary>
+
+4. Check Console Logs and Network Panel for Errors
+
+Run the app and:
+	•	Open DevTools
+	•	Check the console and network tab
+	•	Look for:
+	•	404s
+	•	Missing component errors
+	•	Route not matched warnings
+	•	Failed MongoDB fetches
+	•	Log all major route loads (console.log("Loading: /transactions")) to verify nav flow
+
+⸻
+
+Final Deliverables:
+	•	Fix Transaction button 404
+	•	Validate and fix all dashboard navigation
+	•	Catch broken imports, missing components, or mismatched route paths
+	•	Wrap routes in error boundaries for dev feedback
+	•	Log failed network requests and component load errors
+
+3. Refactor and Improve the AI Coach UI
+
+Current Problem:
+The AI Coach section looks flat, unpolished, and generic.
+
+Improvement Instructions:
+	•	Visually polish the AI Coach box:
+	•	Use a rounded card layout with a shadow and padding
+	•	Add a GPT-style typewriter animation or fade-in when showing new advice
+	•	Include a floating assistant avatar/icon on the left to give it a “coach” feel
+	•	Use light gradients or soft backgrounds behind advice text
+
+•	Example UI improvements:
+
+.ai-advice {
+  background: #f8f9fc;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  font-style: italic;
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+	•	Make sure the advice text includes the Rivu Score and user data clearly and is formatted as actual sentences — not code-style dumps.
+
+⸻
+
+4. Visually Modernize the Entire Web App
+
+Issue:
+The app looks dated and low-fidelity. We need to elevate the design to feel clean, professional, and modern.
+
+Design Overhaul Checklist:
+	•	Typography: Use a modern Google Font like Inter, Poppins, or Manrope
+	•	Spacing: Add consistent margin/padding around cards, forms, and sections
+	•	UI Components: Use rounded corners, drop shadows, and hover effects
+	•	Colors: Extract a primary color palette from the logo and apply it consistently:
+	•	Accent buttons, link hover, progress bars, headings
+	•	Navigation: Sticky sidebar or topbar with subtle animations and selected state highlighting
+	•	Transitions: Use transition: all 0.3s ease; on buttons, inputs, and modal elements
+	•	Dark Mode Ready: Use CSS variables or tailwind dark: variants if applicable
+
+Optional:
+Install a lightweight UI kit or component library like Tailwind UI, Chakra UI, or Radix UI for structure and polish.
+
+1. Fix “Transaction” Button Under Welcome Header (404 Error)
+
+Issue:
+On the main dashboard, right below the line:
+“Welcome back, Elisha. Here’s your financial overview for May 2025”,
+the Transaction button is broken — clicking it results in a Page Not Found (404) error.
+
+Fix Instructions:
+	•	This button should route to the /transactions page or equivalent.
+	•	Validate:
+	•	The route exists in the router:
+
+<Route path="/transactions" element={<TransactionsPage />} />
+
+	•	The TransactionsPage component is imported and exported correctly
+	•	The button uses navigate('/transactions') or <Link to="/transactions"> properly
+	•	The casing of file names and imports matches exactly

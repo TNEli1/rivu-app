@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { formatCurrency, formatDate, getCategoryIconAndColor } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, invalidateRelatedQueries } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 
 export type Transaction = {
   id: string;
@@ -28,6 +29,7 @@ export type Transaction = {
 
 export default function TransactionsSection() {
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<"all" | "income" | "expenses">("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -208,7 +210,11 @@ export default function TransactionsSection() {
             >
               Add
             </Button>
-            <Button variant="ghost" className="text-primary hover:underline text-sm font-medium">
+            <Button 
+              variant="ghost" 
+              className="text-primary hover:underline text-sm font-medium"
+              onClick={() => setLocation ? setLocation('/transactions') : window.location.href = '/transactions'}
+            >
               View All
             </Button>
           </div>

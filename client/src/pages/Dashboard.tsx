@@ -72,7 +72,7 @@ export default function Dashboard() {
             <div className="mt-4 md:mt-0">
               <Button 
                 className="bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-lg font-medium flex items-center"
-                onClick={() => setLocation('/transactions/new')}
+                onClick={() => setLocation('/transactions')}
               >
                 <i className="ri-add-line mr-1.5"></i> Add Transaction
               </Button>
