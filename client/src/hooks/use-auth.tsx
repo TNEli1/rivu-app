@@ -110,10 +110,6 @@ const removeToken = () => {
 const isTokenExpired = (token: string | null): boolean => {
   if (!token) return true;
   
-  // TEMPORARY DEV LOGIN — REMOVE BEFORE PRODUCTION
-  // Never expire the dev token
-  if (token === 'dev-mode-token') return false;
-  
   try {
     // For JWT tokens, parse the payload to get expiration
     const payload = JSON.parse(atob(token.split('.')[1]));
@@ -190,32 +186,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryFn: async () => {
       const token = getToken();
       if (!token) return null;
-      
-      // TEMPORARY DEV LOGIN — REMOVE BEFORE PRODUCTION
-      // Return fake user for dev token
-      if (token === 'dev-mode-token') {
-        return {
-          _id: 'dev-user-id',
-          username: 'Temp User',
-          email: 'temp@rivu.app',
-          firstName: 'Dev',
-          lastName: 'User',
-          token: 'dev-mode-token',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          lastLogin: new Date().toISOString(),
-          loginCount: 1,
-          demographics: {
-            ageRange: '25-34',
-            incomeBracket: '50000-100000',
-            goals: ['Save for retirement', 'Build emergency fund'],
-            riskTolerance: 'Moderate',
-            experienceLevel: 'Intermediate',
-            completed: true,
-            updatedAt: new Date().toISOString()
-          }
-        };
-      }
       
       // Don't even try if token is expired
       if (isTokenExpired(token)) {

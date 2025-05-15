@@ -185,38 +185,7 @@ export default function AuthPage() {
                     </Button>
                   </form>
                 </CardContent>
-                <CardFooter className="flex flex-col space-y-4 w-full">
-                  {/* TEMPORARY DEV LOGIN — REMOVE BEFORE PRODUCTION */}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full border-dashed border-yellow-500 text-yellow-500 hover:text-yellow-600 hover:bg-yellow-50"
-                    onClick={() => {
-                      // Define the fake user object
-                      const fakeUser = {
-                        _id: 'dev-user-id',
-                        username: 'Temp User',
-                        email: 'temp@rivu.app',
-                        firstName: 'Dev',
-                        lastName: 'User',
-                        token: 'dev-mode-token',
-                        demographics: {
-                          completed: true
-                        }
-                      };
-                      
-                      // Store the token and user data in localStorage
-                      localStorage.setItem('rivuToken', fakeUser.token);
-                      
-                      // Set the user in the auth context (handled by effect in AuthProvider)
-                      
-                      // Redirect to dashboard
-                      window.location.href = '/';
-                    }}
-                  >
-                    Dev Access (Temp Login)
-                  </Button>
-                  
+                <CardFooter className="flex justify-center">
                   <Button 
                     variant="link" 
                     onClick={() => setActiveTab("register")}

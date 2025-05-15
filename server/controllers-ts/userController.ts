@@ -425,7 +425,7 @@ export const logoutUser = (req: any, res: any) => {
 /**
  * @desc    Generate a password reset token
  */
-const forgotPassword = async (req: any, res: any) => {
+export const forgotPassword = async (req: any, res: any) => {
   try {
     const { email } = req.body;
     
@@ -494,7 +494,7 @@ const forgotPassword = async (req: any, res: any) => {
 /**
  * @desc    Reset password with token
  */
-const resetPassword = async (req: any, res: any) => {
+export const resetPassword = async (req: any, res: any) => {
   try {
     const resetToken = req.params.token;
     const { password } = req.body;
