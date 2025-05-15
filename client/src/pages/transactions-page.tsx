@@ -516,29 +516,39 @@ export default function TransactionsPage() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="amount">Amount</Label>
-                  <Input 
-                    id="amount" 
-                    type="number" 
-                    step="0.01"
-                    placeholder="0.00" 
-                    value={formData.amount}
-                    onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                  />
+                  <Label htmlFor="amount">Amount <span className="text-destructive">*</span></Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
+                    <Input 
+                      id="amount" 
+                      type="number" 
+                      step="0.01"
+                      placeholder="0.00" 
+                      className="pl-7"
+                      value={formData.amount}
+                      onChange={(e) => setFormData({...formData, amount: e.target.value})}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Required: Enter a positive number
+                  </p>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="merchant">Merchant / Source</Label>
+                  <Label htmlFor="merchant">Description <span className="text-destructive">*</span></Label>
                   <Input 
                     id="merchant" 
                     placeholder="e.g., Starbucks, Employer" 
                     value={formData.merchant}
                     onChange={(e) => setFormData({...formData, merchant: e.target.value})}
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Required: Briefly describe what this transaction is for
+                  </p>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
+                  <Label htmlFor="category">Category <span className="text-muted-foreground text-xs">(optional)</span></Label>
                   <div className="space-y-2">
                     <Input 
                       id="category" 
@@ -554,13 +564,15 @@ export default function TransactionsPage() {
                       <div className="text-xs text-muted-foreground mt-1">
                         Suggestions: {categories.slice(0, 3).map(cat => cat.name).join(', ')}
                         {categories.length > 3 && ', and more'}
+                        <br />
+                        If left blank, will default to "Uncategorized" or "General Income"
                       </div>
                     )}
                   </div>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="account">Account</Label>
+                  <Label htmlFor="account">Account <span className="text-muted-foreground text-xs">(optional)</span></Label>
                   <div className="space-y-2">
                     <Input 
                       id="account" 
@@ -574,6 +586,8 @@ export default function TransactionsPage() {
                     />
                     <div className="text-xs text-muted-foreground mt-1">
                       Common accounts: Checking, Savings, Credit Card, Cash
+                      <br />
+                      If left blank, will default to "Default Account"
                     </div>
                   </div>
                 </div>
