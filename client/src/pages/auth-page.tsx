@@ -129,6 +129,24 @@ export default function AuthPage() {
 
   return (
     <div className="flex min-h-screen">
+      {/* Theme toggle button - positioned absolutely in the corner */}
+      <div className="absolute top-4 right-4 z-10">
+        <div className="flex items-center space-x-2 bg-card p-2 rounded-full shadow-sm">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            className="rounded-full h-8 w-8 flex items-center justify-center"
+            onClick={toggleDarkMode}
+          >
+            {darkMode ? (
+              <Sun className="h-4 w-4" />
+            ) : (
+              <Moon className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+      </div>
+      
       {/* Left side - Auth form */}
       <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
         <div className="mx-auto w-full max-w-md">
