@@ -1,0 +1,68 @@
+Apply the following critical fixes to finalize Rivu for production. All features must function using real user data from MongoDB and Plaid. Remove all placeholder logic or uneditable form behavior. No static values, demo buttons, or simulated flows should remain.
+
+⸻
+
+A. TRANSACTIONS PAGE – MANUAL ENTRY REQUIREMENT
+
+Fix:
+	•	On the /transactions Add Transaction form:
+	•	Users must be able to manually enter:
+	•	Category
+	•	Account
+	•	These fields must:
+	•	Be text inputs, not restricted dropdowns
+	•	Save custom values cleanly to MongoDB
+	•	Continue requiring:
+	•	Merchant / Source
+	•	Amount
+	•	Default type and date values if not entered
+
+⸻
+
+B. SETTINGS PAGE – REMOVE EXTERNAL ACCOUNTS SECTION
+
+Fix:
+	•	In /settings, remove the entire “External Accounts” section
+	•	This includes:
+	•	Bank metadata displays
+	•	Any “Simulate Account” or “Connected Bank” fields/buttons
+	•	Only the “Preferences” section should remain, including:
+	•	Theme toggle (light/dark)
+	•	Language or timezone settings (if applicable)
+
+⸻
+
+C. DASHBOARD – MONTHLY BUDGET INTERACTION BUTTON
+
+Fix:
+	•	On the Dashboard, within the “Monthly Budget” section:
+	•	Add a dedicated button labeled: “Update Spent Amount”
+	•	Clicking it should:
+	•	Open a modal or inline field for each category
+	•	Allow entry of amount spent
+	•	Save data to MongoDB
+	•	Recalculate budget usage and update progress bar + summaries
+
+⸻
+
+D. RIVU SCORE – LOGIC VALIDATION
+
+Fix:
+	•	Double-check that Rivu Score logic is functioning correctly:
+	•	Score should be calculated using:
+	•	Budget goal adherence
+	•	Savings goal progress
+	•	Weekly engagement or login frequency
+	•	If no relevant data exists, score should show 0
+	•	Score must update live as new data is added
+	•	Remove any hardcoded or fallback score values
+
+⸻
+
+E. GLOBAL REMINDERS
+	•	No fields may be hardcoded or read-only unless required
+	•	All data must be tied to authenticated MongoDB user
+	•	All budget, transaction, and account pages must:
+	•	Allow add/update/delete
+	•	Reflect backend changes immediately in UI
+	•	Test in both light and dark mode

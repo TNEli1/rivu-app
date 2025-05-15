@@ -81,13 +81,7 @@ type TransactionFormData = {
   source: 'manual' | 'plaid';
 };
 
-// List of accounts (in a real app, this would come from the database)
-const ACCOUNTS = [
-  "Chase Checking",
-  "Bank of America Savings",
-  "Capital One Credit",
-  "Cash"
-];
+// Now using free text fields for categories and accounts
 
 export default function TransactionsPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -543,104 +537,43 @@ export default function TransactionsPage() {
                 
                 <div className="space-y-2">
                   <Label htmlFor="category">Category</Label>
-                  {formData.category === 'Other' ? (
-                    <div className="space-y-2">
-                      <Input 
-                        id="customCategory" 
-                        placeholder="Enter custom category" 
-                        value={formData.customCategory || ''}
-                        onChange={(e) => setFormData({
-                          ...formData, 
-                          customCategory: e.target.value,
-                          category: e.target.value || 'Other'
-                        })}
-                      />
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        size="sm"
-                        className="w-full"
-                        onClick={() => setFormData({...formData, category: '', customCategory: ''})}
-                      >
-                        Select from list instead
-                      </Button>
-                    </div>
-                  ) : (
-                    <>
-                      <Select 
-                        value={formData.category} 
-                        onValueChange={(value) => setFormData({
-                          ...formData, 
-                          category: value,
-                          customCategory: value === 'Other' ? '' : undefined
-                        })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {formData.type === 'income' && (
-                            <SelectItem value="Income">Income</SelectItem>
-                          )}
-                          {categories.map((category) => (
-                            <SelectItem key={category.id} value={category.name}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                          {/* Allow for custom categories */}
-                          <SelectItem value="Other">Enter custom category</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </>
-                  )}
+                  <div className="space-y-2">
+                    <Input 
+                      id="category" 
+                      placeholder="Enter category (e.g., Groceries, Utilities)" 
+                      value={formData.category}
+                      onChange={(e) => setFormData({
+                        ...formData, 
+                        category: e.target.value
+                      })}
+                      autoComplete="off"
+                    />
+                    {categories.length > 0 && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Suggestions: {categories.slice(0, 3).map(cat => cat.name).join(', ')}
+                        {categories.length > 3 && ', and more'}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="account">Account</Label>
-                  {formData.account === 'Other' ? (
-                    <div className="space-y-2">
-                      <Input 
-                        id="customAccount" 
-                        placeholder="Enter custom account" 
-                        value={formData.customAccount || ''}
-                        onChange={(e) => setFormData({
-                          ...formData, 
-                          customAccount: e.target.value,
-                          account: e.target.value || 'Other'
-                        })}
-                      />
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        size="sm"
-                        className="w-full"
-                        onClick={() => setFormData({...formData, account: ACCOUNTS[0], customAccount: ''})}
-                      >
-                        Select from list instead
-                      </Button>
-                    </div>
-                  ) : (
-                    <Select 
-                      value={formData.account} 
-                      onValueChange={(value) => setFormData({
+                  <div className="space-y-2">
+                    <Input 
+                      id="account" 
+                      placeholder="Enter account (e.g., Checking, Credit Card)" 
+                      value={formData.account}
+                      onChange={(e) => setFormData({
                         ...formData, 
-                        account: value,
-                        customAccount: value === 'Other' ? '' : undefined
+                        account: e.target.value
                       })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select account" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ACCOUNTS.map((account) => (
-                          <SelectItem key={account} value={account}>
-                            {account}
-                          </SelectItem>
-                        ))}
-                        <SelectItem value="Other">Enter custom account</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
+                      autoComplete="off"
+                    />
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Common accounts: Checking, Savings, Credit Card, Cash
+                    </div>
+                  </div>
                 </div>
                 
                 <div className="flex justify-end">
