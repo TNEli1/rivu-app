@@ -21,9 +21,12 @@ type RivuScoreResponse = {
 export default function RivuScoreCard() {
   const [offset, setOffset] = useState(339.292); // Full circle circumference (2 * PI * 54)
   
-  // Fetch Rivu score data with proper type
-  const { data, isLoading } = useQuery<RivuScoreResponse>({
+  // Fetch Rivu score data with proper type and reduced stale time to refresh more often
+  const { data, isLoading, refetch } = useQuery<RivuScoreResponse>({
     queryKey: ["/api/rivu-score"],
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    staleTime: 5000, // Reduce stale time to 5 seconds to ensure frequent updates
   });
 
   // Only use actual data, don't default to anything

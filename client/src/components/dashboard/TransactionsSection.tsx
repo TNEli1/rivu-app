@@ -10,7 +10,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { formatCurrency, formatDate, getCategoryIconAndColor } from "@/lib/utils";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
 export type Transaction = {
@@ -26,6 +26,7 @@ export type Transaction = {
 };
 
 export default function TransactionsSection() {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"all" | "income" | "expenses">("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
@@ -70,7 +71,11 @@ export default function TransactionsSection() {
       return apiRequest("POST", "/api/transactions", transactionData);
     },
     onSuccess: () => {
-      refetch();
+      // Invalidate related queries to trigger refresh
+      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/transactions/summary"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/rivu-score"] });
+      
       setIsAddDialogOpen(false);
       setNewTransaction({
         amount: "",
@@ -186,7 +191,7 @@ export default function TransactionsSection() {
                       <p className="text-xs text-muted-foreground">
                         {formatDate(new Date(transaction.date))} • {transaction.category} •&nbsp;
                         <span className="text-xs italic">
-                          {transaction.source === 'plaid' ? 'Synced from bank' : 'Added manually'}
+                          {transaction.source === 'plaid' ? 'Bank Account' : 'Entered Manually'}
                         </span>
                       </p>
                     </div>
@@ -285,6 +290,7 @@ export default function TransactionsSection() {
                         selected={selectedDate}
                         onSelect={setSelectedDate}
                         initialFocus
+                        disabled={(date) => date > new Date()}
                       />
                     </PopoverContent>
                   </Popover>

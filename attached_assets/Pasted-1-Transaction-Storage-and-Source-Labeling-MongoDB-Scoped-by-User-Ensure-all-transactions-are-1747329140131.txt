@@ -1,0 +1,51 @@
+1. Transaction Storage and Source Labeling (MongoDB + Scoped by User)
+	•	Ensure all transactions are stored in MongoDB, under the currently authenticated user’s ID.
+	•	When a user logs in, fetch only their transactions. Do not load data from localStorage, sessionStorage, or previous users.
+	•	When a transaction is manually entered via the UI:
+	•	Save it with a field: "source": "manual"
+	•	When a transaction is imported from the Plaid API:
+	•	Save it with a field: "source": "plaid"
+	•	In the transaction log UI:
+	•	If source === "manual", display: “Entered Manually”
+	•	If source === "plaid", display: “Bank Account”
+	•	Ensure that past dates can be selected when entering a manual transaction. Prevent selection of future dates.
+	•	Remove any defaulting to the current date unless explicitly selected.
+
+⸻
+
+2. Rivu Score Refresh Logic (Must Recalculate Immediately on Change)
+	•	The Rivu Score must update live, without requiring logout or full refresh.
+	•	Trigger recalculation and UI update of the Rivu Score in these scenarios:
+	•	When a user creates or completes a goal
+	•	When a user updates a budget or saves toward a goal
+	•	When a user logs in or reloads the dashboard
+	•	The score should be pulled from the database (MongoDB or backend logic), not cached values.
+
+⸻
+
+3. AI Coach Integration (Accurate Data Only)
+	•	The AI Coach must use real, user-specific data, including:
+	•	The actual Rivu Score value
+	•	Budget progress
+	•	Goal completion rate
+	•	Savings progress
+	•	Never send placeholder, hardcoded, or outdated values to the GPT API.
+	•	Ensure GPT receives a structured object or string like:
+
+User Rivu Score: 72  
+Budget Goals Met: 80%  
+Savings Progress: 60%  
+Weekly Engagement: High  
+Goals Completed: 3 out of 5  
+
+•	These inputs should power GPT-based financial tips and advice.
+
+⸻
+
+4. Session Security Fix
+	•	On logout:
+	•	Fully clear localStorage and sessionStorage.
+	•	Reset all frontend user state.
+	•	On login:
+	•	Fetch all user data (transactions, goals, budget, score, profile) from MongoDB using the authenticated user ID.
+	•	Ensure data from one user cannot leak or display under another.
