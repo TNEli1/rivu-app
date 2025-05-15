@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, LogOut, CreditCard, Moon, Sun } from "lucide-react";
+import { Loader2, LogOut, CreditCard, Moon, Sun, ClipboardCheck } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { 
   Dialog, 
@@ -290,6 +290,22 @@ export default function SettingsPage() {
                   <Switch 
                     checked={darkMode} 
                     onCheckedChange={toggleDarkMode} 
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                  <div className="flex flex-col">
+                    <div className="flex items-center space-x-2">
+                      <ClipboardCheck className="h-5 w-5" />
+                      <span>Skip Onboarding Survey</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground mt-1 ml-7">
+                      You won't be prompted to complete the survey on login
+                    </span>
+                  </div>
+                  <Switch 
+                    checked={skipSurvey} 
+                    onCheckedChange={toggleSkipSurvey} 
                   />
                 </div>
               </Card>
