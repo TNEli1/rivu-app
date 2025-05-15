@@ -137,8 +137,23 @@ export default function TransactionsPage() {
   // Add new transaction
   const addMutation = useMutation({
     mutationFn: async (data: TransactionFormData) => {
+      // Process data before sending to API
+      let category = data.category;
+      let account = data.account;
+      
+      // Use custom values if appropriate
+      if (data.category === 'Other' && data.customCategory) {
+        category = data.customCategory;
+      }
+      
+      if (data.account === 'Other' && data.customAccount) {
+        account = data.customAccount;
+      }
+      
       const res = await apiRequest('POST', '/api/transactions', {
         ...data,
+        category,
+        account,
         amount: parseFloat(data.amount),
         date: new Date(data.date).toISOString(),
         type: data.type || 'expense', // Ensure type is included
@@ -168,6 +183,19 @@ export default function TransactionsPage() {
   const updateMutation = useMutation({
     mutationFn: async (data: { id: number, updates: Partial<TransactionFormData> }) => {
       const updates = {...data.updates};
+      
+      // Process custom fields
+      if (updates.category === 'Other' && updates.customCategory) {
+        updates.category = updates.customCategory;
+      }
+      
+      if (updates.account === 'Other' && updates.customAccount) {
+        updates.account = updates.customAccount;
+      }
+      
+      // Remove custom fields before sending to API
+      delete updates.customCategory;
+      delete updates.customAccount;
       
       // Convert amount to string if present
       if (updates.amount) {
