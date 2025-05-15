@@ -48,6 +48,7 @@ export default function TransactionsSection() {
       merchant: string;
       category: string;
       account: string;
+      source: "manual" | "plaid";
     }) => {
       return apiRequest("POST", "/api/transactions", transactionData);
     },
@@ -67,18 +68,19 @@ export default function TransactionsSection() {
     e.preventDefault();
     const amount = parseFloat(newTransaction.amount);
     
-    if (newTransaction.merchant && !isNaN(amount) && amount > 0 && newTransaction.category) {
+    if (!isNaN(amount) && amount > 0) {
       createMutation.mutate({
         amount,
-        merchant: newTransaction.merchant,
-        category: newTransaction.category,
-        account: newTransaction.account,
+        merchant: newTransaction.merchant || "Uncategorized",
+        category: newTransaction.category || "Other",
+        account: newTransaction.account || "Credit Card",
+        source: "manual", // Always set to manual when user creates via form
       });
     }
   };
 
   // Filter transactions based on active tab
-  const filteredTransactions = transactions.filter((transaction: Transaction) => {
+  const filteredTransactions = transactions.filter((transaction) => {
     if (activeTab === "all") return true;
     if (activeTab === "income") return transaction.type === "income";
     if (activeTab === "expenses") return transaction.type === "expense";
