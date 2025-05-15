@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import MobileNav from "@/components/layout/MobileNav";
+import MobileHeader from "@/components/layout/MobileHeader";
 import StatCards from "@/components/dashboard/StatCards";
 import BudgetSection from "@/components/dashboard/BudgetSection";
 import TransactionsSection from "@/components/dashboard/TransactionsSection";
@@ -47,15 +48,7 @@ export default function Dashboard() {
       {/* Main Content */}
       <main className="flex-grow md:ml-64 p-4 md:p-8">
         {/* Mobile Header */}
-        <header className="md:hidden flex items-center justify-between mb-6">
-          <div className="flex items-center">
-            <i className="ri-line-chart-fill text-primary text-2xl mr-2"></i>
-            <h1 className="text-xl font-bold text-foreground">Rivu</h1>
-          </div>
-          <Button variant="outline" size="icon" className="p-2 rounded-lg bg-card">
-            <i className="ri-menu-line text-xl"></i>
-          </Button>
-        </header>
+        <MobileHeader />
         
         {/* Welcome Section */}
         <section className="mb-8">

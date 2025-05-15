@@ -1,6 +1,7 @@
 import React from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import RivuLogo from "./RivuLogo";
 
 type NavItem = {
   title: string;
