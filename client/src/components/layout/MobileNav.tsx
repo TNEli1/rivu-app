@@ -17,7 +17,7 @@ export default function MobileNav() {
     { title: "Dashboard", href: "/", icon: "ri-dashboard-line" },
     { title: "Budget", href: "/budget", icon: "ri-wallet-3-line" },
     { title: "Transactions", href: "/transactions", icon: "ri-exchange-dollar-line" },
-    { title: "Insights", href: "/insights", icon: "ri-line-chart-line" },
+    { title: "Goals", href: "/goals", icon: "ri-target-line" },
     { title: "Account", href: "/account", icon: "ri-user-settings-line" },
   ];
 

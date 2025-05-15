@@ -15,6 +15,7 @@ const navItems: NavItem[] = [
   { title: "Dashboard", href: "/", icon: "ri-dashboard-fill" },
   { title: "Budget", href: "/budget", icon: "ri-wallet-3-fill" },
   { title: "Transactions", href: "/transactions", icon: "ri-exchange-dollar-fill" },
+  { title: "Goals", href: "/goals", icon: "ri-target-fill" },
   { title: "Insights", href: "/insights", icon: "ri-line-chart-line-fill" },
 ];
 
