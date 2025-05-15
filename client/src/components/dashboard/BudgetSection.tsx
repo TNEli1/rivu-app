@@ -32,7 +32,7 @@ export default function BudgetSection() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditSpentDialogOpen, setIsEditSpentDialogOpen] = useState(false);
+  const [isEditCategoryDialogOpen, setIsEditCategoryDialogOpen] = useState(false);
   const [newCategory, setNewCategory] = useState({ name: "", budgetAmount: "" });
   const [editingCategory, setEditingCategory] = useState<BudgetCategory | null>(null);
   const [newSpentAmount, setNewSpentAmount] = useState("");
@@ -89,10 +89,10 @@ export default function BudgetSection() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/budget-categories"] });
       queryClient.invalidateQueries({ queryKey: ["/api/rivu-score"] });
-      setIsEditSpentDialogOpen(false);
+      setIsEditCategoryDialogOpen(false);
       setEditingCategory(null);
       toast({
-        title: "Spent amount updated",
+        title: "Budget category updated",
         description: "Your budget category has been updated successfully.",
       });
     },
@@ -207,6 +207,7 @@ export default function BudgetSection() {
                       onClick={() => {
                         setEditingCategory(category);
                         setNewSpentAmount(String(category.spentAmount));
+                        setNewBudgetAmount(String(category.budgetAmount));
                         setIsEditSpentDialogOpen(true);
                       }}
                     >
@@ -331,21 +332,33 @@ export default function BudgetSection() {
           </DialogContent>
         </Dialog>
         
-        {/* Edit Spent Amount Dialog */}
+        {/* Edit Budget Category Dialog */}
         <Dialog open={isEditSpentDialogOpen} onOpenChange={setIsEditSpentDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Update Spent Amount</DialogTitle>
+              <DialogTitle>Edit Budget Category</DialogTitle>
             </DialogHeader>
             {editingCategory && (
               <form onSubmit={(e) => {
                 e.preventDefault();
-                const amount = parseFloat(newSpentAmount);
-                if (!isNaN(amount) && amount >= 0) {
-                  updateSpentMutation.mutate({
+                const spentAmount = parseFloat(newSpentAmount);
+                const budgetAmount = parseFloat(newBudgetAmount);
+                
+                if (!isNaN(spentAmount) && spentAmount >= 0) {
+                  const updateData: {
+                    id: string;
+                    spentAmount: number;
+                    budgetAmount?: number;
+                  } = {
                     id: editingCategory.id,
-                    spentAmount: amount
-                  });
+                    spentAmount: spentAmount
+                  };
+                  
+                  if (!isNaN(budgetAmount) && budgetAmount > 0) {
+                    updateData.budgetAmount = budgetAmount;
+                  }
+                  
+                  updateSpentMutation.mutate(updateData);
                 }
               }}>
                 <div className="space-y-4 py-2">
@@ -353,15 +366,23 @@ export default function BudgetSection() {
                     <Label>Category</Label>
                     <p className="text-foreground font-medium">{editingCategory.name}</p>
                   </div>
-                  <div className="space-y-1">
-                    <Label>Monthly Budget</Label>
-                    <p className="text-foreground font-medium">{formatCurrency(editingCategory.budgetAmount)}</p>
+                  <div className="space-y-2">
+                    <Label htmlFor="budget-amount">Monthly Budget</Label>
+                    <Input
+                      id="budget-amount"
+                      placeholder={`Current: ${formatCurrency(editingCategory.budgetAmount)}`}
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={newBudgetAmount}
+                      onChange={(e) => setNewBudgetAmount(e.target.value)}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="spent-amount">Amount Spent</Label>
                     <Input
                       id="spent-amount"
-                      placeholder="Enter amount spent"
+                      placeholder={`Current: ${formatCurrency(editingCategory.spentAmount)}`}
                       type="number"
                       min="0"
                       step="0.01"
@@ -380,9 +401,9 @@ export default function BudgetSection() {
                   </Button>
                   <Button 
                     type="submit" 
-                    disabled={!newSpentAmount || updateSpentMutation.isPending}
+                    disabled={(!newSpentAmount && !newBudgetAmount) || updateSpentMutation.isPending}
                   >
-                    {updateSpentMutation.isPending ? "Updating..." : "Update Spent Amount"}
+                    {updateSpentMutation.isPending ? "Saving..." : "Save Changes"}
                   </Button>
                 </DialogFooter>
               </form>
