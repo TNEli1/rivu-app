@@ -34,6 +34,7 @@ type BudgetCategory = {
 type BudgetFormData = {
   name: string;
   budgetAmount: string;
+  spentAmount: string;
 };
 
 export default function BudgetPage() {
@@ -43,6 +44,7 @@ export default function BudgetPage() {
   const [formData, setFormData] = useState<BudgetFormData>({
     name: "",
     budgetAmount: "",
+    spentAmount: "0",
   });
   
   const { toast } = useToast();
@@ -80,7 +82,7 @@ export default function BudgetPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/budget-categories'] });
       setIsAddDialogOpen(false);
-      setFormData({ name: "", budgetAmount: "" });
+      setFormData({ name: "", budgetAmount: "", spentAmount: "0" });
       toast({
         title: "Budget category added",
         description: "Your budget category has been created successfully.",
@@ -172,6 +174,7 @@ export default function BudgetPage() {
     setFormData({
       name: category.name,
       budgetAmount: category.budgetAmount,
+      spentAmount: category.spentAmount,
     });
     setIsEditDialogOpen(true);
   };
@@ -412,6 +415,18 @@ export default function BudgetPage() {
                 value={formData.budgetAmount}
                 onChange={(e) => setFormData({...formData, budgetAmount: e.target.value})}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-spent">Amount Spent</Label>
+              <Input 
+                id="edit-spent" 
+                type="number" 
+                value={formData.spentAmount}
+                onChange={(e) => setFormData({...formData, spentAmount: e.target.value})}
+              />
+              <p className="text-xs text-muted-foreground">
+                Manually set how much you've spent in this category
+              </p>
             </div>
             <div className="flex justify-end">
               <Button 
