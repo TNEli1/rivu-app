@@ -71,6 +71,8 @@ export class MemStorage implements IStorage {
     const newUser: User = { 
       ...user, 
       id, 
+      loginCount: 0,
+      lastLogin: null,
       createdAt: new Date() 
     };
     this.users.set(id, newUser);
@@ -234,14 +236,47 @@ export class MemStorage implements IStorage {
       ? Math.round((categoriesUnderBudget / totalCategories) * 100)
       : 100;
     
-    // For this demo, we'll use fixed values for savings progress and weekly activity
-    const savingsProgress = 60;
-    const weeklyActivity = 95;
+    // Get transactions to calculate user activity
+    const transactions = await this.getTransactions(userId);
+    
+    // Calculate weekly activity based on real transaction data
+    // Count transactions in the past 7 days
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    const recentTransactions = transactions.filter(t => {
+      const transDate = new Date(t.date);
+      return transDate >= weekAgo && transDate <= now;
+    });
+    
+    // Score between 0-100 based on recent transactions (max 10 transactions = 100%)
+    const weeklyActivity = Math.min(recentTransactions.length * 10, 100);
+    
+    // Get user to check login metrics for engagement
+    const user = await this.getUser(userId);
+    const loginCount = user?.loginCount || 0;
+    
+    // Calculate savings progress based on income vs expenses
+    const incomeTransactions = transactions.filter(t => t.type === 'income');
+    const expenseTransactions = transactions.filter(t => t.type === 'expense');
+    
+    const totalIncome = incomeTransactions.reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
+    const totalExpenses = expenseTransactions.reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
+    
+    // If no income, default to 0% savings
+    let savingsProgress = 0;
+    if (totalIncome > 0) {
+      const savingsRate = Math.max(0, (totalIncome - totalExpenses) / totalIncome);
+      savingsProgress = Math.min(Math.round(savingsRate * 100), 100);
+    }
+    
+    // If no data, score should be 0
+    const hasData = categories.length > 0 || transactions.length > 0 || loginCount > 0;
     
     // Calculate overall score (weighted average)
-    const score = Math.round(
+    const score = hasData ? Math.round(
       (budgetAdherence * 0.5) + (savingsProgress * 0.3) + (weeklyActivity * 0.2)
-    );
+    ) : 0;
     
     // Create or update the Rivu score
     await this.createOrUpdateRivuScore({
@@ -249,7 +284,7 @@ export class MemStorage implements IStorage {
       score,
       budgetAdherence,
       savingsProgress,
-      weeklyActivity
+      weeklyActivity,
     });
     
     return score;

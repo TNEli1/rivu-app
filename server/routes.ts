@@ -180,7 +180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         category: validated.category,
         account: validated.account,
         type: validated.type,
-        date: validated.date || new Date().toISOString(),
+        date: validated.date ? new Date(validated.date) : new Date(),
       });
       
       res.status(201).json(newTransaction);
