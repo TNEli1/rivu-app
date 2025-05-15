@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import Sidebar from "@/components/layout/Sidebar";
@@ -110,6 +110,17 @@ export default function TransactionsPage() {
       return res.json();
     }
   });
+  
+  // Check URL parameters for actions
+  useEffect(() => {
+    // Check if we should auto-open the add dialog from URL param
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('action') === 'add') {
+      setIsAddDialogOpen(true);
+      // Clean up the URL to prevent reopening on refresh
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   // Get budget categories for the dropdown
   const { data: categories = [], isLoading: isCategoriesLoading } = useQuery<BudgetCategory[]>({

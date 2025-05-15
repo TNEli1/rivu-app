@@ -23,26 +23,28 @@ export default function RivuScoreCard() {
     queryKey: ["/api/rivu-score"],
   });
 
-  const score = data?.score || 75;
-  const defaultFactors: ScoreFactor[] = [
-    { name: "Budget Adherence", percentage: 80, rating: "Good", color: "bg-[#00C2A8]" },
-    { name: "Savings Goal Progress", percentage: 60, rating: "Fair", color: "bg-[#2F80ED]" },
-    { name: "Weekly Activity", percentage: 95, rating: "Excellent", color: "bg-[#D0F500]" },
-  ];
-  const scoreFactors = data?.factors || defaultFactors;
+  // Only use actual data, don't default to anything
+  const score = data?.score;
+  const scoreFactors = data?.factors;
+  
+  // Check if we have real data
+  const hasNoRealData = !data || score === 0 || !scoreFactors || scoreFactors.length === 0;
 
   useEffect(() => {
-    // Animate the score circle
-    const timer = setTimeout(() => {
-      const newOffset = 339.292 - (score / 100) * 339.292;
-      setOffset(newOffset);
-    }, 200);
-    
-    return () => clearTimeout(timer);
-  }, [score]);
+    // Only animate if we have real data
+    if (!hasNoRealData && score !== undefined) {
+      const timer = setTimeout(() => {
+        const newOffset = 339.292 - (score / 100) * 339.292;
+        setOffset(newOffset);
+      }, 200);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [score, hasNoRealData]);
 
   // Determine score color
   const getScoreColor = () => {
+    if (!score) return "#3A3A3A"; // gray/neutral for no data
     if (score >= 80) return "#00C2A8"; // green
     if (score >= 60) return "#D0F500"; // yellow
     return "#FF4D4F"; // red
