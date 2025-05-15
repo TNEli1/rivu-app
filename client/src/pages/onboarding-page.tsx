@@ -11,6 +11,7 @@ import { Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useQueryClient } from "@tanstack/react-query";
 import { Redirect, useLocation } from "wouter";
+import MobileHeader from "@/components/layout/MobileHeader";
 
 export default function OnboardingPage() {
   const { user } = useAuth();
