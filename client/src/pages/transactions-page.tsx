@@ -336,6 +336,7 @@ export default function TransactionsPage() {
       account: ACCOUNTS[0],
       customCategory: undefined,
       customAccount: undefined,
+      source: 'manual',
     });
   };
 
@@ -422,6 +423,7 @@ export default function TransactionsPage() {
       merchant: transaction.merchant,
       category: transaction.category,
       account: transaction.account,
+      source: transaction.source || 'manual',
     });
     
     setIsEditDialogOpen(true);
@@ -840,6 +842,7 @@ export default function TransactionsPage() {
                     <th className="text-left p-4 font-medium">Description</th>
                     <th className="text-left p-4 font-medium">Category</th>
                     <th className="text-left p-4 font-medium">Account</th>
+                    <th className="text-left p-4 font-medium">Source</th>
                     <th className="text-right p-4 font-medium">Amount</th>
                     <th className="text-right p-4 font-medium">Actions</th>
                   </tr>
@@ -857,7 +860,16 @@ export default function TransactionsPage() {
                             <span>{formatDate(new Date(transaction.date))}</span>
                           </div>
                         </td>
-                        <td className="p-4 align-middle">{transaction.merchant}</td>
+                        <td className="p-4 align-middle">
+                          <div className="flex flex-col">
+                            <span>{transaction.merchant}</span>
+                            {transaction.possibleDuplicate && (
+                              <Badge variant="outline" className="mt-1 bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-800">
+                                Possible Duplicate
+                              </Badge>
+                            )}
+                          </div>
+                        </td>
                         <td className="p-4 align-middle">
                           <div className="flex items-center gap-2">
                             <div className={`p-1 rounded ${color.split(' ')[0]}`}>
