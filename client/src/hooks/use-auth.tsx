@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 
 // User's demographic information
-type Demographics = {
+export type Demographics = {
   ageRange?: string;
   incomeBracket?: string;
   goals?: string[];
@@ -21,8 +21,17 @@ type Demographics = {
   updatedAt?: string;
 };
 
+// Plaid connection data type
+export type PlaidData = {
+  status: 'connected' | 'disconnected';
+  accessToken?: string;
+  itemId?: string;
+  bankName?: string;
+  lastUpdated?: string;
+};
+
 // Main user type
-type User = {
+export type User = {
   _id: string;
   username: string;
   email: string;
@@ -36,6 +45,7 @@ type User = {
   lastLogin?: string;
   loginCount?: number;
   demographics?: Demographics;
+  plaidData?: PlaidData;
 };
 
 // Auth context type
