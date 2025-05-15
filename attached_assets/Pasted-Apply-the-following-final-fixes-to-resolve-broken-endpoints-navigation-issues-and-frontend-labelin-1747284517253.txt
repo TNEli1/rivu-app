@@ -1,0 +1,80 @@
+Apply the following final fixes to resolve broken endpoints, navigation issues, and frontend labeling errors. This is the last set of blockers before Rivu can be considered fully launch-ready.
+
+⸻
+
+A. SAVINGS GOALS – API CONNECTION FIX
+
+Issue:
+	•	Attempting to save a savings goal returns an “API endpoint not found” error.
+
+Fix:
+	•	Ensure the backend includes a valid POST route for saving savings goals:
+	•	Example: POST /api/goals/create
+	•	Route should:
+	•	Validate input (name, target amount, saved amount, optional date)
+	•	Save to MongoDB under the authenticated user
+	•	Return success response and update frontend state
+	•	Also implement:
+	•	GET route to fetch goals per user
+	•	PUT route to update saved amount
+	•	DELETE route to remove a goal
+
+⸻
+
+B. TRANSACTIONS – SOURCE LABELING ERROR
+
+Issue:
+	•	Manually entered transactions are incorrectly labeled as “Synced from Bank”
+
+Fix:
+	•	Ensure every transaction has a source field:
+	•	"manual" if entered by the user
+	•	"plaid" if pulled from Plaid API
+	•	In the UI:
+	•	Display labels accordingly:
+	•	“Added manually”
+	•	“Synced from bank”
+	•	Default any missing source fields in legacy data to "manual"
+
+⸻
+
+C. GOALS PAGE – UI/UX NAVIGATION
+
+Issue:
+	•	The /goals page loads as a standalone view with no way to return to the main app
+
+Fix:
+	•	Add a “Back to Dashboard” button or icon in the top-left corner
+	•	Button should route to /dashboard and maintain user session state
+
+⸻
+
+D. INSIGHTS PAGE – SPENDING BY CATEGORY LAYOUT ISSUE
+
+Issue:
+	•	Chart labels in “Spending by Category” are overlapping and unreadable
+
+Fix:
+	•	Adjust the chart layout to:
+	•	Use outer or curved label lines
+	•	Rotate or reduce label font size for clarity
+	•	Add hover tooltips if space is tight
+	•	Ensure responsiveness on both desktop and mobile
+
+⸻
+
+E. SETTINGS – TOGGLE CLEANUP
+
+Issue:
+	•	Settings page still contains “Skip Onboarding Survey” toggle
+
+Fix:
+	•	Remove the toggle entirely
+	•	If survey logic is still active, show survey only once after account creation (not toggle-based)
+
+⸻
+
+Final Expectations:
+	•	All changes must be synced with MongoDB and scoped to the current authenticated user
+	•	All labels, buttons, and chart elements must function in both light and dark mode
+	•	No placeholders or demo tags should be present in production

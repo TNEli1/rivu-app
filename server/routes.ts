@@ -38,6 +38,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       forgotPassword,
       resetPassword
     } = await import('./controllers-ts/userController');
+    
+    // Import goals controller functions
+    const {
+      getGoals,
+      getGoalById,
+      createGoal,
+      updateGoal,
+      deleteGoal
+    } = await import('./controllers/goalController');
 
     // Register auth routes with our TypeScript controller
     app.post(`${apiPath}/register`, registerUser);
@@ -49,6 +58,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.post(`${apiPath}/user/login-metric`, protect, updateLoginMetrics);
     app.post(`${apiPath}/forgot-password`, forgotPassword);
     app.post(`${apiPath}/reset-password/:token`, resetPassword);
+    
+    // Register goal routes
+    app.get(`${apiPath}/goals`, protect, getGoals);
+    app.get(`${apiPath}/goals/:id`, protect, getGoalById);
+    app.post(`${apiPath}/goals`, protect, createGoal);
+    app.put(`${apiPath}/goals/:id`, protect, updateGoal);
+    app.delete(`${apiPath}/goals/:id`, protect, deleteGoal);
     
     console.log('✅ Auth routes (MongoDB) successfully mounted at /api');
   } catch (error) {
