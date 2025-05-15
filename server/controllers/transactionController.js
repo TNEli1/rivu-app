@@ -6,14 +6,51 @@ const Budget = require('../models/Budget');
 // @access  Private
 const getTransactions = async (req, res) => {
   try {
-    // Add sorting by date, newest first
-    const transactions = await Transaction.find({ userId: req.user._id })
-      .sort({ date: -1 });
+    // Verify user ID exists from authenticated session
+    if (!req.user || !req.user._id) {
+      console.error('Transaction fetch failed: No authenticated user ID available');
+      return res.status(401).json({ 
+        message: 'Authentication required. User ID not found in session.' 
+      });
+    }
+
+    const userId = req.user._id;
     
-    res.json(transactions);
+    try {
+      // Use explicit userId filter and log the query
+      console.log(`Fetching transactions for user: ${userId}`);
+      
+      // Add sorting by date, newest first
+      const transactions = await Transaction.find({ 
+        userId: userId  // Explicitly use the userId from authenticated session
+      }).sort({ date: -1 });
+      
+      // Log transaction count for debugging
+      console.log(`Found ${transactions.length} transactions for user: ${userId}`);
+      
+      // Verify all transactions belong to the correct user
+      const incorrectUserCount = transactions.filter(tx => 
+        tx.userId.toString() !== userId.toString()
+      ).length;
+      
+      if (incorrectUserCount > 0) {
+        console.error(`Data integrity issue: ${incorrectUserCount} transactions with incorrect userId found`);
+      }
+      
+      res.json(transactions);
+    } catch (queryError) {
+      console.error('MongoDB query error when fetching transactions:', queryError);
+      res.status(500).json({ 
+        message: 'Error retrieving transactions from database', 
+        error: queryError.message 
+      });
+    }
   } catch (error) {
-    console.error('Error fetching transactions:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Error in transaction fetch handler:', error);
+    res.status(500).json({ 
+      message: 'Server error processing transaction request', 
+      error: error.message 
+    });
   }
 };
 
