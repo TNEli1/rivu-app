@@ -1,0 +1,136 @@
+Fix the following critical issues across Rivu to make the platform clean, accurate, and production-ready. All features must work with real user data, be connected to the backend, and display only live or user-input content.
+
+⸻
+
+A. TRANSACTION SYSTEM FIXES
+
+1. Manual “Add Transaction” Fails
+	•	Fix the “Add Transaction” button:
+	•	Data must be submitted and saved to MongoDB under the current user
+	•	Transaction list must refresh live after submission
+	•	Show confirmation or error messages based on success/failure
+
+2. Plaid Integration - Sandbox Connection Logic
+	•	When user clicks “Connect Bank”:
+	•	If no access_token is set, show:
+“No token found. Connection failed — check Plaid sandbox setup.”
+	•	This message confirms the front-end connection is working and sandbox is active
+	•	If Plaid Link is not triggered, show:
+“Unable to launch bank connection — try again.”
+	•	Remove any “Coming soon” message — this is a live feature under testing
+
+⸻
+
+B. BUDGET & RIVU SCORE LOGIC FIXES
+
+3. Rivu Score is Incorrect (e.g., shows 75 with no data)
+	•	Only calculate Rivu Score using:
+	•	Budget adherence (real vs. planned)
+	•	Savings goal progress
+	•	Engagement (login count)
+	•	If user has no data → show score = 0
+	•	If partial data → use weighted scoring
+
+4. Budget Loads Automatically with Fake Data
+	•	Remove all hardcoded budget values
+	•	When no categories exist:
+Show “No budgets found. Add a category to begin tracking your spending.”
+
+5. Budget Category CRUD
+	•	Enable full functionality:
+	•	Add new category
+	•	Update amount/label
+	•	Delete category
+	•	Deleting a category should:
+	•	Remove it from summaries
+	•	Update totals
+	•	Prevent UI or score calculation errors
+
+⸻
+
+C. GOAL DISPLAY & PROGRESS SYNC
+
+6. Progress Bar Shows Wrong Value
+	•	Fix the mismatch between:
+	•	Text label (e.g., “0% complete”)
+	•	Progress bar (e.g., 60%)
+	•	Both must be synced based on stored progress
+	•	Use percentage format with 0–100 scale
+
+⸻
+
+D. DASHBOARD MODULE COMPLETENESS
+
+7. Validate Every Section on /dashboard
+	•	All dashboard elements must:
+	•	Pull real MongoDB/GPT data
+	•	Show fallback only if data is truly missing
+	•	Link to relevant detail pages (clickable summaries)
+
+Validate:
+	•	Rivu Score box
+	•	GPT Coach module (no lag, user messages visible)
+	•	Budget summary
+	•	Active goals
+	•	Spending trends (with arrow logic)
+	•	Transactions preview
+
+⸻
+
+E. QUICK QA NOTES
+	•	Add Transaction: fix button submission
+	•	Plaid Link: simulate missing token error correctly
+	•	Rivu Score: show 0 if no data; score updates live
+	•	Delete Budget Categories: must be functional
+	•	Goal Sync: fix text-bar mismatch
+	•	Coach Chat:
+	•	User message should appear
+	•	Smooth assistant response
+	•	Visual improvements
+
+Clean up the last remaining production issues in Rivu. All features must be fully functional — or removed if incomplete. No placeholder logic or demo behaviors should remain.
+
+⸻
+
+A. Bank Connection Logic (Settings Page)
+
+1. “Connect Bank” Button Behavior
+	•	Currently, clicking “Connect Bank” in settings:
+	•	Displays a list of bank logos
+	•	Then shows “Bank Connected”, even though no real authentication or Plaid connection occurs
+	•	This behavior is misleading and unacceptable for production
+
+Fix:
+	•	Either:
+	•	Integrate real Plaid Link (sandbox mode) using your PLAID_CLIENT_ID and PLAID_SECRET, and show the real flow
+	•	OR, if you cannot integrate now — remove the button entirely
+	•	Do not show “Bank Connected” unless a valid access_token has been retrieved and stored in MongoDB for that user
+	•	If connection fails or is incomplete, show:
+“Unable to connect bank. Please try again.”
+
+⸻
+
+B. Light Mode Styling (Unreadable)
+	•	Current light mode turns the entire page white with white or faint gray text, making the app unreadable
+
+Fix:
+	•	Create a professional light mode theme with:
+	•	Subtle light background (e.g. #f8f9fa, #f1f1f1)
+	•	Clear contrast on:
+	•	Text (#111 or darker)
+	•	Buttons (#007bff, #17a2b8, etc.)
+	•	Cards (#ffffff with subtle shadows)
+	•	Inputs should have visible borders, hover states, and readable placeholder text
+	•	Use the same visual quality and UX consistency as dark mode
+	•	Add a toggle between light and dark in settings (if not already present)
+
+⸻
+
+C. Final Notes to Apply Globally
+	•	Eliminate all demo states or simulated confirmations (e.g., fake success messages)
+	•	Every button in the app must either:
+	•	Execute a real function tied to backend logic
+	•	Or be removed entirely (no placeholders)
+	•	All pages must:
+	•	Pull real MongoDB data
+	•	React to missing data with user-friendly empty states

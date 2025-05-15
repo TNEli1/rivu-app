@@ -136,8 +136,9 @@ export default function TransactionsPage() {
     mutationFn: async (data: TransactionFormData) => {
       const res = await apiRequest('POST', '/api/transactions', {
         ...data,
-        amount: data.amount.toString(),
+        amount: parseFloat(data.amount),
         date: new Date(data.date).toISOString(),
+        type: data.type || 'expense', // Ensure type is included
       });
       return res.json();
     },

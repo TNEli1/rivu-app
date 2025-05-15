@@ -165,14 +165,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       merchant: z.string().min(1, "Merchant is required"),
       category: z.string().min(1, "Category is required"),
       account: z.string().min(1, "Account is required"),
+      type: z.enum(['expense', 'income']).default('expense'),
+      date: z.string().optional(),
     });
 
     try {
       const validated = schema.parse(req.body);
       const userId = getCurrentUserId();
-      
-      // Determine transaction type based on category
-      const type = validated.category.toLowerCase() === 'income' ? 'income' : 'expense';
       
       const newTransaction = await storage.createTransaction({
         userId,
@@ -180,7 +179,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         merchant: validated.merchant,
         category: validated.category,
         account: validated.account,
-        type,
+        type: validated.type,
+        date: validated.date || new Date().toISOString(),
       });
       
       res.status(201).json(newTransaction);
