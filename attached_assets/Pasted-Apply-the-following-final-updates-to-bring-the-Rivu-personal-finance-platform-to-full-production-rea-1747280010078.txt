@@ -1,0 +1,132 @@
+Apply the following final updates to bring the Rivu personal finance platform to full production readiness. This version must use real user data only, connect securely to Plaid and MongoDB, and eliminate all demo content. All user input must be validated, stored, and properly displayed.
+
+⸻
+
+A. TRANSACTION SYSTEM – MANUAL INPUT, SOURCE TRACKING, DUPLICATE LOGIC
+
+1. Manual Entry Required Fields
+	•	On /transactions, require users to input:
+	•	Merchant / Source
+	•	Category
+	•	Account
+	•	Amount
+	•	Make type and date optional with defaults:
+	•	type: “expense”
+	•	date: current date
+	•	Accept free text for all inputs
+	•	Validate amount > 0
+	•	Store cleanly to MongoDB under current user
+
+⸻
+
+2. Identify and Flag Potential Duplicates
+	•	Add a check to identify likely duplicate transactions:
+	•	Same user
+	•	Same amount
+	•	Similar merchant/source
+	•	Same or adjacent date
+	•	If found:
+	•	Flag with a tag: “Possible Duplicate”
+	•	Visually group or highlight in /transactions
+
+⸻
+
+3. Allow Duplicate Removal
+	•	Give users the option to:
+	•	Manually delete flagged duplicate transactions
+	•	Confirm “not a duplicate” to dismiss the tag
+
+⸻
+
+4. Track Source of Each Transaction
+	•	Add a source field to each transaction in the database:
+	•	Values should be either "manual" or "plaid"
+	•	Display the source visibly in the UI (e.g., “Added manually” or “Synced from Bank”)
+	•	Use icons or text to differentiate them clearly
+
+⸻
+
+B. PLAID INTEGRATION – REAL CONNECTION & DATA PRIORITY
+
+Fix:
+	•	Replace all demo logic or “Coming Soon” text in:
+	•	/transactions
+	•	/settings > External Accounts
+	•	“Link Bank Account” buttons must:
+	•	Trigger Plaid Link sandbox using API keys from Replit secrets
+	•	On success:
+	•	Save access_token, item_id, and account metadata in MongoDB
+	•	On failure:
+	•	Show error message: “Connection failed. Please try again.”
+	•	Once linked:
+	•	Default to showing Plaid-pulled transactions in the UI
+	•	Still allow manual entry, but clearly separate and label sources
+	•	Remove any “Simulate Connected Accounts” or demo buttons
+
+⸻
+
+C. BUDGETING SYSTEM – UPDATE SPENT, DELETE, AND DASHBOARD SYNC
+
+Fixes:
+	•	On /budget and the dashboard budget section:
+	•	Add a numeric field for Amount Spent
+	•	Add Update and Delete buttons per category
+	•	“Update” should:
+	•	Save the new value in MongoDB
+	•	Recalculate % usage
+	•	Update dashboard progress bars and Rivu Score logic
+	•	“Delete” should:
+	•	Remove the category from MongoDB
+	•	Refresh both UI views
+
+⸻
+
+D. THEME TOGGLE – PERSISTENCE + VISIBILITY
+
+Fix:
+	•	Add a light/dark mode toggle in:
+	•	/settings
+	•	Login page
+	•	Save theme preference to:
+	•	localStorage or
+	•	MongoDB under user profile
+	•	Ensure preference persists after login and applies on all pages
+	•	Light mode should follow this color scheme:
+	•	Background: #f5f7fa
+	•	Primary text: #1c1e21
+	•	Card background: #ffffff
+	•	Buttons: #2563eb with hover states
+
+⸻
+
+E. ACCOUNT SETTINGS CLEANUP
+
+Fixes:
+	•	Remove the Rivu Score description and any static placeholder score in /settings > account information
+	•	Ensure user data is pulled live or not shown at all
+
+⸻
+
+F. DEMOGRAPHIC SURVEY – SECURE STORAGE
+
+Fix:
+	•	Store demographic survey responses to MongoDB under the authenticated user
+	•	Data must be:
+	•	Stored securely
+	•	Used only to personalize experience
+	•	Not shared or exposed publicly
+	•	Optional legal notice:
+“We use your responses to personalize your experience. Data is private and never shared.”
+
+⸻
+
+G. FINAL QA CHECKLIST
+	1.	All demo/test buttons must be removed
+	2.	All pages must display helpful empty states, like:
+	•	“No transactions yet. Add one manually or link a bank.”
+	•	“No budget categories set. Create one to begin.”
+	3.	JWT authentication must work across all routes
+	•	Redirect unauthenticated users to /login
+	•	Clear localStorage or tokens on logout
+	4.	Every feature must be tested in both light and dark mode
+	•	No layout or visibility issues

@@ -57,6 +57,8 @@ type Transaction = {
   merchant: string;
   category: string;
   account: string;
+  source: 'manual' | 'plaid';
+  possibleDuplicate?: boolean;
 };
 
 type BudgetCategory = {
@@ -75,6 +77,7 @@ type TransactionFormData = {
   customCategory?: string;
   customAccount?: string;
   notes?: string;
+  source: 'manual' | 'plaid';
 };
 
 // List of accounts (in a real app, this would come from the database)
@@ -101,6 +104,7 @@ export default function TransactionsPage() {
     merchant: "",
     category: "",
     account: ACCOUNTS[0],
+    source: 'manual',
   });
   
   const { toast } = useToast();
@@ -192,6 +196,7 @@ export default function TransactionsPage() {
         amount: parseFloat(data.amount),
         date: new Date(data.date).toISOString(),
         type: data.type || 'expense',
+        source: data.source || 'manual',
       });
       return res.json();
     },
