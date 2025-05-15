@@ -151,7 +151,7 @@ export default function TransactionsPage() {
       }
       
       // Perform client-side validation
-      // Required fields: description (merchant), category, account, amount
+      // Required fields: description (merchant) and amount
       if (!data.amount || isNaN(parseFloat(data.amount)) || parseFloat(data.amount) <= 0) {
         throw new Error("Please enter a valid amount greater than 0");
       }
@@ -160,12 +160,15 @@ export default function TransactionsPage() {
         throw new Error("Please enter a description for the transaction");
       }
       
+      // Category and account are now optional but will use default values if missing
       if (!data.category) {
-        throw new Error("Please select a category for the transaction");
+        // Default category for expenses and income
+        data.category = data.type === 'expense' ? 'Uncategorized' : 'General Income';
       }
       
       if (!data.account) {
-        throw new Error("Please select an account for the transaction");
+        // Default account
+        data.account = 'Default Account';
       }
       
       // Date is optional, will default to today if not provided
@@ -234,7 +237,7 @@ export default function TransactionsPage() {
       }
       
       // Perform validation
-      // Required fields check for updates
+      // Required fields check for updates: only amount and merchant are required
       if (updates.amount !== undefined && (isNaN(parseFloat(updates.amount)) || parseFloat(updates.amount) <= 0)) {
         throw new Error("Please enter a valid amount greater than 0");
       }
@@ -243,12 +246,13 @@ export default function TransactionsPage() {
         throw new Error("Please enter a description for the transaction");
       }
       
+      // Category and account now get default values if missing
       if (updates.category !== undefined && !updates.category) {
-        throw new Error("Please select a category for the transaction");
+        updates.category = updates.type === 'income' ? 'General Income' : 'Uncategorized';
       }
       
       if (updates.account !== undefined && !updates.account) {
-        throw new Error("Please select an account for the transaction");
+        updates.account = 'Default Account';
       }
       
       // Date is optional, will default to current date if not provided

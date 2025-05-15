@@ -270,15 +270,36 @@ export default function BudgetSection() {
   return (
     <Card className="bg-card rounded-xl">
       <CardContent className="p-6">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-2">
           <h2 className="text-xl font-bold text-foreground">Monthly Budget</h2>
-          <Button 
-            variant="ghost" 
-            className="text-primary hover:underline text-sm font-medium flex items-center"
-            onClick={() => setIsAddDialogOpen(true)}
-          >
-            <i className="ri-add-line mr-1"></i> Add Category
-          </Button>
+          <div className="flex space-x-2 w-full md:w-auto">
+            <Button 
+              variant="outline" 
+              className="text-primary flex items-center text-sm w-full md:w-auto"
+              onClick={() => {
+                // If there are no categories, open add dialog instead
+                if (categories.length === 0) {
+                  setIsAddDialogOpen(true);
+                  return;
+                }
+                // Open quick update dialog for the first category
+                const firstCategory = categories[0];
+                setEditingCategory(firstCategory);
+                setNewSpentAmount(String(firstCategory.spentAmount));
+                setNewBudgetAmount(String(firstCategory.budgetAmount));
+                setIsEditCategoryDialogOpen(true);
+              }}
+            >
+              <i className="ri-edit-line mr-1"></i> Update Spending
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="text-primary hover:underline text-sm font-medium flex items-center whitespace-nowrap"
+              onClick={() => setIsAddDialogOpen(true)}
+            >
+              <i className="ri-add-line mr-1"></i> Add Category
+            </Button>
+          </div>
         </div>
 
         {renderBudgetCategories()}
@@ -336,7 +357,7 @@ export default function BudgetSection() {
         <Dialog open={isEditCategoryDialogOpen} onOpenChange={setIsEditCategoryDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Edit Budget Category</DialogTitle>
+              <DialogTitle>Update Budget</DialogTitle>
             </DialogHeader>
             {editingCategory && (
               <form onSubmit={(e) => {
@@ -362,33 +383,76 @@ export default function BudgetSection() {
                 }
               }}>
                 <div className="space-y-4 py-2">
-                  <div className="space-y-1">
-                    <Label>Category</Label>
-                    <p className="text-foreground font-medium">{editingCategory.name}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="budget-amount">Monthly Budget</Label>
-                    <Input
-                      id="budget-amount"
-                      placeholder={`Current: ${formatCurrency(editingCategory.budgetAmount)}`}
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={newBudgetAmount}
-                      onChange={(e) => setNewBudgetAmount(e.target.value)}
-                    />
-                  </div>
+                  {categories.length > 1 && (
+                    <div className="space-y-2">
+                      <Label htmlFor="category-select">Select Category</Label>
+                      <select
+                        id="category-select"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        value={editingCategory.id}
+                        onChange={(e) => {
+                          const selectedId = e.target.value;
+                          const selectedCategory = categories.find(cat => cat.id === selectedId);
+                          if (selectedCategory) {
+                            setEditingCategory(selectedCategory);
+                            setNewSpentAmount(String(selectedCategory.spentAmount));
+                            setNewBudgetAmount(String(selectedCategory.budgetAmount));
+                          }
+                        }}
+                      >
+                        {categories.map(cat => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  
+                  {categories.length === 1 && (
+                    <div className="space-y-1">
+                      <Label>Category</Label>
+                      <p className="text-foreground font-medium">{editingCategory.name}</p>
+                    </div>
+                  )}
+                  
                   <div className="space-y-2">
                     <Label htmlFor="spent-amount">Amount Spent</Label>
-                    <Input
-                      id="spent-amount"
-                      placeholder={`Current: ${formatCurrency(editingCategory.spentAmount)}`}
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={newSpentAmount}
-                      onChange={(e) => setNewSpentAmount(e.target.value)}
-                    />
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
+                      <Input
+                        id="spent-amount"
+                        className="pl-7"
+                        placeholder="Enter amount spent"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={newSpentAmount}
+                        onChange={(e) => setNewSpentAmount(e.target.value)}
+                        autoFocus
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Current: {formatCurrency(editingCategory.spentAmount)}
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="budget-amount">Monthly Budget</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
+                      <Input
+                        id="budget-amount"
+                        className="pl-7"
+                        placeholder="Enter budget amount"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={newBudgetAmount}
+                        onChange={(e) => setNewBudgetAmount(e.target.value)}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Current: {formatCurrency(editingCategory.budgetAmount)}
+                    </p>
                   </div>
                 </div>
                 <DialogFooter className="mt-4">
