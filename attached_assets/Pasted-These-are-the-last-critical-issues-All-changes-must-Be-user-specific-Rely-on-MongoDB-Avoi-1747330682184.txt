@@ -1,0 +1,89 @@
+These are the last critical issues. All changes must:
+	•	Be user-specific
+	•	Rely on MongoDB
+	•	Avoid local storage for persistent state
+	•	Support real-time updates and clean session isolation
+
+⸻
+
+1. Enable Editing of Transactions
+	•	Users must be able to edit existing transactions (amount, category, date, etc.) without deleting and recreating them.
+	•	Implement a PUT /api/transactions/:id route.
+	•	Ensure ownership is validated (users cannot edit other users’ transactions).
+	•	Update the frontend to:
+	•	Open an edit modal or inline form
+	•	Save edits to the backend
+	•	Reflect changes instantly in the UI
+
+⸻
+
+2. Fix Transaction Source Labeling
+	•	Add a source field to all transactions:
+	•	"manual" for user-entered
+	•	"plaid" for imported from linked accounts
+	•	In the transaction list UI:
+	•	Show “Entered Manually” if source === "manual"
+	•	Show “Bank Account” if source === "plaid"
+	•	Default any missing sources to "manual" unless clearly Plaid-linked.
+
+⸻
+
+3. Allow Backdating for Manual Transactions
+	•	Ensure the date picker allows selecting any past or current date.
+	•	Prevent future-dated transactions.
+	•	Save the selected date to MongoDB without defaulting to new Date().
+
+⸻
+
+4. Fix Rivu Score Real-Time Updates
+	•	Rivu Score must automatically recalculate and update:
+	•	After goal creation or completion
+	•	After budget or savings updates
+	•	After manual transaction entries
+	•	Do not require logout/login or page refresh to see the updated score.
+	•	Pull score directly from the backend — do not rely on cached or stale frontend state.
+
+⸻
+
+5. Add Optional Manual “Refresh Rivu Score” Button
+	•	Add a small “Refresh Score” button or icon near the Rivu Score display.
+	•	Tooltip: “Recalculate based on your latest progress”
+	•	Clicking this should:
+	•	Send POST to /api/rivu-score/recalculate
+	•	Then fetch the latest user data (/api/user) and update the UI
+	•	Debounce it to prevent abuse (e.g., limit to once every 30 seconds)
+	•	This is a fallback in case auto-refresh fails, or for power users
+
+⸻
+
+6. Fix AI Coach Data Accuracy
+	•	AI Coach (GPT) must use live, real data:
+	•	rivuScore
+	•	% of budget met
+	•	Goal completion ratio
+	•	Savings progress
+	•	Never use hardcoded or demo inputs
+	•	Pass a structured prompt to GPT, such as:
+
+Rivu Score: 68
+Budget Goals Met: 70%
+Savings Progress: 40%
+Goals Completed: 2 of 4
+Provide 1 tip to improve financial discipline.
+
+7. Fix Session Isolation and Security (CRITICAL)
+	•	On logout:
+	•	Fully clear localStorage, sessionStorage, and reset all frontend state
+	•	On login:
+	•	Fetch all data fresh from MongoDB using the authenticated user ID
+	•	Ensure no data from one user is shown to another
+	•	All API calls must be user-scoped server-side
+
+⸻
+
+✅ Summary of Deliverables:
+	•	Transactions are fully editable
+	•	Manual entries are correctly labeled and backdateable
+	•	Rivu Score updates automatically and via refresh button
+	•	AI Coach uses real, current data only
+	•	All sessions are isolated and secure — no cross-user leakage

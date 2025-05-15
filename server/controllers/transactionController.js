@@ -98,7 +98,7 @@ const createTransaction = async (req, res) => {
 // @access  Private
 const updateTransaction = async (req, res) => {
   try {
-    const { amount, merchant, category, account, type } = req.body;
+    const { amount, merchant, category, account, type, date, notes, source } = req.body;
 
     const transaction = await Transaction.findById(req.params.id);
 
@@ -154,11 +154,14 @@ const updateTransaction = async (req, res) => {
     }
 
     // Update transaction fields
-    if (amount !== undefined) transaction.amount = amount;
+    if (amount !== undefined) transaction.amount = parseFloat(amount);
     if (merchant !== undefined) transaction.merchant = merchant;
     if (category !== undefined) transaction.category = category;
     if (account !== undefined) transaction.account = account;
     if (type !== undefined) transaction.type = type;
+    if (date !== undefined) transaction.date = new Date(date);
+    if (notes !== undefined) transaction.notes = notes;
+    if (source !== undefined) transaction.source = source;
 
     const updatedTransaction = await transaction.save();
     res.json(updatedTransaction);

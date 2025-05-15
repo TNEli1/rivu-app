@@ -28,6 +28,26 @@ const getRivuScore = async (req, res) => {
   }
 };
 
+// @desc    Recalculate user's Rivu Score
+// @route   POST /api/rivu-score/recalculate
+// @access  Private
+const recalculateRivuScore = async (req, res) => {
+  try {
+    // Force recalculation of the score
+    const rivuScore = await calculateRivuScore(req.user._id);
+    
+    res.json({
+      score: rivuScore.score,
+      factors: rivuScore.factorsWithRatings,
+      rawFactors: rivuScore.factors,
+      lastUpdated: rivuScore.updatedAt
+    });
+  } catch (error) {
+    console.error('Error recalculating Rivu Score:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 // Calculate Rivu Score based on user's financial data
 async function calculateRivuScore(userId) {
   try {
@@ -129,5 +149,6 @@ async function calculateRivuScore(userId) {
 
 module.exports = {
   getRivuScore,
+  recalculateRivuScore,
   calculateRivuScore
 };

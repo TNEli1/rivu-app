@@ -37,7 +37,7 @@ const {
   deleteGoal
 } = require('../controllers/goalController');
 
-const { getRivuScore } = require('../controllers/rivuScoreController');
+const { getRivuScore, recalculateRivuScore } = require('../controllers/rivuScoreController');
 const { getAdvice } = require('../controllers/adviceController');
 
 // Use cookie parser to read JWT cookies
@@ -91,8 +91,9 @@ router.route('/goals/:id')
   .put(protect, updateGoal)
   .delete(protect, deleteGoal);
 
-// Rivu Score Route
+// Rivu Score Routes
 router.get('/rivu-score', protect, getRivuScore);
+router.post('/rivu-score/recalculate', protect, recalculateRivuScore);
 
 // AI Advice Route
 router.post('/advice', protect, getAdvice);
