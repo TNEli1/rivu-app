@@ -24,6 +24,7 @@ const {
 
 const {
   getTransactions,
+  getTransactionSummary,
   createTransaction,
   updateTransaction,
   deleteTransaction,
@@ -74,6 +75,9 @@ router.route('/budgets/:id')
 router.route('/transactions')
   .get(protect, getTransactions)
   .post(protect, createTransaction);
+
+// Transaction summary endpoint - must come before :id routes to avoid being masked
+router.get('/transactions/summary', protect, getTransactionSummary);
 
 router.route('/transactions/:id')
   .put(protect, updateTransaction)

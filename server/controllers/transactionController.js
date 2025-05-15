@@ -520,8 +520,119 @@ const markAsNotDuplicate = async (req, res) => {
   }
 };
 
+// @desc    Get transactions summary (monthly metrics)
+// @route   GET /api/transactions/summary
+// @access  Private
+const getTransactionSummary = async (req, res) => {
+  try {
+    // Verify user ID exists from authenticated session
+    if (!req.user || !req.user._id) {
+      console.error('Transaction summary failed: No authenticated user ID available');
+      return res.status(401).json({ 
+        message: 'Authentication required. User ID not found in session.' 
+      });
+    }
+
+    const userId = req.user._id;
+    
+    try {
+      console.log(`Fetching transaction summary for user: ${userId}`);
+      
+      // Get transactions from MongoDB for this user only
+      const transactions = await Transaction.find({ 
+        userId: userId  // Explicitly use the userId from authenticated session
+      });
+      
+      // Log transaction count for debugging
+      console.log(`Found ${transactions.length} transactions for summary calculation for user: ${userId}`);
+      
+      // Get current month and previous month
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      
+      // Filter transactions for current month
+      const currentMonthTransactions = transactions.filter(t => {
+        const tDate = new Date(t.date);
+        return tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear;
+      });
+      
+      // Filter transactions for previous month
+      const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+      const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+      const prevMonthTransactions = transactions.filter(t => {
+        const tDate = new Date(t.date);
+        return tDate.getMonth() === prevMonth && tDate.getFullYear() === prevYear;
+      });
+      
+      // Calculate current month totals
+      const currentMonthSpending = currentMonthTransactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + t.amount, 0);
+        
+      const currentMonthIncome = currentMonthTransactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + t.amount, 0);
+        
+      const currentMonthSavings = currentMonthIncome - currentMonthSpending;
+      
+      // Calculate previous month totals
+      const prevMonthSpending = prevMonthTransactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + t.amount, 0);
+        
+      const prevMonthIncome = prevMonthTransactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + t.amount, 0);
+        
+      const prevMonthSavings = prevMonthIncome - prevMonthSpending;
+      
+      // Calculate percent changes
+      const calculateChange = (current, previous) => {
+        if (previous === 0) return 0;
+        return Number(((current - previous) / previous * 100).toFixed(1));
+      };
+      
+      const spendingChange = calculateChange(currentMonthSpending, prevMonthSpending);
+      const incomeChange = calculateChange(currentMonthIncome, prevMonthIncome);
+      const savingsChange = calculateChange(currentMonthSavings, prevMonthSavings);
+      
+      // Create the summary object
+      const summary = {
+        monthlySpending: currentMonthSpending,
+        monthlyIncome: currentMonthIncome,
+        monthlySavings: currentMonthSavings > 0 ? currentMonthSavings : 0,
+        spendingChange: spendingChange,
+        incomeChange: incomeChange,
+        savingsChange: savingsChange
+      };
+      
+      console.log(`Generated transaction summary for user ${userId}:`, {
+        spending: summary.monthlySpending,
+        income: summary.monthlyIncome,
+        savings: summary.monthlySavings,
+      });
+      
+      res.json(summary);
+    } catch (queryError) {
+      console.error('MongoDB query error when generating transaction summary:', queryError);
+      res.status(500).json({ 
+        message: 'Error retrieving transaction data for summary', 
+        error: queryError.message 
+      });
+    }
+  } catch (error) {
+    console.error('Error processing transaction summary:', error);
+    res.status(500).json({ 
+      message: 'Server error generating transaction summary', 
+      error: error.message 
+    });
+  }
+};
+
 module.exports = {
   getTransactions,
+  getTransactionSummary,
   createTransaction,
   updateTransaction,
   deleteTransaction,
