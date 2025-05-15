@@ -5,8 +5,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatCurrency, calculatePercentage, formatPercentage, getStatusColor, getProgressColor, getCategoryIconAndColor } from "@/lib/utils";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { Pencil, Trash2, Loader2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export type BudgetCategory = {
   id: string;
@@ -16,11 +29,16 @@ export type BudgetCategory = {
 };
 
 export default function BudgetSection() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditSpentDialogOpen, setIsEditSpentDialogOpen] = useState(false);
   const [newCategory, setNewCategory] = useState({ name: "", budgetAmount: "" });
-
+  const [editingCategory, setEditingCategory] = useState<BudgetCategory | null>(null);
+  const [newSpentAmount, setNewSpentAmount] = useState("");
+  
   // Fetch budget categories
-  const { data: categories = [], isLoading, refetch } = useQuery({
+  const { data: categories = [], isLoading, refetch } = useQuery<BudgetCategory[]>({
     queryKey: ["/api/budget-categories"],
   });
 
@@ -30,10 +48,72 @@ export default function BudgetSection() {
       return apiRequest("POST", "/api/budget-categories", categoryData);
     },
     onSuccess: () => {
-      refetch();
+      queryClient.invalidateQueries({ queryKey: ["/api/budget-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/rivu-score"] });
       setIsAddDialogOpen(false);
       setNewCategory({ name: "", budgetAmount: "" });
+      toast({
+        title: "Budget category added",
+        description: "Your new budget category has been created.",
+      });
     },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to add category",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Update spent amount
+  const updateSpentMutation = useMutation({
+    mutationFn: async ({ id, spentAmount }: { id: string, spentAmount: number }) => {
+      const res = await apiRequest("PUT", `/api/budget-categories/${id}`, { 
+        spentAmount 
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/budget-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/rivu-score"] });
+      setIsEditSpentDialogOpen(false);
+      setEditingCategory(null);
+      toast({
+        title: "Spent amount updated",
+        description: "Your budget category has been updated successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update category",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Delete budget category
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("DELETE", `/api/budget-categories/${id}`);
+      return res.status === 204;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/budget-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/rivu-score"] });
+      toast({
+        title: "Budget category deleted",
+        description: "Your budget category has been removed successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to delete category",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -94,9 +174,56 @@ export default function BudgetSection() {
                       </div>
                       <span className="font-medium">{category.name}</span>
                     </div>
-                    <div className="text-right">
-                      <span className="font-medium">{formatCurrency(category.spentAmount)}</span>
-                      <span className="text-muted-foreground">/{formatCurrency(category.budgetAmount)}</span>
+                    <div className="text-right flex items-center space-x-2">
+                      <div>
+                        <span className="font-medium">{formatCurrency(category.spentAmount)}</span>
+                        <span className="text-muted-foreground">/{formatCurrency(category.budgetAmount)}</span>
+                      </div>
+                      <div className="flex space-x-1">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6"
+                          onClick={() => {
+                            setEditingCategory(category);
+                            setNewSpentAmount(String(category.spentAmount));
+                            setIsEditSpentDialogOpen(true);
+                          }}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-6 w-6 text-destructive"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently delete the "{category.name}" budget category.
+                                This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                onClick={() => deleteMutation.mutate(category.id)}
+                              >
+                                {deleteMutation.isPending ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : 'Delete'}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
                   </div>
                   <div className="h-2 bg-border/40 rounded-full overflow-hidden">
@@ -164,6 +291,65 @@ export default function BudgetSection() {
                 </Button>
               </DialogFooter>
             </form>
+          </DialogContent>
+        </Dialog>
+        
+        {/* Edit Spent Amount Dialog */}
+        <Dialog open={isEditSpentDialogOpen} onOpenChange={setIsEditSpentDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Update Spent Amount</DialogTitle>
+            </DialogHeader>
+            {editingCategory && (
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const amount = parseFloat(newSpentAmount);
+                if (!isNaN(amount) && amount >= 0) {
+                  updateSpentMutation.mutate({
+                    id: editingCategory.id,
+                    spentAmount: amount
+                  });
+                }
+              }}>
+                <div className="space-y-4 py-2">
+                  <div className="space-y-1">
+                    <Label>Category</Label>
+                    <p className="text-foreground font-medium">{editingCategory.name}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Monthly Budget</Label>
+                    <p className="text-foreground font-medium">{formatCurrency(editingCategory.budgetAmount)}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="spent-amount">Amount Spent</Label>
+                    <Input
+                      id="spent-amount"
+                      placeholder="Enter amount spent"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={newSpentAmount}
+                      onChange={(e) => setNewSpentAmount(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <DialogFooter className="mt-4">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setIsEditSpentDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={!newSpentAmount || updateSpentMutation.isPending}
+                  >
+                    {updateSpentMutation.isPending ? "Updating..." : "Update Spent Amount"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            )}
           </DialogContent>
         </Dialog>
       </CardContent>

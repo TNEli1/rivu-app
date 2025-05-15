@@ -1,0 +1,85 @@
+Make the following fixes to remove remaining demo logic and finalize full user functionality for production. Every button, form, and API call must connect to real MongoDB or Plaid API data. No placeholder or simulated content should remain.
+
+⸻
+
+A. BUDGET PAGE & DASHBOARD — “AMOUNT SPENT” + BUTTON FIXES
+
+Issue:
+	•	“Update Spent” button is present only on the /budget page, but does not save real data (demo only)
+
+Fixes:
+	1.	Add fully functional Update Spent button to:
+	•	/budget page
+	•	Dashboard budget section (each category)
+	2.	Add Delete Category button to both locations as well
+	3.	Functionality for both buttons:
+	•	Update Spent:
+	•	Save updated spent value to MongoDB
+	•	Recalculate progress bar
+	•	Sync with dashboard + score logic
+	•	Delete:
+	•	Remove category from MongoDB
+	•	Immediately update all affected UI components
+
+⸻
+
+B. MANUAL TRANSACTION ENTRY — FORM VALIDATION FIX
+
+Issue:
+	•	Transaction form still throws validation error
+
+Fix:
+	•	Make the following fields required:
+	•	description
+	•	category
+	•	account
+	•	amount
+	•	Make type and date optional with sensible defaults:
+	•	type: default = “expense”
+	•	date: default = current date
+	•	Validate amount > 0, allow freeform text for all other inputs
+	•	Save all data to MongoDB under current user
+
+⸻
+
+C. ACCOUNT SETTINGS — REMOVE RIVU SCORE INFO
+
+Fix:
+	•	In /account or /settings → account information section:
+	•	Remove any references to:
+	•	“Rivu Score”
+	•	Descriptions, score boxes, or placeholder data about how it works
+
+⸻
+
+D. LINK BANK ACCOUNT — CONNECT PLAID API PROPERLY
+
+Issue:
+	•	“Link Bank Account” buttons on /transactions and /settings > external accounts still:
+	•	Show “coming soon”
+	•	Use demo simulations
+	•	Rely on “simulate account connected” button
+
+Fixes:
+	1.	Remove the “Simulate Connected Accounts” button completely
+	•	Do not replace it
+	2.	Update “Link Bank Account” buttons to:
+	•	Trigger actual Plaid Link sandbox flow using API keys in Replit secrets
+	•	On success, retrieve and store:
+	•	access_token
+	•	item_id
+	•	Linked account metadata (e.g., name, mask, subtype)
+	3.	After linking:
+	•	Show confirmation: “Bank account linked successfully”
+	•	If error: “Connection failed. Please try again.”
+
+⸻
+
+E. Final QA Notes
+	•	All data must be saved to and loaded from the authenticated user’s MongoDB record
+	•	Eliminate any leftover “demo mode” elements across:
+	•	Budget
+	•	Transactions
+	•	Score
+	•	External accounts
+	•	Validate everything works in both light mode and dark mode
