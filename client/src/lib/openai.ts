@@ -4,6 +4,7 @@ export type FinanceAdvice = {
   message: string;
   timestamp: Date;
   isLoading?: boolean;
+  isUser?: boolean;
 };
 
 // Request AI-powered finance advice from the server

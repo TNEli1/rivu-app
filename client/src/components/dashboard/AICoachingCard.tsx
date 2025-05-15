@@ -63,7 +63,23 @@ export default function AICoachingCard() {
   const handleSendQuestion = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputValue.trim()) {
-      sendQuestion.mutate(inputValue);
+      // Add user message immediately
+      const userMessage: FinanceAdvice = {
+        message: inputValue,
+        timestamp: new Date(),
+        isUser: true
+      };
+      
+      setMessages(prev => [...prev, userMessage]);
+      
+      // Store the question before clearing
+      const question = inputValue;
+      
+      // Clear input right away for better UX
+      setInputValue("");
+      
+      // Send question to get AI response
+      sendQuestion.mutate(question);
     }
   };
 
@@ -83,17 +99,31 @@ export default function AICoachingCard() {
           </Button>
         </div>
         
-        <div className="max-h-[300px] overflow-y-auto mb-4">
+        <div className="max-h-[300px] overflow-y-auto mb-4 px-1">
           {messages.map((message, index) => (
-            <div className="flex mb-4" key={index}>
-              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                <i className="ri-robot-line text-primary"></i>
-              </div>
-              <div className="ml-4 p-4 bg-background rounded-tr-xl rounded-br-xl rounded-bl-xl">
-                <p className={`text-sm text-foreground ${message.isLoading ? 'animate-pulse-slow' : ''}`}>
+            <div className={`flex mb-4 ${message.isUser ? 'justify-end' : ''}`} key={index}>
+              {!message.isUser && (
+                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                  <i className="ri-robot-line text-primary"></i>
+                </div>
+              )}
+              <div 
+                className={`p-4 max-w-[80%] ${message.isUser 
+                  ? 'bg-primary text-white rounded-tl-xl rounded-tr-xl rounded-bl-xl ml-auto' 
+                  : 'ml-4 bg-background rounded-tr-xl rounded-br-xl rounded-bl-xl'}`}
+              >
+                <p className={`text-sm ${message.isLoading ? 'animate-pulse-slow' : ''}`}>
                   {message.message}
                 </p>
+                <div className="text-xs mt-2 opacity-70 text-right">
+                  {message.timestamp?.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                </div>
               </div>
+              {message.isUser && (
+                <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0 ml-2">
+                  <i className="ri-user-line text-white"></i>
+                </div>
+              )}
             </div>
           ))}
           <div ref={messagesEndRef} />
@@ -103,11 +133,12 @@ export default function AICoachingCard() {
               <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
                 <i className="ri-robot-line text-primary"></i>
               </div>
-              <div className="ml-4 p-4 bg-background rounded-tr-xl rounded-br-xl rounded-bl-xl">
-                <div className="animate-pulse flex space-x-2">
-                  <div className="h-2 w-2 rounded-full bg-muted"></div>
-                  <div className="h-2 w-2 rounded-full bg-muted"></div>
-                  <div className="h-2 w-2 rounded-full bg-muted"></div>
+              <div className="ml-4 p-4 bg-background rounded-tr-xl rounded-br-xl rounded-bl-xl animate-pulse-slow">
+                <div className="flex space-x-2 items-center">
+                  <div className="h-2 w-2 rounded-full bg-primary/40 animate-bounce"></div>
+                  <div className="h-2 w-2 rounded-full bg-primary/40 animate-bounce [animation-delay:0.2s]"></div>
+                  <div className="h-2 w-2 rounded-full bg-primary/40 animate-bounce [animation-delay:0.4s]"></div>
+                  <span className="text-xs ml-2 text-muted-foreground">Coach is typing...</span>
                 </div>
               </div>
             </div>
