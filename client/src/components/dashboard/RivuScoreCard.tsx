@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 
 type ScoreFactor = {
   name: string;
@@ -117,15 +118,16 @@ export default function RivuScoreCard() {
                 <p className="text-sm text-muted-foreground">
                   Your Rivu Score is calculated based on your spending habits, budget adherence, and financial activity.
                 </p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-3"
-                  onClick={() => window.location.href = '/transactions?action=add'}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Transaction
-                </Button>
+                <Link href="/transactions?action=add">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-3"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Transaction
+                  </Button>
+                </Link>
               </div>
             ) : (
               scoreFactors && scoreFactors.map((factor, index) => (
