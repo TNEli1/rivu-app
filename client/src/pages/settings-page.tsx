@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, LogOut, CreditCard, Moon, Sun, ClipboardCheck } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useTheme } from "@/hooks/use-theme";
 import { 
   Dialog, 
   DialogContent, 
@@ -46,8 +47,8 @@ type PasswordFormData = {
 
 export default function SettingsPage() {
   const { user, logoutMutation, updateDemographicsMutation } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
-  const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
   const [skipSurvey, setSkipSurvey] = useState(user?.demographics?.skipPermanently || false);
   const [isConnectBankOpen, setIsConnectBankOpen] = useState(false);
   const [passwordFormData, setPasswordFormData] = useState<PasswordFormData>({
@@ -82,13 +83,34 @@ export default function SettingsPage() {
     }
   });
 
-  // Connect bank account mutation (simulated)
+  // Connect bank account mutation with Plaid
   const connectBankMutation = useMutation({
-    mutationFn: async () => {
-      // This would be replaced with Plaid Link initialization
-      // For now, we'll simulate a successful connection
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      return { success: true };
+    mutationFn: async (bank: string) => {
+      // In a real implementation, this would call a backend endpoint to create a link token
+      // and initialize Plaid Link
+      try {
+        const res = await apiRequest('POST', '/api/plaid/link-token', { bank });
+        const linkToken = await res.json();
+        
+        if (!linkToken.link_token) {
+          throw new Error("Bank connection failed. No token received.");
+        }
+        
+        // In a real implementation, this would open Plaid Link
+        // Simulate sandbox authentication
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // After Plaid Link success, exchange public token for access token
+        const exchangeRes = await apiRequest('POST', '/api/plaid/exchange-token', { 
+          public_token: "simulated_public_token",
+          bank_name: bank
+        });
+        
+        return exchangeRes.json();
+      } catch (error) {
+        console.error("Plaid connection error:", error);
+        throw new Error("Bank connection failed. " + error.message);
+      }
     },
     onSuccess: () => {
       setIsConnectBankOpen(false);
@@ -133,22 +155,11 @@ export default function SettingsPage() {
     });
   };
 
-  const toggleDarkMode = () => {
-    const newMode = !darkMode;
-    setDarkMode(newMode);
-    
-    // Apply theme change to document
-    const root = window.document.documentElement;
-    if (newMode) {
-      root.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      root.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
+  const handleThemeToggle = () => {
+    toggleTheme();
     
     toast({
-      title: newMode ? "Dark mode enabled" : "Light mode enabled",
+      title: theme === 'light' ? "Dark mode enabled" : "Light mode enabled",
       description: `The application theme has been updated.`,
     });
   };
@@ -242,7 +253,7 @@ export default function SettingsPage() {
                               key={bank} 
                               variant="outline" 
                               className="justify-start h-16"
-                              onClick={() => connectBankMutation.mutate()}
+                              onClick={() => connectBankMutation.mutate(bank)}
                             >
                               {bank}
                             </Button>
@@ -280,7 +291,7 @@ export default function SettingsPage() {
                 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    {darkMode ? (
+                    {theme === 'dark' ? (
                       <Moon className="h-5 w-5" />
                     ) : (
                       <Sun className="h-5 w-5" />
@@ -288,8 +299,8 @@ export default function SettingsPage() {
                     <span>Dark Mode</span>
                   </div>
                   <Switch 
-                    checked={darkMode} 
-                    onCheckedChange={toggleDarkMode} 
+                    checked={theme === 'dark'} 
+                    onCheckedChange={handleThemeToggle} 
                   />
                 </div>
                 

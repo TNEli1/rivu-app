@@ -54,6 +54,9 @@ async function initializeRoutes() {
     const adviceController = await importController('../controllers/adviceController.js');
     const { getAdvice } = adviceController;
     
+    const plaidController = await importController('../controllers/plaidController.js');
+    const { createLinkToken, exchangePublicToken, getConnectedAccounts } = plaidController;
+    
     // Set up all routes
     
     // Auth Routes
