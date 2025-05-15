@@ -213,7 +213,7 @@ export default function TransactionsSection() {
             <Button 
               variant="ghost" 
               className="text-primary hover:underline text-sm font-medium"
-              onClick={() => setLocation ? setLocation('/transactions') : window.location.href = '/transactions'}
+              onClick={() => setLocation('/transactions')}
             >
               View All
             </Button>
