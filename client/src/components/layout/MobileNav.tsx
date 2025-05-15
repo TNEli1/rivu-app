@@ -14,10 +14,11 @@ export default function MobileNav() {
 
   // Create nav items based on authentication status
   const mobileNavItems: NavItem[] = [
-    { title: "Home", href: "/", icon: "ri-dashboard-fill" },
+    { title: "Dashboard", href: "/", icon: "ri-dashboard-line" },
     { title: "Budget", href: "/budget", icon: "ri-wallet-3-line" },
     { title: "Transactions", href: "/transactions", icon: "ri-exchange-dollar-line" },
-    { title: "Account", href: "/account", icon: "ri-user-line" },
+    { title: "Insights", href: "/insights", icon: "ri-line-chart-line" },
+    { title: "Account", href: "/account", icon: "ri-user-settings-line" },
   ];
 
   // Handle navigation manually to avoid nesting issues with Link

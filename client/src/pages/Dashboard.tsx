@@ -57,25 +57,22 @@ export default function Dashboard() {
           </Button>
         </header>
         
-        {/* Welcome Message */}
-        <div className="mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-            Welcome, {user?.firstName || user?.username || 'there'}!
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Here's your financial overview for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-          </p>
-        </div>
-
         {/* Welcome Section */}
         <section className="mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground">Welcome back, Jamie</h1>
-              <p className="text-muted-foreground mt-1">Here's your financial snapshot for July</p>
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+                Welcome back, {user?.firstName || user?.username || 'there'}
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                Here's your financial overview for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </p>
             </div>
             <div className="mt-4 md:mt-0">
-              <Button className="bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-lg font-medium flex items-center">
+              <Button 
+                className="bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-lg font-medium flex items-center"
+                onClick={() => setLocation('/transactions/new')}
+              >
                 <i className="ri-add-line mr-1.5"></i> Add Transaction
               </Button>
             </div>

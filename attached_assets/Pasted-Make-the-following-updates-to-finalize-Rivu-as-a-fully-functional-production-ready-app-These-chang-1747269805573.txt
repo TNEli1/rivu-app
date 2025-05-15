@@ -1,0 +1,89 @@
+Make the following updates to finalize Rivu as a fully functional, production-ready app. These changes must fully remove all demo logic, ensure proper data handling, and complete the user-facing experience.
+
+⸻
+
+A. Remove All Hardcoded Content
+	•	On the dashboard, remove any placeholder messages like:
+“Welcome back, Jamie. Here’s your financial snapshot for July”
+	•	Replace with dynamic user-specific content:
+	•	Welcome back, {user.name}
+	•	Rivu Score
+	•	GPT-generated advice
+	•	Budget summary pulled from actual user data
+
+⸻
+
+B. Sidebar Navigation — Pages & Features
+
+Ensure the sidebar is fully functional and routes correctly to the following pages:
+
+Route	Required Features
+/dashboard	Rivu Score, smart advice, budget summary
+/budget	Add/edit/delete categories, live usage tracking
+/transactions	List + filter transactions (pulled from Plaid API or manual entries)
+/insights	GPT-powered advice, financial performance breakdown
+/account	Profile info (email, username), allow username update if unique
+/settings	Change password (optional), dark mode, logout, Plaid account management
+
+•	Each page must be implemented, routed, and display dynamic user data from MongoDB
+
+⸻
+
+C. Budget & Transactions Logic
+
+Budget Page
+	•	Users can:
+	•	Add new categories
+	•	Set/edit limits
+	•	View monthly usage progress bars
+
+Transactions Page
+	•	Pull live or sandbox transactions from the Plaid API
+	•	Simulate with sandbox for now
+	•	Connect through existing PLAID_CLIENT_ID, PLAID_SECRET, etc.
+	•	Include fallback support: users can enter transactions manually
+	•	Show transactions in a clean table:
+	•	Date, merchant, amount, assigned category
+	•	Allow:
+	•	Filtering
+	•	Manual transaction editing
+	•	Category assignment
+
+⸻
+
+D. Plaid Integration Setup
+	•	Add a “Connect Bank Account” button
+	•	Place it in /settings or a /connect-bank page
+	•	Trigger Plaid Link modal (sandbox mode)
+	•	Store access_token and account metadata in MongoDB
+	•	Allow users to continue without linking a bank account — all features must work with manual data entry if Plaid is skipped
+
+⸻
+
+E. Survey Flow Fix
+	•	On survey page, add:
+	•	A “Do not show again” checkbox
+	•	If selected:
+	•	Set surveyCompleted = true in MongoDB immediately
+	•	Skip the survey in future logins
+
+⸻
+
+F. Username Uniqueness + Update Option
+	•	On registration:
+	•	Validate username and email are unique
+	•	Return 409 Conflict if either is already used
+	•	In /account page:
+	•	Allow user to update their username
+	•	Only save change if new username is not taken
+
+⸻
+
+G. Final QA Requirements
+	•	All data (budgets, transactions, score, advice, profile) must come from:
+	•	MongoDB
+	•	Plaid API (sandbox)
+	•	Manual user inputs (if bank not connected)
+	•	No null, undefined, or demo data should remain
+	•	All routes must be authenticated
+	•	UI must be responsive, clean, and error-tolerant

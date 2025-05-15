@@ -78,7 +78,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newCategory = await storage.createBudgetCategory({
         userId,
         name: validated.name,
-        budgetAmount: validated.budgetAmount,
+        budgetAmount: validated.budgetAmount.toString(),
+        spentAmount: "0", // Initialize with zero spent
       });
       
       res.status(201).json(newCategory);
@@ -281,6 +282,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       ]
     });
+  });
+  
+  // Transaction Summary API
+  app.get("/api/transactions/summary", async (req, res) => {
+    try {
+      const userId = getCurrentUserId();
+      const transactions = await storage.getTransactions(userId);
+      
+      // Get current month and previous month
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      
+      // Filter transactions for current month
+      const currentMonthTransactions = transactions.filter(t => {
+        const tDate = new Date(t.date);
+        return tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear;
+      });
+      
+      // Filter transactions for previous month
+      const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+      const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+      const prevMonthTransactions = transactions.filter(t => {
+        const tDate = new Date(t.date);
+        return tDate.getMonth() === prevMonth && tDate.getFullYear() === prevYear;
+      });
+      
+      // Calculate current month totals
+      const currentMonthSpending = currentMonthTransactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
+        
+      const currentMonthIncome = currentMonthTransactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
+        
+      const currentMonthSavings = currentMonthIncome - currentMonthSpending;
+      
+      // Calculate previous month totals
+      const prevMonthSpending = prevMonthTransactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
+        
+      const prevMonthIncome = prevMonthTransactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
+        
+      const prevMonthSavings = prevMonthIncome - prevMonthSpending;
+      
+      // Calculate percent changes
+      const calculateChange = (current: number, previous: number) => {
+        if (previous === 0) return 0;
+        return Number(((current - previous) / previous * 100).toFixed(1));
+      };
+      
+      const spendingChange = calculateChange(currentMonthSpending, prevMonthSpending);
+      const incomeChange = calculateChange(currentMonthIncome, prevMonthIncome);
+      const savingsChange = calculateChange(currentMonthSavings, prevMonthSavings);
+      
+      res.json({
+        monthlySpending: currentMonthSpending,
+        monthlyIncome: currentMonthIncome,
+        monthlySavings: currentMonthSavings > 0 ? currentMonthSavings : 0,
+        spendingChange: spendingChange,
+        incomeChange: incomeChange,
+        savingsChange: savingsChange
+      });
+    } catch (error) {
+      console.error('Error calculating transaction summary:', error);
+      res.status(500).json({ message: 'Failed to calculate transaction summary' });
+    }
+  });
+  
+  // Goals Summary API
+  app.get("/api/goals/summary", async (req, res) => {
+    try {
+      // This would connect to a goals collection in MongoDB
+      // For now we'll simulate with in-memory data
+      
+      const activeGoals = 3; // This would be a count from the database
+      const totalProgress = 60; // This would be calculated from actual goals
+      
+      res.json({
+        activeGoals: activeGoals,
+        totalProgress: totalProgress
+      });
+    } catch (error) {
+      console.error('Error fetching goals summary:', error);
+      res.status(500).json({ message: 'Failed to fetch goals summary' });
+    }
   });
 
   // Financial advice API using OpenAI
