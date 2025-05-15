@@ -54,12 +54,7 @@ const userSchema = new mongoose.Schema(
     lockUntil: {
       type: Date,
     },
-    resetPasswordToken: {
-      type: String,
-    },
-    resetPasswordExpires: {
-      type: Date,
-    },
+    // Fields for password reset functionality
     demographics: {
       ageRange: String,
       incomeBracket: String,

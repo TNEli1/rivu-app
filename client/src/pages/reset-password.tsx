@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, CheckCircle2, X, AlertCircle } from "lucide-react";
 import { Link, useLocation, useParams } from "wouter";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function ResetPasswordPage() {
   const { toast } = useToast();

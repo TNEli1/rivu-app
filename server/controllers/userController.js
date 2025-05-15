@@ -514,7 +514,7 @@ const resetPassword = async (req, res) => {
       email: user.email,
       firstName: user.firstName || '',
       lastName: user.lastName || '',
-      token,
+      token: authToken,
       code: 'PASSWORD_RESET_SUCCESS'
     });
     
