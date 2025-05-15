@@ -22,7 +22,7 @@ const getTransactions = async (req, res) => {
 // @access  Private
 const createTransaction = async (req, res) => {
   try {
-    const { amount, merchant, category, account, type = 'expense', date, notes } = req.body;
+    const { amount, merchant, category, account, type = 'expense', date, notes, source = 'manual' } = req.body;
 
     // Validate required fields with specific error messages
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
@@ -37,14 +37,35 @@ const createTransaction = async (req, res) => {
       });
     }
 
+    // Check for potential duplicates before creating transaction
+    const transactionDate = date ? new Date(date) : new Date();
+    
+    // Set date range to check for duplicates (1 day before and after)
+    const oneDayMs = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    const startDate = new Date(transactionDate.getTime() - oneDayMs);
+    const endDate = new Date(transactionDate.getTime() + oneDayMs);
+    
+    // Look for transactions with same amount and similar merchant within date range
+    const similarTransactions = await Transaction.find({
+      userId: req.user._id,
+      amount: parseFloat(amount),
+      date: { $gte: startDate, $lte: endDate },
+      merchant: { $regex: new RegExp(merchant.substring(0, 5), 'i') } // Match on first 5 chars of merchant
+    });
+    
+    // Flag as possible duplicate if similar transactions found
+    const possibleDuplicate = similarTransactions.length > 0;
+    
     // Create transaction with validated data
     const transactionData = {
       userId: req.user._id,
       amount: parseFloat(amount),
       merchant,
       type,
-      date: date ? new Date(date) : new Date(),
-      notes
+      date: transactionDate,
+      notes,
+      source,
+      possibleDuplicate
     };
 
     // Add optional fields if provided
@@ -184,9 +205,37 @@ const deleteTransaction = async (req, res) => {
   }
 };
 
+// @desc    Mark a transaction as not a duplicate
+// @route   PUT /api/transactions/:id/not-duplicate
+// @access  Private
+const markAsNotDuplicate = async (req, res) => {
+  try {
+    const transaction = await Transaction.findById(req.params.id);
+
+    if (!transaction) {
+      return res.status(404).json({ message: 'Transaction not found' });
+    }
+
+    // Check if transaction belongs to user
+    if (transaction.userId.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ message: 'Not authorized' });
+    }
+
+    // Update the duplicate flag
+    transaction.possibleDuplicate = false;
+    const updatedTransaction = await transaction.save();
+    
+    res.json(updatedTransaction);
+  } catch (error) {
+    console.error('Error marking transaction as not duplicate:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 module.exports = {
   getTransactions,
   createTransaction,
   updateTransaction,
   deleteTransaction,
+  markAsNotDuplicate,
 };

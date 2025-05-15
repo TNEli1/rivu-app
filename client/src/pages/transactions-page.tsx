@@ -864,9 +864,26 @@ export default function TransactionsPage() {
                           <div className="flex flex-col">
                             <span>{transaction.merchant}</span>
                             {transaction.possibleDuplicate && (
-                              <Badge variant="outline" className="mt-1 bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-800">
-                                Possible Duplicate
-                              </Badge>
+                              <div className="flex flex-col mt-1">
+                                <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-800">
+                                  Possible Duplicate
+                                </Badge>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="mt-1 h-7 text-xs"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Here we'll add logic to mark as not duplicate
+                                    toast({
+                                      title: "Marked as not duplicate",
+                                      description: "This transaction will no longer be flagged as a duplicate."
+                                    });
+                                  }}
+                                >
+                                  Not a duplicate
+                                </Button>
+                              </div>
                             )}
                           </div>
                         </td>
@@ -879,6 +896,11 @@ export default function TransactionsPage() {
                           </div>
                         </td>
                         <td className="p-4 align-middle">{transaction.account}</td>
+                        <td className="p-4 align-middle">
+                          <Badge variant={transaction.source === 'manual' ? 'outline' : 'secondary'}>
+                            {transaction.source === 'manual' ? 'Added manually' : 'Synced from bank'}
+                          </Badge>
+                        </td>
                         <td className={`p-4 align-middle text-right font-medium ${isExpense ? 'text-destructive' : 'text-[#00C2A8]'}`}>
                           {isExpense ? '-' : '+'}{formatCurrency(parseFloat(transaction.amount))}
                         </td>

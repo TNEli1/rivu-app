@@ -26,7 +26,8 @@ const {
   getTransactions,
   createTransaction,
   updateTransaction,
-  deleteTransaction
+  deleteTransaction,
+  markAsNotDuplicate
 } = require('../controllers/transactionController');
 
 const {

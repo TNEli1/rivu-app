@@ -46,6 +46,15 @@ const transactionSchema = mongoose.Schema(
       type: String,
       default: null,
     },
+    source: {
+      type: String,
+      enum: ['manual', 'plaid'],
+      default: 'manual',
+    },
+    possibleDuplicate: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
