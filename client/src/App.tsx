@@ -8,6 +8,10 @@ import Dashboard from "@/pages/Dashboard";
 import AuthPage from "@/pages/auth-page";
 import AccountPage from "@/pages/account-page";
 import OnboardingPage from "@/pages/onboarding-page";
+import BudgetPage from "@/pages/budget-page";
+import TransactionsPage from "@/pages/transactions-page";
+import InsightsPage from "@/pages/insights-page";
+import SettingsPage from "@/pages/settings-page";
 import ForgotPasswordPage from "@/pages/forgot-password";
 import ResetPasswordPage from "@/pages/reset-password";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -17,7 +21,11 @@ function Router() {
   return (
     <Switch>
       <ProtectedRoute path="/" component={Dashboard} />
+      <ProtectedRoute path="/budget" component={BudgetPage} />
+      <ProtectedRoute path="/transactions" component={TransactionsPage} />
+      <ProtectedRoute path="/insights" component={InsightsPage} />
       <ProtectedRoute path="/account" component={AccountPage} />
+      <ProtectedRoute path="/settings" component={SettingsPage} />
       <ProtectedRoute path="/onboarding" component={OnboardingPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/forgot-password" component={ForgotPasswordPage} />
