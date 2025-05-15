@@ -4,6 +4,8 @@ import { apiRequest, getQueryFn } from "@/lib/queryClient";
 import Sidebar from "@/components/layout/Sidebar";
 import MobileNav from "@/components/layout/MobileNav";
 import PlaidRefreshButton from "@/components/account/PlaidRefreshButton";
+import PlaidDisconnectButton from "@/components/account/PlaidDisconnectButton";
+import SimulatePlaidConnection from "@/components/account/SimulatePlaidConnection";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -302,10 +304,17 @@ export default function SettingsPage() {
                             {account.type} · Connected {new Date(account.lastUpdated).toLocaleDateString()}
                           </div>
                         </div>
-                        <PlaidRefreshButton 
-                          accountId={account.id}
-                          onSuccess={refetchAccounts}
-                        />
+                        <div className="flex items-center space-x-2">
+                          <PlaidRefreshButton 
+                            accountId={account.id}
+                            onSuccess={refetchAccounts}
+                          />
+                          <PlaidDisconnectButton
+                            accountId={account.id}
+                            bankName={account.name}
+                            onSuccess={refetchAccounts}
+                          />
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -313,6 +322,13 @@ export default function SettingsPage() {
                   <div className="text-center py-8 text-muted-foreground">
                     <p>You don't have any connected accounts yet.</p>
                     <p className="mt-2">Connect a bank account to get started.</p>
+                    
+                    {/* Simulation button for easy testing */}
+                    {import.meta.env.MODE !== 'production' && (
+                      <div className="mt-4 px-8">
+                        <SimulatePlaidConnection onSuccess={refetchAccounts} />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

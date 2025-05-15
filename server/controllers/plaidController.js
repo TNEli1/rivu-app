@@ -163,9 +163,57 @@ const refreshAccountData = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Disconnect a bank account
+ * @route   DELETE /api/plaid/disconnect/:id
+ * @access  Private
+ */
+const disconnectAccount = async (req, res) => {
+  try {
+    const accountId = req.params.id;
+    
+    if (!accountId) {
+      return res.status(400).json({ message: 'Account ID is required' });
+    }
+    
+    // Find the user
+    const user = await User.findById(req.user._id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Check if the user has Plaid data
+    if (!user.plaidData || !user.plaidData.status || user.plaidData.status !== 'connected') {
+      return res.status(400).json({ message: 'No connected account found' });
+    }
+    
+    // In a real implementation, this would call Plaid API to revoke access token
+    
+    // Reset Plaid data
+    user.plaidData.status = 'disconnected';
+    user.plaidData.accessToken = undefined;
+    user.plaidData.itemId = undefined;
+    user.plaidData.bankName = undefined;
+    await user.save();
+    
+    res.json({
+      success: true,
+      message: 'Bank account disconnected successfully'
+    });
+  } catch (error) {
+    console.error('Error disconnecting account:', error);
+    res.status(500).json({ 
+      message: 'Failed to disconnect bank account', 
+      error: error.message 
+    });
+  }
+};
+
 module.exports = {
   createLinkToken,
   exchangePublicToken,
   getConnectedAccounts,
-  refreshAccountData
+  refreshAccountData,
+  disconnectAccount
 };
