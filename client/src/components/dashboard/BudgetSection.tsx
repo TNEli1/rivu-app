@@ -208,7 +208,7 @@ export default function BudgetSection() {
                         setEditingCategory(category);
                         setNewSpentAmount(String(category.spentAmount));
                         setNewBudgetAmount(String(category.budgetAmount));
-                        setIsEditSpentDialogOpen(true);
+                        setIsEditCategoryDialogOpen(true);
                       }}
                     >
                       <Pencil className="h-3 w-3" />
@@ -333,7 +333,7 @@ export default function BudgetSection() {
         </Dialog>
         
         {/* Edit Budget Category Dialog */}
-        <Dialog open={isEditSpentDialogOpen} onOpenChange={setIsEditSpentDialogOpen}>
+        <Dialog open={isEditCategoryDialogOpen} onOpenChange={setIsEditCategoryDialogOpen}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Edit Budget Category</DialogTitle>
@@ -395,7 +395,7 @@ export default function BudgetSection() {
                   <Button 
                     type="button" 
                     variant="outline" 
-                    onClick={() => setIsEditSpentDialogOpen(false)}
+                    onClick={() => setIsEditCategoryDialogOpen(false)}
                   >
                     Cancel
                   </Button>
