@@ -17,6 +17,8 @@ export type Transaction = {
   category: string;
   account: string;
   type: "income" | "expense";
+  source?: "manual" | "plaid";
+  possibleDuplicate?: boolean;
 };
 
 export default function TransactionsSection() {
@@ -30,12 +32,12 @@ export default function TransactionsSection() {
   });
 
   // Fetch transactions
-  const { data: transactions = [], isLoading, refetch } = useQuery({
+  const { data: transactions = [], isLoading, refetch } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions"],
   });
 
   // Fetch categories for the select dropdown
-  const { data: categories = [] } = useQuery({
+  const { data: categories = [] } = useQuery<{id: string, name: string}[]>({
     queryKey: ["/api/budget-categories"],
   });
 
@@ -161,7 +163,10 @@ export default function TransactionsSection() {
                     <div>
                       <p className="font-medium">{transaction.merchant}</p>
                       <p className="text-xs text-muted-foreground">
-                        {formatDate(new Date(transaction.date))} • {transaction.category}
+                        {formatDate(new Date(transaction.date))} • {transaction.category} •&nbsp;
+                        <span className="text-xs italic">
+                          {transaction.source === 'plaid' ? 'Synced from bank' : 'Added manually'}
+                        </span>
                       </p>
                     </div>
                   </div>

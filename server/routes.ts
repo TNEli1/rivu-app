@@ -38,15 +38,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       forgotPassword,
       resetPassword
     } = await import('./controllers-ts/userController');
-    
-    // Import goals controller functions
-    const {
-      getGoals,
-      getGoalById,
-      createGoal,
-      updateGoal,
-      deleteGoal
-    } = await import('./controllers/goalController');
 
     // Register auth routes with our TypeScript controller
     app.post(`${apiPath}/register`, registerUser);
@@ -58,13 +49,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.post(`${apiPath}/user/login-metric`, protect, updateLoginMetrics);
     app.post(`${apiPath}/forgot-password`, forgotPassword);
     app.post(`${apiPath}/reset-password/:token`, resetPassword);
-    
-    // Register goal routes
-    app.get(`${apiPath}/goals`, protect, getGoals);
-    app.get(`${apiPath}/goals/:id`, protect, getGoalById);
-    app.post(`${apiPath}/goals`, protect, createGoal);
-    app.put(`${apiPath}/goals/:id`, protect, updateGoal);
-    app.delete(`${apiPath}/goals/:id`, protect, deleteGoal);
     
     console.log('✅ Auth routes (MongoDB) successfully mounted at /api');
   } catch (error) {
@@ -409,18 +393,212 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Goals API
+  interface Goal {
+    id: number;
+    userId: number;
+    name: string;
+    targetAmount: number;
+    currentAmount: number;
+    targetDate?: Date | string;
+    progressPercentage: number;
+    monthlySavings: Array<{
+      month: string; // Format: "YYYY-MM"
+      amount: number;
+    }>;
+    createdAt: Date;
+    updatedAt: Date;
+  }
+
+  // In-memory goals storage
+  const goals: Goal[] = [];
+  let goalId = 1;
+  
+  // Get all goals for a user
+  app.get("/api/goals", async (req, res) => {
+    try {
+      const userId = getCurrentUserId();
+      const userGoals = goals.filter(g => g.userId === userId);
+      res.json(userGoals);
+    } catch (error) {
+      console.error('Error fetching goals:', error);
+      res.status(500).json({ message: 'Failed to fetch goals' });
+    }
+  });
+  
+  // Get a specific goal by ID
+  app.get("/api/goals/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid goal ID" });
+      }
+      
+      const userId = getCurrentUserId();
+      const goal = goals.find(g => g.id === id && g.userId === userId);
+      
+      if (!goal) {
+        return res.status(404).json({ message: "Goal not found" });
+      }
+      
+      res.json(goal);
+    } catch (error) {
+      console.error('Error fetching goal:', error);
+      res.status(500).json({ message: 'Failed to fetch goal' });
+    }
+  });
+  
+  // Create a new goal
+  app.post("/api/goals", async (req, res) => {
+    try {
+      const schema = z.object({
+        name: z.string().min(1, "Goal name is required"),
+        targetAmount: z.number().or(z.string()).transform(val => 
+          typeof val === 'string' ? parseFloat(val) : val
+        ).refine(val => val > 0, "Target amount must be greater than 0"),
+        targetDate: z.string().optional(),
+      });
+      
+      const validated = schema.parse(req.body);
+      const userId = getCurrentUserId();
+      
+      const newGoal: Goal = {
+        id: goalId++,
+        userId,
+        name: validated.name,
+        targetAmount: validated.targetAmount,
+        currentAmount: 0,
+        targetDate: validated.targetDate,
+        progressPercentage: 0,
+        monthlySavings: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      goals.push(newGoal);
+      
+      // Update Rivu score after adding a new goal
+      await storage.calculateRivuScore(userId);
+      
+      res.status(201).json(newGoal);
+    } catch (error) {
+      console.error('Error creating goal:', error);
+      res.status(400).json({ message: "Invalid input", error });
+    }
+  });
+  
+  // Update an existing goal
+  app.put("/api/goals/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid goal ID" });
+      }
+      
+      const userId = getCurrentUserId();
+      const goalIndex = goals.findIndex(g => g.id === id && g.userId === userId);
+      
+      if (goalIndex === -1) {
+        return res.status(404).json({ message: "Goal not found" });
+      }
+      
+      const schema = z.object({
+        name: z.string().min(1).optional(),
+        targetAmount: z.number().or(z.string()).transform(val => 
+          typeof val === 'string' ? parseFloat(val) : val
+        ).refine(val => val > 0, "Target amount must be greater than 0").optional(),
+        targetDate: z.string().optional(),
+        amountToAdd: z.number().or(z.string()).transform(val => 
+          typeof val === 'string' ? parseFloat(val) : val
+        ).optional(),
+      });
+      
+      const validated = schema.parse(req.body);
+      const goal = goals[goalIndex];
+      
+      // Update basic properties
+      if (validated.name) goal.name = validated.name;
+      if (validated.targetAmount) goal.targetAmount = validated.targetAmount;
+      if (validated.targetDate) goal.targetDate = validated.targetDate;
+      
+      // If amount to add is included, update the savings amount
+      if (validated.amountToAdd) {
+        goal.currentAmount += validated.amountToAdd;
+        
+        // Update monthly savings tracking
+        const now = new Date();
+        const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        
+        const existingMonthIndex = goal.monthlySavings.findIndex(m => m.month === monthKey);
+        if (existingMonthIndex >= 0) {
+          goal.monthlySavings[existingMonthIndex].amount += validated.amountToAdd;
+        } else {
+          goal.monthlySavings.push({ month: monthKey, amount: validated.amountToAdd });
+        }
+      }
+      
+      // Recalculate progress percentage
+      goal.progressPercentage = goal.targetAmount > 0 
+        ? (goal.currentAmount / goal.targetAmount) * 100 
+        : 0;
+      
+      goal.updatedAt = new Date();
+      
+      // Update Rivu score after updating a goal
+      await storage.calculateRivuScore(userId);
+      
+      res.json(goal);
+    } catch (error) {
+      console.error('Error updating goal:', error);
+      res.status(400).json({ message: "Invalid input", error });
+    }
+  });
+  
+  // Delete a goal
+  app.delete("/api/goals/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid goal ID" });
+      }
+      
+      const userId = getCurrentUserId();
+      const goalIndex = goals.findIndex(g => g.id === id && g.userId === userId);
+      
+      if (goalIndex === -1) {
+        return res.status(404).json({ message: "Goal not found" });
+      }
+      
+      goals.splice(goalIndex, 1);
+      
+      // Update Rivu score after deleting a goal
+      await storage.calculateRivuScore(userId);
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting goal:', error);
+      res.status(500).json({ message: "Failed to delete goal" });
+    }
+  });
+  
   // Goals Summary API
   app.get("/api/goals/summary", async (req, res) => {
     try {
-      // This would connect to a goals collection in MongoDB
-      // For now we'll simulate with in-memory data
+      const userId = getCurrentUserId();
+      const userGoals = goals.filter(g => g.userId === userId);
       
-      const activeGoals = 3; // This would be a count from the database
-      const totalProgress = 60; // This would be calculated from actual goals
+      const activeGoals = userGoals.length;
+      const totalTarget = userGoals.reduce((sum, goal) => sum + goal.targetAmount, 0);
+      const totalSaved = userGoals.reduce((sum, goal) => sum + goal.currentAmount, 0);
+      const totalProgress = userGoals.length > 0
+        ? userGoals.reduce((sum, goal) => sum + goal.progressPercentage, 0) / userGoals.length
+        : 0;
       
       res.json({
-        activeGoals: activeGoals,
-        totalProgress: totalProgress
+        activeGoals,
+        totalProgress,
+        totalTarget,
+        totalSaved
       });
     } catch (error) {
       console.error('Error fetching goals summary:', error);
