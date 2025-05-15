@@ -45,9 +45,10 @@ type PasswordFormData = {
 };
 
 export default function SettingsPage() {
-  const { user, logoutMutation } = useAuth();
+  const { user, logoutMutation, updateDemographicsMutation } = useAuth();
   const { toast } = useToast();
   const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
+  const [skipSurvey, setSkipSurvey] = useState(user?.demographics?.skipPermanently || false);
   const [isConnectBankOpen, setIsConnectBankOpen] = useState(false);
   const [passwordFormData, setPasswordFormData] = useState<PasswordFormData>({
     currentPassword: "",
@@ -149,6 +150,37 @@ export default function SettingsPage() {
     toast({
       title: newMode ? "Dark mode enabled" : "Light mode enabled",
       description: `The application theme has been updated.`,
+    });
+  };
+
+  const toggleSkipSurvey = () => {
+    const newValue = !skipSurvey;
+    setSkipSurvey(newValue);
+    
+    // Update user demographics
+    updateDemographicsMutation.mutate({
+      demographics: {
+        skipPermanently: newValue,
+        completed: user?.demographics?.completed || false,
+      }
+    }, {
+      onSuccess: () => {
+        toast({
+          title: newValue ? "Survey disabled" : "Survey enabled",
+          description: newValue 
+            ? "You won't be prompted with the onboarding survey anymore." 
+            : "You may see the onboarding survey on next login if not yet completed.",
+        });
+      },
+      onError: () => {
+        // Revert UI state on error
+        setSkipSurvey(!newValue);
+        toast({
+          title: "Error updating preferences",
+          description: "There was a problem saving your survey preferences.",
+          variant: "destructive"
+        });
+      }
     });
   };
 

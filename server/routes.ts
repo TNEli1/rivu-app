@@ -212,7 +212,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Transaction not found" });
       }
       
-      const updatedTransaction = await storage.updateTransaction(id, validated);
+      // Create update data with string conversions
+      const updateData: Partial<Transaction> = {};
+      
+      if (validated.type !== undefined) {
+        updateData.type = validated.type;
+      }
+      
+      if (validated.amount !== undefined) {
+        updateData.amount = validated.amount.toString();
+      }
+      
+      if (validated.merchant !== undefined) {
+        updateData.merchant = validated.merchant;
+      }
+      
+      if (validated.category !== undefined) {
+        updateData.category = validated.category;
+      }
+      
+      if (validated.account !== undefined) {
+        updateData.account = validated.account;
+      }
+      
+      const updatedTransaction = await storage.updateTransaction(id, updateData);
       res.json(updatedTransaction);
     } catch (error) {
       res.status(400).json({ message: "Invalid input", error });
