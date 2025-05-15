@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, getQueryFn } from "@/lib/queryClient";
 import Sidebar from "@/components/layout/Sidebar";
 import MobileNav from "@/components/layout/MobileNav";
+import PlaidRefreshButton from "@/components/account/PlaidRefreshButton";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -57,8 +58,17 @@ export default function SettingsPage() {
     confirmPassword: "",
   });
   
+  // Define type for connected accounts
+  type ConnectedAccount = {
+    id: string;
+    name: string;
+    type: string;
+    status: string;
+    lastUpdated: string;
+  };
+  
   // Fetch connected bank accounts
-  const { data: connectedAccounts = [], refetch: refetchAccounts } = useQuery({
+  const { data: connectedAccounts = [], refetch: refetchAccounts } = useQuery<ConnectedAccount[]>({
     queryKey: ['/api/plaid/accounts'],
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
@@ -284,7 +294,7 @@ export default function SettingsPage() {
                 
                 {connectedAccounts.length > 0 ? (
                   <div className="space-y-4">
-                    {connectedAccounts.map((account: any) => (
+                    {connectedAccounts.map((account) => (
                       <div key={account.id} className="border rounded-lg p-4 flex justify-between items-center">
                         <div>
                           <div className="font-medium">{account.name}</div>
@@ -292,9 +302,10 @@ export default function SettingsPage() {
                             {account.type} · Connected {new Date(account.lastUpdated).toLocaleDateString()}
                           </div>
                         </div>
-                        <Button variant="outline" size="sm">
-                          Refresh
-                        </Button>
+                        <PlaidRefreshButton 
+                          accountId={account.id}
+                          onSuccess={refetchAccounts}
+                        />
                       </div>
                     ))}
                   </div>

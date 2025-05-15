@@ -118,8 +118,54 @@ const getConnectedAccounts = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Refresh Plaid account data
+ * @route   POST /api/plaid/refresh/:id
+ * @access  Private
+ */
+const refreshAccountData = async (req, res) => {
+  try {
+    const accountId = req.params.id;
+    
+    if (!accountId) {
+      return res.status(400).json({ message: 'Account ID is required' });
+    }
+    
+    // Find the user
+    const user = await User.findById(req.user._id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Check if the user has Plaid data
+    if (!user.plaidData || !user.plaidData.status || user.plaidData.status !== 'connected') {
+      return res.status(400).json({ message: 'No connected account found' });
+    }
+    
+    // In a real implementation, this would call Plaid API to refresh account data
+    
+    // Update lastUpdated timestamp
+    user.plaidData.lastUpdated = new Date();
+    await user.save();
+    
+    res.json({
+      success: true,
+      message: 'Account data refreshed successfully',
+      lastUpdated: user.plaidData.lastUpdated
+    });
+  } catch (error) {
+    console.error('Error refreshing account data:', error);
+    res.status(500).json({ 
+      message: 'Failed to refresh account data', 
+      error: error.message 
+    });
+  }
+};
+
 module.exports = {
   createLinkToken,
   exchangePublicToken,
-  getConnectedAccounts
+  getConnectedAccounts,
+  refreshAccountData
 };

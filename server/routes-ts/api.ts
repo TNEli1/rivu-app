@@ -55,7 +55,7 @@ async function initializeRoutes() {
     const { getAdvice } = adviceController;
     
     const plaidController = await importController('../controllers/plaidController.js');
-    const { createLinkToken, exchangePublicToken, getConnectedAccounts } = plaidController;
+    const { createLinkToken, exchangePublicToken, getConnectedAccounts, refreshAccountData } = plaidController;
     
     // Set up all routes
     
@@ -151,6 +151,7 @@ async function initializeRoutes() {
     router.post('/plaid/link-token', protect, createLinkToken);
     router.post('/plaid/exchange-token', protect, exchangePublicToken);
     router.get('/plaid/accounts', protect, getConnectedAccounts);
+    router.post('/plaid/refresh/:id', protect, refreshAccountData);
     
     // Simulated Plaid Transactions (temp until full integration)
     router.get('/plaid/transactions', protect, (req, res) => {
