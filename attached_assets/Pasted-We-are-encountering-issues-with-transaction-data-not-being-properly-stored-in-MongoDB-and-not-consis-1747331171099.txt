@@ -1,0 +1,70 @@
+We are encountering issues with transaction data not being properly stored in MongoDB and not consistently associated with the correct user.
+
+Follow these instructions exactly. Do not skip validation or make assumptions.
+
+⸻
+
+1. Ensure All Transaction Writes Include userId
+	•	Every transaction written to MongoDB must include the authenticated user’s ID.
+	•	This applies to manual entries, Plaid-imported data, and updates.
+
+Fix logic:
+
+await db.insert(transactions).values({
+  userId: currentUser.id,  // MUST be defined from session/token
+  ...otherTransactionFields
+});
+
+•	If currentUser.id is not available, do not proceed. Instead, log an error and stop the insert.
+
+⸻
+
+2. Make All MongoDB Writes Fully Awaited and Wrapped in Try/Catch
+	•	Do not assume the database write succeeded unless it’s explicitly awaited and error-checked.
+
+Fix logic:
+
+try {
+  await db.insert(...);
+} catch (err) {
+  console.error("MongoDB write failed", err);
+}
+
+3. Validate That Writes Are Actually Reaching MongoDB
+	•	After each transaction is inserted, immediately run a test fetch using the same userId:
+
+const testResult = await db.select().from(transactions).where(eq(transactions.userId, currentUser.id));
+console.log("Verify transaction write:", testResult);
+
+•	If nothing is returned or result is empty, the write did not succeed.
+
+⸻
+
+4. Fix Transaction Fetch Logic (Scoped by User ID)
+	•	When fetching transactions (for dashboard, history, etc.), ensure all queries filter by the authenticated user’s ID.
+
+Fix logic:
+
+await db.select().from(transactions).where(eq(transactions.userId, currentUser.id));
+
+5. Check for Schema Mismatch or Required Fields Blocking Writes
+	•	Review the transactions schema for .notNull() or .unique() constraints.
+	•	Make sure every insert includes:
+	•	userId
+	•	amount
+	•	category
+	•	date
+	•	source (“manual” or “plaid”)
+
+⸻
+
+6. Confirm Data Visibility in MongoDB
+	•	Log all successfully written transaction records to console or dev UI.
+	•	Check the actual database using the MongoDB dashboard to confirm the data is stored.
+
+⸻
+
+Final Notes:
+	•	Do not store or rely on transactions in localStorage or in-memory state across sessions.
+	•	Fix all inconsistencies between writing and reading transaction data.
+	•	If any Mongo write or read fails, it must be clearly logged and not silently ignored.

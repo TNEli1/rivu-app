@@ -22,6 +22,15 @@ const getTransactions = async (req, res) => {
 // @access  Private
 const createTransaction = async (req, res) => {
   try {
+    // Verify user ID exists from authenticated session
+    if (!req.user || !req.user._id) {
+      console.error('Transaction creation failed: No authenticated user ID available');
+      return res.status(401).json({ 
+        message: 'Authentication required. User ID not found in session.' 
+      });
+    }
+
+    const userId = req.user._id;
     const { amount, merchant, category, account, type = 'expense', date, notes, source = 'manual' } = req.body;
 
     // Validate required fields with specific error messages
@@ -45,51 +54,95 @@ const createTransaction = async (req, res) => {
     const startDate = new Date(transactionDate.getTime() - oneDayMs);
     const endDate = new Date(transactionDate.getTime() + oneDayMs);
     
-    // Look for transactions with same amount and similar merchant within date range
-    const similarTransactions = await Transaction.find({
-      userId: req.user._id,
-      amount: parseFloat(amount),
-      date: { $gte: startDate, $lte: endDate },
-      merchant: { $regex: new RegExp(merchant.substring(0, 5), 'i') } // Match on first 5 chars of merchant
-    });
-    
-    // Flag as possible duplicate if similar transactions found
-    const possibleDuplicate = similarTransactions.length > 0;
-    
-    // Create transaction with validated data
-    const transactionData = {
-      userId: req.user._id,
-      amount: parseFloat(amount),
-      merchant,
-      type,
-      date: transactionDate,
-      notes,
-      source,
-      possibleDuplicate
-    };
-
-    // Add optional fields if provided
-    if (category) transactionData.category = category;
-    if (account) transactionData.account = account;
-
-    const transaction = await Transaction.create(transactionData);
-
-    // If this is an expense transaction, update the budget spent amount
-    if (type === 'expense') {
-      // Find the budget for this category
-      const budget = await Budget.findOne({ userId: req.user._id, category });
+    try {
+      // Look for transactions with same amount and similar merchant within date range
+      const similarTransactions = await Transaction.find({
+        userId: userId,
+        amount: parseFloat(amount),
+        date: { $gte: startDate, $lte: endDate },
+        merchant: { $regex: new RegExp(merchant.substring(0, 5), 'i') } // Match on first 5 chars of merchant
+      });
       
-      // If budget exists, update spent amount
-      if (budget) {
-        budget.currentSpent += amount;
-        await budget.save();
-      }
-    }
+      // Flag as possible duplicate if similar transactions found
+      const possibleDuplicate = similarTransactions.length > 0;
+      
+      // Create transaction with validated data
+      const transactionData = {
+        userId: userId, // Explicitly set from authenticated user
+        amount: parseFloat(amount),
+        merchant,
+        type,
+        date: transactionDate,
+        notes: notes || '',
+        source,
+        possibleDuplicate,
+        category: category || 'Uncategorized',
+        account: account || 'Cash'
+      };
 
-    res.status(201).json(transaction);
+      // Create transaction in MongoDB
+      let transaction;
+      try {
+        transaction = await Transaction.create(transactionData);
+        
+        // Verify write succeeded by immediately querying the database
+        const verificationResult = await Transaction.findById(transaction._id);
+        if (!verificationResult) {
+          console.error('Transaction write verification failed: Transaction not found after creation');
+          return res.status(500).json({ message: 'Transaction creation could not be verified' });
+        }
+        
+        console.log('Verified transaction write:', {
+          id: verificationResult._id,
+          userId: verificationResult.userId,
+          amount: verificationResult.amount,
+          merchant: verificationResult.merchant
+        });
+      } catch (dbError) {
+        console.error('MongoDB transaction write failed:', dbError);
+        return res.status(500).json({ 
+          message: 'Failed to save transaction to database', 
+          error: dbError.message 
+        });
+      }
+
+      // If this is an expense transaction, update the budget spent amount
+      if (type === 'expense' && category) {
+        try {
+          // Find the budget for this category
+          const budget = await Budget.findOne({ userId: userId, category });
+          
+          // If budget exists, update spent amount
+          if (budget) {
+            budget.currentSpent += parseFloat(amount);
+            await budget.save();
+            
+            // Verify budget update
+            const updatedBudget = await Budget.findById(budget._id);
+            if (!updatedBudget || updatedBudget.currentSpent !== budget.currentSpent) {
+              console.error('Budget update verification failed');
+            }
+          }
+        } catch (budgetError) {
+          console.error('Error updating budget for transaction:', budgetError);
+          // Don't fail the transaction creation if budget update fails
+        }
+      }
+
+      res.status(201).json(transaction);
+    } catch (queryError) {
+      console.error('Error during transaction duplicate check:', queryError);
+      return res.status(500).json({ 
+        message: 'Error checking for duplicate transactions', 
+        error: queryError.message 
+      });
+    }
   } catch (error) {
     console.error('Error creating transaction:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ 
+      message: 'Server error processing transaction creation', 
+      error: error.message 
+    });
   }
 };
 
@@ -98,76 +151,163 @@ const createTransaction = async (req, res) => {
 // @access  Private
 const updateTransaction = async (req, res) => {
   try {
+    // Verify user ID exists from authenticated session
+    if (!req.user || !req.user._id) {
+      console.error('Transaction update failed: No authenticated user ID available');
+      return res.status(401).json({ 
+        message: 'Authentication required. User ID not found in session.' 
+      });
+    }
+
+    const userId = req.user._id;
     const { amount, merchant, category, account, type, date, notes, source } = req.body;
 
-    const transaction = await Transaction.findById(req.params.id);
+    try {
+      // Find transaction by ID and ensure it belongs to the current user
+      const transaction = await Transaction.findOne({
+        _id: req.params.id,
+        userId: userId
+      });
 
-    if (!transaction) {
-      return res.status(404).json({ message: 'Transaction not found' });
-    }
+      if (!transaction) {
+        console.error(`Transaction not found or not owned by user. ID: ${req.params.id}, User: ${userId}`);
+        return res.status(404).json({ message: 'Transaction not found' });
+      }
 
-    // Check if transaction belongs to user
-    if (transaction.userId.toString() !== req.user._id.toString()) {
-      return res.status(401).json({ message: 'Not authorized' });
-    }
-
-    // If changing amount or category and transaction is expense, update budgets
-    if (transaction.type === 'expense' && (amount !== undefined || category !== undefined)) {
-      // If changing category, update both old and new budget categories
-      if (category !== undefined && category !== transaction.category) {
-        // Reduce amount from old category budget
-        const oldBudget = await Budget.findOne({ 
-          userId: req.user._id, 
-          category: transaction.category 
-        });
-        
-        if (oldBudget) {
-          oldBudget.currentSpent -= transaction.amount;
-          await oldBudget.save();
-        }
-        
-        // Add to new category budget
-        const newBudget = await Budget.findOne({ 
-          userId: req.user._id, 
-          category 
-        });
-        
-        if (newBudget) {
-          newBudget.currentSpent += amount || transaction.amount;
-          await newBudget.save();
-        }
-      } 
-      // If just changing amount but keeping category the same
-      else if (amount !== undefined) {
-        const budget = await Budget.findOne({ 
-          userId: req.user._id, 
-          category: transaction.category 
-        });
-        
-        if (budget) {
-          // Adjust the difference in amount
-          const amountDifference = amount - transaction.amount;
-          budget.currentSpent += amountDifference;
-          await budget.save();
+      // If changing amount or category and transaction is expense, update budgets
+      if (transaction.type === 'expense' && (amount !== undefined || category !== undefined)) {
+        try {
+          // If changing category, update both old and new budget categories
+          if (category !== undefined && category !== transaction.category) {
+            // Reduce amount from old category budget
+            try {
+              const oldBudget = await Budget.findOne({ 
+                userId: userId, 
+                category: transaction.category 
+              });
+              
+              if (oldBudget) {
+                oldBudget.currentSpent -= transaction.amount;
+                await oldBudget.save();
+                
+                // Verify old budget update
+                const verifiedOldBudget = await Budget.findById(oldBudget._id);
+                if (!verifiedOldBudget || verifiedOldBudget.currentSpent !== oldBudget.currentSpent) {
+                  console.error('Old budget update verification failed');
+                }
+              }
+            } catch (oldBudgetError) {
+              console.error('Error updating old budget category:', oldBudgetError);
+              // Continue with transaction update even if budget update fails
+            }
+            
+            // Add to new category budget
+            try {
+              const newBudget = await Budget.findOne({ 
+                userId: userId, 
+                category 
+              });
+              
+              if (newBudget) {
+                newBudget.currentSpent += amount ? parseFloat(amount) : transaction.amount;
+                await newBudget.save();
+                
+                // Verify new budget update
+                const verifiedNewBudget = await Budget.findById(newBudget._id);
+                if (!verifiedNewBudget || verifiedNewBudget.currentSpent !== newBudget.currentSpent) {
+                  console.error('New budget update verification failed');
+                }
+              }
+            } catch (newBudgetError) {
+              console.error('Error updating new budget category:', newBudgetError);
+              // Continue with transaction update even if budget update fails
+            }
+          } 
+          // If just changing amount but keeping category the same
+          else if (amount !== undefined) {
+            try {
+              const budget = await Budget.findOne({ 
+                userId: userId, 
+                category: transaction.category 
+              });
+              
+              if (budget) {
+                // Adjust the difference in amount
+                const amountDifference = parseFloat(amount) - transaction.amount;
+                budget.currentSpent += amountDifference;
+                await budget.save();
+                
+                // Verify budget update
+                const verifiedBudget = await Budget.findById(budget._id);
+                if (!verifiedBudget || verifiedBudget.currentSpent !== budget.currentSpent) {
+                  console.error('Budget update verification failed');
+                }
+              }
+            } catch (budgetError) {
+              console.error('Error updating budget for amount change:', budgetError);
+              // Continue with transaction update even if budget update fails
+            }
+          }
+        } catch (budgetProcessError) {
+          console.error('Error processing budget updates:', budgetProcessError);
+          // Continue with transaction update even if budget update fails
         }
       }
+
+      // Update transaction fields
+      if (amount !== undefined) transaction.amount = parseFloat(amount);
+      if (merchant !== undefined) transaction.merchant = merchant;
+      if (category !== undefined) transaction.category = category;
+      if (account !== undefined) transaction.account = account;
+      if (type !== undefined) transaction.type = type;
+      if (date !== undefined) transaction.date = new Date(date);
+      if (notes !== undefined) transaction.notes = notes;
+      if (source !== undefined) transaction.source = source;
+
+      try {
+        // Save the updated transaction
+        const updatedTransaction = await transaction.save();
+        
+        // Verify write succeeded by immediately querying the database
+        const verificationResult = await Transaction.findById(updatedTransaction._id);
+        if (!verificationResult) {
+          console.error('Transaction update verification failed: Transaction not found after update');
+          return res.status(500).json({ message: 'Transaction update could not be verified' });
+        }
+        
+        // Check if updated fields match what we expect
+        if (amount !== undefined && verificationResult.amount !== parseFloat(amount)) {
+          console.error('Transaction amount verification failed after update');
+        }
+        
+        console.log('Verified transaction update:', {
+          id: verificationResult._id,
+          userId: verificationResult.userId,
+          amount: verificationResult.amount,
+          merchant: verificationResult.merchant
+        });
+        
+        res.json(updatedTransaction);
+      } catch (saveError) {
+        console.error('Failed to save transaction update:', saveError);
+        res.status(500).json({ 
+          message: 'Failed to save transaction update', 
+          error: saveError.message 
+        });
+      }
+    } catch (findError) {
+      console.error('Error finding transaction:', findError);
+      res.status(500).json({ 
+        message: 'Error finding transaction', 
+        error: findError.message 
+      });
     }
-
-    // Update transaction fields
-    if (amount !== undefined) transaction.amount = parseFloat(amount);
-    if (merchant !== undefined) transaction.merchant = merchant;
-    if (category !== undefined) transaction.category = category;
-    if (account !== undefined) transaction.account = account;
-    if (type !== undefined) transaction.type = type;
-    if (date !== undefined) transaction.date = new Date(date);
-    if (notes !== undefined) transaction.notes = notes;
-    if (source !== undefined) transaction.source = source;
-
-    const updatedTransaction = await transaction.save();
-    res.json(updatedTransaction);
   } catch (error) {
     console.error('Error updating transaction:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ 
+      message: 'Server error processing transaction update', 
+      error: error.message 
+    });
   }
 };
 
@@ -176,35 +316,94 @@ const updateTransaction = async (req, res) => {
 // @access  Private
 const deleteTransaction = async (req, res) => {
   try {
-    const transaction = await Transaction.findById(req.params.id);
-
-    if (!transaction) {
-      return res.status(404).json({ message: 'Transaction not found' });
-    }
-
-    // Check if transaction belongs to user
-    if (transaction.userId.toString() !== req.user._id.toString()) {
-      return res.status(401).json({ message: 'Not authorized' });
-    }
-
-    // If expense transaction, update budget
-    if (transaction.type === 'expense') {
-      const budget = await Budget.findOne({ 
-        userId: req.user._id, 
-        category: transaction.category 
+    // Verify user ID exists from authenticated session
+    if (!req.user || !req.user._id) {
+      console.error('Transaction deletion failed: No authenticated user ID available');
+      return res.status(401).json({ 
+        message: 'Authentication required. User ID not found in session.' 
       });
-      
-      if (budget) {
-        budget.currentSpent -= transaction.amount;
-        await budget.save();
-      }
     }
 
-    await transaction.remove();
-    res.json({ message: 'Transaction removed' });
+    const userId = req.user._id;
+
+    try {
+      // Find transaction by ID and ensure it belongs to the current user
+      const transaction = await Transaction.findOne({
+        _id: req.params.id,
+        userId: userId
+      });
+
+      if (!transaction) {
+        console.error(`Transaction not found or not owned by user. ID: ${req.params.id}, User: ${userId}`);
+        return res.status(404).json({ message: 'Transaction not found' });
+      }
+
+      // If expense transaction, update budget
+      if (transaction.type === 'expense') {
+        try {
+          const budget = await Budget.findOne({ 
+            userId: userId, 
+            category: transaction.category 
+          });
+          
+          if (budget) {
+            budget.currentSpent -= transaction.amount;
+            await budget.save();
+            
+            // Verify budget update
+            const verifiedBudget = await Budget.findById(budget._id);
+            if (!verifiedBudget || verifiedBudget.currentSpent !== budget.currentSpent) {
+              console.error('Budget update verification failed during transaction deletion');
+            }
+          }
+        } catch (budgetError) {
+          console.error('Error updating budget during transaction deletion:', budgetError);
+          // Continue with transaction deletion even if budget update fails
+        }
+      }
+
+      try {
+        // Store transaction ID for verification
+        const transactionId = transaction._id;
+        
+        // Mongoose 6+ uses deleteOne instead of remove
+        await Transaction.deleteOne({ _id: transactionId });
+        
+        // Verify deletion by checking the transaction no longer exists
+        const verificationCheck = await Transaction.findById(transactionId);
+        if (verificationCheck) {
+          console.error('Transaction deletion verification failed: Transaction still exists after deletion');
+          return res.status(500).json({ message: 'Transaction deletion could not be verified' });
+        }
+        
+        console.log('Verified transaction deletion:', {
+          id: transactionId,
+          userId: userId,
+          amount: transaction.amount,
+          merchant: transaction.merchant
+        });
+        
+        res.json({ message: 'Transaction removed' });
+      } catch (deleteError) {
+        console.error('Error during transaction deletion:', deleteError);
+        res.status(500).json({ 
+          message: 'Failed to delete transaction', 
+          error: deleteError.message 
+        });
+      }
+    } catch (findError) {
+      console.error('Error finding transaction for deletion:', findError);
+      res.status(500).json({ 
+        message: 'Error finding transaction', 
+        error: findError.message 
+      });
+    }
   } catch (error) {
-    console.error('Error deleting transaction:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Error processing transaction deletion:', error);
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: error.message 
+    });
   }
 };
 
@@ -213,25 +412,74 @@ const deleteTransaction = async (req, res) => {
 // @access  Private
 const markAsNotDuplicate = async (req, res) => {
   try {
-    const transaction = await Transaction.findById(req.params.id);
-
-    if (!transaction) {
-      return res.status(404).json({ message: 'Transaction not found' });
+    // Verify user ID exists from authenticated session
+    if (!req.user || !req.user._id) {
+      console.error('Transaction update failed: No authenticated user ID available');
+      return res.status(401).json({ 
+        message: 'Authentication required. User ID not found in session.' 
+      });
     }
 
-    // Check if transaction belongs to user
-    if (transaction.userId.toString() !== req.user._id.toString()) {
-      return res.status(401).json({ message: 'Not authorized' });
-    }
+    const userId = req.user._id;
 
-    // Update the duplicate flag
-    transaction.possibleDuplicate = false;
-    const updatedTransaction = await transaction.save();
-    
-    res.json(updatedTransaction);
+    try {
+      // Find transaction by ID and ensure it belongs to the current user
+      const transaction = await Transaction.findOne({
+        _id: req.params.id,
+        userId: userId
+      });
+
+      if (!transaction) {
+        console.error(`Transaction not found or not owned by user. ID: ${req.params.id}, User: ${userId}`);
+        return res.status(404).json({ message: 'Transaction not found' });
+      }
+
+      try {
+        // Update transaction
+        transaction.possibleDuplicate = false;
+        const updatedTransaction = await transaction.save();
+        
+        // Verify write succeeded by immediately querying the database
+        const verificationResult = await Transaction.findById(updatedTransaction._id);
+        if (!verificationResult) {
+          console.error('Transaction update verification failed: Transaction not found after update');
+          return res.status(500).json({ message: 'Transaction update could not be verified' });
+        }
+        
+        // Check if field was properly updated
+        if (verificationResult.possibleDuplicate !== false) {
+          console.error('Transaction duplicate flag verification failed after update');
+          return res.status(500).json({ message: 'Transaction update failed to set duplicate flag' });
+        }
+        
+        console.log('Verified transaction update (not duplicate):', {
+          id: verificationResult._id,
+          userId: verificationResult.userId,
+          merchant: verificationResult.merchant,
+          possibleDuplicate: verificationResult.possibleDuplicate
+        });
+        
+        res.json(updatedTransaction);
+      } catch (saveError) {
+        console.error('Failed to save transaction update (not duplicate):', saveError);
+        res.status(500).json({ 
+          message: 'Failed to mark transaction as not a duplicate', 
+          error: saveError.message 
+        });
+      }
+    } catch (findError) {
+      console.error('Error finding transaction for duplicate flag update:', findError);
+      res.status(500).json({ 
+        message: 'Error finding transaction', 
+        error: findError.message 
+      });
+    }
   } catch (error) {
     console.error('Error marking transaction as not duplicate:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: error.message 
+    });
   }
 };
 
