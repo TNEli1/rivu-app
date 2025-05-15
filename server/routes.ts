@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { z } from "zod";
 import OpenAI from "openai";
 import cors from "cors";
+import { BudgetCategory, Transaction } from "@shared/schema";
 
 // Initialize OpenAI client
 const openai = new OpenAI({ 
@@ -78,8 +79,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newCategory = await storage.createBudgetCategory({
         userId,
         name: validated.name,
-        budgetAmount: validated.budgetAmount.toString(),
-        spentAmount: "0", // Initialize with zero spent
+        budgetAmount: validated.budgetAmount.toString(), // Convert to string
       });
       
       res.status(201).json(newCategory);
@@ -109,7 +109,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Category not found" });
       }
       
-      const updatedCategory = await storage.updateBudgetCategory(id, validated);
+      // Create update data with string conversions for numeric fields
+      const updateData: Partial<BudgetCategory> = {};
+      
+      if (validated.name !== undefined) {
+        updateData.name = validated.name;
+      }
+      
+      if (validated.budgetAmount !== undefined) {
+        updateData.budgetAmount = validated.budgetAmount.toString();
+      }
+      
+      if (validated.spentAmount !== undefined) {
+        updateData.spentAmount = validated.spentAmount.toString();
+      }
+      
+      const updatedCategory = await storage.updateBudgetCategory(id, updateData);
       res.json(updatedCategory);
     } catch (error) {
       res.status(400).json({ message: "Invalid input", error });
@@ -161,7 +176,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const newTransaction = await storage.createTransaction({
         userId,
-        amount: validated.amount,
+        amount: validated.amount.toString(),
         merchant: validated.merchant,
         category: validated.category,
         account: validated.account,
