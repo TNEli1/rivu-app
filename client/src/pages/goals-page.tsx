@@ -41,6 +41,11 @@ export default function GoalsPage() {
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   const [date, setDate] = useState<Date | undefined>();
   
+  // Helper function to get the goal ID
+  const getGoalId = (goal: Goal): string | number => {
+    return goal._id || goal.id || 0;
+  };
+  
   const [formData, setFormData] = useState<GoalFormData>({
     name: "",
     targetAmount: "",
@@ -100,7 +105,7 @@ export default function GoalsPage() {
 
   // Update goal mutation
   const updateGoalMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string, data: GoalFormData }) => {
+    mutationFn: async ({ id, data }: { id: string | number, data: GoalFormData }) => {
       const res = await apiRequest('PUT', `/api/goals/${id}`, data);
       return res.json();
     },
@@ -126,7 +131,7 @@ export default function GoalsPage() {
 
   // Contribute to goal mutation
   const contributeToGoalMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string, data: GoalContributionData }) => {
+    mutationFn: async ({ id, data }: { id: string | number, data: GoalContributionData }) => {
       const res = await apiRequest('PUT', `/api/goals/${id}`, data);
       return res.json();
     },
@@ -152,7 +157,7 @@ export default function GoalsPage() {
 
   // Delete goal mutation
   const deleteGoalMutation = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async (id: string | number) => {
       const res = await apiRequest('DELETE', `/api/goals/${id}`);
       return res.json();
     },
@@ -235,10 +240,12 @@ export default function GoalsPage() {
       return;
     }
     
-    // Create or update
+  
+
+  // Create or update
     if (isEditDialogOpen && selectedGoal) {
       updateGoalMutation.mutate({ 
-        id: selectedGoal._id, 
+        id: getGoalId(selectedGoal), 
         data: formData 
       });
     } else {
@@ -264,7 +271,7 @@ export default function GoalsPage() {
     }
     
     contributeToGoalMutation.mutate({
-      id: selectedGoal._id,
+      id: getGoalId(selectedGoal),
       data: contributionData
     });
   };
@@ -435,7 +442,7 @@ export default function GoalsPage() {
             ))
           ) : (
             goals.map(goal => (
-              <Card key={goal._id} className="overflow-hidden">
+              <Card key={getGoalId(goal).toString()} className="overflow-hidden">
                 <CardHeader className="pb-3">
                   <CardTitle className="truncate font-bold">{goal.name}</CardTitle>
                   <div className="flex justify-between items-center">

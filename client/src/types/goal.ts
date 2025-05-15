@@ -1,7 +1,8 @@
 // Types for Savings Goals feature
 
 export type Goal = {
-  _id: string;
+  _id?: string; // MongoDB ID format
+  id?: number;  // In-memory ID format
   name: string;
   targetAmount: number;
   currentAmount: number;
@@ -11,8 +12,8 @@ export type Goal = {
     month: string; // Format: "YYYY-MM"
     amount: number;
   }>;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
 export type GoalFormData = {
