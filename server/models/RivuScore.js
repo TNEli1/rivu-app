@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const rivuScoreSchema = mongoose.Schema(
   {
-    userId: {
+    user: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
       ref: 'User',
@@ -14,24 +14,29 @@ const rivuScoreSchema = mongoose.Schema(
       min: [0, 'Score cannot be negative'],
       max: [100, 'Score cannot be more than 100'],
     },
-    // Score factors with their individual percentages
-    budgetAdherence: {
-      type: Number,
-      required: true,
-      min: [0, 'Budget adherence cannot be negative'],
-      max: [100, 'Budget adherence cannot be more than 100'],
-    },
-    savingsProgress: {
-      type: Number,
-      required: true,
-      min: [0, 'Savings progress cannot be negative'],
-      max: [100, 'Savings progress cannot be more than 100'],
-    },
-    weeklyActivity: {
-      type: Number,
-      required: true,
-      min: [0, 'Weekly activity cannot be negative'],
-      max: [100, 'Weekly activity cannot be more than 100'],
+    // Factors stored as an embedded object
+    factors: {
+      budgetAdherence: {
+        type: Number,
+        required: true,
+        min: [0, 'Budget adherence cannot be negative'],
+        max: [100, 'Budget adherence cannot be more than 100'],
+        default: 0
+      },
+      savingsProgress: {
+        type: Number,
+        required: true,
+        min: [0, 'Savings progress cannot be negative'],
+        max: [100, 'Savings progress cannot be more than 100'],
+        default: 0
+      },
+      weeklyActivity: {
+        type: Number,
+        required: true,
+        min: [0, 'Weekly activity cannot be negative'],
+        max: [100, 'Weekly activity cannot be more than 100'],
+        default: 0
+      }
     },
   },
   {
@@ -48,25 +53,25 @@ function getRating(percentage) {
   return "Needs Improvement";
 }
 
-// Define virtual property for ratings
-rivuScoreSchema.virtual('factors').get(function() {
+// Define virtual property for detailed factors with ratings
+rivuScoreSchema.virtual('factorsWithRatings').get(function() {
   return [
     { 
       name: "Budget Adherence", 
-      percentage: this.budgetAdherence, 
-      rating: getRating(this.budgetAdherence), 
+      percentage: this.factors.budgetAdherence, 
+      rating: getRating(this.factors.budgetAdherence), 
       color: "bg-[#00C2A8]" 
     },
     { 
       name: "Savings Goal Progress", 
-      percentage: this.savingsProgress, 
-      rating: getRating(this.savingsProgress), 
+      percentage: this.factors.savingsProgress, 
+      rating: getRating(this.factors.savingsProgress), 
       color: "bg-[#2F80ED]" 
     },
     { 
       name: "Weekly Activity", 
-      percentage: this.weeklyActivity, 
-      rating: getRating(this.weeklyActivity), 
+      percentage: this.factors.weeklyActivity, 
+      rating: getRating(this.factors.weeklyActivity), 
       color: "bg-[#D0F500]" 
     },
   ];

@@ -18,7 +18,8 @@ const getRivuScore = async (req, res) => {
     
     res.json({
       score: rivuScore.score,
-      factors: rivuScore.factors,
+      factors: rivuScore.factorsWithRatings,
+      rawFactors: rivuScore.factors,
       lastUpdated: rivuScore.updatedAt
     });
   } catch (error) {

@@ -140,7 +140,7 @@ const deleteGoal = asyncHandler(async (req, res) => {
  * @access  Private (internal function)
  */
 const updateRivuScore = async (userId) => {
-  const { default: calculateRivuScore } = require('./rivuScoreController');
+  const { calculateRivuScore } = require('./rivuScoreController');
   await calculateRivuScore(userId);
 };
 
