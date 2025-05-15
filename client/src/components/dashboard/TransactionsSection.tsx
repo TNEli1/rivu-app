@@ -23,19 +23,34 @@ export type Transaction = {
   type: "income" | "expense";
   source?: "manual" | "plaid";
   possibleDuplicate?: boolean;
+  notes?: string;
 };
 
 export default function TransactionsSection() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"all" | "income" | "expenses">("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [editDate, setEditDate] = useState<Date | undefined>(new Date());
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [newTransaction, setNewTransaction] = useState({
     amount: "",
     merchant: "",
     category: "",
     account: "Credit Card",
     date: new Date().toISOString().split('T')[0], // Default to today's date in YYYY-MM-DD format
+  });
+  const [editTransaction, setEditTransaction] = useState({
+    id: "",
+    amount: "",
+    merchant: "",
+    category: "",
+    account: "",
+    type: "expense" as "income" | "expense",
+    date: "",
+    source: "manual" as "manual" | "plaid",
+    notes: ""
   });
 
   // Fetch transactions
@@ -57,6 +72,38 @@ export default function TransactionsSection() {
       }));
     }
   }, [selectedDate]);
+  
+  // Update edit transaction date when editDate changes
+  useEffect(() => {
+    if (editDate) {
+      setEditTransaction(prev => ({
+        ...prev,
+        date: editDate.toISOString().split('T')[0]
+      }));
+    }
+  }, [editDate]);
+  
+  // Open edit dialog and populate form with transaction data
+  const handleEditTransaction = (transaction: Transaction) => {
+    // Convert string date to Date object for the calendar
+    const txDate = transaction.date ? new Date(transaction.date) : new Date();
+    setEditDate(txDate);
+    
+    setEditTransaction({
+      id: transaction.id,
+      amount: transaction.amount.toString(),
+      merchant: transaction.merchant,
+      category: transaction.category,
+      account: transaction.account || '',
+      type: transaction.type || 'expense',
+      date: transaction.date,
+      source: transaction.source || 'manual',
+      notes: transaction.notes || ''
+    });
+    
+    setSelectedTransaction(transaction);
+    setIsEditDialogOpen(true);
+  };
 
   // Create a new transaction
   const createMutation = useMutation({
@@ -100,6 +147,44 @@ export default function TransactionsSection() {
         date: newTransaction.date || new Date().toISOString().split('T')[0]
       });
     }
+  };
+  
+  // Update an existing transaction
+  const updateMutation = useMutation({
+    mutationFn: async (data: { id: string, updates: any }) => {
+      return apiRequest("PUT", `/api/transactions/${data.id}`, data.updates);
+    },
+    onSuccess: () => {
+      // Use the helper function to invalidate all related queries
+      invalidateRelatedQueries('transaction');
+      
+      // Reset form and close dialog
+      setIsEditDialogOpen(false);
+      setSelectedTransaction(null);
+    },
+  });
+  
+  // Handle edit form submission
+  const handleUpdateTransaction = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!selectedTransaction) return;
+    
+    const updatedData = {
+      amount: parseFloat(editTransaction.amount),
+      merchant: editTransaction.merchant,
+      category: editTransaction.category,
+      account: editTransaction.account,
+      type: editTransaction.type,
+      date: editTransaction.date,
+      source: editTransaction.source,
+      notes: editTransaction.notes
+    };
+    
+    updateMutation.mutate({ 
+      id: selectedTransaction.id, 
+      updates: updatedData 
+    });
   };
 
   // Filter transactions based on active tab
