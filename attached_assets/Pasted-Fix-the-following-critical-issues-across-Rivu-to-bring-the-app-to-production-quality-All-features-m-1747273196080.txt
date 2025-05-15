@@ -1,0 +1,145 @@
+Fix the following critical issues across Rivu to bring the app to production quality. All features must be fully functional, connected to real user data, and free of placeholder, fake, or demo logic. Every feature must either work fully — or be removed.
+
+⸻
+
+A. TRANSACTION SYSTEM FIXES
+
+1. Manual “Add Transaction” Broken
+	•	Fix the “Add Transaction” form:
+	•	Submit transaction to backend and save under current user in MongoDB
+	•	Refresh list after submission
+	•	Display confirmation or failure message
+
+⸻
+
+B. BANK CONNECTION (PLAID) FIXES
+
+2. Plaid Button Behavior (Settings Page)
+	•	The current “Connect Bank” button:
+	•	Displays bank logos and fake “Bank Connected” message, even without a real connection
+
+Fix:
+	•	If you can implement real Plaid sandbox, use the full Link flow and show:
+	•	Error if token is missing → “No token found. Connection failed.”
+	•	Success only if a real access_token is saved to MongoDB
+	•	If not integrating now → remove the button entirely
+	•	Do not display fake “Connected” status
+
+⸻
+
+3. Plaid Link (in General)
+	•	When user attempts to connect:
+	•	If Plaid Link fails due to missing token, show:
+“No token found — check sandbox credentials”
+	•	Confirm this behavior as a sign that Plaid sandbox is working
+
+⸻
+
+C. RIVU SCORE AND BUDGET FIXES
+
+4. Rivu Score Shows 75 With No Data
+	•	Rivu Score must be calculated only using:
+	•	Real budget adherence
+	•	Real savings goal progress
+	•	Real login engagement
+	•	If no qualifying data exists, score should be 0
+
+⸻
+
+5. Monthly Budget Shows Auto-Generated Data
+	•	Eliminate all fake budget data on dashboard
+	•	If user has not added categories:
+Show “No budget data. Add categories to begin.”
+
+⸻
+
+6. Budget Category Logic
+	•	Must support:
+	•	Add
+	•	Edit
+	•	Delete
+	•	Deleting a category should update summary data, remove charts, and adjust Rivu Score
+
+⸻
+
+D. GOAL + DASHBOARD DISPLAY BUGS
+
+7. Active Goals Widget Mismatch
+	•	Progress bar and percentage must match
+	•	Fix inconsistency (e.g., “0% Complete” + 60% progress bar)
+
+⸻
+
+8. Dashboard Module Check
+	•	Ensure all widgets:
+	•	Pull live MongoDB or GPT data
+	•	Display clean states when data is missing
+	•	Have no fake or static content
+
+Modules to validate:
+	•	Rivu Score
+	•	Budget summary
+	•	Active goals
+	•	Smart advice
+	•	Transactions
+	•	Spending breakdown chart
+
+⸻
+
+E. QUICK ACTION + CHARTS
+
+9. Quick Action Buttons
+	•	Either:
+	•	Connect them to real actions (e.g., navigate to /budget or /transactions)
+	•	Or remove them completely
+
+10. Spending by Category Chart Overlap
+	•	Fix overlapping labels and text
+	•	Make chart readable and mobile-friendly
+
+⸻
+
+F. LIGHT MODE FIXES
+
+11. Light Mode is Unreadable
+	•	Current light mode is white-on-white and unusable
+
+Fix:
+	•	Apply a professional light color palette:
+	•	Background: soft gray or off-white (#f1f1f1)
+	•	Text: black/dark gray (#111)
+	•	Cards: #fff with shadow
+	•	Buttons: styled with visible contrast
+	•	Ensure input fields, charts, and cards are all clearly visible
+	•	Match UX quality of dark mode
+	•	Toggle between themes in settings
+
+⸻
+
+G. COACH UI FIXES
+
+12. AI Coach Chat Box
+	•	Issues:
+	•	User messages disappear
+	•	Response is slow or unstyled
+	•	Box is visually inconsistent
+
+Fix:
+	•	Show user’s message immediately
+	•	Style messages like a real chat (rounded, spaced)
+	•	Add loading indicator while GPT is responding
+	•	Make chat scrollable and persistent during session
+
+⸻
+
+H. GLOBAL POLISH + DEPLOYMENT PREP
+	•	Remove all placeholder or demo logic across:
+	•	Budgets
+	•	Transactions
+	•	Goals
+	•	Advice
+	•	Validate that:
+	•	All routes load authenticated user data
+	•	No null/undefined states show in production
+	•	All buttons perform real actions or are removed
+	•	Mobile responsiveness is intact
