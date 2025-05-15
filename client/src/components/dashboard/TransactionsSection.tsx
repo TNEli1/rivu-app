@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, PencilIcon } from "lucide-react";
 import { format } from "date-fns";
 import { formatCurrency, formatDate, getCategoryIconAndColor } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -265,7 +265,7 @@ export default function TransactionsSection() {
               const isIncome = transaction.type === "income";
               
               return (
-                <div key={transaction.id} className="flex items-center justify-between p-3 hover:bg-background/40 rounded-lg transition-colors">
+                <div key={transaction.id} className="flex items-center justify-between p-3 hover:bg-background/40 rounded-lg transition-colors group">
                   <div className="flex items-center">
                     <div className={`w-10 h-10 ${color.split(' ')[0]} rounded-lg flex items-center justify-center mr-3`}>
                       <i className={`${icon} ${color.split(' ')[1]}`}></i>
@@ -280,11 +280,21 @@ export default function TransactionsSection() {
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className={`font-medium ${isIncome ? 'text-[#00C2A8]' : 'text-[#FF4D4F]'}`}>
-                      {isIncome ? '+' : '-'}{formatCurrency(Math.abs(transaction.amount))}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{transaction.account}</p>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className={`font-medium ${isIncome ? 'text-[#00C2A8]' : 'text-[#FF4D4F]'}`}>
+                        {isIncome ? '+' : '-'}{formatCurrency(Math.abs(transaction.amount))}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{transaction.account}</p>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => handleEditTransaction(transaction)}
+                    >
+                      <PencilIcon className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               );
@@ -398,6 +408,151 @@ export default function TransactionsSection() {
                   }
                 >
                   {createMutation.isPending ? "Adding..." : "Add Transaction"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Transaction Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Transaction</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleUpdateTransaction}>
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-amount">Amount</Label>
+                  <Input
+                    id="edit-amount"
+                    type="number"
+                    step="0.01"
+                    value={editTransaction.amount}
+                    onChange={(e) => setEditTransaction({...editTransaction, amount: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-merchant">Merchant/Description</Label>
+                  <Input
+                    id="edit-merchant"
+                    value={editTransaction.merchant}
+                    onChange={(e) => setEditTransaction({...editTransaction, merchant: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-category">Category</Label>
+                  <Select 
+                    value={editTransaction.category} 
+                    onValueChange={(value) => setEditTransaction({...editTransaction, category: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.name}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-type">Type</Label>
+                  <Select
+                    value={editTransaction.type}
+                    onValueChange={(value: "income" | "expense") => 
+                      setEditTransaction({...editTransaction, type: value})
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="income">Income</SelectItem>
+                      <SelectItem value="expense">Expense</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-account">Account</Label>
+                  <Select
+                    value={editTransaction.account}
+                    onValueChange={(value) => setEditTransaction({...editTransaction, account: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select account" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Credit Card">Credit Card</SelectItem>
+                      <SelectItem value="Checking">Checking</SelectItem>
+                      <SelectItem value="Savings">Savings</SelectItem>
+                      <SelectItem value="Cash">Cash</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-transaction-date">Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {editDate ? format(editDate, "PPP") : "Select date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={editDate}
+                        onSelect={setEditDate}
+                        initialFocus
+                        disabled={(date) => date > new Date()}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-notes">Notes</Label>
+                  <Input
+                    id="edit-notes"
+                    value={editTransaction.notes}
+                    onChange={(e) => setEditTransaction({...editTransaction, notes: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-source">Source</Label>
+                  <div className="flex items-center space-x-2">
+                    <p className="text-sm text-muted-foreground">
+                      {editTransaction.source === "manual" ? "Entered Manually" : "Bank Account"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter className="mt-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsEditDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={
+                    !editTransaction.amount || 
+                    !editTransaction.merchant ||
+                    !editTransaction.category ||
+                    updateMutation.isPending
+                  }
+                >
+                  {updateMutation.isPending ? "Updating..." : "Update Transaction"}
                 </Button>
               </DialogFooter>
             </form>
