@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, invalidateRelatedQueries } from "@/lib/queryClient";
 import { formatCurrency, getProgressColor } from "@/lib/utils";
 import { Goal } from "@/types/goal";
 import { useLocation } from "wouter";

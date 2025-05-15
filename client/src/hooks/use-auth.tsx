@@ -349,7 +349,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await apiRequest('POST', '/api/logout');
     },
     onSuccess: () => {
-      // Remove token from localStorage
+      // Fully clear localStorage and sessionStorage
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Also remove the specific token
       removeToken();
       setTokenExpired(true);
       

@@ -11,7 +11,7 @@ import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { formatCurrency, formatDate, getCategoryIconAndColor } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, invalidateRelatedQueries } from "@/lib/queryClient";
 
 export type Transaction = {
   id: string;
@@ -71,11 +71,10 @@ export default function TransactionsSection() {
       return apiRequest("POST", "/api/transactions", transactionData);
     },
     onSuccess: () => {
-      // Invalidate related queries to trigger refresh
-      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/transactions/summary"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/rivu-score"] });
+      // Use the helper function to invalidate all related queries
+      invalidateRelatedQueries('transaction');
       
+      // Reset form and close dialog
       setIsAddDialogOpen(false);
       setNewTransaction({
         amount: "",
