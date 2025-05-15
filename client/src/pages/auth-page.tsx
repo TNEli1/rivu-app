@@ -4,10 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Switch } from "@/components/ui/switch";
 import { useState, useEffect } from "react";
 import { Redirect, Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle2, XCircle, Sun, Moon } from "lucide-react";
 
 
 export default function AuthPage() {
@@ -15,6 +16,7 @@ export default function AuthPage() {
   const [activeTab, setActiveTab] = useState("login");
   const [password, setPassword] = useState("");
   const [passwordStrength, setPasswordStrength] = useState(0);
+  const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
   const [passwordFeedback, setPasswordFeedback] = useState<{
     message: string;
     isValid: boolean;
@@ -102,6 +104,22 @@ export default function AuthPage() {
     if (passwordStrength < 40) return "bg-red-500";
     if (passwordStrength < 80) return "bg-yellow-500";
     return "bg-green-500";
+  };
+  
+  // Toggle dark/light mode
+  const toggleDarkMode = () => {
+    const newMode = !darkMode;
+    setDarkMode(newMode);
+    
+    // Apply theme change to document
+    const root = window.document.documentElement;
+    if (newMode) {
+      root.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      root.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
   };
 
   // Redirect to dashboard if user is already logged in

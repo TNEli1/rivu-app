@@ -1,0 +1,65 @@
+Make the following critical final updates to Rivu. These issues are blocking a complete MVP and must be resolved before launch. No fake content, broken UI elements, or demo behavior should remain in the live app.
+
+⸻
+
+A. DASHBOARD FIXES
+
+1. Remove “Active Goals” Box
+	•	The “Active Goals” widget on the dashboard is displaying incorrect or inconsistent data
+	•	Remove the entire box from the dashboard until full goal-tracking logic is implemented and integrated
+
+⸻
+
+B. BUDGET INPUT LOGIC
+
+2. Manual “Amount Spent” Field Still Missing
+	•	Each budget category must include a numeric input field for users to manually enter how much they’ve spent in that category
+	•	This is required if the user is not pulling transaction data from Plaid
+
+Required Behavior:
+	•	Field must be editable
+	•	Value saved to MongoDB under user’s budget record
+	•	Used to calculate percentage used
+	•	Updates dashboard charts and progress bars accordingly
+
+⸻
+
+C. TRANSACTION ENTRY FIXES
+
+3. Manual Transaction Forms Are Still Not Editable
+	•	When adding a manual transaction, the following fields must be fully customizable:
+	•	Description: free text input
+	•	Category: either select from list or manually enter new one
+	•	Account: optional but editable
+	•	Autocomplete/suggestions are okay — but do not restrict input to predefined values
+
+⸻
+
+D. ACCOUNT SETTINGS PAGE FIX
+
+4. Remove Fake Rivu Score from Settings
+	•	The Account Settings page currently displays a placeholder Rivu Score
+	•	This is misleading
+	•	Remove it completely, or only display it if a real calculated score exists from backend logic
+
+⸻
+
+E. LOGIN PAGE IMPROVEMENTS
+
+5. Add Light/Dark Mode Toggle on Login Page
+	•	Add a toggle switch to the login page for theme selection
+	•	Save user preference using:
+	•	Local storage, or
+	•	A value tied to their MongoDB profile
+	•	Apply theme preference immediately on login and carry it across all pages
+
+⸻
+
+F. GLOBAL REMINDERS
+	•	No placeholder/fake data may remain in:
+	•	Rivu Score
+	•	Budgets
+	•	Transactions
+	•	Goals
+	•	Dashboard metrics
+	•	All forms must allow add/update/delete and store values to the user’s MongoDB record

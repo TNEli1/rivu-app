@@ -161,7 +161,7 @@ export default function StatCards() {
   const goalsProgress = goalsData?.totalProgress || 0;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
       <StatCard
         title="Monthly Spending"
         value={spending}
@@ -193,18 +193,6 @@ export default function StatCards() {
         change={incomeChange}
         changeText="vs last month"
         isLoading={isTransactionsLoading}
-      />
-      
-      <StatCard
-        title="Active Goals"
-        value={activeGoals}
-        icon="ri-flag-line"
-        iconBg="bg-[#2F80ED]/10"
-        iconColor="text-[#2F80ED]"
-        change={0}
-        changeText="progress"
-        progressPercent={goalsProgress}
-        isLoading={isGoalsLoading}
       />
     </div>
   );
