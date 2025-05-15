@@ -7,7 +7,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
-import MobileHeader from "@/components/layout/MobileHeader";
 
 export default function ForgotPasswordPage() {
   const { toast } = useToast();
@@ -52,10 +51,6 @@ export default function ForgotPasswordPage() {
   if (submitted) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4 sm:p-8">
-        {/* Mobile Header - only visible on mobile */}
-        <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white p-4 shadow-md">
-          <MobileHeader />
-        </div>
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle className="text-2xl">Check your email</CardTitle>
@@ -87,10 +82,6 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4 sm:p-8">
-      {/* Mobile Header - only visible on mobile */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white p-4 shadow-md">
-        <MobileHeader />
-      </div>
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl">Reset Password</CardTitle>

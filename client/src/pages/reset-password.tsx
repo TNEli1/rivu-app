@@ -8,7 +8,6 @@ import { Loader2, CheckCircle2, X, AlertCircle } from "lucide-react";
 import { Link, useLocation, useParams } from "wouter";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { apiRequest } from "@/lib/queryClient";
-import MobileHeader from "@/components/layout/MobileHeader";
 
 export default function ResetPasswordPage() {
   const { toast } = useToast();
@@ -279,10 +278,6 @@ export default function ResetPasswordPage() {
   if (submitted) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4 sm:p-8">
-        {/* Mobile Header - only visible on mobile */}
-        <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white p-4 shadow-md">
-          <MobileHeader />
-        </div>
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle className="text-2xl">Password reset successful!</CardTitle>
@@ -311,10 +306,6 @@ export default function ResetPasswordPage() {
   // Reset password form
   return (
     <div className="flex min-h-screen items-center justify-center p-4 sm:p-8">
-      {/* Mobile Header - only visible on mobile */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white p-4 shadow-md">
-        <MobileHeader />
-      </div>
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl">Reset your password</CardTitle>

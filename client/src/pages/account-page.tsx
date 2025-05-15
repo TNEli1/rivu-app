@@ -8,7 +8,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { useState } from "react";
 import { Loader2, User, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
-import MobileHeader from "@/components/layout/MobileHeader";
 
 export default function AccountPage() {
   const { user, updateProfileMutation, logoutMutation } = useAuth();
@@ -118,11 +117,6 @@ export default function AccountPage() {
   
   return (
     <div className="container max-w-4xl py-10">
-      {/* Mobile Header - only visible on mobile */}
-      <div className="md:hidden mb-4">
-        <MobileHeader />
-      </div>
-      
       <Link to="/">
         <Button variant="ghost" className="mb-6">
           <ArrowLeft className="mr-2 h-4 w-4" />

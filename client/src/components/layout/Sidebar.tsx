@@ -4,7 +4,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { Loader2, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import RivuLogo from "./RivuLogo";
 
 type NavItem = {
   title: string;
@@ -50,8 +49,9 @@ export default function Sidebar() {
 
   return (
     <aside className="hidden md:flex flex-col w-64 bg-card border-r border-border p-6 fixed h-full">
-      <div className="mb-10">
-        <RivuLogo size={40} />
+      <div className="flex items-center mb-10">
+        <i className="ri-line-chart-fill text-primary text-3xl mr-2"></i>
+        <h1 className="text-2xl font-bold text-foreground">Rivu</h1>
       </div>
       
       <nav className="flex-grow">
