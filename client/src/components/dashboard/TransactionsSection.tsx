@@ -1,10 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
 import { formatCurrency, formatDate, getCategoryIconAndColor } from "@/lib/utils";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -24,11 +28,13 @@ export type Transaction = {
 export default function TransactionsSection() {
   const [activeTab, setActiveTab] = useState<"all" | "income" | "expenses">("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [newTransaction, setNewTransaction] = useState({
     amount: "",
     merchant: "",
     category: "",
     account: "Credit Card",
+    date: new Date().toISOString().split('T')[0], // Default to today's date in YYYY-MM-DD format
   });
 
   // Fetch transactions
@@ -49,6 +55,7 @@ export default function TransactionsSection() {
       category: string;
       account: string;
       source: "manual" | "plaid";
+      date: string;
     }) => {
       return apiRequest("POST", "/api/transactions", transactionData);
     },
@@ -60,6 +67,7 @@ export default function TransactionsSection() {
         merchant: "",
         category: "",
         account: "Credit Card",
+        date: new Date().toISOString().split('T')[0], // Reset to today
       });
     },
   });
@@ -75,6 +83,7 @@ export default function TransactionsSection() {
         category: newTransaction.category || "Other",
         account: newTransaction.account || "Credit Card",
         source: "manual", // Always set to manual when user creates via form
+        date: newTransaction.date || new Date().toISOString().split('T')[0]
       });
     }
   };

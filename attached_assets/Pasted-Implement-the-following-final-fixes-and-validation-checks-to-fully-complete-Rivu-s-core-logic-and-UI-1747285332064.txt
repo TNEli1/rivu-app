@@ -1,0 +1,87 @@
+Implement the following final fixes and validation checks to fully complete Rivu’s core logic and UI for public readiness. All features must be functioning with accurate, up-to-date data and proper navigation.
+
+⸻
+
+A. TRANSACTIONS – DATE FLEXIBILITY
+
+Issue:
+	•	Currently, manual transactions can only be added for today’s date
+	•	Users cannot select past or future dates
+
+Fix:
+	•	Update the transaction entry form to:
+	•	Allow the user to select any valid date (past or future) via a calendar/date picker
+	•	Default to today, but do not restrict the range
+	•	Backend must:
+	•	Accept and save the selected date to MongoDB
+	•	Confirm that:
+	•	Transactions list remains sorted by date
+	•	Insights and charts use the entered date accurately
+
+⸻
+
+B. BUDGET MODULE – VERIFY DATE HANDLING
+
+Fix:
+	•	Double-check the budget module (both /budget and dashboard):
+	•	Ensure there are no restrictions on when spending data can be entered
+	•	If budgets are stored with monthly context, confirm proper grouping and no hardcoded limits
+
+⸻
+
+C. GOALS PAGE – ADD “BACK TO DASHBOARD” BUTTON
+
+Issue:
+	•	The goals page loads separately with no way to return to the main app UI
+
+Fix:
+	•	Add a visible “Back to Dashboard” button or icon at the top of the /goals page
+	•	Route it cleanly to /dashboard
+	•	Maintain user session state and any unsaved data should be preserved or confirmed before leaving
+
+⸻
+
+D. RIVU SCORE – FINAL LOGIC VALIDATION
+
+Fix:
+	•	Confirm that the Rivu Score is calculated using the following logic:
+
+Components:
+	•	Budget adherence (e.g., % of categories staying under budget)
+	•	Savings progress (total progress across active savings goals)
+	•	Weekly user engagement (login/activity rate over time)
+
+Weighting Example (if not already implemented):
+
+rivuScore = 
+  (budgetSuccessRate * 100 * 0.4) +
+  (savingsProgressRate * 100 * 0.3) +
+  (engagementRate * 100 * 0.3);
+
+•	If no data is available, the score must default to 0
+	•	Ensure:
+	•	Score updates live when user adds budgets, savings, or logs in repeatedly
+	•	The AI Coach receives and uses the correct current Rivu Score, not a placeholder
+
+⸻
+
+Final Expectations
+	•	All changes must reflect immediately in the UI
+	•	Data must be scoped to authenticated users and saved to MongoDB
+	•	No hardcoded values or demo behaviors may remain
+	•	Ensure changes are tested in both dark and light mode
+
+A. SESSION & DATA PERSISTENCE – FIX DATA LOSS ON LOGOUT/LOGIN
+
+Issue:
+	•	When users log out and log back in, all their saved data (transactions, goals, budget, etc.) disappears
+
+Fix:
+	•	Ensure the following:
+	•	All user-generated data (transactions, budgets, goals, preferences) is being stored in MongoDB using the logged-in user’s unique ID
+	•	On login, the app fetches that user’s data and rehydrates the state
+	•	Do not rely on local state or temporary memory for core features
+	•	Verify:
+	•	JWT authentication is correctly scoped
+	•	Backend routes fetch only the current user’s data
+	•	State persists across page refresh and session changes
