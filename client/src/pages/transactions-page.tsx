@@ -318,6 +318,9 @@ export default function TransactionsPage() {
 
       {/* Main Content */}
       <main className="flex-grow md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
+        {/* Mobile Header */}
+        <MobileHeader />
+        
         {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
           <div>
