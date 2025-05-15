@@ -515,7 +515,7 @@ export default function GoalsPage() {
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction 
-                            onClick={() => goal && deleteGoalMutation.mutate(goal._id)}
+                            onClick={() => goal && deleteGoalMutation.mutate(getGoalId(goal))}
                             className="bg-red-500 hover:bg-red-600"
                           >
                             Delete
