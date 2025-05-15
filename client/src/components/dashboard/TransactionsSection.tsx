@@ -46,6 +46,16 @@ export default function TransactionsSection() {
   const { data: categories = [] } = useQuery<{id: string, name: string}[]>({
     queryKey: ["/api/budget-categories"],
   });
+  
+  // Update transaction date when selectedDate changes
+  useEffect(() => {
+    if (selectedDate) {
+      setNewTransaction(prev => ({
+        ...prev,
+        date: selectedDate.toISOString().split('T')[0]
+      }));
+    }
+  }, [selectedDate]);
 
   // Create a new transaction
   const createMutation = useMutation({
@@ -256,6 +266,28 @@ export default function TransactionsSection() {
                       <SelectItem value="Cash">Cash</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="transaction-date">Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {selectedDate ? format(selectedDate, "PPP") : "Select date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={setSelectedDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
               <DialogFooter className="mt-4">

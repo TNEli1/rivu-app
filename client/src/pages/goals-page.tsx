@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +18,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { formatCurrency, getProgressColor } from "@/lib/utils";
 import { Goal, GoalFormData, GoalContributionData } from "@/types/goal";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Plus, Target, Trash2, PiggyBank, Pencil } from "lucide-react";
+import { CalendarIcon, Plus, Target, Trash2, PiggyBank, Pencil, ArrowLeft } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
 import { format } from "date-fns";
@@ -340,6 +341,16 @@ export default function GoalsPage() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
+      {/* Back to Dashboard Button */}
+      <div className="mb-2">
+        <Link to="/dashboard">
+          <Button variant="ghost" className="p-0 hover:bg-transparent">
+            <ArrowLeft className="h-5 w-5 mr-1" />
+            <span>Back to Dashboard</span>
+          </Button>
+        </Link>
+      </div>
+    
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Savings Goals</h1>
