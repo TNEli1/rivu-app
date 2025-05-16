@@ -1031,7 +1031,7 @@ export default function TransactionsPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8"
+                              className="h-8 w-8 text-primary/70 hover:text-primary hover:bg-secondary/60 transition-colors"
                               onClick={() => openEditDialog(transaction)}
                             >
                               <Pencil className="h-4 w-4" />
@@ -1041,23 +1041,23 @@ export default function TransactionsPage() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-8 w-8 text-destructive"
+                                  className="h-8 w-8 text-destructive/70 hover:text-destructive hover:bg-secondary/60 transition-colors"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </AlertDialogTrigger>
-                              <AlertDialogContent>
+                              <AlertDialogContent className="border border-border/40 card-gradient">
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                  <AlertDialogDescription>
+                                  <AlertDialogTitle className="text-xl text-primary">Are you absolutely sure?</AlertDialogTitle>
+                                  <AlertDialogDescription className="text-foreground/80">
                                     This will permanently delete the transaction from {transaction.merchant} for {formatCurrency(parseFloat(transaction.amount))}.
                                     This action cannot be undone.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogCancel className="btn-luxury">Cancel</AlertDialogCancel>
                                   <AlertDialogAction
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90 btn-luxury"
                                     onClick={() => deleteMutation.mutate(transaction.id)}
                                   >
                                     {deleteMutation.isPending ? (
@@ -1081,19 +1081,19 @@ export default function TransactionsPage() {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="border border-border/40 card-gradient">
           <DialogHeader>
-            <DialogTitle>Edit Transaction</DialogTitle>
+            <DialogTitle className="text-xl text-primary">Edit Transaction</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleEditSubmit} className="space-y-4 mt-4">
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-type">Type</Label>
+              <div className="form-group-luxury">
+                <Label htmlFor="edit-type" className="label-luxury">Type</Label>
                 <Select 
                   value={formData.type} 
                   onValueChange={(value) => setFormData({...formData, type: value as 'expense' | 'income'})}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="form-input-luxury">
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1102,26 +1102,31 @@ export default function TransactionsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-date">Date</Label>
+              <div className="form-group-luxury">
+                <Label htmlFor="edit-date" className="label-luxury">Date</Label>
                 <Input 
                   id="edit-date" 
                   type="date" 
+                  className="form-input-luxury"
                   value={formData.date}
                   onChange={(e) => setFormData({...formData, date: e.target.value})}
                 />
               </div>
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="edit-amount">Amount</Label>
-              <Input 
-                id="edit-amount" 
-                type="number" 
-                step="0.01"
-                value={formData.amount}
-                onChange={(e) => setFormData({...formData, amount: e.target.value})}
-              />
+            <div className="form-group-luxury">
+              <Label htmlFor="edit-amount" className="label-luxury">Amount</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
+                <Input 
+                  id="edit-amount" 
+                  type="number" 
+                  step="0.01"
+                  className="pl-7 form-input-luxury"
+                  value={formData.amount}
+                  onChange={(e) => setFormData({...formData, amount: e.target.value})}
+                />
+              </div>
             </div>
             
             <div className="space-y-2">
