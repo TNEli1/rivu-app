@@ -48,7 +48,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import PlaidLinkButton from "@/components/account/PlaidLinkButton";
+// Removed Plaid import to focus on manual transactions only
 
 type Transaction = {
   id: number;

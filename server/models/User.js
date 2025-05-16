@@ -61,19 +61,6 @@ const userSchema = new mongoose.Schema(
       default: 'dark'
     },
     
-    // Plaid integration data
-    plaidData: {
-      accessToken: String,
-      itemId: String,
-      bankName: String,
-      status: {
-        type: String,
-        enum: ['connected', 'disconnected', 'error'],
-        default: 'disconnected'
-      },
-      lastUpdated: Date
-    },
-    
     // Fields for password reset functionality
     demographics: {
       ageRange: String,

@@ -22,13 +22,7 @@ export type Demographics = {
 };
 
 // Plaid connection data type
-export type PlaidData = {
-  status: 'connected' | 'disconnected';
-  accessToken?: string;
-  itemId?: string;
-  bankName?: string;
-  lastUpdated?: string;
-};
+// Plaid integration has been removed
 
 // Main user type
 export type User = {
@@ -45,7 +39,6 @@ export type User = {
   lastLogin?: string;
   loginCount?: number;
   demographics?: Demographics;
-  plaidData?: PlaidData;
 };
 
 // Auth context type

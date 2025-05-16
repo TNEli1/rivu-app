@@ -1,0 +1,102 @@
+Refocus Rivu to operate without bank linking and ensure tailored AI financial advice based on manual user input. This is for a stable, clean, and production-ready MVP launch.
+
+⸻
+
+1. Remove All Bank Linking (Plaid)
+	•	Completely remove all Plaid integrations, including sandbox logic and default transactions.
+	•	Replace with manual transaction entry.
+	•	Optional: Add support for uploading a CSV of past transactions (parse and categorize them client-side or server-side).
+
+⸻
+
+2. Ensure Manual Data Flow Only
+	•	Users will manually enter:
+	•	Income
+	•	Budget categories
+	•	Savings goals
+	•	Transactions
+	•	All data must be stored securely in MongoDB (or Postgres if migrated).
+	•	Prevent placeholder, demo, or hardcoded data from appearing.
+
+⸻
+
+3. Repair and Improve Rivu Score Logic
+	•	Rebalance weights: Budget Adherence (40%), Savings Progress (30%), Weekly Engagement (20%), Goal Completion Rate (10%)
+	•	Recalculate on any data update (budget, savings, transactions, logins).
+	•	Store in backend, and display real-time score + dynamic label (Excellent, Good, Fair, Needs Improvement).
+	•	Sync the updated score into the AI prompt logic.
+
+⸻
+
+4. Inject Smart GPT Prompting Logic
+
+Replace generic GPT prompts with one of the following tailored templates. Use user-entered values to dynamically populate each prompt before calling the GPT API.
+
+⸻
+
+Prompt 1 – Budget Overview:
+
+You're an AI personal finance coach helping users improve their budgeting. Analyze the following user data and provide 2–3 personalized, actionable tips to help them stay on track or improve their habits:
+
+- Monthly Income: ${{userIncome}}
+- Budget Status:
+  - Groceries: ${{spentGroceries}} spent out of ${{budgetGroceries}}
+  - Entertainment: ${{spentEntertainment}} spent out of ${{budgetEntertainment}}
+  - Subscriptions: ${{spentSubs}} spent out of ${{budgetSubs}}
+- Rivu Score: {{rivuScore}} – {{scoreRating}}
+
+Keep your response under 150 words. Be clear, constructive, and encouraging.
+
+Prompt 2 – Goal-Focused:
+
+You're an AI financial mentor. A user has entered the following savings goals and progress. Help them improve their consistency and mindset with 2–3 actionable tips:
+
+- Emergency Fund: Saved ${{emergencySaved}} out of ${{emergencyTarget}}
+- Travel Fund: Saved ${{travelSaved}} out of ${{travelTarget}}
+- Other goals: {{goalSummary}}
+
+They currently have a Rivu Score of {{rivuScore}}. Offer insight and encouragement to improve their savings behavior and hit more goals.
+
+Prompt 3 – Monthly Reflection:
+
+You're an AI personal finance coach offering a monthly recap. Based on the user's activity, spending habits, and savings progress, give them a short summary and 2 clear recommendations for next month.
+
+- Total Income: ${{income}}
+- Total Spent: ${{spentTotal}}
+- Total Saved: ${{savedTotal}}
+- Rivu Score: {{rivuScore}} – {{scoreRating}}
+
+Focus on one area of improvement and one area to maintain. Keep the tone practical and supportive.
+
+Randomly rotate or select based on user input completeness. Ensure no dummy data is included in the prompt sent to GPT.
+
+5. Remove Broken and Outdated UI
+	•	Delete popups like “Welcome” or “Registration Successful”
+	•	Remove demo profiles, sample transactions, and broken nav buttons
+	•	Fix any broken routing (e.g., Dashboard → Goals, Goals → Back)
+	•	Ensure all nav works correctly for:
+	•	Dashboard
+	•	Budgeting
+	•	Goals
+	•	Transactions
+	•	Advice
+
+⸻
+
+6. Final UX Behavior
+	•	After login, user should be prompted to:
+	•	Enter income
+	•	Set 3+ budget categories
+	•	Add 1 goal
+	•	Then view their Rivu Score
+	•	Then receive 1 AI tip
+
+This is the full MVP loop.
+
+⸻
+
+Once complete, confirm:
+	•	Rivu Score updates correctly
+	•	GPT responds with meaningful advice using real user data
+	•	No use of Plaid or placeholder logic
+	•	App looks stable and clean for public demo or investor pitch

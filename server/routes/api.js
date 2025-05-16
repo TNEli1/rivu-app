@@ -103,26 +103,7 @@ router.post('/rivu-score/recalculate', protect, recalculateRivuScore);
 router.post('/advice', protect, getAdvice);
 
 // Plaid Routes
-const {
-  createLinkToken,
-  exchangePublicToken,
-  getConnectedAccounts,
-  refreshAccountData,
-  disconnectAccount
-} = require('../controllers/plaidController');
-
-router.post('/plaid/link-token', protect, createLinkToken);
-router.post('/plaid/exchange-token', protect, exchangePublicToken);
-router.get('/plaid/accounts', protect, getConnectedAccounts);
-router.post('/plaid/refresh/:id', protect, refreshAccountData);
-router.delete('/plaid/disconnect/:id', protect, disconnectAccount);
-
-// Get transactions from Plaid
-router.get('/plaid/transactions', protect, (req, res) => {
-  // This is a placeholder for future Plaid integration with real-time transaction syncing
-  // For now, it returns the user's existing transactions
-  getTransactions(req, res);
-});
+// Plaid routes have been removed to focus on manual transaction entry only
 
 // Export the router both as a CommonJS module and as ES Module for compatibility
 module.exports = router;
