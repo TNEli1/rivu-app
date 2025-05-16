@@ -354,9 +354,12 @@ export default function TransactionsPage() {
       amount: "",
       merchant: "",
       category: "",
+      subcategory: "",
       account: "",
       notes: '',
     });
+    // Reset main category selection
+    setSelectedMainCategory("");
   };
 
   const handleAddSubmit = (e: React.FormEvent) => {
@@ -598,7 +601,7 @@ export default function TransactionsPage() {
                 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="category">Category <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                    <Label htmlFor="category">Category <span className="text-destructive">*</span></Label>
                     <Select 
                       value={formData.category} 
                       onValueChange={(value) => {
@@ -623,7 +626,7 @@ export default function TransactionsPage() {
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground mt-1">
-                      If left blank, will default to "Uncategorized" or "General Income"
+                      Select a category for this transaction
                     </p>
                   </div>
                   
@@ -654,7 +657,7 @@ export default function TransactionsPage() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="account">Account <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                  <Label htmlFor="account">Account <span className="text-destructive">*</span></Label>
                   <div className="space-y-2">
                     <Input 
                       id="account" 
