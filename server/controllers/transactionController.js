@@ -99,6 +99,17 @@ const createTransaction = async (req, res) => {
     const isValidDateFormat = submittedDate && /^\d{4}-\d{2}-\d{2}$/.test(submittedDate);
     if (!isValidDateFormat && submittedDate) {
       console.log(`Invalid date format received: ${submittedDate}`);
+      return res.status(400).json({ 
+        message: 'Please provide a valid date in YYYY-MM-DD format' 
+      });
+    }
+    
+    // Additional check: Make sure a date was provided
+    if (!submittedDate) {
+      console.log('Missing date in transaction data');
+      return res.status(400).json({ 
+        message: 'Please select a date for the transaction' 
+      });
     }
     
     try {
