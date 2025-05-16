@@ -1122,17 +1122,17 @@ export default function TransactionsPage() {
               </div>
               <div className="form-group-luxury">
                 <Label htmlFor="edit-date" className="label-luxury">Date</Label>
-                <Input 
-                  id="edit-date" 
-                  type="date" 
-                  className="form-input-luxury"
-                  value={formData.date}
-                  onChange={(e) => {
-                    // Enhanced date handling - log and preserve exact input value
-                    console.log("Date input changed to:", e.target.value);
-                    setFormData({...formData, date: e.target.value});
+                <DatePicker 
+                  date={formData.date} 
+                  setDate={(dateStr) => {
+                    console.log("Date selected using DatePicker:", dateStr);
+                    setFormData({...formData, date: dateStr});
                   }}
+                  className="form-input-luxury"
                 />
+                <p className="text-xs text-primary/70 mt-1.5">
+                  Select any date for this transaction
+                </p>
               </div>
             </div>
             
