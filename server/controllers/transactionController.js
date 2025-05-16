@@ -68,7 +68,7 @@ const createTransaction = async (req, res) => {
     }
 
     const userId = req.user._id;
-    const { amount, merchant, category, account, type = 'expense', date, notes, source = 'manual' } = req.body;
+    const { amount, merchant, category, account, type = 'expense', date, notes } = req.body;
 
     // Validate required fields with specific error messages
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
@@ -86,22 +86,7 @@ const createTransaction = async (req, res) => {
     // Check for potential duplicates before creating transaction
     const transactionDate = date ? new Date(date) : new Date();
     
-    // Set date range to check for duplicates (1 day before and after)
-    const oneDayMs = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-    const startDate = new Date(transactionDate.getTime() - oneDayMs);
-    const endDate = new Date(transactionDate.getTime() + oneDayMs);
-    
     try {
-      // Look for transactions with same amount and similar merchant within date range
-      const similarTransactions = await Transaction.find({
-        userId: userId,
-        amount: parseFloat(amount),
-        date: { $gte: startDate, $lte: endDate },
-        merchant: { $regex: new RegExp(merchant.substring(0, 5), 'i') } // Match on first 5 chars of merchant
-      });
-      
-      // Flag as possible duplicate if similar transactions found
-      const possibleDuplicate = similarTransactions.length > 0;
       
       // Create transaction with validated data
       const transactionData = {
@@ -111,8 +96,6 @@ const createTransaction = async (req, res) => {
         type,
         date: transactionDate,
         notes: notes || '',
-        source,
-        possibleDuplicate,
         category: category || 'Uncategorized',
         account: account || 'Cash'
       };
@@ -197,7 +180,7 @@ const updateTransaction = async (req, res) => {
     }
 
     const userId = req.user._id;
-    const { amount, merchant, category, account, type, date, notes, source } = req.body;
+    const { amount, merchant, category, account, type, date, notes } = req.body;
 
     try {
       // Find transaction by ID and ensure it belongs to the current user
@@ -299,7 +282,7 @@ const updateTransaction = async (req, res) => {
       if (type !== undefined) transaction.type = type;
       if (date !== undefined) transaction.date = new Date(date);
       if (notes !== undefined) transaction.notes = notes;
-      if (source !== undefined) transaction.source = source;
+      // Source field removed - all transactions are now manual entry only
 
       try {
         // Save the updated transaction
