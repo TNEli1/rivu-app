@@ -102,6 +102,8 @@ export default function TransactionsPage() {
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [accountFilter, setAccountFilter] = useState<string | null>(null);
+  const [isCustomAccount, setIsCustomAccount] = useState(false);
+  const [userAccounts, setUserAccounts] = useState<string[]>([]);
   
   const [formData, setFormData] = useState<TransactionFormData>({
     type: 'expense',
@@ -123,6 +125,18 @@ export default function TransactionsPage() {
       ? CATEGORY_SUGGESTIONS[selectedMainCategory] 
       : [];
   }, [selectedMainCategory]);
+  
+  // Fetch user's saved accounts
+  const { isLoading: isLoadingAccounts } = useQuery({
+    queryKey: ['/api/user/accounts'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/user/accounts');
+      const data = await res.json();
+      setUserAccounts(data.accounts || []);
+      return data;
+    },
+    staleTime: 60 * 1000, // 1 minute
+  });
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -156,21 +170,28 @@ export default function TransactionsPage() {
     }
   });
 
+  // Save new account if needed
+  const addAccountMutation = useMutation({
+    mutationFn: async (account: string) => {
+      const res = await apiRequest('POST', '/api/user/accounts', { account });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to save account");
+      }
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      setUserAccounts(data.accounts);
+      queryClient.invalidateQueries({ queryKey: ['/api/user/accounts'] });
+    }
+  });
+  
   // Add new transaction
   const addMutation = useMutation({
     mutationFn: async (data: TransactionFormData) => {
       // Process data before sending to API
       let category = data.category;
       let account = data.account;
-      
-      // Use custom values if appropriate
-      if (data.category === 'Other' && data.customCategory) {
-        category = data.customCategory;
-      }
-      
-      if (data.account === 'Other' && data.customAccount) {
-        account = data.customAccount;
-      }
       
       // Perform client-side validation
       // Required fields: description (merchant) and amount
@@ -182,21 +203,28 @@ export default function TransactionsPage() {
         throw new Error("Please enter a description for the transaction");
       }
       
-      // Category and account are now optional but will use default values if missing
-      if (!data.category) {
-        // Default category for expenses and income
-        data.category = data.type === 'expense' ? 'Uncategorized' : 'General Income';
+      // Category and account are required
+      if (!category) {
+        throw new Error("Please select a category for the transaction");
       }
       
-      if (!data.account) {
-        // Default account
-        data.account = 'Default Account';
+      if (!account) {
+        throw new Error("Please select or enter an account for the transaction");
       }
       
-      // Date is optional, will default to today if not provided
-      const currentDate = new Date().toISOString().split('T')[0];
+      // If this is a new custom account, save it first
+      if (isCustomAccount && account && !userAccounts.includes(account)) {
+        try {
+          await addAccountMutation.mutateAsync(account);
+        } catch (error) {
+          console.error("Failed to save new account:", error);
+          // Continue with transaction even if account saving fails
+        }
+      }
+      
+      // Date validation - ensure we use the user-selected date
       if (!data.date) {
-        data.date = currentDate;
+        throw new Error("Please select a date for the transaction");
       } else if (isNaN(new Date(data.date).getTime())) {
         throw new Error("Please select a valid date");
       }
@@ -659,19 +687,58 @@ export default function TransactionsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="account">Account <span className="text-destructive">*</span></Label>
                   <div className="space-y-2">
-                    <Input 
-                      id="account" 
-                      placeholder="Enter account (e.g., Checking, Credit Card)" 
-                      value={formData.account}
-                      onChange={(e) => setFormData({
-                        ...formData, 
-                        account: e.target.value
-                      })}
-                      autoComplete="off"
-                    />
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Common accounts: Checking, Savings, Credit Card, Cash
-                    </div>
+                    {isCustomAccount ? (
+                      <div className="space-y-2">
+                        <Input 
+                          id="account" 
+                          placeholder="Enter new account name" 
+                          value={formData.account}
+                          onChange={(e) => setFormData({
+                            ...formData, 
+                            account: e.target.value
+                          })}
+                          autoComplete="off"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsCustomAccount(false)}
+                          className="mt-2"
+                        >
+                          Select from existing accounts
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Select 
+                          value={formData.account} 
+                          onValueChange={(value) => {
+                            if (value === "add_new_account") {
+                              setIsCustomAccount(true);
+                              setFormData({...formData, account: ""});
+                            } else {
+                              setFormData({...formData, account: value});
+                            }
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select account" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {userAccounts.map((account) => (
+                              <SelectItem key={account} value={account}>
+                                {account}
+                              </SelectItem>
+                            ))}
+                            <SelectItem value="add_new_account">➕ Add new account</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Saved accounts are remembered across transactions
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
                 
