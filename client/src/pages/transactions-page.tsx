@@ -358,11 +358,26 @@ export default function TransactionsPage() {
       return;
     }
     
-    // Ensure we have defaults for optional fields
+    // Validate date is provided and in the correct format
+    if (!formData.date) {
+      toast({
+        title: "Validation error",
+        description: "Please select a valid date for the transaction.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    console.log("Submitting transaction with date:", formData.date);
+    
+    // Ensure we have defaults for optional fields but preserve user-selected date
     const submissionData = {
       ...formData,
       type: formData.type || 'expense',
-      date: formData.date || new Date().toISOString().split('T')[0]
+      // Important: Keep the original date selected by user, don't default to today
+      date: formData.date,
+      amount: parseFloat(formData.amount.toString()),
+      notes: formData.notes || ''
     };
     
     addMutation.mutate(submissionData);
