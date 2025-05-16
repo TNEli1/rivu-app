@@ -37,11 +37,7 @@ const transactionSchema = mongoose.Schema(
       type: String,
       default: '',
     },
-    // All transactions are manual entry only
-    possibleDuplicate: {
-      type: Boolean,
-      default: false,
-    },
+    // Manual entry only - no bank import fields needed
   },
   {
     timestamps: true,

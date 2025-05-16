@@ -49,7 +49,6 @@ export default function TransactionsSection() {
     account: "",
     type: "expense" as "income" | "expense",
     date: "",
-    source: "manual" as "manual" | "plaid",
     notes: ""
   });
 
@@ -97,7 +96,6 @@ export default function TransactionsSection() {
       account: transaction.account || '',
       type: transaction.type || 'expense',
       date: transaction.date,
-      source: transaction.source || 'manual',
       notes: transaction.notes || ''
     });
     
@@ -112,7 +110,6 @@ export default function TransactionsSection() {
       merchant: string;
       category: string;
       account: string;
-      source: "manual" | "plaid";
       date: string;
     }) => {
       return apiRequest("POST", "/api/transactions", transactionData);
@@ -143,7 +140,6 @@ export default function TransactionsSection() {
         merchant: newTransaction.merchant || "Uncategorized",
         category: newTransaction.category || "Other",
         account: newTransaction.account || "Credit Card",
-        source: "manual", // Always set to manual when user creates via form
         date: newTransaction.date || new Date().toISOString().split('T')[0]
       });
     }
@@ -177,7 +173,6 @@ export default function TransactionsSection() {
       account: editTransaction.account,
       type: editTransaction.type,
       date: editTransaction.date,
-      source: editTransaction.source,
       notes: editTransaction.notes
     };
     
@@ -279,7 +274,7 @@ export default function TransactionsSection() {
                       <p className="text-xs text-muted-foreground">
                         {formatDate(new Date(transaction.date))} • {transaction.category} •&nbsp;
                         <span className="text-xs italic">
-                          {transaction.source === 'plaid' ? 'Bank Account' : 'Entered Manually'}
+                          Entered Manually
                         </span>
                       </p>
                     </div>
@@ -530,14 +525,7 @@ export default function TransactionsSection() {
                     onChange={(e) => setEditTransaction({...editTransaction, notes: e.target.value})}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-source">Source</Label>
-                  <div className="flex items-center space-x-2">
-                    <p className="text-sm text-muted-foreground">
-                      {editTransaction.source === "manual" ? "Entered Manually" : "Bank Account"}
-                    </p>
-                  </div>
-                </div>
+                {/* Source field removed - all transactions are manual */}
               </div>
               <DialogFooter className="mt-4">
                 <Button 
