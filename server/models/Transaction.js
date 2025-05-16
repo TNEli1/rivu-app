@@ -34,8 +34,8 @@ const transactionSchema = mongoose.Schema(
       default: 'expense',
     },
     date: {
-      type: Date,
-      default: Date.now,
+      type: String,
+      default: () => new Date().toISOString().split('T')[0], // YYYY-MM-DD format
     },
     notes: {
       type: String,

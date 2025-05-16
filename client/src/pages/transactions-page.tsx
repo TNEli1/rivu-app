@@ -487,8 +487,13 @@ export default function TransactionsPage() {
   const openEditDialog = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
     
-    // Convert ISO date to YYYY-MM-DD for the input
-    const date = new Date(transaction.date).toISOString().split('T')[0];
+    // Preserve the exact date string or ensure it's in YYYY-MM-DD format
+    // If date is already in YYYY-MM-DD format, use it directly
+    const date = transaction.date.includes('T') 
+      ? new Date(transaction.date).toISOString().split('T')[0]
+      : transaction.date;
+      
+    console.log("Opening edit dialog with date:", transaction.date, "=>", date);
     
     // Set selected main category to properly load subcategories
     setSelectedMainCategory(transaction.category);
