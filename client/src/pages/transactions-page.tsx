@@ -556,7 +556,7 @@ export default function TransactionsPage() {
           </div>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="mt-4 md:mt-0 bg-primary hover:bg-primary/90 text-white">
+              <Button className="mt-4 md:mt-0 bg-primary hover:bg-primary/90 text-white btn-luxury btn-luxury-primary glow-effect">
                 <PlusCircle className="mr-2 h-4 w-4" /> Add Transaction
               </Button>
             </DialogTrigger>
@@ -564,15 +564,15 @@ export default function TransactionsPage() {
               <DialogHeader>
                 <DialogTitle>Add New Transaction</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleAddSubmit} className="space-y-4 mt-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="type">Type</Label>
+              <form onSubmit={handleAddSubmit} className="space-y-5 mt-4">
+                <div className="grid grid-cols-2 gap-5">
+                  <div className="form-group-luxury">
+                    <Label htmlFor="type" className="label-luxury">Type</Label>
                     <Select 
                       value={formData.type} 
                       onValueChange={(value) => setFormData({...formData, type: value as 'expense' | 'income'})}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="form-input-luxury">
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent>
@@ -581,12 +581,13 @@ export default function TransactionsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="date">Date <span className="text-destructive">*</span></Label>
+                  <div className="form-group-luxury">
+                    <Label htmlFor="date" className="label-luxury">Date <span className="text-destructive">*</span></Label>
                     <Input 
                       id="date" 
                       type="date" 
                       name="date"
+                      className="form-input-luxury"
                       value={formData.date}
                       onChange={(e) => {
                         const selectedDate = e.target.value;
