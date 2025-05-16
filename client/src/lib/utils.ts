@@ -35,12 +35,44 @@ export function getProgressColor(percentage: number): string {
   return 'bg-[#00C2A8]';
 }
 
-export function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  }).format(date);
+export function formatDate(date: Date | string): string {
+  try {
+    // If it's a string, convert to Date
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    
+    // Check for invalid date
+    if (isNaN(dateObj.getTime())) {
+      console.error("Invalid date received:", date);
+      return "Invalid date";
+    }
+    
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    }).format(dateObj);
+  } catch (error) {
+    console.error("Error formatting date:", error, date);
+    return "Invalid date";
+  }
+}
+
+// Format date to ISO string (YYYY-MM-DD)
+export function formatISODate(date: Date | string): string {
+  try {
+    // If it's a string, convert to Date
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    
+    // Extract year, month, day components directly to avoid timezone issues
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
+  } catch (error) {
+    console.error("Error formatting date to ISO:", error, date);
+    return "";
+  }
 }
 
 // Category Icons mapping

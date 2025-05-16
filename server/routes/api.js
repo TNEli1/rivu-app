@@ -101,6 +101,13 @@ router.route('/goals/:id')
   .put(protect, updateGoal)
   .delete(protect, deleteGoal);
 
+// Account Routes
+router.route('/user/accounts')
+  .get(protect, getUserAccounts)
+  .post(protect, addUserAccount);
+
+router.delete('/user/accounts/:id', protect, deleteUserAccount);
+
 // Rivu Score Routes
 router.get('/rivu-score', protect, getRivuScore);
 router.post('/rivu-score/recalculate', protect, recalculateRivuScore);

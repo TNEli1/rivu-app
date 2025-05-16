@@ -411,13 +411,14 @@ export default function TransactionsPageNew() {
   // List of unique accounts from transactions
   const uniqueAccounts = useMemo(() => {
     if (!transactions) return [];
-    const accountSet = new Set<string>();
+    // Use Object keys instead of Set for better compatibility
+    const accountMap: Record<string, boolean> = {};
     transactions.forEach(transaction => {
       if (transaction.account) {
-        accountSet.add(transaction.account);
+        accountMap[transaction.account] = true;
       }
     });
-    return [...accountSet];
+    return Object.keys(accountMap);
   }, [transactions]);
 
   // Clear all filters
