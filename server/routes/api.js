@@ -102,6 +102,10 @@ router.post('/rivu-score/recalculate', protect, recalculateRivuScore);
 // AI Advice Route
 router.post('/advice', protect, getAdvice);
 
+// Admin Routes
+const adminRoutes = require('./adminRoutes');
+router.use('/admin', adminRoutes);
+
 // Plaid Routes
 // Plaid routes have been removed to focus on manual transaction entry only
 

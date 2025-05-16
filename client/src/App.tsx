@@ -13,6 +13,7 @@ import TransactionsPage from "@/pages/transactions-page";
 import InsightsPage from "@/pages/insights-page";
 import SettingsPage from "@/pages/settings-page";
 import GoalsPage from "@/pages/goals-page";
+import AdminPage from "@/pages/admin-page";
 import ForgotPasswordPage from "@/pages/forgot-password";
 import ResetPasswordPage from "@/pages/reset-password";
 import { ProtectedRoute } from "./lib/protected-route";
