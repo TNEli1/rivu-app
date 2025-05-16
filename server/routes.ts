@@ -57,13 +57,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
   
   // Current user helper (kept for compatibility with existing code)
-  const getCurrentUserId = () => 1; // Always return the demo user for now
+  // Helper function to get the authenticated user ID from the request
+  // This replaces the old getCurrentUserId function to ensure proper user authentication
+  const getCurrentUserId = (req: any): any => {
+    // If using MongoDB authentication with req.user
+    if (req.user && req.user._id) {
+      // For MongoDB users, return the user's ObjectId
+      return req.user._id;
+    }
+    
+    // For fallback/testing only - should never happen in production
+    console.error('🚨 WARNING: No authenticated user found in request. Using fallback value for development only.');
+    return null;
+  };
 
   // Budget Categories API
   app.get("/api/budget-categories", async (req, res) => {
-    const userId = getCurrentUserId();
-    const categories = await storage.getBudgetCategories(userId);
-    res.json(categories);
+    // Use authenticated user ID from request
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    
+    const userId = req.user._id;
+    console.log(`Fetching budget categories for user: ${userId}`);
+    
+    try {
+      const categories = await storage.getBudgetCategories(userId);
+      res.json(categories);
+    } catch (error) {
+      console.error(`Error fetching budget categories for user ${userId}:`, error);
+      res.status(500).json({ message: "Error fetching budget categories" });
+    }
   });
 
   app.post("/api/budget-categories", async (req, res) => {
@@ -584,16 +608,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Goals Summary API
   app.get("/api/goals/summary", async (req, res) => {
     try {
-      const userId = getCurrentUserId();
-      const userGoals = goals.filter(g => g.userId === userId);
+      // Use MongoDB Goal model for user-specific goals
+      // Get authenticated user ID from request (req.user._id)
+      const userId = req.user?._id;
       
+      if (!userId) {
+        console.error("No authenticated user for goals summary request");
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Log for debugging purposes
+      console.log(`Fetching goals summary for user ${userId}`);
+      
+      // Find goals for this specific user using the Goal model
+      const Goal = require('./models/Goal');
+      const userGoals = await Goal.find({ user: userId });
+      
+      // Calculate summary metrics
       const activeGoals = userGoals.length;
       const totalTarget = userGoals.reduce((sum, goal) => sum + goal.targetAmount, 0);
       const totalSaved = userGoals.reduce((sum, goal) => sum + goal.currentAmount, 0);
+      
+      // Calculate overall progress percentage
       const totalProgress = userGoals.length > 0
-        ? userGoals.reduce((sum, goal) => sum + goal.progressPercentage, 0) / userGoals.length
+        ? userGoals.reduce((sum, goal) => {
+            const progressPercent = goal.targetAmount > 0 
+              ? (goal.currentAmount / goal.targetAmount) * 100 
+              : 0;
+            return sum + progressPercent;
+          }, 0) / userGoals.length
         : 0;
       
+      console.log(`Found ${activeGoals} goals for user ${userId}`);
+      
+      // Return the summary data
       res.json({
         activeGoals,
         totalProgress,
