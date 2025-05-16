@@ -123,9 +123,8 @@ const createTransaction = async (req, res) => {
         amount: parseFloat(amount),
         merchant,
         type,
-        // Critical Fix: Strictly preserve the exact date string from the client
-        // Only default to today if absolutely necessary
-        date: submittedDate || new Date().toISOString().split('T')[0],
+        // FIXED: Store exact date string provided by user without any conversion
+        date: submittedDate,
         notes: notes || '',
         category: category || 'Uncategorized',
         subcategory: subcategory || '', // Add subcategory support
@@ -317,9 +316,17 @@ const updateTransaction = async (req, res) => {
       if (type !== undefined) transaction.type = type;
       // Critical Fix: Do not create a new Date() object from the string
       // This preserves the exact date string as selected by the user without timezone conversion
+      // Critical date fix: Preserve exact user-selected date without any conversion
       if (date !== undefined) {
         console.log(`Update transaction - preserving exact date: ${date}`);
+        // Store the date string directly without any Date object conversion
         transaction.date = date;
+        
+        // Verify date wasn't changed
+        if (transaction.date !== date) {
+          console.error(`Date mismatch: expected ${date}, got ${transaction.date}`);
+          transaction.date = date; // Force it again if needed
+        }
       }
       if (notes !== undefined) transaction.notes = notes;
       // Source field removed - all transactions are now manual entry only

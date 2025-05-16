@@ -707,20 +707,22 @@ export default function TransactionsPage() {
                   )}
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="account">Account <span className="text-destructive">*</span></Label>
-                  <div className="space-y-2">
+                <div className="form-group-luxury">
+                  <Label htmlFor="account" className="label-luxury">Account <span className="text-destructive">*</span></Label>
+                  <div className="space-y-3">
                     {isCustomAccount ? (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         <Input 
                           id="account" 
                           placeholder="Enter new account name" 
+                          className="form-input-luxury"
                           value={formData.account}
                           onChange={(e) => setFormData({
                             ...formData, 
                             account: e.target.value
                           })}
                           autoComplete="off"
+                          required
                         />
                         <Button
                           type="button"
@@ -745,7 +747,7 @@ export default function TransactionsPage() {
                             }
                           }}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="form-input-luxury">
                             <SelectValue placeholder="Select account" />
                           </SelectTrigger>
                           <SelectContent>
@@ -757,7 +759,7 @@ export default function TransactionsPage() {
                             <SelectItem value="add_new_account">➕ Add new account</SelectItem>
                           </SelectContent>
                         </Select>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-xs text-primary/70 mt-1.5">
                           Saved accounts are remembered across transactions
                         </p>
                       </div>
@@ -769,7 +771,7 @@ export default function TransactionsPage() {
                   <Button 
                     type="submit" 
                     className="btn-luxury btn-luxury-primary glow-effect"
-                    disabled={!formData.amount || !formData.merchant || !formData.category || !formData.account || addMutation.isPending}
+                    disabled={!formData.amount || !formData.merchant || !formData.category || !formData.account || !formData.date || addMutation.isPending}
                   >
                     {addMutation.isPending ? (
                       <>
