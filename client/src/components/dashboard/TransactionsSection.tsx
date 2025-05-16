@@ -22,8 +22,6 @@ export type Transaction = {
   category: string;
   account: string;
   type: "income" | "expense";
-  source?: "manual" | "plaid";
-  possibleDuplicate?: boolean;
   notes?: string;
 };
 
