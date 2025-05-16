@@ -800,7 +800,7 @@ export default function TransactionsPage() {
                         <td className="p-4 align-middle">
                           <div className="flex flex-col">
                             <span>{transaction.merchant}</span>
-                            {transaction.possibleDuplicate && (
+                            {false && (
                               <div className="flex flex-col mt-1">
                                 <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-800">
                                   Possible Duplicate
@@ -846,8 +846,8 @@ export default function TransactionsPage() {
                         </td>
                         <td className="p-4 align-middle">{transaction.account}</td>
                         <td className="p-4 align-middle">
-                          <Badge variant={transaction.source === 'manual' ? 'outline' : 'secondary'}>
-                            {transaction.source === 'manual' ? 'Added manually' : 'Synced from bank'}
+                          <Badge variant="outline">
+                            Manual Entry
                           </Badge>
                         </td>
                         <td className={`p-4 align-middle text-right font-medium ${isExpense ? 'text-destructive' : 'text-[#00C2A8]'}`}>
