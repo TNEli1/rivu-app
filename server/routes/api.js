@@ -32,12 +32,6 @@ const {
 } = require('../controllers/transactionController');
 
 const {
-  getUserAccounts,
-  addUserAccount,
-  deleteUserAccount
-} = require('../controllers/accountController');
-
-const {
   getGoals,
   createGoal,
   updateGoal,
@@ -100,13 +94,6 @@ router.route('/goals')
 router.route('/goals/:id')
   .put(protect, updateGoal)
   .delete(protect, deleteGoal);
-
-// Account Routes
-router.route('/user/accounts')
-  .get(protect, getUserAccounts)
-  .post(protect, addUserAccount);
-
-router.delete('/user/accounts/:id', protect, deleteUserAccount);
 
 // Rivu Score Routes
 router.get('/rivu-score', protect, getRivuScore);

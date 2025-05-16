@@ -788,34 +788,30 @@ export default function TransactionsPage() {
         </div>
 
         {/* Filters */}
-        <Card className="p-5 mb-6 card-luxury border border-primary/10">
+        <Card className="p-4 mb-6 card-luxury">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-grow">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-primary/60" />
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search transactions..."
-                className="pl-9 form-input-luxury h-10 text-sm bg-background/70 border-primary/20"
+                className="pl-8 form-input-luxury"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    className="flex items-center gap-1.5 bg-background/70 border-primary/20 hover:bg-background/90 text-sm font-medium h-10"
-                  >
-                    <span className="text-primary/80">Type</span> 
-                    <ChevronDown className="h-3.5 w-3.5 text-primary/60" />
+                  <Button variant="outline" className="flex items-center gap-1 form-input-luxury">
+                    Type <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="border-primary/10 bg-background/95 backdrop-blur-lg">
-                  <DropdownMenuItem onClick={() => setTypeFilter('expense')} className="text-sm hover:bg-primary/10">
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setTypeFilter('expense')}>
                     Expense
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setTypeFilter('income')} className="text-sm hover:bg-primary/10">
+                  <DropdownMenuItem onClick={() => setTypeFilter('income')}>
                     Income
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -823,20 +819,15 @@ export default function TransactionsPage() {
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    className="flex items-center gap-1.5 bg-background/70 border-primary/20 hover:bg-background/90 text-sm font-medium h-10"
-                  >
-                    <span className="text-primary/80">Category</span> 
-                    <ChevronDown className="h-3.5 w-3.5 text-primary/60" />
+                  <Button variant="outline" className="flex items-center gap-1 form-input-luxury">
+                    Category <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="border-primary/10 bg-background/95 backdrop-blur-lg">
+                <DropdownMenuContent align="end">
                   {uniqueCategories.map(category => (
                     <DropdownMenuItem 
                       key={category}
                       onClick={() => setCategoryFilter(category)}
-                      className="text-sm hover:bg-primary/10"
                     >
                       {category}
                     </DropdownMenuItem>
@@ -846,20 +837,15 @@ export default function TransactionsPage() {
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    className="flex items-center gap-1.5 bg-background/70 border-primary/20 hover:bg-background/90 text-sm font-medium h-10"
-                  >
-                    <span className="text-primary/80">Account</span> 
-                    <ChevronDown className="h-3.5 w-3.5 text-primary/60" />
+                  <Button variant="outline" className="flex items-center gap-1 form-input-luxury">
+                    Account <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="border-primary/10 bg-background/95 backdrop-blur-lg">
+                <DropdownMenuContent align="end">
                   {uniqueAccounts.map(account => (
                     <DropdownMenuItem 
                       key={account}
                       onClick={() => setAccountFilter(account)}
-                      className="text-sm hover:bg-primary/10"
                     >
                       {account}
                     </DropdownMenuItem>
@@ -869,11 +855,12 @@ export default function TransactionsPage() {
               
               {hasActiveFilters && (
                 <Button 
-                  variant="outline" 
+                  variant="ghost" 
                   onClick={clearAllFilters}
-                  className="flex items-center gap-1.5 bg-background/70 border-primary/20 hover:bg-destructive/10 text-sm font-medium text-destructive h-10"
+                  className="text-destructive btn-luxury"
                 >
-                  <FilterX className="h-3.5 w-3.5" /> Clear Filters
+                  <FilterX className="h-4 w-4 mr-1" />
+                  Clear filters
                 </Button>
               )}
             </div>
@@ -881,39 +868,39 @@ export default function TransactionsPage() {
           
           {/* Active filters */}
           {hasActiveFilters && (
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-3 flex flex-wrap gap-2">
               {typeFilter && (
-                <Badge variant="outline" className="flex items-center gap-1.5 bg-primary/5 text-primary/80 border-primary/20 py-1.5 pl-3 pr-2">
-                  <span className="font-medium">Type:</span> {typeFilter}
+                <Badge variant="secondary" className="flex items-center gap-1 border-primary/20 bg-secondary/80">
+                  Type: {typeFilter}
                   <Trash2 
-                    className="h-3 w-3 ml-1.5 cursor-pointer text-primary/70 hover:text-destructive transition-colors" 
+                    className="h-3 w-3 ml-1 cursor-pointer text-primary/80 hover:text-primary" 
                     onClick={() => setTypeFilter(null)}
                   />
                 </Badge>
               )}
               {categoryFilter && (
-                <Badge variant="outline" className="flex items-center gap-1.5 bg-primary/5 text-primary/80 border-primary/20 py-1.5 pl-3 pr-2">
-                  <span className="font-medium">Category:</span> {categoryFilter}
+                <Badge variant="secondary" className="flex items-center gap-1 border-primary/20 bg-secondary/80">
+                  Category: {categoryFilter}
                   <Trash2 
-                    className="h-3 w-3 ml-1.5 cursor-pointer text-primary/70 hover:text-destructive transition-colors" 
+                    className="h-3 w-3 ml-1 cursor-pointer text-primary/80 hover:text-primary" 
                     onClick={() => setCategoryFilter(null)}
                   />
                 </Badge>
               )}
               {accountFilter && (
-                <Badge variant="outline" className="flex items-center gap-1.5 bg-primary/5 text-primary/80 border-primary/20 py-1.5 pl-3 pr-2">
-                  <span className="font-medium">Account:</span> {accountFilter}
+                <Badge variant="secondary" className="flex items-center gap-1 border-primary/20 bg-secondary/80">
+                  Account: {accountFilter}
                   <Trash2 
-                    className="h-3 w-3 ml-1.5 cursor-pointer text-primary/70 hover:text-destructive transition-colors" 
+                    className="h-3 w-3 ml-1 cursor-pointer text-primary/80 hover:text-primary" 
                     onClick={() => setAccountFilter(null)}
                   />
                 </Badge>
               )}
               {searchTerm && (
-                <Badge variant="outline" className="flex items-center gap-1.5 bg-primary/5 text-primary/80 border-primary/20 py-1.5 pl-3 pr-2">
-                  <span className="font-medium">Search:</span> {searchTerm}
+                <Badge variant="secondary" className="flex items-center gap-1 border-primary/20 bg-secondary/80">
+                  Search: {searchTerm}
                   <Trash2 
-                    className="h-3 w-3 ml-1.5 cursor-pointer text-primary/70 hover:text-destructive transition-colors" 
+                    className="h-3 w-3 ml-1 cursor-pointer text-primary/80 hover:text-primary" 
                     onClick={() => setSearchTerm("")}
                   />
                 </Badge>
@@ -1045,10 +1032,7 @@ export default function TransactionsPage() {
                           </div>
                         </td>
                         <td className="p-4 align-middle">
-                          <div className="flex items-center gap-2">
-                            <CreditCard className="h-4 w-4 text-primary/60" />
-                            <span className="font-medium text-sm">{transaction.account}</span>
-                          </div>
+                          <span className="font-medium text-primary/80">{transaction.account}</span>
                         </td>
                         <td className="p-4 align-middle">
                           <Badge variant="outline" className="bg-primary/5 text-primary/80 border-primary/20 font-normal">
