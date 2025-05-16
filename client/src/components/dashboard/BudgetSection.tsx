@@ -272,26 +272,7 @@ export default function BudgetSection() {
       <CardContent className="p-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-2">
           <h2 className="text-xl font-bold text-foreground">Monthly Budget</h2>
-          <div className="flex space-x-2 w-full md:w-auto">
-            <Button 
-              variant="outline" 
-              className="text-primary flex items-center text-sm w-full md:w-auto"
-              onClick={() => {
-                // If there are no categories, open add dialog instead
-                if (categories.length === 0) {
-                  setIsAddDialogOpen(true);
-                  return;
-                }
-                // Open quick update dialog for the first category
-                const firstCategory = categories[0];
-                setEditingCategory(firstCategory);
-                setNewSpentAmount(String(firstCategory.spentAmount));
-                setNewBudgetAmount(String(firstCategory.budgetAmount));
-                setIsEditCategoryDialogOpen(true);
-              }}
-            >
-              <i className="ri-edit-line mr-1"></i> Update Spending
-            </Button>
+          <div className="flex w-full md:w-auto">
             <Button 
               variant="ghost" 
               className="text-primary hover:underline text-sm font-medium flex items-center whitespace-nowrap"
