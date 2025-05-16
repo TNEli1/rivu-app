@@ -936,14 +936,14 @@ export default function TransactionsPage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="text-left p-4 font-medium">Date</th>
-                    <th className="text-left p-4 font-medium">Description</th>
-                    <th className="text-left p-4 font-medium">Category</th>
-                    <th className="text-left p-4 font-medium">Account</th>
-                    <th className="text-left p-4 font-medium">Source</th>
-                    <th className="text-right p-4 font-medium">Amount</th>
-                    <th className="text-right p-4 font-medium">Actions</th>
+                  <tr className="border-b border-border/50 bg-gradient-to-r from-card to-secondary/40">
+                    <th className="text-left p-4 font-medium text-primary/90">Date</th>
+                    <th className="text-left p-4 font-medium text-primary/90">Description</th>
+                    <th className="text-left p-4 font-medium text-primary/90">Category</th>
+                    <th className="text-left p-4 font-medium text-primary/90">Account</th>
+                    <th className="text-left p-4 font-medium text-primary/90">Source</th>
+                    <th className="text-right p-4 font-medium text-primary/90">Amount</th>
+                    <th className="text-right p-4 font-medium text-primary/90">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -952,16 +952,16 @@ export default function TransactionsPage() {
                     const isExpense = transaction.type === 'expense';
                     
                     return (
-                      <tr key={transaction.id} className="border-b hover:bg-muted/20">
+                      <tr key={transaction.id} className="border-b border-border/40 hover:bg-secondary/30 transition-colors duration-200">
                         <td className="p-4 align-middle">
                           <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span>{formatDate(new Date(transaction.date))}</span>
+                            <Calendar className="h-4 w-4 text-primary/60" />
+                            <span className="font-medium">{formatDate(new Date(transaction.date))}</span>
                           </div>
                         </td>
                         <td className="p-4 align-middle">
                           <div className="flex flex-col">
-                            <span>{transaction.merchant}</span>
+                            <span className="font-medium">{transaction.merchant}</span>
                             {false && (
                               <div className="flex flex-col mt-1">
                                 <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-800">
@@ -1000,27 +1000,31 @@ export default function TransactionsPage() {
                         </td>
                         <td className="p-4 align-middle">
                           <div className="flex items-center gap-2">
-                            <div className={`p-1 rounded ${color.split(' ')[0]}`}>
+                            <div className={`p-1.5 rounded-md shadow-sm ${color.split(' ')[0]}`}>
                               <i className={`${icon} text-sm`}></i>
                             </div>
                             <div className="flex flex-col">
-                              <span>{transaction.category}</span>
+                              <span className="font-medium">{transaction.category}</span>
                               {transaction.subcategory && (
-                                <span className="text-xs text-muted-foreground">
+                                <span className="text-xs text-primary/60">
                                   {transaction.subcategory}
                                 </span>
                               )}
                             </div>
                           </div>
                         </td>
-                        <td className="p-4 align-middle">{transaction.account}</td>
                         <td className="p-4 align-middle">
-                          <Badge variant="outline">
+                          <span className="font-medium text-primary/80">{transaction.account}</span>
+                        </td>
+                        <td className="p-4 align-middle">
+                          <Badge variant="outline" className="bg-secondary/50 border-primary/20 text-primary/80">
                             Manual Entry
                           </Badge>
                         </td>
-                        <td className={`p-4 align-middle text-right font-medium ${isExpense ? 'text-destructive' : 'text-[#00C2A8]'}`}>
-                          {isExpense ? '-' : '+'}{formatCurrency(parseFloat(transaction.amount))}
+                        <td className={`p-4 align-middle text-right font-semibold ${isExpense ? 'text-destructive' : 'text-[#00C2A8]'}`}>
+                          <span className="text-lg tracking-tight">
+                            {isExpense ? '-' : '+'}{formatCurrency(parseFloat(transaction.amount))}
+                          </span>
                         </td>
                         <td className="p-4 align-middle text-right">
                           <div className="flex justify-end items-center space-x-1">
