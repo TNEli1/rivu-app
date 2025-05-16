@@ -591,28 +591,61 @@ export default function TransactionsPage() {
                   </p>
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                <div className="space-y-4">
                   <div className="space-y-2">
-                    <Input 
-                      id="category" 
-                      placeholder="Enter category (e.g., Groceries, Utilities)" 
-                      value={formData.category}
-                      onChange={(e) => setFormData({
-                        ...formData, 
-                        category: e.target.value
-                      })}
-                      autoComplete="off"
-                    />
-                    {categories.length > 0 && (
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Suggestions: {categories.slice(0, 3).map(cat => cat.name).join(', ')}
-                        {categories.length > 3 && ', and more'}
-                        <br />
-                        If left blank, will default to "Uncategorized" or "General Income"
-                      </div>
-                    )}
+                    <Label htmlFor="category">Category <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                    <Select 
+                      value={formData.category} 
+                      onValueChange={(value) => {
+                        setSelectedMainCategory(value);
+                        setFormData({
+                          ...formData, 
+                          category: value,
+                          // Reset subcategory when main category changes
+                          subcategory: ""
+                        });
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.keys(CATEGORY_SUGGESTIONS).map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      If left blank, will default to "Uncategorized" or "General Income"
+                    </p>
                   </div>
+                  
+                  {/* Subcategory selection - only show if a main category is selected */}
+                  {formData.category && availableSubcategories.length > 0 && (
+                    <div className="space-y-2">
+                      <Label htmlFor="subcategory">Subcategory</Label>
+                      <Select 
+                        value={formData.subcategory} 
+                        onValueChange={(value) => setFormData({...formData, subcategory: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select subcategory" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableSubcategories.map((subcat) => (
+                            <SelectItem key={subcat} value={subcat}>
+                              {subcat}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Further categorize your {formData.type}
+                      </p>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="space-y-2">

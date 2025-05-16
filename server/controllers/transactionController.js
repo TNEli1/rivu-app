@@ -92,6 +92,9 @@ const createTransaction = async (req, res) => {
     
     try {
       
+      // Extract subcategory from request body
+      const { subcategory } = req.body;
+    
       // Create transaction with validated data
       const transactionData = {
         userId: userId, // Explicitly set from authenticated user
@@ -101,6 +104,7 @@ const createTransaction = async (req, res) => {
         date: transactionDate,
         notes: notes || '',
         category: category || 'Uncategorized',
+        subcategory: subcategory || '', // Add subcategory support
         account: account || 'Cash'
       };
 
@@ -184,7 +188,7 @@ const updateTransaction = async (req, res) => {
     }
 
     const userId = req.user._id;
-    const { amount, merchant, category, account, type, date, notes } = req.body;
+    const { amount, merchant, category, subcategory, account, type, date, notes } = req.body;
 
     try {
       // Find transaction by ID and ensure it belongs to the current user
