@@ -1,10 +1,10 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
-const User = require('../models/User');
-const Transaction = require('../models/Transaction');
-const Budget = require('../models/Budget');
-const Goal = require('../models/Goal');
-const RivuScore = require('../models/RivuScore');
+const User = require('../models/User').default;
+const Transaction = require('../models/Transaction').default;
+const Budget = require('../models/Budget').default;
+const Goal = require('../models/Goal').default;
+const RivuScore = require('../models/RivuScore').default;
 
 // Common password for all demo accounts
 const DEFAULT_PASSWORD = 'Password123!';
