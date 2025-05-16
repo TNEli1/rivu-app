@@ -788,30 +788,34 @@ export default function TransactionsPage() {
         </div>
 
         {/* Filters */}
-        <Card className="p-4 mb-6 card-luxury">
+        <Card className="p-5 mb-6 card-luxury border border-primary/10">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-grow">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-3 h-4 w-4 text-primary/60" />
               <Input
                 placeholder="Search transactions..."
-                className="pl-8 form-input-luxury"
+                className="pl-9 form-input-luxury h-10 text-sm bg-background/70 border-primary/20"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-1 form-input-luxury">
-                    Type <ChevronDown className="h-4 w-4" />
+                  <Button 
+                    variant="outline" 
+                    className="flex items-center gap-1.5 bg-background/70 border-primary/20 hover:bg-background/90 text-sm font-medium h-10"
+                  >
+                    <span className="text-primary/80">Type</span> 
+                    <ChevronDown className="h-3.5 w-3.5 text-primary/60" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setTypeFilter('expense')}>
+                <DropdownMenuContent align="end" className="border-primary/10 bg-background/95 backdrop-blur-lg">
+                  <DropdownMenuItem onClick={() => setTypeFilter('expense')} className="text-sm hover:bg-primary/10">
                     Expense
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setTypeFilter('income')}>
+                  <DropdownMenuItem onClick={() => setTypeFilter('income')} className="text-sm hover:bg-primary/10">
                     Income
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -819,15 +823,20 @@ export default function TransactionsPage() {
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-1 form-input-luxury">
-                    Category <ChevronDown className="h-4 w-4" />
+                  <Button 
+                    variant="outline" 
+                    className="flex items-center gap-1.5 bg-background/70 border-primary/20 hover:bg-background/90 text-sm font-medium h-10"
+                  >
+                    <span className="text-primary/80">Category</span> 
+                    <ChevronDown className="h-3.5 w-3.5 text-primary/60" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="border-primary/10 bg-background/95 backdrop-blur-lg">
                   {uniqueCategories.map(category => (
                     <DropdownMenuItem 
                       key={category}
                       onClick={() => setCategoryFilter(category)}
+                      className="text-sm hover:bg-primary/10"
                     >
                       {category}
                     </DropdownMenuItem>
@@ -837,15 +846,20 @@ export default function TransactionsPage() {
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-1 form-input-luxury">
-                    Account <ChevronDown className="h-4 w-4" />
+                  <Button 
+                    variant="outline" 
+                    className="flex items-center gap-1.5 bg-background/70 border-primary/20 hover:bg-background/90 text-sm font-medium h-10"
+                  >
+                    <span className="text-primary/80">Account</span> 
+                    <ChevronDown className="h-3.5 w-3.5 text-primary/60" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="border-primary/10 bg-background/95 backdrop-blur-lg">
                   {uniqueAccounts.map(account => (
                     <DropdownMenuItem 
                       key={account}
                       onClick={() => setAccountFilter(account)}
+                      className="text-sm hover:bg-primary/10"
                     >
                       {account}
                     </DropdownMenuItem>
@@ -1032,7 +1046,10 @@ export default function TransactionsPage() {
                           </div>
                         </td>
                         <td className="p-4 align-middle">
-                          <span className="font-medium text-primary/80">{transaction.account}</span>
+                          <div className="flex items-center gap-2">
+                            <CreditCard className="h-4 w-4 text-primary/60" />
+                            <span className="font-medium text-sm">{transaction.account}</span>
+                          </div>
                         </td>
                         <td className="p-4 align-middle">
                           <Badge variant="outline" className="bg-primary/5 text-primary/80 border-primary/20 font-normal">
