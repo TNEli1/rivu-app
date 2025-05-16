@@ -1,30 +1,11 @@
-import React, { useEffect } from 'react';
-import { Helmet } from 'react-helmet';
+import React from 'react';
 import Sidebar from '@/components/layout/Sidebar';
 import MobileNav from '@/components/layout/MobileNav';
 import DemoAccountsGenerator from '@/components/admin/DemoAccountsGenerator';
-import { useAuth } from '@/hooks/use-auth';
-import { useLocation } from 'wouter';
 
 export default function AdminPage() {
-  const { user } = useAuth();
-  const [, setLocation] = useLocation();
-
-  useEffect(() => {
-    if (!user) {
-      setLocation('/auth');
-    }
-  }, [user, setLocation]);
-
-  if (!user) return null;
-
   return (
     <div className="flex h-screen bg-background">
-      <Helmet>
-        <title>Admin Tools | Rivu</title>
-        <meta name="description" content="Administrative tools for Rivu personal finance platform" />
-      </Helmet>
-      
       <Sidebar />
       
       <div className="flex flex-col flex-1 w-full overflow-hidden">

@@ -100,6 +100,17 @@ export default function Sidebar() {
               <span className="font-medium">Settings</span>
             </div>
           </li>
+          <li className="mb-4">
+            <div 
+              onClick={() => handleNavigation("/admin")}
+              className={`flex items-center px-4 py-3 rounded-lg cursor-pointer ${
+                location === "/admin" ? "bg-primary/10 text-primary" : "hover:bg-card/80 text-foreground"
+              }`}
+            >
+              <i className="ri-admin-line mr-3 text-xl"></i>
+              <span className="font-medium">Admin</span>
+            </div>
+          </li>
         </ul>
       </nav>
       
