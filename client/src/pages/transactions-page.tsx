@@ -753,6 +753,7 @@ export default function TransactionsPage() {
                 <div className="flex justify-end">
                   <Button 
                     type="submit" 
+                    className="btn-luxury btn-luxury-primary glow-effect"
                     disabled={!formData.amount || !formData.merchant || !formData.category || !formData.account || addMutation.isPending}
                   >
                     {addMutation.isPending ? (
@@ -769,13 +770,13 @@ export default function TransactionsPage() {
         </div>
 
         {/* Filters */}
-        <Card className="p-4 mb-6">
+        <Card className="p-4 mb-6 card-luxury">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-grow">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search transactions..."
-                className="pl-8"
+                className="pl-8 form-input-luxury"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -784,7 +785,7 @@ export default function TransactionsPage() {
             <div className="flex flex-wrap gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-1">
+                  <Button variant="outline" className="flex items-center gap-1 form-input-luxury">
                     Type <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -800,7 +801,7 @@ export default function TransactionsPage() {
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-1">
+                  <Button variant="outline" className="flex items-center gap-1 form-input-luxury">
                     Category <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -818,7 +819,7 @@ export default function TransactionsPage() {
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-1">
+                  <Button variant="outline" className="flex items-center gap-1 form-input-luxury">
                     Account <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -838,7 +839,7 @@ export default function TransactionsPage() {
                 <Button 
                   variant="ghost" 
                   onClick={clearAllFilters}
-                  className="text-destructive"
+                  className="text-destructive btn-luxury"
                 >
                   <FilterX className="h-4 w-4 mr-1" />
                   Clear filters
