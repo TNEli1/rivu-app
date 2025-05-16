@@ -58,8 +58,7 @@ type Transaction = {
   merchant: string;
   category: string;
   account: string;
-  source: 'manual' | 'plaid';
-  possibleDuplicate?: boolean;
+  notes?: string;
 };
 
 type BudgetCategory = {
@@ -78,7 +77,6 @@ type TransactionFormData = {
   customCategory?: string;
   customAccount?: string;
   notes?: string;
-  source: 'manual' | 'plaid';
 };
 
 // Now using free text fields for categories and accounts
@@ -333,7 +331,7 @@ export default function TransactionsPage() {
       merchant: "",
       category: "",
       account: "",
-      source: 'manual',
+      notes: '',
     });
   };
 
