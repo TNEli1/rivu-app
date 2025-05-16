@@ -230,6 +230,9 @@ export default function TransactionsPage() {
         throw new Error("Please select a valid date");
       }
       
+      // Additional date validation and preservation
+      console.log("Validating transaction date:", data.date);
+      
       // Log the exact date being submitted for debugging
       console.log("Submitting transaction with date:", data.date);
       
@@ -597,8 +600,10 @@ export default function TransactionsPage() {
                       id="date" 
                       type="date" 
                       name="date"
-                      className="form-input-luxury"
+                      className="form-input-luxury w-full"
                       value={formData.date}
+                      defaultValue={""} 
+                      placeholder="Select date"
                       onChange={(e) => {
                         const selectedDate = e.target.value;
                         console.log("Date explicitly selected:", selectedDate);

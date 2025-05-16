@@ -1,0 +1,55 @@
+Please address the following issues in order of priority:
+
+⸻
+
+1. Transaction Page Formatting
+	•	The transaction page layout is currently broken or visually inconsistent.
+	•	Ensure consistent padding, alignment, and font styling across all elements.
+	•	Inputs, labels, and dropdowns should follow the same width, font, and spacing conventions set in the new design system.
+	•	Ensure form fields (amount, merchant, category, account, type, date) are not overlapping or misaligned.
+
+⸻
+
+2. Transaction Date Bug — New Date Entry Logic
+	•	Users still cannot enter dates other than today’s date when adding a transaction.
+	•	Replace or rework the current date picker logic.
+	•	Ensure the backend accepts a custom date if passed (should parse as new Date() or ISO string).
+	•	If using a <input type="date"> field, confirm that:
+	•	It’s not defaulting to Date.now() unconditionally.
+	•	The submitted date is being properly passed to and stored in MongoDB.
+	•	The timezone is being handled correctly.
+
+New date method:
+	•	Accept a valid ISO date string (e.g., "2024-04-01") and convert server-side using new Date(req.body.date) before saving.
+	•	Add client-side validation to ensure a valid date is entered.
+
+⸻
+
+3. Goal Page Layout Bug
+	•	The Goals page currently opens in a completely separate layout and does not preserve the sidebar/navigation.
+	•	Fix this by embedding Goals within the main dashboard layout.
+	•	Use the same header/sidebar component shared across all main pages (e.g., Dashboard, Transactions, Budget).
+	•	Remove any full-page reload behavior that isolates Goals as a standalone page.
+
+⸻
+
+4. MongoDB Data Not Persisting Properly
+	•	User-specific data is not being properly stored or retrieved from MongoDB.
+	•	Verify that every write (e.g., transaction, survey, goals) is being stored with the user’s unique userId.
+	•	When logging in, the app should only fetch data associated with that specific user’s ID.
+	•	Prevent leakage of one user’s data into another account by scoping all MongoDB queries using the authenticated user’s ID (e.g., find({ userId: req.user.id })).
+	•	Revisit all POST/GET/PUT/DELETE handlers to ensure user data is isolated.
+
+⸻
+
+5. Login/Signup Page – Fix Broken Buttons
+	•	The following links/buttons are non-functional:
+	•	“Already have an account? Log In” – should redirect to /login
+	•	“Don’t have an account? Register” – should redirect to /register
+	•	Confirm the buttons are wrapped in <Link> tags (if using React Router), or <a href> with the correct route.
+	•	Add onClick handlers or navigation logic if using a custom router.
+	•	Ensure all auth routes render inside the same UI container (no broken transitions or reloads).
+
+⸻
+
+Let me know once these items are fixed. Be thorough — these are launch-blocking bugs.
