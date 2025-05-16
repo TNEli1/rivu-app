@@ -274,12 +274,29 @@
 
 /* Form group with improved spacing */
 .form-group-luxury {
-  @apply space-y-1.5 mb-4;
+  @apply space-y-2 mb-5;
+  width: 100%;
 }
 
 /* Label styling */
 .label-luxury {
-  @apply text-sm font-medium text-muted-foreground mb-1 block;
+  @apply text-sm font-medium text-primary mb-1.5 block;
+}
+
+/* Form input styling */
+.form-input-luxury {
+  @apply border-primary/20 bg-background/60 focus:border-primary/70 focus:ring-1 focus:ring-primary/30;
+  height: 2.5rem;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+/* Consistent form grid layout */
+.transaction-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  width: 100%;
 }
 
 /* Consistent spacing utility class */

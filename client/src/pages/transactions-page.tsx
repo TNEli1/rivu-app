@@ -578,7 +578,7 @@ export default function TransactionsPage() {
                 <DialogTitle>Add New Transaction</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleAddSubmit} className="space-y-5 mt-4">
-                <div className="grid grid-cols-2 gap-5">
+                <div className="transaction-form-grid">
                   <div className="form-group-luxury">
                     <Label htmlFor="type" className="label-luxury">Type</Label>
                     <Select 
@@ -600,10 +600,8 @@ export default function TransactionsPage() {
                       id="date" 
                       type="date" 
                       name="date"
-                      className="form-input-luxury w-full"
+                      className="form-input-luxury"
                       value={formData.date}
-                      defaultValue={""} 
-                      placeholder="Select date"
                       onChange={(e) => {
                         const selectedDate = e.target.value;
                         console.log("Date explicitly selected:", selectedDate);
@@ -611,7 +609,7 @@ export default function TransactionsPage() {
                       }}
                       required
                     />
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-primary/70 mt-1.5">
                       Select any date for this transaction
                     </p>
                   </div>
@@ -620,7 +618,7 @@ export default function TransactionsPage() {
                 <div className="form-group-luxury">
                   <Label htmlFor="amount" className="label-luxury">Amount <span className="text-destructive">*</span></Label>
                   <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
+                    <span className="absolute left-3 top-2.5 text-primary/80">$</span>
                     <Input 
                       id="amount" 
                       type="number" 
@@ -629,10 +627,11 @@ export default function TransactionsPage() {
                       className="pl-7 form-input-luxury"
                       value={formData.amount}
                       onChange={(e) => setFormData({...formData, amount: e.target.value})}
+                      required
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Required: Enter a positive number
+                  <p className="text-xs text-primary/70 mt-1.5">
+                    Enter a positive number
                   </p>
                 </div>
                 
@@ -644,13 +643,14 @@ export default function TransactionsPage() {
                     className="form-input-luxury"
                     value={formData.merchant}
                     onChange={(e) => setFormData({...formData, merchant: e.target.value})}
+                    required
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Required: Briefly describe what this transaction is for
+                  <p className="text-xs text-primary/70 mt-1.5">
+                    Briefly describe what this transaction is for
                   </p>
                 </div>
                 
-                <div className="space-y-5">
+                <div className="transaction-form-grid">
                   <div className="form-group-luxury">
                     <Label htmlFor="category" className="label-luxury">Category <span className="text-destructive">*</span></Label>
                     <Select 
@@ -676,7 +676,7 @@ export default function TransactionsPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-primary/70 mt-1.5">
                       Select a category for this transaction
                     </p>
                   </div>
@@ -700,7 +700,7 @@ export default function TransactionsPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className="text-xs text-primary/70 mt-1.5">
                         Further categorize your {formData.type}
                       </p>
                     </div>
