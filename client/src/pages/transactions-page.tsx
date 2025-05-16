@@ -105,9 +105,10 @@ export default function TransactionsPage() {
   const [isCustomAccount, setIsCustomAccount] = useState(false);
   const [userAccounts, setUserAccounts] = useState<string[]>([]);
   
+  // Initialize form data without a default date
   const [formData, setFormData] = useState<TransactionFormData>({
     type: 'expense',
-    date: new Date().toISOString().split('T')[0],
+    date: "", // Don't default to today, make user explicitly choose
     amount: "",
     merchant: "",
     category: "",
@@ -382,7 +383,7 @@ export default function TransactionsPage() {
   const resetForm = () => {
     setFormData({
       type: 'expense',
-      date: new Date().toISOString().split('T')[0],
+      date: "", // Critical fix: Require explicit date selection, don't default to today
       amount: "",
       merchant: "",
       category: "",
