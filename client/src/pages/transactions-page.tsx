@@ -97,7 +97,7 @@ export default function TransactionsPage() {
     merchant: "",
     category: "",
     account: "",
-    source: 'manual',
+    notes: ""
   });
   
   const { toast } = useToast();
@@ -192,7 +192,7 @@ export default function TransactionsPage() {
         amount: parseFloat(data.amount),
         date: new Date(data.date).toISOString(),
         type: data.type || 'expense',
-        source: data.source || 'manual',
+        // All transactions are now manual entry
       });
       return res.json();
     },
@@ -418,7 +418,7 @@ export default function TransactionsPage() {
       merchant: transaction.merchant,
       category: transaction.category,
       account: transaction.account,
-      source: transaction.source || 'manual',
+      notes: transaction.notes || '',
     });
     
     setIsEditDialogOpen(true);
