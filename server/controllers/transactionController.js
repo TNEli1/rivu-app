@@ -110,7 +110,8 @@ const createTransaction = async (req, res) => {
         amount: parseFloat(amount),
         merchant,
         type,
-        date: transactionDate,
+        // Store the exact user-selected date without timezone manipulation
+        date: submittedDate || new Date().toISOString().split('T')[0],
         notes: notes || '',
         category: category || 'Uncategorized',
         subcategory: subcategory || '', // Add subcategory support

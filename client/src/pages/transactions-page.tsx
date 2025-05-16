@@ -222,12 +222,15 @@ export default function TransactionsPage() {
         }
       }
       
-      // Date validation - ensure we use the user-selected date
+      // Enhanced date validation to ensure we use the exact user-selected date
       if (!data.date) {
         throw new Error("Please select a date for the transaction");
       } else if (isNaN(new Date(data.date).getTime())) {
         throw new Error("Please select a valid date");
       }
+      
+      // Log the exact date being submitted for debugging
+      console.log("Submitting transaction with date:", data.date);
       
       // Type is optional, default to expense
       if (!data.type) {
@@ -242,7 +245,8 @@ export default function TransactionsPage() {
         category,
         account,
         amount: parseFloat(data.amount),
-        date: new Date(data.date).toISOString(),
+        // Preserve exact user-selected date without time component manipulation
+        date: data.date,
         type: data.type || 'expense',
         // All transactions are now manual entry
       });
@@ -582,10 +586,12 @@ export default function TransactionsPage() {
                     <Input 
                       id="date" 
                       type="date" 
+                      name="date"
                       value={formData.date}
                       onChange={(e) => {
-                        console.log("Date changed to:", e.target.value);
-                        setFormData({...formData, date: e.target.value});
+                        const selectedDate = e.target.value;
+                        console.log("Date explicitly selected:", selectedDate);
+                        setFormData({...formData, date: selectedDate});
                       }}
                       required
                     />
