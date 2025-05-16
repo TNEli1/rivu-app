@@ -57,6 +57,7 @@ type Transaction = {
   amount: string;
   merchant: string;
   category: string;
+  subcategory?: string; // Added subcategory support
   account: string;
   notes?: string;
 };
@@ -450,12 +451,16 @@ export default function TransactionsPage() {
     // Convert ISO date to YYYY-MM-DD for the input
     const date = new Date(transaction.date).toISOString().split('T')[0];
     
+    // Set selected main category to properly load subcategories
+    setSelectedMainCategory(transaction.category);
+    
     setFormData({
       type: transaction.type as 'expense' | 'income',
       date,
       amount: transaction.amount,
       merchant: transaction.merchant,
       category: transaction.category,
+      subcategory: transaction.subcategory || '',
       account: transaction.account,
       notes: transaction.notes || '',
     });
@@ -920,7 +925,14 @@ export default function TransactionsPage() {
                             <div className={`p-1 rounded ${color.split(' ')[0]}`}>
                               <i className={`${icon} text-sm`}></i>
                             </div>
-                            <span>{transaction.category}</span>
+                            <div className="flex flex-col">
+                              <span>{transaction.category}</span>
+                              {transaction.subcategory && (
+                                <span className="text-xs text-muted-foreground">
+                                  {transaction.subcategory}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </td>
                         <td className="p-4 align-middle">{transaction.account}</td>
