@@ -86,18 +86,20 @@ const createTransaction = async (req, res) => {
     // Transaction Payload Debug - TEMPORARY
     console.log("Transaction Payload:", req.body);
     
-    // Explicitly handle the date without overwriting user selection
-    // Only default to current date if undefined/null/empty
+    // Date handling fix: preserve the exact submitted date string
+    // DO NOT create a new Date() object from the string as it causes timezone issues
     const submittedDate = req.body.date;
-    const parsedDate = submittedDate ? new Date(submittedDate) : new Date();
     
-    // Log detailed date debugging information
-    console.log(`Transaction date handling:
-    - Date submitted: ${submittedDate} (${typeof submittedDate})
-    - Date parsed: ${parsedDate}
-    - ISO string: ${parsedDate.toISOString()}`);
+    // Extensive debug logging for transaction date troubleshooting
+    console.log(`Transaction date debugging:
+    - Original submitted date: ${submittedDate} (${typeof submittedDate})
+    - Current server date: ${new Date().toISOString()}`);
     
-    // Store the proper date as specified in the request
+    // Validate the date format (YYYY-MM-DD)
+    const isValidDateFormat = submittedDate && /^\d{4}-\d{2}-\d{2}$/.test(submittedDate);
+    if (!isValidDateFormat && submittedDate) {
+      console.log(`Invalid date format received: ${submittedDate}`);
+    }
     
     try {
       
@@ -110,13 +112,17 @@ const createTransaction = async (req, res) => {
         amount: parseFloat(amount),
         merchant,
         type,
-        // Store the exact user-selected date without timezone manipulation
+        // Critical Fix: Strictly preserve the exact date string from the client
+        // Only default to today if absolutely necessary
         date: submittedDate || new Date().toISOString().split('T')[0],
         notes: notes || '',
         category: category || 'Uncategorized',
         subcategory: subcategory || '', // Add subcategory support
         account: account || 'Cash'
       };
+      
+      // Extra verification to ensure date is not modified accidentally
+      console.log(`Final transaction date being saved: ${transactionData.date}`);
 
       // Create transaction in MongoDB
       let transaction;
@@ -298,7 +304,12 @@ const updateTransaction = async (req, res) => {
       if (category !== undefined) transaction.category = category;
       if (account !== undefined) transaction.account = account;
       if (type !== undefined) transaction.type = type;
-      if (date !== undefined) transaction.date = new Date(date);
+      // Critical Fix: Do not create a new Date() object from the string
+      // This preserves the exact date string as selected by the user without timezone conversion
+      if (date !== undefined) {
+        console.log(`Update transaction - preserving exact date: ${date}`);
+        transaction.date = date;
+      }
       if (notes !== undefined) transaction.notes = notes;
       // Source field removed - all transactions are now manual entry only
 

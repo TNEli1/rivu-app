@@ -467,11 +467,15 @@ export default function TransactionsPage() {
       return;
     }
     
-    // Ensure we have defaults for optional fields
+    // Enhanced date handling for edit form to match add transaction flow
+    console.log("Editing transaction with date:", formData.date);
+    
+    // Ensure we have defaults for optional fields but preserve user-selected date exactly
     const submissionData = {
       ...formData,
       type: formData.type || 'expense',
-      date: formData.date || new Date().toISOString().split('T')[0]
+      // Important: Preserve the exact date string without any conversion
+      date: formData.date 
     };
     
     updateMutation.mutate({
@@ -1109,7 +1113,11 @@ export default function TransactionsPage() {
                   type="date" 
                   className="form-input-luxury"
                   value={formData.date}
-                  onChange={(e) => setFormData({...formData, date: e.target.value})}
+                  onChange={(e) => {
+                    // Enhanced date handling - log and preserve exact input value
+                    console.log("Date input changed to:", e.target.value);
+                    setFormData({...formData, date: e.target.value});
+                  }}
                 />
               </div>
             </div>
