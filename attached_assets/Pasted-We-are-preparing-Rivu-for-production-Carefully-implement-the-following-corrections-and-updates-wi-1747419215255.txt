@@ -1,0 +1,119 @@
+We are preparing Rivu for production. Carefully implement the following corrections and updates — with focus on proper user separation, data handling, and interface integrity.
+
+⸻
+
+1. Transaction Date Issue
+
+Bug: Users cannot add transactions for any date except today.
+
+Fix:
+	•	Ensure the date input field in the frontend is connected and passes a valid string (e.g., "2025-05-16").
+	•	In the POST /api/transactions route, accept validated.date and use it as:
+
+date: validated.date ? new Date(validated.date) : new Date()
+
+Do not override date with new Date() if a valid one is provided.
+
+⸻
+
+2. MongoDB Not Storing User or Survey Data
+
+Fix:
+	•	Confirm MongoDB is connected (connectDB() successful).
+	•	Check /api/user, /api/user/demographics, and /api/survey (if exists) routes:
+	•	Use insertOne() or updateOne() properly
+	•	Include userId in every query
+	•	Await all DB write operations
+	•	Add error logging if Mongo fails silently
+
+⸻
+
+3. Data Leak: One User’s Data Showing to Another
+
+Cause: Likely due to hardcoded getCurrentUserId() or shared in-memory state.
+
+Fix:
+	•	Replace getCurrentUserId() with authenticated user ID from session or JWT.
+	•	Ensure all queries are filtered by userId:
+
+await db.collection('transactions').find({ userId: req.user.id });
+
+•	Do this for all:
+	•	Transactions
+	•	Budget categories
+	•	Goals
+	•	Rivu Score
+	•	Survey responses
+
+⸻
+
+4. Rivu Score Refresh Button Does Not Refresh Score
+
+Fix:
+	•	Ensure the refresh button triggers an API call to /api/rivu-score with { forceRefresh: true } or equivalent.
+	•	Backend should re-calculate score and return updated value:
+
+await storage.calculateRivuScore(userId);
+
+•	Update UI state with new score after fetch completes
+
+⸻
+
+5. Remove “Update Spending” Button in Budget Section
+
+Fix:
+	•	Delete the redundant “Update Spending” button
+	•	Use the existing edit/update budget modal for spending updates
+
+⸻
+
+6. Sign-Up Page Navigation
+
+Fix:
+	•	On Sign-up screen, fix “Already have an account? Log in” button
+	•	Ensure it links to the /login route or the login component in frontend routing
+
+⸻
+
+7. Advanced Rivu Score Logic (Replace Existing)
+
+Replace or enhance the existing Rivu Score calculation with the following logic:
+
+function calculateRivuScore(userData) {
+  const {
+    budgetAdherenceRate,     // % of categories under budget (0–1)
+    savingsProgressRate,     // % toward total savings goals (0–1)
+    weeklyEngagementRate,    // % of active days this month (0–1)
+    goalsCompletedRate,      // % of total goals completed (0–1)
+    incomeToSpendingRatio    // (income - spending) / income (can be negative)
+  } = userData;
+
+  const WEIGHTS = {
+    budget: 0.35,
+    savings: 0.25,
+    engagement: 0.15,
+    goals: 0.15,
+    cashFlow: 0.10
+  };
+
+  let score = 0;
+  score += (budgetAdherenceRate * 100) * WEIGHTS.budget;
+  score += (savingsProgressRate * 100) * WEIGHTS.savings;
+  score += (weeklyEngagementRate * 100) * WEIGHTS.engagement;
+  score += (goalsCompletedRate * 100) * WEIGHTS.goals;
+  score += (incomeToSpendingRatio * 100) * WEIGHTS.cashFlow;
+
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+Update score whenever any component of user data changes.
+	•	Cache it to DB for performance, but allow dynamic refresh via button.
+
+⸻
+
+Final Deliverables:
+	•	Fix all bugs listed above
+	•	Store and isolate user data properly in MongoDB
+	•	Replace Rivu Score logic with improved version
+	•	Remove unnecessary UI clutter
+	•	Confirm app is stable, accurate, and visually coherent for demo

@@ -83,8 +83,12 @@ const createTransaction = async (req, res) => {
       });
     }
 
-    // Check for potential duplicates before creating transaction
+    // Use the provided date or default to current date
+    // Important: Don't override user-provided dates with current date
     const transactionDate = date ? new Date(date) : new Date();
+    
+    // Log the incoming and processed date for debugging
+    console.log(`Transaction date provided: ${date}, processed as: ${transactionDate}`);
     
     try {
       
