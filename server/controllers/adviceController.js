@@ -7,6 +7,33 @@ const RivuScore = require('../models/RivuScore');
 // Initialize OpenAI client with API key
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// Define the smart prompt templates
+const PROMPT_TEMPLATES = {
+  BUDGET_OVERVIEW: `You're an AI personal finance coach helping users improve their budgeting. Analyze the following user data and provide 2–3 personalized, actionable tips to help them stay on track or improve their habits:
+
+- Monthly Income: ${{userIncome}}
+- Budget Status:
+  {{budgetDetails}}
+- Rivu Score: {{rivuScore}} – {{scoreRating}}
+
+Keep your response under 150 words. Be clear, constructive, and encouraging.`,
+
+  GOAL_FOCUSED: `You're an AI financial mentor. A user has entered the following savings goals and progress. Help them improve their consistency and mindset with 2–3 actionable tips:
+
+{{goalDetails}}
+
+They currently have a Rivu Score of {{rivuScore}}. Offer insight and encouragement to improve their savings behavior and hit more goals.`,
+
+  MONTHLY_REFLECTION: `You're an AI personal finance coach offering a monthly recap. Based on the user's activity, spending habits, and savings progress, give them a short summary and 2 clear recommendations for next month.
+
+- Total Income: ${{income}}
+- Total Spent: ${{spentTotal}}
+- Total Saved: ${{savedTotal}}
+- Rivu Score: {{rivuScore}} – {{scoreRating}}
+
+Focus on one area of improvement and one area to maintain. Keep the tone practical and supportive.`
+};
+
 // @desc    Get AI-powered financial advice
 // @route   POST /api/advice
 // @access  Private
@@ -89,16 +116,90 @@ Goals Completed: ${completedGoals} out of ${goals.length}
       }))
     };
 
-    // Construct the prompt
-    let aiPrompt = 'As an AI financial coach, analyze this user\'s financial data and provide personalized advice:';
-    aiPrompt += '\n\nUser Financial Summary: ' + structuredUserData;
-    aiPrompt += '\n\nDetailed Financial Context: ' + JSON.stringify(financialContext, null, 2);
+    // Calculate monthly summaries for prompt templates
+    const now = new Date();
+    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const thisMonthTransactions = transactions.filter(t => 
+      new Date(t.date) >= thisMonth
+    );
     
-    if (prompt) {
-      aiPrompt += `\n\nThe user is asking: "${prompt}"`;
+    const monthlyIncome = thisMonthTransactions
+      .filter(t => t.type === 'income')
+      .reduce((total, t) => total + t.amount, 0);
+      
+    const monthlySpending = thisMonthTransactions
+      .filter(t => t.type === 'expense')
+      .reduce((total, t) => total + t.amount, 0);
+      
+    const monthlySavings = Math.max(0, monthlyIncome - monthlySpending);
+    
+    // Map score to a rating
+    const getScoreRating = (score) => {
+      if (score >= 80) return 'Excellent';
+      if (score >= 60) return 'Good';
+      if (score >= 40) return 'Fair';
+      return 'Needs Improvement';
+    };
+    
+    // Format budget details for prompt
+    let budgetDetails = '';
+    if (budgets.length > 0) {
+      budgetDetails = budgets.map(b => {
+        const percentUsed = b.amount > 0 
+          ? Math.round((b.currentSpent / b.amount) * 100) 
+          : 0;
+        return `  - ${b.category}: $${b.currentSpent} spent out of $${b.amount} (${percentUsed}%)`;
+      }).join('\n');
+    } else {
+      budgetDetails = '  - No budget categories set up yet';
     }
     
-    aiPrompt += '\n\nProvide specific, actionable financial advice based on the user\'s spending patterns, budget adherence, and savings goals. Keep your response concise (1-2 short paragraphs) and easy to understand.';
+    // Format goals for prompt
+    let goalDetails = '';
+    if (goals.length > 0) {
+      goalDetails = goals.map(g => {
+        const progressPercent = g.targetAmount > 0 
+          ? Math.round((g.savedAmount / g.targetAmount) * 100) 
+          : 0;
+        return `- ${g.name}: Saved $${g.savedAmount} out of $${g.targetAmount} (${progressPercent}%)`;
+      }).join('\n');
+    } else {
+      goalDetails = '- No savings goals set up yet';
+    }
+    
+    // Select which template to use based on available data
+    let templateKey = 'MONTHLY_REFLECTION';
+    
+    // If they have goals set up, use the goal-focused template
+    if (goals.length > 0) {
+      templateKey = 'GOAL_FOCUSED';
+    }
+    
+    // If they have budgets set up, use the budget overview template
+    if (budgets.length > 0) {
+      templateKey = 'BUDGET_OVERVIEW';
+    }
+    
+    // If the user provides a specific prompt, use monthly reflection as it's most general
+    if (prompt) {
+      templateKey = 'MONTHLY_REFLECTION';
+    }
+    
+    // Fill in the template with actual data
+    let aiPrompt = PROMPT_TEMPLATES[templateKey]
+      .replace('{{userIncome}}', monthlyIncome || 'Not set')
+      .replace('{{budgetDetails}}', budgetDetails)
+      .replace('{{goalDetails}}', goalDetails)
+      .replace('{{rivuScore}}', rivuScoreValue)
+      .replace('{{scoreRating}}', getScoreRating(rivuScoreValue))
+      .replace('{{income}}', monthlyIncome || 0)
+      .replace('{{spentTotal}}', monthlySpending)
+      .replace('{{savedTotal}}', monthlySavings);
+    
+    // Add user prompt if provided
+    if (prompt) {
+      aiPrompt += `\n\nThe user is asking: "${prompt}"\n\nIncorporate this question into your advice.`;
+    }
 
     try {
       // Call OpenAI API with the prompt

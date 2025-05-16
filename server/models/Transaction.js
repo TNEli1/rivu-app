@@ -37,20 +37,7 @@ const transactionSchema = mongoose.Schema(
       type: String,
       default: '',
     },
-    // Fields to support Plaid integration later
-    plaidId: {
-      type: String,
-      default: null,
-    },
-    plaidCategoryId: {
-      type: String,
-      default: null,
-    },
-    source: {
-      type: String,
-      enum: ['manual', 'plaid'],
-      default: 'manual',
-    },
+    // All transactions are manual entry only
     possibleDuplicate: {
       type: Boolean,
       default: false,

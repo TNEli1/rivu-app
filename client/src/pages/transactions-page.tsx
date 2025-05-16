@@ -759,24 +759,15 @@ export default function TransactionsPage() {
                   </div>
                   <h3 className="text-lg font-medium mb-2">No transactions available</h3>
                   <p className="text-muted-foreground mb-6">
-                    No transactions available. Link a bank account or add transactions manually.
+                    Start tracking your finances by adding your transactions manually.
                   </p>
-                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <div className="flex justify-center">
                     <Button 
-                      variant="outline"
+                      className="bg-primary hover:bg-primary/90 text-white"
                       onClick={() => setIsAddDialogOpen(true)}
                     >
-                      <PlusCircle className="mr-2 h-4 w-4" /> Add manually
+                      <PlusCircle className="mr-2 h-4 w-4" /> Add transaction
                     </Button>
-                    <PlaidLinkButton 
-                      className="bg-primary hover:bg-primary/90 text-white"
-                      onSuccess={() => {
-                        toast({
-                          title: "Bank connected successfully",
-                          description: "Your bank account has been connected. Transactions will be synced automatically.",
-                        });
-                      }}
-                    />
                   </div>
                 </div>
               )}
