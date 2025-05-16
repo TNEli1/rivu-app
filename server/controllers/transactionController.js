@@ -83,12 +83,21 @@ const createTransaction = async (req, res) => {
       });
     }
 
-    // Use the provided date or default to current date
-    // Important: Don't override user-provided dates with current date
-    const transactionDate = date ? new Date(date) : new Date();
+    // Transaction Payload Debug - TEMPORARY
+    console.log("Transaction Payload:", req.body);
     
-    // Log the incoming and processed date for debugging
-    console.log(`Transaction date provided: ${date}, processed as: ${transactionDate}`);
+    // Explicitly handle the date without overwriting user selection
+    // Only default to current date if undefined/null/empty
+    const submittedDate = req.body.date;
+    const parsedDate = submittedDate ? new Date(submittedDate) : new Date();
+    
+    // Log detailed date debugging information
+    console.log(`Transaction date handling:
+    - Date submitted: ${submittedDate} (${typeof submittedDate})
+    - Date parsed: ${parsedDate}
+    - ISO string: ${parsedDate.toISOString()}`);
+    
+    // Store the proper date as specified in the request
     
     try {
       
