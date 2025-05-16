@@ -3,27 +3,40 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 
+// Define more detailed types for the Rivu Score factors
 type ScoreFactor = {
   name: string;
-  percentage: number;
+  value: number;
   rating: string;
-  color: string;
+  weight: number;
+  color?: string;
 };
 
 // Define expected response type
 type RivuScoreResponse = {
   score: number;
   factors: ScoreFactor[];
+  rawFactors: {
+    budgetAdherenceRate: number;
+    savingsProgressRate: number;
+    weeklyEngagementRate: number;
+    goalsCompletedRate: number;
+    incomeToSpendingRatio: number;
+  };
+  lastUpdated: string;
 };
 
 export default function RivuScoreCard() {
   const [offset, setOffset] = useState(339.292); // Full circle circumference (2 * PI * 54)
   const [refreshCooldown, setRefreshCooldown] = useState(false);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   
   // Fetch Rivu score data with proper type and reduced stale time to refresh more often
   const { data, isLoading, refetch } = useQuery<RivuScoreResponse>({
@@ -33,26 +46,45 @@ export default function RivuScoreCard() {
     staleTime: 5000, // Reduce stale time to 5 seconds to ensure frequent updates
   });
   
-  // Mutation for manually recalculating the Rivu score
+  // Mutation for manually recalculating the Rivu score with forceRefresh parameter
   const recalculateMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest("POST", "/api/rivu-score/recalculate");
+      // Pass forceRefresh: true to force a full recalculation on the server
+      const response = await apiRequest("POST", "/api/rivu-score/recalculate", { forceRefresh: true });
+      return await response.json();
     },
-    onSuccess: () => {
-      // Refetch the score data after recalculation
-      refetch();
+    onSuccess: (data) => {
+      // Update the cache with new data
+      queryClient.setQueryData(["/api/rivu-score"], data);
+      
+      // Also invalidate related data that might have changed
+      queryClient.invalidateQueries({ queryKey: ["/api/transactions/summary"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/goals/summary"] });
+      
+      toast({
+        title: "Rivu Score Updated",
+        description: `Your Rivu Score has been recalculated: ${data.score}`,
+      });
       
       // Set cooldown for 30 seconds to prevent abuse
       setRefreshCooldown(true);
       setTimeout(() => {
         setRefreshCooldown(false);
       }, 30000);
+    },
+    onError: (error) => {
+      console.error("Failed to recalculate Rivu Score:", error);
+      toast({
+        title: "Update Failed",
+        description: "Could not recalculate your Rivu Score. Please try again later.",
+        variant: "destructive",
+      });
     }
   });
   
   // Handle manual refresh button click
   const handleManualRefresh = () => {
-    if (!refreshCooldown) {
+    if (!refreshCooldown && !recalculateMutation.isPending) {
       recalculateMutation.mutate();
     }
   };
@@ -183,15 +215,29 @@ export default function RivuScoreCard() {
                 </Link>
               </div>
             ) : (
-              scoreFactors && scoreFactors.map((factor, index) => (
-                <div className="flex items-center justify-between" key={index}>
-                  <div className="flex items-center">
-                    <div className={`w-2 h-2 rounded-full ${factor.color} mr-2`}></div>
-                    <span className="text-sm">{factor.name}</span>
+              scoreFactors && scoreFactors.map((factor, index) => {
+                // Get color based on rating
+                const getColorForRating = (rating: string) => {
+                  switch (rating) {
+                    case 'Excellent': return 'bg-emerald-500';
+                    case 'Good': return 'bg-green-500';
+                    case 'Fair': return 'bg-yellow-500';
+                    case 'Needs Improvement': return 'bg-orange-500';
+                    case 'Poor': return 'bg-red-500';
+                    default: return 'bg-gray-500';
+                  }
+                };
+                
+                return (
+                  <div className="flex items-center justify-between" key={index}>
+                    <div className="flex items-center">
+                      <div className={`w-2 h-2 rounded-full ${getColorForRating(factor.rating)} mr-2`}></div>
+                      <span className="text-sm">{factor.name}</span>
+                    </div>
+                    <span className="text-sm font-medium">{factor.rating} ({factor.value}%)</span>
                   </div>
-                  <span className="text-sm font-medium">{factor.rating} ({factor.percentage}%)</span>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
