@@ -38,58 +38,38 @@
 }
 
 .dark {
-  /* Modern dark theme: Deep blue background with gold accents */
-  --background: 210 75% 12%; /* Deep blue #003366 */
-  --foreground: 40 10% 98%; /* Off-white #F5F7FA */
-  
-  /* Muted and secondary tones */
-  --muted: 210 50% 18%;
-  --muted-foreground: 40 8% 80%;
-  
-  /* Card and popover styling */
-  --popover: 210 60% 14%;
-  --popover-foreground: 40 10% 98%;
-  --card: 210 60% 14%;
-  --card-foreground: 40 10% 98%;
-  
-  /* Borders and input fields */
-  --border: 210 30% 22%;
-  --input: 210 30% 22%;
-  
-  /* Primary accent - soft gold */
-  --primary: 43 74% 49%; /* Soft gold #D4AF37 */
-  --primary-foreground: 210 75% 12%;
-  
-  /* Secondary - slightly lighter blue */
-  --secondary: 210 50% 20%;
-  --secondary-foreground: 40 10% 98%;
-  
-  /* Accent color - soft gold */
-  --accent: 43 74% 49%; /* Matches primary */
-  --accent-foreground: 210 75% 12%;
-  
-  --destructive: 0 70% 50%;
-  --destructive-foreground: 40 10% 98%;
-  
-  /* Ring for focus states */
-  --ring: 43 74% 49%;
+  --background: 0 0% 7%;
+  --foreground: 0 0% 95%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --popover: 0 0% 17.6%;
+  --popover-foreground: 0 0% 95%;
+  --card: 0 0% 17.6%;
+  --card-foreground: 0 0% 95%;
+  --border: 240 3.7% 22.9%;
+  --input: 240 3.7% 22.9%;
+  --primary: 172 100% 38%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --accent: 172 100% 38%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 172 100% 38%;
   --radius: 0.5rem;
   
-  /* Chart colors - more refined palette */
-  --chart-1: 43 74% 49%; /* Gold */
-  --chart-2: 210 70% 50%; /* Blue */
-  --chart-3: 180 60% 45%; /* Teal */
-  --chart-4: 270 60% 50%; /* Purple */
-  --chart-5: 330 60% 50%; /* Pink */
+  /* Chart colors */
+  --chart-1: 172 100% 38%;
+  --chart-2: 81 100% 47%;
+  --chart-3: 217 91% 55%;
+  --chart-4: 0 84% 60%;
+  --chart-5: 45 93% 47%;
   
   /* Custom colors for Rivu */
-  --lime: 120 45% 55%;
-  --blue: 210 70% 50%;
-  --red: 0 70% 50%;
-  
-  /* Gradient background variables */
-  --gradient-from: 210 80% 10%; 
-  --gradient-to: 210 70% 15%;
+  --lime: 81 100% 47%;
+  --blue: 217 91% 55%;
+  --red: 0 84% 60%;
 }
 
 @layer base {
@@ -100,113 +80,32 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
-  
-  /* Improve typography */
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-medium tracking-tight;
-  }
-  
-  h1 {
-    @apply text-3xl font-bold;
-  }
-  
-  h2 {
-    @apply text-2xl font-semibold;
-  }
-  
-  /* Improve form control spacing */
-  input, select, textarea {
-    @apply transition-all duration-200;
-  }
 }
 
-/* Luxury UI element transitions */
 .progress-ring-circle {
-  transition: stroke-dashoffset 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: stroke-dashoffset 0.8s ease;
   transform: rotate(-90deg);
   transform-origin: 50% 50%;
 }
 
 .budget-progress {
-  transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: width 0.5s ease-in-out;
 }
 
-/* Enhanced card hover effect */
 .card-hover {
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), 
-              box-shadow 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-              background 0.3s ease;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
 .card-hover:hover {
   transform: translateY(-4px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
-  background: linear-gradient(
-    to bottom right,
-    hsl(var(--card)),
-    hsl(var(--gradient-to))
-  );
-}
-
-/* Gradient background for cards */
-.card-gradient {
-  background: linear-gradient(
-    135deg,
-    hsl(var(--gradient-from)),
-    hsl(var(--gradient-to))
-  );
-}
-
-/* Soft glow effect for important elements */
-.glow-effect {
-  box-shadow: 0 0 15px 1px hsla(var(--primary), 0.2);
-  transition: box-shadow 0.3s ease;
-}
-
-.glow-effect:hover {
-  box-shadow: 0 0 20px 2px hsla(var(--primary), 0.4);
-}
-
-/* Subtle border animation for call-to-action elements */
-.border-pulse {
-  position: relative;
-  overflow: hidden;
-}
-
-.border-pulse::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 2px;
-  background: linear-gradient(
-    45deg,
-    hsla(var(--primary), 0.6),
-    transparent,
-    hsla(var(--primary), 0.6)
-  );
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  animation: border-rotation 3s linear infinite;
-}
-
-@keyframes border-rotation {
-  0% {
-    background-position: 0% 0%;
-  }
-  100% {
-    background-position: 135% 0%;
-  }
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
 }
 
 .tab-active {
   color: hsl(var(--primary));
   border-bottom: 2px solid hsl(var(--primary));
-  transition: color 0.2s ease, border-color 0.2s ease;
 }
 
-/* Improved animations */
 .animate-pulse-slow {
   animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
@@ -218,154 +117,4 @@
   50% {
     opacity: 0.8;
   }
-}
-
-/* Enhanced form inputs */
-.form-input-luxury {
-  @apply rounded-md border-border bg-muted/50 px-4 py-2;
-  transition: all 0.2s ease;
-}
-
-.form-input-luxury:focus {
-  @apply outline-none ring-2 ring-primary/30 border-primary/70;
-  box-shadow: 0 0 0 2px hsla(var(--primary), 0.1);
-}
-
-/* Enhanced button styles */
-.btn-luxury {
-  @apply rounded-md px-4 py-2 font-medium;
-  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.btn-luxury-primary {
-  @apply bg-primary text-primary-foreground shadow-md;
-}
-
-.btn-luxury-primary:hover {
-  @apply bg-primary/90;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px hsla(var(--primary), 0.4);
-}
-
-.btn-luxury-secondary {
-  @apply bg-secondary text-secondary-foreground;
-}
-
-.btn-luxury-secondary:hover {
-  @apply bg-secondary/90;
-  transform: translateY(-2px);
-}
-
-/* Enhanced card styles */
-.card-luxury {
-  @apply rounded-lg border border-border/40 shadow-md;
-  background: linear-gradient(
-    135deg,
-    hsl(var(--card)),
-    hsl(var(--gradient-to))
-  );
-  transition: all 0.3s ease;
-}
-
-.card-luxury:hover {
-  @apply border-primary/30;
-  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.3);
-}
-
-/* Form group with improved spacing */
-.form-group-luxury {
-  @apply space-y-2 mb-5;
-  width: 100%;
-}
-
-/* Label styling */
-.label-luxury {
-  @apply text-sm font-medium text-primary mb-1.5 block;
-}
-
-/* Form input styling */
-.form-input-luxury {
-  @apply border-primary/20 bg-background/60 focus:border-primary/70 focus:ring-1 focus:ring-primary/30;
-  height: 2.5rem;
-  width: 100%;
-  transition: all 0.2s ease;
-}
-
-/* Complete redesign of transaction form layout */
-.transaction-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  width: 100%;
-}
-
-.transaction-form-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.25rem;
-  width: 100%;
-}
-
-@media (min-width: 640px) {
-  .transaction-form-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* Form field styles */
-.form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  width: 100%;
-}
-
-/* Custom date picker styling */
-.date-picker-container {
-  position: relative;
-  width: 100%;
-}
-
-.date-picker-input {
-  width: 100%;
-  padding: 0.625rem 0.75rem;
-  border-radius: 0.375rem;
-  background-color: hsl(var(--background));
-  border: 1px solid hsl(var(--border));
-  color: hsl(var(--foreground));
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.date-picker-input:focus {
-  outline: none;
-  border-color: hsl(var(--primary)/0.5);
-  box-shadow: 0 0 0 2px hsl(var(--primary)/0.2);
-}
-
-.date-display {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 0.75rem;
-  border-radius: 0.375rem;
-  background-color: hsl(var(--background));
-  border: 1px solid hsl(var(--border));
-  color: hsl(var(--foreground));
-  font-size: 0.875rem;
-  cursor: pointer;
-}
-
-.date-display:hover {
-  background-color: hsl(var(--accent)/0.1);
-}
-
-/* Consistent spacing utility class */
-.spacer-y {
-  @apply py-6;
-}
-
-.spacer-x {
-  @apply px-6;
 }

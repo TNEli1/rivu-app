@@ -4,11 +4,6 @@ import { apiRequest } from "@/lib/queryClient";
 import Sidebar from "@/components/layout/Sidebar";
 import MobileNav from "@/components/layout/MobileNav";
 import { Button } from "@/components/ui/button";
-
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { DatePicker } from "@/components/custom/date-picker";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -107,13 +102,10 @@ export default function TransactionsPage() {
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [accountFilter, setAccountFilter] = useState<string | null>(null);
-  const [isCustomAccount, setIsCustomAccount] = useState(false);
-  const [userAccounts, setUserAccounts] = useState<string[]>([]);
   
-  // Initialize form data without a default date
   const [formData, setFormData] = useState<TransactionFormData>({
     type: 'expense',
-    date: "", // Don't default to today, make user explicitly choose
+    date: new Date().toISOString().split('T')[0],
     amount: "",
     merchant: "",
     category: "",
@@ -131,18 +123,6 @@ export default function TransactionsPage() {
       ? CATEGORY_SUGGESTIONS[selectedMainCategory] 
       : [];
   }, [selectedMainCategory]);
-  
-  // Fetch user's saved accounts
-  const { isLoading: isLoadingAccounts } = useQuery({
-    queryKey: ['/api/user/accounts'],
-    queryFn: async () => {
-      const res = await apiRequest('GET', '/api/user/accounts');
-      const data = await res.json();
-      setUserAccounts(data.accounts || []);
-      return data;
-    },
-    staleTime: 60 * 1000, // 1 minute
-  });
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -176,28 +156,21 @@ export default function TransactionsPage() {
     }
   });
 
-  // Save new account if needed
-  const addAccountMutation = useMutation({
-    mutationFn: async (account: string) => {
-      const res = await apiRequest('POST', '/api/user/accounts', { account });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to save account");
-      }
-      return await res.json();
-    },
-    onSuccess: (data) => {
-      setUserAccounts(data.accounts);
-      queryClient.invalidateQueries({ queryKey: ['/api/user/accounts'] });
-    }
-  });
-  
   // Add new transaction
   const addMutation = useMutation({
     mutationFn: async (data: TransactionFormData) => {
       // Process data before sending to API
       let category = data.category;
       let account = data.account;
+      
+      // Use custom values if appropriate
+      if (data.category === 'Other' && data.customCategory) {
+        category = data.customCategory;
+      }
+      
+      if (data.account === 'Other' && data.customAccount) {
+        account = data.customAccount;
+      }
       
       // Perform client-side validation
       // Required fields: description (merchant) and amount
@@ -209,37 +182,24 @@ export default function TransactionsPage() {
         throw new Error("Please enter a description for the transaction");
       }
       
-      // Category and account are required
-      if (!category) {
-        throw new Error("Please select a category for the transaction");
+      // Category and account are now optional but will use default values if missing
+      if (!data.category) {
+        // Default category for expenses and income
+        data.category = data.type === 'expense' ? 'Uncategorized' : 'General Income';
       }
       
-      if (!account) {
-        throw new Error("Please select or enter an account for the transaction");
+      if (!data.account) {
+        // Default account
+        data.account = 'Default Account';
       }
       
-      // If this is a new custom account, save it first
-      if (isCustomAccount && account && !userAccounts.includes(account)) {
-        try {
-          await addAccountMutation.mutateAsync(account);
-        } catch (error) {
-          console.error("Failed to save new account:", error);
-          // Continue with transaction even if account saving fails
-        }
-      }
-      
-      // Enhanced date validation to ensure we use the exact user-selected date
+      // Date is optional, will default to today if not provided
+      const currentDate = new Date().toISOString().split('T')[0];
       if (!data.date) {
-        throw new Error("Please select a date for the transaction");
+        data.date = currentDate;
       } else if (isNaN(new Date(data.date).getTime())) {
         throw new Error("Please select a valid date");
       }
-      
-      // Additional date validation and preservation
-      console.log("Validating transaction date:", data.date);
-      
-      // Log the exact date being submitted for debugging
-      console.log("Submitting transaction with date:", data.date);
       
       // Type is optional, default to expense
       if (!data.type) {
@@ -254,8 +214,7 @@ export default function TransactionsPage() {
         category,
         account,
         amount: parseFloat(data.amount),
-        // Preserve exact user-selected date without time component manipulation
-        date: data.date,
+        date: new Date(data.date).toISOString(),
         type: data.type || 'expense',
         // All transactions are now manual entry
       });
@@ -391,16 +350,13 @@ export default function TransactionsPage() {
   const resetForm = () => {
     setFormData({
       type: 'expense',
-      date: "", // Critical fix: Require explicit date selection, don't default to today
+      date: new Date().toISOString().split('T')[0],
       amount: "",
       merchant: "",
       category: "",
-      subcategory: "",
       account: "",
       notes: '',
     });
-    // Reset main category selection
-    setSelectedMainCategory("");
   };
 
   const handleAddSubmit = (e: React.FormEvent) => {
@@ -476,15 +432,11 @@ export default function TransactionsPage() {
       return;
     }
     
-    // Enhanced date handling for edit form to match add transaction flow
-    console.log("Editing transaction with date:", formData.date);
-    
-    // Ensure we have defaults for optional fields but preserve user-selected date exactly
+    // Ensure we have defaults for optional fields
     const submissionData = {
       ...formData,
       type: formData.type || 'expense',
-      // Important: Preserve the exact date string without any conversion
-      date: formData.date 
+      date: formData.date || new Date().toISOString().split('T')[0]
     };
     
     updateMutation.mutate({
@@ -496,13 +448,8 @@ export default function TransactionsPage() {
   const openEditDialog = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
     
-    // Preserve the exact date string or ensure it's in YYYY-MM-DD format
-    // If date is already in YYYY-MM-DD format, use it directly
-    const date = transaction.date.includes('T') 
-      ? new Date(transaction.date).toISOString().split('T')[0]
-      : transaction.date;
-      
-    console.log("Opening edit dialog with date:", transaction.date, "=>", date);
+    // Convert ISO date to YYYY-MM-DD for the input
+    const date = new Date(transaction.date).toISOString().split('T')[0];
     
     // Set selected main category to properly load subcategories
     setSelectedMainCategory(transaction.category);
@@ -574,7 +521,7 @@ export default function TransactionsPage() {
           </div>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="mt-4 md:mt-0 bg-primary hover:bg-primary/90 text-white btn-luxury btn-luxury-primary glow-effect">
+              <Button className="mt-4 md:mt-0 bg-primary hover:bg-primary/90 text-white">
                 <PlusCircle className="mr-2 h-4 w-4" /> Add Transaction
               </Button>
             </DialogTrigger>
@@ -582,16 +529,15 @@ export default function TransactionsPage() {
               <DialogHeader>
                 <DialogTitle>Add New Transaction</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleAddSubmit} className="transaction-form mt-5">
-                <div className="transaction-form-grid">
-                  {/* Transaction Type */}
-                  <div className="form-field">
-                    <Label htmlFor="type" className="font-medium">Type</Label>
+              <form onSubmit={handleAddSubmit} className="space-y-4 mt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="type">Type</Label>
                     <Select 
                       value={formData.type} 
                       onValueChange={(value) => setFormData({...formData, type: value as 'expense' | 'income'})}
                     >
-                      <SelectTrigger className="bg-background/80 border-border/50 hover:border-primary/30 transition-colors">
+                      <SelectTrigger>
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent>
@@ -600,60 +546,59 @@ export default function TransactionsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-
-                  {/* New Custom Date Picker Component */}
-                  <div className="form-field">
-                    <Label htmlFor="date" className="font-medium">
-                      Date <span className="text-destructive">*</span>
-                    </Label>
-                    <DatePicker 
-                      date={formData.date} 
-                      setDate={(dateStr) => setFormData({ ...formData, date: dateStr })}
+                  <div className="space-y-2">
+                    <Label htmlFor="date">Date <span className="text-destructive">*</span></Label>
+                    <Input 
+                      id="date" 
+                      type="date" 
+                      value={formData.date}
+                      onChange={(e) => {
+                        console.log("Date changed to:", e.target.value);
+                        setFormData({...formData, date: e.target.value});
+                      }}
+                      required
                     />
-                    <p className="text-xs text-primary/70 mt-1.5">
+                    <p className="text-xs text-muted-foreground mt-1">
                       Select any date for this transaction
                     </p>
                   </div>
                 </div>
                 
-                <div className="form-group-luxury">
-                  <Label htmlFor="amount" className="label-luxury">Amount <span className="text-destructive">*</span></Label>
+                <div className="space-y-2">
+                  <Label htmlFor="amount">Amount <span className="text-destructive">*</span></Label>
                   <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-primary/80">$</span>
+                    <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
                     <Input 
                       id="amount" 
                       type="number" 
                       step="0.01"
                       placeholder="0.00" 
-                      className="pl-7 form-input-luxury"
+                      className="pl-7"
                       value={formData.amount}
                       onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                      required
                     />
                   </div>
-                  <p className="text-xs text-primary/70 mt-1.5">
-                    Enter a positive number
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Required: Enter a positive number
                   </p>
                 </div>
                 
-                <div className="form-group-luxury">
-                  <Label htmlFor="merchant" className="label-luxury">Description <span className="text-destructive">*</span></Label>
+                <div className="space-y-2">
+                  <Label htmlFor="merchant">Description <span className="text-destructive">*</span></Label>
                   <Input 
                     id="merchant" 
                     placeholder="e.g., Starbucks, Employer" 
-                    className="form-input-luxury"
                     value={formData.merchant}
                     onChange={(e) => setFormData({...formData, merchant: e.target.value})}
-                    required
                   />
-                  <p className="text-xs text-primary/70 mt-1.5">
-                    Briefly describe what this transaction is for
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Required: Briefly describe what this transaction is for
                   </p>
                 </div>
                 
-                <div className="transaction-form-grid">
-                  <div className="form-group-luxury">
-                    <Label htmlFor="category" className="label-luxury">Category <span className="text-destructive">*</span></Label>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Category <span className="text-muted-foreground text-xs">(optional)</span></Label>
                     <Select 
                       value={formData.category} 
                       onValueChange={(value) => {
@@ -666,7 +611,7 @@ export default function TransactionsPage() {
                         });
                       }}
                     >
-                      <SelectTrigger className="form-input-luxury">
+                      <SelectTrigger>
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                       <SelectContent>
@@ -677,20 +622,20 @@ export default function TransactionsPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-primary/70 mt-1.5">
-                      Select a category for this transaction
+                    <p className="text-xs text-muted-foreground mt-1">
+                      If left blank, will default to "Uncategorized" or "General Income"
                     </p>
                   </div>
                   
                   {/* Subcategory selection - only show if a main category is selected */}
                   {formData.category && availableSubcategories.length > 0 && (
-                    <div className="form-group-luxury">
-                      <Label htmlFor="subcategory" className="label-luxury">Subcategory</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="subcategory">Subcategory</Label>
                       <Select 
                         value={formData.subcategory} 
                         onValueChange={(value) => setFormData({...formData, subcategory: value})}
                       >
-                        <SelectTrigger className="form-input-luxury">
+                        <SelectTrigger>
                           <SelectValue placeholder="Select subcategory" />
                         </SelectTrigger>
                         <SelectContent>
@@ -701,78 +646,38 @@ export default function TransactionsPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-primary/70 mt-1.5">
+                      <p className="text-xs text-muted-foreground mt-1">
                         Further categorize your {formData.type}
                       </p>
                     </div>
                   )}
                 </div>
                 
-                <div className="form-group-luxury">
-                  <Label htmlFor="account" className="label-luxury">Account <span className="text-destructive">*</span></Label>
-                  <div className="space-y-3">
-                    {isCustomAccount ? (
-                      <div className="space-y-3">
-                        <Input 
-                          id="account" 
-                          placeholder="Enter new account name" 
-                          className="form-input-luxury"
-                          value={formData.account}
-                          onChange={(e) => setFormData({
-                            ...formData, 
-                            account: e.target.value
-                          })}
-                          autoComplete="off"
-                          required
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setIsCustomAccount(false)}
-                          className="mt-2"
-                        >
-                          Select from existing accounts
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <Select 
-                          value={formData.account} 
-                          onValueChange={(value) => {
-                            if (value === "add_new_account") {
-                              setIsCustomAccount(true);
-                              setFormData({...formData, account: ""});
-                            } else {
-                              setFormData({...formData, account: value});
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="form-input-luxury">
-                            <SelectValue placeholder="Select account" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {userAccounts.map((account) => (
-                              <SelectItem key={account} value={account}>
-                                {account}
-                              </SelectItem>
-                            ))}
-                            <SelectItem value="add_new_account">➕ Add new account</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <p className="text-xs text-primary/70 mt-1.5">
-                          Saved accounts are remembered across transactions
-                        </p>
-                      </div>
-                    )}
+                <div className="space-y-2">
+                  <Label htmlFor="account">Account <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                  <div className="space-y-2">
+                    <Input 
+                      id="account" 
+                      placeholder="Enter account (e.g., Checking, Credit Card)" 
+                      value={formData.account}
+                      onChange={(e) => setFormData({
+                        ...formData, 
+                        account: e.target.value
+                      })}
+                      autoComplete="off"
+                    />
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Common accounts: Checking, Savings, Credit Card, Cash
+                      <br />
+                      If left blank, will default to "Default Account"
+                    </div>
                   </div>
                 </div>
                 
                 <div className="flex justify-end">
                   <Button 
                     type="submit" 
-                    className="btn-luxury btn-luxury-primary glow-effect"
-                    disabled={!formData.amount || !formData.merchant || !formData.category || !formData.account || !formData.date || addMutation.isPending}
+                    disabled={!formData.amount || !formData.merchant || !formData.category || !formData.account || addMutation.isPending}
                   >
                     {addMutation.isPending ? (
                       <>
@@ -788,13 +693,13 @@ export default function TransactionsPage() {
         </div>
 
         {/* Filters */}
-        <Card className="p-4 mb-6 card-luxury">
+        <Card className="p-4 mb-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-grow">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search transactions..."
-                className="pl-8 form-input-luxury"
+                className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -803,7 +708,7 @@ export default function TransactionsPage() {
             <div className="flex flex-wrap gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-1 form-input-luxury">
+                  <Button variant="outline" className="flex items-center gap-1">
                     Type <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -819,7 +724,7 @@ export default function TransactionsPage() {
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-1 form-input-luxury">
+                  <Button variant="outline" className="flex items-center gap-1">
                     Category <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -837,7 +742,7 @@ export default function TransactionsPage() {
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-1 form-input-luxury">
+                  <Button variant="outline" className="flex items-center gap-1">
                     Account <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -857,7 +762,7 @@ export default function TransactionsPage() {
                 <Button 
                   variant="ghost" 
                   onClick={clearAllFilters}
-                  className="text-destructive btn-luxury"
+                  className="text-destructive"
                 >
                   <FilterX className="h-4 w-4 mr-1" />
                   Clear filters
@@ -870,37 +775,37 @@ export default function TransactionsPage() {
           {hasActiveFilters && (
             <div className="mt-3 flex flex-wrap gap-2">
               {typeFilter && (
-                <Badge variant="secondary" className="flex items-center gap-1 border-primary/20 bg-secondary/80">
+                <Badge variant="secondary" className="flex items-center gap-1">
                   Type: {typeFilter}
                   <Trash2 
-                    className="h-3 w-3 ml-1 cursor-pointer text-primary/80 hover:text-primary" 
+                    className="h-3 w-3 ml-1 cursor-pointer" 
                     onClick={() => setTypeFilter(null)}
                   />
                 </Badge>
               )}
               {categoryFilter && (
-                <Badge variant="secondary" className="flex items-center gap-1 border-primary/20 bg-secondary/80">
+                <Badge variant="secondary" className="flex items-center gap-1">
                   Category: {categoryFilter}
                   <Trash2 
-                    className="h-3 w-3 ml-1 cursor-pointer text-primary/80 hover:text-primary" 
+                    className="h-3 w-3 ml-1 cursor-pointer" 
                     onClick={() => setCategoryFilter(null)}
                   />
                 </Badge>
               )}
               {accountFilter && (
-                <Badge variant="secondary" className="flex items-center gap-1 border-primary/20 bg-secondary/80">
+                <Badge variant="secondary" className="flex items-center gap-1">
                   Account: {accountFilter}
                   <Trash2 
-                    className="h-3 w-3 ml-1 cursor-pointer text-primary/80 hover:text-primary" 
+                    className="h-3 w-3 ml-1 cursor-pointer" 
                     onClick={() => setAccountFilter(null)}
                   />
                 </Badge>
               )}
               {searchTerm && (
-                <Badge variant="secondary" className="flex items-center gap-1 border-primary/20 bg-secondary/80">
+                <Badge variant="secondary" className="flex items-center gap-1">
                   Search: {searchTerm}
                   <Trash2 
-                    className="h-3 w-3 ml-1 cursor-pointer text-primary/80 hover:text-primary" 
+                    className="h-3 w-3 ml-1 cursor-pointer" 
                     onClick={() => setSearchTerm("")}
                   />
                 </Badge>
@@ -910,7 +815,7 @@ export default function TransactionsPage() {
         </Card>
 
         {/* Transactions Table */}
-        <Card className="overflow-hidden card-luxury">
+        <Card className="overflow-hidden">
           {isTransactionsLoading ? (
             <div className="p-8">
               <div className="flex items-center justify-center">
@@ -925,23 +830,22 @@ export default function TransactionsPage() {
                   <Button 
                     variant="outline"
                     onClick={clearAllFilters}
-                    className="btn-luxury btn-luxury-secondary"
                   >
                     Clear all filters
                   </Button>
                 </div>
               ) : (
                 <div className="px-6 max-w-md mx-auto">
-                  <div className="text-6xl mb-6 text-primary/60 flex justify-center">
-                    <CreditCard className="drop-shadow-lg" />
+                  <div className="text-6xl mb-4 opacity-50 flex justify-center">
+                    <CreditCard />
                   </div>
-                  <h3 className="text-xl font-medium mb-3">No transactions available</h3>
+                  <h3 className="text-lg font-medium mb-2">No transactions available</h3>
                   <p className="text-muted-foreground mb-6">
                     Start tracking your finances by adding your transactions manually.
                   </p>
                   <div className="flex justify-center">
                     <Button 
-                      className="bg-primary hover:bg-primary/90 text-white btn-luxury btn-luxury-primary glow-effect"
+                      className="bg-primary hover:bg-primary/90 text-white"
                       onClick={() => setIsAddDialogOpen(true)}
                     >
                       <PlusCircle className="mr-2 h-4 w-4" /> Add transaction
@@ -951,17 +855,17 @@ export default function TransactionsPage() {
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-lg">
-              <table className="w-full table-fixed">
+            <div className="overflow-x-auto">
+              <table className="w-full">
                 <thead>
-                  <tr className="border-b border-primary/20 bg-gradient-to-r from-card to-primary/5">
-                    <th className="text-left p-4 font-medium text-primary/90 w-[13%]">Date</th>
-                    <th className="text-left p-4 font-medium text-primary/90 w-[22%]">Description</th>
-                    <th className="text-left p-4 font-medium text-primary/90 w-[17%]">Category</th>
-                    <th className="text-left p-4 font-medium text-primary/90 w-[13%]">Account</th>
-                    <th className="text-left p-4 font-medium text-primary/90 w-[12%]">Source</th>
-                    <th className="text-right p-4 font-medium text-primary/90 w-[12%]">Amount</th>
-                    <th className="text-right p-4 font-medium text-primary/90 w-[11%]">Actions</th>
+                  <tr className="border-b bg-muted/50">
+                    <th className="text-left p-4 font-medium">Date</th>
+                    <th className="text-left p-4 font-medium">Description</th>
+                    <th className="text-left p-4 font-medium">Category</th>
+                    <th className="text-left p-4 font-medium">Account</th>
+                    <th className="text-left p-4 font-medium">Source</th>
+                    <th className="text-right p-4 font-medium">Amount</th>
+                    <th className="text-right p-4 font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -970,16 +874,16 @@ export default function TransactionsPage() {
                     const isExpense = transaction.type === 'expense';
                     
                     return (
-                      <tr key={transaction.id} className="border-b border-primary/10 hover:bg-primary/5 transition-all duration-200">
+                      <tr key={transaction.id} className="border-b hover:bg-muted/20">
                         <td className="p-4 align-middle">
                           <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-primary/60" />
-                            <span className="font-medium text-sm">{formatDate(new Date(transaction.date))}</span>
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <span>{formatDate(new Date(transaction.date))}</span>
                           </div>
                         </td>
                         <td className="p-4 align-middle">
                           <div className="flex flex-col">
-                            <span className="font-medium text-primary/90">{transaction.merchant}</span>
+                            <span>{transaction.merchant}</span>
                             {false && (
                               <div className="flex flex-col mt-1">
                                 <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-800">
@@ -1018,38 +922,34 @@ export default function TransactionsPage() {
                         </td>
                         <td className="p-4 align-middle">
                           <div className="flex items-center gap-2">
-                            <div className={`p-1.5 rounded-md shadow-sm ${color.split(' ')[0]}`}>
+                            <div className={`p-1 rounded ${color.split(' ')[0]}`}>
                               <i className={`${icon} text-sm`}></i>
                             </div>
                             <div className="flex flex-col">
-                              <span className="font-medium">{transaction.category}</span>
+                              <span>{transaction.category}</span>
                               {transaction.subcategory && (
-                                <span className="text-xs text-primary/60">
+                                <span className="text-xs text-muted-foreground">
                                   {transaction.subcategory}
                                 </span>
                               )}
                             </div>
                           </div>
                         </td>
+                        <td className="p-4 align-middle">{transaction.account}</td>
                         <td className="p-4 align-middle">
-                          <span className="font-medium text-primary/80">{transaction.account}</span>
-                        </td>
-                        <td className="p-4 align-middle">
-                          <Badge variant="outline" className="bg-primary/5 text-primary/80 border-primary/20 font-normal">
+                          <Badge variant="outline">
                             Manual Entry
                           </Badge>
                         </td>
-                        <td className={`p-4 align-middle text-right font-semibold ${isExpense ? 'text-destructive' : 'text-[#00C2A8]'}`}>
-                          <span className="text-lg tracking-tight">
-                            {isExpense ? '-' : '+'}{formatCurrency(parseFloat(transaction.amount))}
-                          </span>
+                        <td className={`p-4 align-middle text-right font-medium ${isExpense ? 'text-destructive' : 'text-[#00C2A8]'}`}>
+                          {isExpense ? '-' : '+'}{formatCurrency(parseFloat(transaction.amount))}
                         </td>
                         <td className="p-4 align-middle text-right">
                           <div className="flex justify-end items-center space-x-1">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-primary/70 hover:text-primary hover:bg-secondary/60 transition-colors"
+                              className="h-8 w-8"
                               onClick={() => openEditDialog(transaction)}
                             >
                               <Pencil className="h-4 w-4" />
@@ -1059,23 +959,23 @@ export default function TransactionsPage() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-8 w-8 text-destructive/70 hover:text-destructive hover:bg-secondary/60 transition-colors"
+                                  className="h-8 w-8 text-destructive"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </AlertDialogTrigger>
-                              <AlertDialogContent className="border border-border/40 card-gradient">
+                              <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle className="text-xl text-primary">Are you absolutely sure?</AlertDialogTitle>
-                                  <AlertDialogDescription className="text-foreground/80">
+                                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
                                     This will permanently delete the transaction from {transaction.merchant} for {formatCurrency(parseFloat(transaction.amount))}.
                                     This action cannot be undone.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                  <AlertDialogCancel className="btn-luxury">Cancel</AlertDialogCancel>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
                                   <AlertDialogAction
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90 btn-luxury"
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                     onClick={() => deleteMutation.mutate(transaction.id)}
                                   >
                                     {deleteMutation.isPending ? (
@@ -1099,19 +999,19 @@ export default function TransactionsPage() {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="border border-border/40 card-gradient">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-xl text-primary">Edit Transaction</DialogTitle>
+            <DialogTitle>Edit Transaction</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleEditSubmit} className="space-y-4 mt-4">
             <div className="grid grid-cols-2 gap-4">
-              <div className="form-group-luxury">
-                <Label htmlFor="edit-type" className="label-luxury">Type</Label>
+              <div className="space-y-2">
+                <Label htmlFor="edit-type">Type</Label>
                 <Select 
                   value={formData.type} 
                   onValueChange={(value) => setFormData({...formData, type: value as 'expense' | 'income'})}
                 >
-                  <SelectTrigger className="form-input-luxury">
+                  <SelectTrigger>
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1120,54 +1020,43 @@ export default function TransactionsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="form-group-luxury">
-                <Label htmlFor="edit-date" className="label-luxury">Date</Label>
-                <DatePicker 
-                  date={formData.date} 
-                  setDate={(dateStr) => {
-                    console.log("Date selected using DatePicker:", dateStr);
-                    setFormData({...formData, date: dateStr});
-                  }}
-                  className="form-input-luxury"
-                />
-                <p className="text-xs text-primary/70 mt-1.5">
-                  Select any date for this transaction
-                </p>
-              </div>
-            </div>
-            
-            <div className="form-group-luxury">
-              <Label htmlFor="edit-amount" className="label-luxury">Amount</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
+              <div className="space-y-2">
+                <Label htmlFor="edit-date">Date</Label>
                 <Input 
-                  id="edit-amount" 
-                  type="number" 
-                  step="0.01"
-                  className="pl-7 form-input-luxury"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({...formData, amount: e.target.value})}
+                  id="edit-date" 
+                  type="date" 
+                  value={formData.date}
+                  onChange={(e) => setFormData({...formData, date: e.target.value})}
                 />
               </div>
             </div>
             
-            <div className="form-group-luxury">
-              <Label htmlFor="edit-merchant" className="label-luxury">Merchant / Source</Label>
+            <div className="space-y-2">
+              <Label htmlFor="edit-amount">Amount</Label>
+              <Input 
+                id="edit-amount" 
+                type="number" 
+                step="0.01"
+                value={formData.amount}
+                onChange={(e) => setFormData({...formData, amount: e.target.value})}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-merchant">Merchant / Source</Label>
               <Input 
                 id="edit-merchant" 
-                className="form-input-luxury"
                 value={formData.merchant}
                 onChange={(e) => setFormData({...formData, merchant: e.target.value})}
               />
             </div>
             
-            <div className="form-group-luxury">
-              <Label htmlFor="edit-category" className="label-luxury">Category</Label>
+            <div className="space-y-2">
+              <Label htmlFor="edit-category">Category</Label>
               <div className="space-y-2">
                 <Input 
                   id="edit-category" 
                   placeholder="Enter category (e.g., Groceries, Utilities)" 
-                  className="form-input-luxury"
                   value={formData.category}
                   onChange={(e) => setFormData({
                     ...formData, 
@@ -1176,21 +1065,20 @@ export default function TransactionsPage() {
                   autoComplete="off"
                 />
                 {categories.length > 0 && (
-                  <div className="text-xs text-primary/70 mt-1">
-                    <span className="font-medium">Suggestions:</span> {categories.slice(0, 3).map(cat => cat.name).join(', ')}
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Suggestions: {categories.slice(0, 3).map(cat => cat.name).join(', ')}
                     {categories.length > 3 && ', and more'}
                   </div>
                 )}
               </div>
             </div>
             
-            <div className="form-group-luxury">
-              <Label htmlFor="edit-account" className="label-luxury">Account</Label>
+            <div className="space-y-2">
+              <Label htmlFor="edit-account">Account</Label>
               <div className="space-y-2">
                 <Input 
                   id="edit-account" 
                   placeholder="Enter account (e.g., Checking, Credit Card)" 
-                  className="form-input-luxury"
                   value={formData.account}
                   onChange={(e) => setFormData({
                     ...formData, 
@@ -1198,8 +1086,8 @@ export default function TransactionsPage() {
                   })}
                   autoComplete="off"
                 />
-                <div className="text-xs text-primary/70 mt-1">
-                  <span className="font-medium">Common accounts:</span> Checking, Savings, Credit Card, Cash
+                <div className="text-xs text-muted-foreground mt-1">
+                  Common accounts: Checking, Savings, Credit Card, Cash
                 </div>
               </div>
             </div>
@@ -1207,7 +1095,6 @@ export default function TransactionsPage() {
             <div className="flex justify-end">
               <Button 
                 type="submit" 
-                className="btn-luxury btn-luxury-primary glow-effect"
                 disabled={!formData.amount || !formData.merchant || !formData.category || !formData.account || updateMutation.isPending}
               >
                 {updateMutation.isPending ? (

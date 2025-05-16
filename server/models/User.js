@@ -76,12 +76,6 @@ const userSchema = new mongoose.Schema(
         type: Date,
       },
     },
-    // Saved accounts for transactions (for persistent account selection)
-    accounts: {
-      type: [String],
-      default: ['Checking', 'Savings', 'Credit Card', 'Cash']
-    },
-    
     // Reset password fields
     resetPasswordToken: String,
     resetPasswordExpires: Date,
