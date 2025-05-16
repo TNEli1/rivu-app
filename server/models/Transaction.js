@@ -20,6 +20,10 @@ const transactionSchema = mongoose.Schema(
       type: String,
       default: 'Uncategorized',
     },
+    subcategory: {
+      type: String,
+      default: '',
+    },
     account: {
       type: String,
       default: 'Cash',

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import Sidebar from "@/components/layout/Sidebar";
@@ -72,6 +72,7 @@ type TransactionFormData = {
   amount: string;
   merchant: string; // This is the required description field
   category: string;
+  subcategory?: string; // Added subcategory support
   account: string;
   // Additional fields for custom entry
   customCategory?: string;
@@ -79,7 +80,18 @@ type TransactionFormData = {
   notes?: string;
 };
 
-// Now using free text fields for categories and accounts
+// Categories with subcategories - per spec requirements
+const CATEGORY_SUGGESTIONS: Record<string, string[]> = {
+  "Housing": ["Rent", "Mortgage", "Property Tax", "HOA Fees"],
+  "Utilities": ["Electric", "Water", "Gas", "Internet", "Trash"],
+  "Groceries": ["Produce", "Meat & Seafood", "Snacks", "Beverages"],
+  "Transportation": ["Gas", "Car Payment", "Insurance", "Rideshare"],
+  "Entertainment": ["Streaming", "Dining Out", "Movies", "Events"],
+  "Health": ["Doctor", "Dentist", "Pharmacy", "Insurance"],
+  "Savings": ["Emergency Fund", "Vacation", "Investments"],
+  "Income": ["Primary Job", "Side Hustle", "Freelance"],
+  "Other": []
+};
 
 export default function TransactionsPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -96,9 +108,20 @@ export default function TransactionsPage() {
     amount: "",
     merchant: "",
     category: "",
+    subcategory: "",
     account: "",
     notes: ""
   });
+  
+  // State to track currently selected main category
+  const [selectedMainCategory, setSelectedMainCategory] = useState<string>("");
+  
+  // Get subcategories based on selected main category
+  const availableSubcategories = useMemo(() => {
+    return selectedMainCategory && CATEGORY_SUGGESTIONS[selectedMainCategory] 
+      ? CATEGORY_SUGGESTIONS[selectedMainCategory] 
+      : [];
+  }, [selectedMainCategory]);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
