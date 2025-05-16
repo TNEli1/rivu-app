@@ -869,12 +869,11 @@ export default function TransactionsPage() {
               
               {hasActiveFilters && (
                 <Button 
-                  variant="ghost" 
+                  variant="outline" 
                   onClick={clearAllFilters}
-                  className="text-destructive btn-luxury"
+                  className="flex items-center gap-1.5 bg-background/70 border-primary/20 hover:bg-destructive/10 text-sm font-medium text-destructive h-10"
                 >
-                  <FilterX className="h-4 w-4 mr-1" />
-                  Clear filters
+                  <FilterX className="h-3.5 w-3.5" /> Clear Filters
                 </Button>
               )}
             </div>
@@ -882,39 +881,39 @@ export default function TransactionsPage() {
           
           {/* Active filters */}
           {hasActiveFilters && (
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-4 flex flex-wrap gap-2">
               {typeFilter && (
-                <Badge variant="secondary" className="flex items-center gap-1 border-primary/20 bg-secondary/80">
-                  Type: {typeFilter}
+                <Badge variant="outline" className="flex items-center gap-1.5 bg-primary/5 text-primary/80 border-primary/20 py-1.5 pl-3 pr-2">
+                  <span className="font-medium">Type:</span> {typeFilter}
                   <Trash2 
-                    className="h-3 w-3 ml-1 cursor-pointer text-primary/80 hover:text-primary" 
+                    className="h-3 w-3 ml-1.5 cursor-pointer text-primary/70 hover:text-destructive transition-colors" 
                     onClick={() => setTypeFilter(null)}
                   />
                 </Badge>
               )}
               {categoryFilter && (
-                <Badge variant="secondary" className="flex items-center gap-1 border-primary/20 bg-secondary/80">
-                  Category: {categoryFilter}
+                <Badge variant="outline" className="flex items-center gap-1.5 bg-primary/5 text-primary/80 border-primary/20 py-1.5 pl-3 pr-2">
+                  <span className="font-medium">Category:</span> {categoryFilter}
                   <Trash2 
-                    className="h-3 w-3 ml-1 cursor-pointer text-primary/80 hover:text-primary" 
+                    className="h-3 w-3 ml-1.5 cursor-pointer text-primary/70 hover:text-destructive transition-colors" 
                     onClick={() => setCategoryFilter(null)}
                   />
                 </Badge>
               )}
               {accountFilter && (
-                <Badge variant="secondary" className="flex items-center gap-1 border-primary/20 bg-secondary/80">
-                  Account: {accountFilter}
+                <Badge variant="outline" className="flex items-center gap-1.5 bg-primary/5 text-primary/80 border-primary/20 py-1.5 pl-3 pr-2">
+                  <span className="font-medium">Account:</span> {accountFilter}
                   <Trash2 
-                    className="h-3 w-3 ml-1 cursor-pointer text-primary/80 hover:text-primary" 
+                    className="h-3 w-3 ml-1.5 cursor-pointer text-primary/70 hover:text-destructive transition-colors" 
                     onClick={() => setAccountFilter(null)}
                   />
                 </Badge>
               )}
               {searchTerm && (
-                <Badge variant="secondary" className="flex items-center gap-1 border-primary/20 bg-secondary/80">
-                  Search: {searchTerm}
+                <Badge variant="outline" className="flex items-center gap-1.5 bg-primary/5 text-primary/80 border-primary/20 py-1.5 pl-3 pr-2">
+                  <span className="font-medium">Search:</span> {searchTerm}
                   <Trash2 
-                    className="h-3 w-3 ml-1 cursor-pointer text-primary/80 hover:text-primary" 
+                    className="h-3 w-3 ml-1.5 cursor-pointer text-primary/70 hover:text-destructive transition-colors" 
                     onClick={() => setSearchTerm("")}
                   />
                 </Badge>
