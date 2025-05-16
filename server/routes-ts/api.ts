@@ -112,6 +112,10 @@ async function initializeRoutes() {
     // Rivu Score Route
     router.get('/rivu-score', protect, getRivuScore);
     
+    // User Accounts Routes (for transaction account management)
+    router.get('/user/accounts', protect, getUserAccounts);
+    router.post('/user/accounts', protect, updateUserAccounts);
+    
     // AI Advice Route
     router.post('/advice', protect, getAdvice);
     

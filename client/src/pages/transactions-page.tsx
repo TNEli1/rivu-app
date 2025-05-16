@@ -671,8 +671,6 @@ export default function TransactionsPage() {
                     />
                     <div className="text-xs text-muted-foreground mt-1">
                       Common accounts: Checking, Savings, Credit Card, Cash
-                      <br />
-                      If left blank, will default to "Default Account"
                     </div>
                   </div>
                 </div>
