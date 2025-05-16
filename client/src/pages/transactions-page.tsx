@@ -602,8 +602,8 @@ export default function TransactionsPage() {
                   </div>
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="amount">Amount <span className="text-destructive">*</span></Label>
+                <div className="form-group-luxury">
+                  <Label htmlFor="amount" className="label-luxury">Amount <span className="text-destructive">*</span></Label>
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
                     <Input 
@@ -611,7 +611,7 @@ export default function TransactionsPage() {
                       type="number" 
                       step="0.01"
                       placeholder="0.00" 
-                      className="pl-7"
+                      className="pl-7 form-input-luxury"
                       value={formData.amount}
                       onChange={(e) => setFormData({...formData, amount: e.target.value})}
                     />
@@ -621,11 +621,12 @@ export default function TransactionsPage() {
                   </p>
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="merchant">Description <span className="text-destructive">*</span></Label>
+                <div className="form-group-luxury">
+                  <Label htmlFor="merchant" className="label-luxury">Description <span className="text-destructive">*</span></Label>
                   <Input 
                     id="merchant" 
                     placeholder="e.g., Starbucks, Employer" 
+                    className="form-input-luxury"
                     value={formData.merchant}
                     onChange={(e) => setFormData({...formData, merchant: e.target.value})}
                   />
@@ -634,9 +635,9 @@ export default function TransactionsPage() {
                   </p>
                 </div>
                 
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Category <span className="text-destructive">*</span></Label>
+                <div className="space-y-5">
+                  <div className="form-group-luxury">
+                    <Label htmlFor="category" className="label-luxury">Category <span className="text-destructive">*</span></Label>
                     <Select 
                       value={formData.category} 
                       onValueChange={(value) => {
@@ -649,7 +650,7 @@ export default function TransactionsPage() {
                         });
                       }}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="form-input-luxury">
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                       <SelectContent>
@@ -667,13 +668,13 @@ export default function TransactionsPage() {
                   
                   {/* Subcategory selection - only show if a main category is selected */}
                   {formData.category && availableSubcategories.length > 0 && (
-                    <div className="space-y-2">
-                      <Label htmlFor="subcategory">Subcategory</Label>
+                    <div className="form-group-luxury">
+                      <Label htmlFor="subcategory" className="label-luxury">Subcategory</Label>
                       <Select 
                         value={formData.subcategory} 
                         onValueChange={(value) => setFormData({...formData, subcategory: value})}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="form-input-luxury">
                           <SelectValue placeholder="Select subcategory" />
                         </SelectTrigger>
                         <SelectContent>
