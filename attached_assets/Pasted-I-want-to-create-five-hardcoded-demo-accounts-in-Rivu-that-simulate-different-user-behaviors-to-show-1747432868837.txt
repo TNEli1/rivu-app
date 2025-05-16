@@ -1,0 +1,122 @@
+I want to create five hardcoded demo accounts in Rivu that simulate different user behaviors to showcase how the app adapts and calculates the Rivu Score. These profiles should include realistic income, budgets, financial goals, and daily/weekly transactions over the time period of January 1 to March 31, 2025.
+
+⸻
+
+1. Account Setup (Five Demo Users)
+
+Each user should have:
+	•	A hardcoded user profile with:
+	•	Name
+	•	Monthly income
+	•	Spending habits (good, decent, poor)
+	•	Savings behavior
+	•	Age range
+	•	Financial goals
+	•	Associated transaction, budget, and goal data stored properly in MongoDB under their own user ID.
+	•	Correct Rivu Score calculated dynamically for each user using improved score logic.
+
+⸻
+
+2. Demo User Profiles
+
+User 1 – “Ava Budgetmaster” (Good Habits)
+	•	Income: $5,500/month
+	•	Budget adherence: 90%+
+	•	Goals: Emergency fund ($3,000), Travel ($2,000)
+	•	Savings rate: ~20%
+	•	Rivu Score: 85–90
+
+User 2 – “Liam Learner” (Average Habits)
+	•	Income: $4,200/month
+	•	Budget adherence: 70%
+	•	Goals: Credit card payoff ($1,500), Laptop purchase ($1,200)
+	•	Savings rate: ~10%
+	•	Rivu Score: 65–70
+
+User 3 – “Nina Overspender” (Poor Habits)
+	•	Income: $3,800/month
+	•	Budget adherence: 40%
+	•	Goals: Rent deposit ($1,000) — abandoned
+	•	Savings: 2–3%
+	•	Rivu Score: 45–50
+
+User 4 – “Jacob Steady” (Disciplined but Low Income)
+	•	Income: $2,500/month
+	•	Budget adherence: 85%
+	•	Goals: Debt payoff ($800), Save for car repair ($600)
+	•	Savings: 15%
+	•	Rivu Score: 75–80
+
+User 5 – “Maya Hustler” (High Income, Unfocused)
+	•	Income: $10,000/month
+	•	Budget adherence: 50%
+	•	Goals: Vague investment target ($5,000)
+	•	Savings: Inconsistent
+	•	Rivu Score: 55–60
+
+⸻
+
+3. Simulated Transactions and Budgets
+
+For each user:
+	•	Enter ~20–30 transactions between Jan 1 and Mar 31 (evenly distributed)
+	•	Include expense and income types
+	•	Transaction categories: Rent, Groceries, Utilities, Dining, Shopping, Travel, Misc
+	•	Assign subcategories (e.g., Groceries > Whole Foods, Dining > Takeout)
+	•	Budget categories should match or slightly misalign with actual spend depending on user type
+
+⸻
+
+4. Goal Tracking
+
+Each user should have 1–3 financial goals with:
+	•	Target amount
+	•	Start date and deadline
+	•	Monthly contributions
+	•	Varying progress based on user behavior
+	•	Store goal data in MongoDB properly
+
+⸻
+
+5. Data Integration
+	•	Link all data (transactions, budgets, goals) to user ID
+	•	Ensure Rivu Score is properly recalculated for each demo user based on:
+	•	Budget goal success rate
+	•	Savings progress
+	•	Weekly login/engagement (simulate)
+	•	Goal completion % (simulate)
+	•	Refresh the score without requiring logout
+
+⸻
+
+6. Visual Features (UI Enhancements)
+
+For demo purposes, simulate:
+	•	Pie chart: Spending breakdown (rent, groceries, utilities)
+	•	Goal progress bars
+	•	Rivu Score meter animation
+	•	AI coach message based on each user’s actual financial data
+
+⸻
+
+7. User Reflection Features
+
+Add the following fake data UI components:
+	•	Notifications like:
+	•	“You saved $400 this month!”
+	•	“You overspent on dining — consider setting a cap”
+	•	Weekly/Monthly Recaps:
+	•	“You improved your score by 4 points”
+	•	“Your savings grew by $150 in February”
+	•	Milestone Cards:
+	•	“3 of 5 goals completed”
+	•	“30 days of consistent budgeting”
+
+⸻
+
+8. Final Touches
+	•	Add default categories and subcategories to the transaction form
+	•	Fix broken date inputs so past dates can be entered
+	•	Ensure all data is stored in MongoDB by user ID
+	•	All buttons (Register, Login, Log Out) must be fully functional
+	•	Rebuild the transaction page UI to avoid visual bugs and overlapping elements
