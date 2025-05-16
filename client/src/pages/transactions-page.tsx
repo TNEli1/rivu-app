@@ -4,6 +4,10 @@ import { apiRequest } from "@/lib/queryClient";
 import Sidebar from "@/components/layout/Sidebar";
 import MobileNav from "@/components/layout/MobileNav";
 import { Button } from "@/components/ui/button";
+
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -577,15 +581,16 @@ export default function TransactionsPage() {
               <DialogHeader>
                 <DialogTitle>Add New Transaction</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleAddSubmit} className="space-y-5 mt-4">
+              <form onSubmit={handleAddSubmit} className="transaction-form mt-5">
                 <div className="transaction-form-grid">
-                  <div className="form-group-luxury">
-                    <Label htmlFor="type" className="label-luxury">Type</Label>
+                  {/* Transaction Type */}
+                  <div className="form-field">
+                    <Label htmlFor="type" className="font-medium">Type</Label>
                     <Select 
                       value={formData.type} 
                       onValueChange={(value) => setFormData({...formData, type: value as 'expense' | 'income'})}
                     >
-                      <SelectTrigger className="form-input-luxury">
+                      <SelectTrigger className="bg-background/80 border-border/50 hover:border-primary/30 transition-colors">
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent>
@@ -594,23 +599,42 @@ export default function TransactionsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="form-group-luxury">
-                    <Label htmlFor="date" className="label-luxury">Date <span className="text-destructive">*</span></Label>
-                    <Input 
-                      id="date" 
-                      type="date" 
-                      name="date"
-                      className="form-input-luxury"
-                      value={formData.date}
-                      onChange={(e) => {
-                        const selectedDate = e.target.value;
-                        console.log("Date explicitly selected:", selectedDate);
-                        setFormData({...formData, date: selectedDate});
-                      }}
-                      required
-                    />
-                    <p className="text-xs text-primary/70 mt-1.5">
-                      Select any date for this transaction
+
+                  {/* New Enhanced Date Picker */}
+                  <div className="form-field">
+                    <Label htmlFor="date" className="font-medium">
+                      Date <span className="text-destructive">*</span>
+                    </Label>
+                    <div className="date-picker-container">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            className={`w-full justify-start text-left font-normal ${!formData.date ? 'text-muted-foreground' : ''}`}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {formData.date ? format(new Date(formData.date), 'PP') : <span>Select date</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={formData.date ? new Date(formData.date) : undefined}
+                            onSelect={(date) => {
+                              if (date) {
+                                // Format as YYYY-MM-DD
+                                const formattedDate = format(date, 'yyyy-MM-dd');
+                                console.log("Date selected using calendar:", formattedDate);
+                                setFormData({ ...formData, date: formattedDate });
+                              }
+                            }}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <p className="text-xs text-primary/70">
+                      Click to select any date
                     </p>
                   </div>
                 </div>
