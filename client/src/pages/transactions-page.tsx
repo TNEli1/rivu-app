@@ -951,17 +951,17 @@ export default function TransactionsPage() {
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div className="overflow-x-auto rounded-lg">
+              <table className="w-full table-fixed">
                 <thead>
-                  <tr className="border-b border-border/50 bg-gradient-to-r from-card to-secondary/40">
-                    <th className="text-left p-4 font-medium text-primary/90">Date</th>
-                    <th className="text-left p-4 font-medium text-primary/90">Description</th>
-                    <th className="text-left p-4 font-medium text-primary/90">Category</th>
-                    <th className="text-left p-4 font-medium text-primary/90">Account</th>
-                    <th className="text-left p-4 font-medium text-primary/90">Source</th>
-                    <th className="text-right p-4 font-medium text-primary/90">Amount</th>
-                    <th className="text-right p-4 font-medium text-primary/90">Actions</th>
+                  <tr className="border-b border-primary/20 bg-gradient-to-r from-card to-primary/5">
+                    <th className="text-left p-4 font-medium text-primary/90 w-[13%]">Date</th>
+                    <th className="text-left p-4 font-medium text-primary/90 w-[22%]">Description</th>
+                    <th className="text-left p-4 font-medium text-primary/90 w-[17%]">Category</th>
+                    <th className="text-left p-4 font-medium text-primary/90 w-[13%]">Account</th>
+                    <th className="text-left p-4 font-medium text-primary/90 w-[12%]">Source</th>
+                    <th className="text-right p-4 font-medium text-primary/90 w-[12%]">Amount</th>
+                    <th className="text-right p-4 font-medium text-primary/90 w-[11%]">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -970,16 +970,16 @@ export default function TransactionsPage() {
                     const isExpense = transaction.type === 'expense';
                     
                     return (
-                      <tr key={transaction.id} className="border-b border-border/40 hover:bg-secondary/30 transition-colors duration-200">
+                      <tr key={transaction.id} className="border-b border-primary/10 hover:bg-primary/5 transition-all duration-200">
                         <td className="p-4 align-middle">
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-primary/60" />
-                            <span className="font-medium">{formatDate(new Date(transaction.date))}</span>
+                            <span className="font-medium text-sm">{formatDate(new Date(transaction.date))}</span>
                           </div>
                         </td>
                         <td className="p-4 align-middle">
                           <div className="flex flex-col">
-                            <span className="font-medium">{transaction.merchant}</span>
+                            <span className="font-medium text-primary/90">{transaction.merchant}</span>
                             {false && (
                               <div className="flex flex-col mt-1">
                                 <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-800">
@@ -1035,7 +1035,7 @@ export default function TransactionsPage() {
                           <span className="font-medium text-primary/80">{transaction.account}</span>
                         </td>
                         <td className="p-4 align-middle">
-                          <Badge variant="outline" className="bg-secondary/50 border-primary/20 text-primary/80">
+                          <Badge variant="outline" className="bg-primary/5 text-primary/80 border-primary/20 font-normal">
                             Manual Entry
                           </Badge>
                         </td>
