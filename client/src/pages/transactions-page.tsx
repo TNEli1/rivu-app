@@ -852,37 +852,37 @@ export default function TransactionsPage() {
           {hasActiveFilters && (
             <div className="mt-3 flex flex-wrap gap-2">
               {typeFilter && (
-                <Badge variant="secondary" className="flex items-center gap-1">
+                <Badge variant="secondary" className="flex items-center gap-1 border-primary/20 bg-secondary/80">
                   Type: {typeFilter}
                   <Trash2 
-                    className="h-3 w-3 ml-1 cursor-pointer" 
+                    className="h-3 w-3 ml-1 cursor-pointer text-primary/80 hover:text-primary" 
                     onClick={() => setTypeFilter(null)}
                   />
                 </Badge>
               )}
               {categoryFilter && (
-                <Badge variant="secondary" className="flex items-center gap-1">
+                <Badge variant="secondary" className="flex items-center gap-1 border-primary/20 bg-secondary/80">
                   Category: {categoryFilter}
                   <Trash2 
-                    className="h-3 w-3 ml-1 cursor-pointer" 
+                    className="h-3 w-3 ml-1 cursor-pointer text-primary/80 hover:text-primary" 
                     onClick={() => setCategoryFilter(null)}
                   />
                 </Badge>
               )}
               {accountFilter && (
-                <Badge variant="secondary" className="flex items-center gap-1">
+                <Badge variant="secondary" className="flex items-center gap-1 border-primary/20 bg-secondary/80">
                   Account: {accountFilter}
                   <Trash2 
-                    className="h-3 w-3 ml-1 cursor-pointer" 
+                    className="h-3 w-3 ml-1 cursor-pointer text-primary/80 hover:text-primary" 
                     onClick={() => setAccountFilter(null)}
                   />
                 </Badge>
               )}
               {searchTerm && (
-                <Badge variant="secondary" className="flex items-center gap-1">
+                <Badge variant="secondary" className="flex items-center gap-1 border-primary/20 bg-secondary/80">
                   Search: {searchTerm}
                   <Trash2 
-                    className="h-3 w-3 ml-1 cursor-pointer" 
+                    className="h-3 w-3 ml-1 cursor-pointer text-primary/80 hover:text-primary" 
                     onClick={() => setSearchTerm("")}
                   />
                 </Badge>
@@ -892,7 +892,7 @@ export default function TransactionsPage() {
         </Card>
 
         {/* Transactions Table */}
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden card-luxury">
           {isTransactionsLoading ? (
             <div className="p-8">
               <div className="flex items-center justify-center">
@@ -907,22 +907,23 @@ export default function TransactionsPage() {
                   <Button 
                     variant="outline"
                     onClick={clearAllFilters}
+                    className="btn-luxury btn-luxury-secondary"
                   >
                     Clear all filters
                   </Button>
                 </div>
               ) : (
                 <div className="px-6 max-w-md mx-auto">
-                  <div className="text-6xl mb-4 opacity-50 flex justify-center">
-                    <CreditCard />
+                  <div className="text-6xl mb-6 text-primary/60 flex justify-center">
+                    <CreditCard className="drop-shadow-lg" />
                   </div>
-                  <h3 className="text-lg font-medium mb-2">No transactions available</h3>
+                  <h3 className="text-xl font-medium mb-3">No transactions available</h3>
                   <p className="text-muted-foreground mb-6">
                     Start tracking your finances by adding your transactions manually.
                   </p>
                   <div className="flex justify-center">
                     <Button 
-                      className="bg-primary hover:bg-primary/90 text-white"
+                      className="bg-primary hover:bg-primary/90 text-white btn-luxury btn-luxury-primary glow-effect"
                       onClick={() => setIsAddDialogOpen(true)}
                     >
                       <PlusCircle className="mr-2 h-4 w-4" /> Add transaction
