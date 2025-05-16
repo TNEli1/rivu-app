@@ -8,49 +8,69 @@ const transactionSchema = mongoose.Schema(
       ref: 'User',
     },
     amount: {
-      type: Number,
+      type: String, // String to maintain decimal precision exactly as entered
       required: [true, 'Please provide an amount'],
-      min: [0, 'Amount cannot be negative'],
+      validate: {
+        validator: function(v) {
+          // Allow valid numeric strings with optional decimal places
+          return /^\d+(\.\d{1,2})?$/.test(v) && parseFloat(v) > 0;
+        },
+        message: props => `${props.value} is not a valid amount. Must be a positive number.`
+      }
     },
     merchant: {
       type: String,
-      required: [true, 'Please provide a merchant name'],
+      required: [true, 'Please provide a merchant or description'],
+      trim: true
     },
     category: {
       type: String,
-      default: 'Uncategorized',
+      required: [true, 'Please select a category'],
+      trim: true
     },
     subcategory: {
       type: String,
-      default: '',
+      trim: true,
+      default: ''
     },
     account: {
       type: String,
-      default: 'Cash',
+      required: [true, 'Please select or enter an account'],
+      trim: true
     },
     type: {
       type: String,
       enum: ['income', 'expense'],
-      default: 'expense',
+      required: [true, 'Transaction type is required'],
     },
     date: {
       type: String,
-      default: () => new Date().toISOString().split('T')[0], // YYYY-MM-DD format
+      required: [true, 'Please select a date'],
+      validate: {
+        validator: function(v) {
+          // Validate ISO date format YYYY-MM-DD
+          return /^\d{4}-\d{2}-\d{2}$/.test(v);
+        },
+        message: props => `${props.value} is not a valid date format. Use YYYY-MM-DD.`
+      }
     },
     notes: {
       type: String,
-      default: '',
-    },
-    // Manual entry only - no bank import fields needed
+      trim: true,
+      default: ''
+    }
   },
   {
     timestamps: true,
   }
 );
 
-// Index for faster lookups
+// Index for faster lookups and query performance
 transactionSchema.index({ userId: 1, date: -1 });
 transactionSchema.index({ userId: 1, category: 1 });
+transactionSchema.index({ userId: 1, merchant: 1 });
+transactionSchema.index({ userId: 1, type: 1 });
+transactionSchema.index({ userId: 1, account: 1 });
 
 const Transaction = mongoose.model('Transaction', transactionSchema);
 

@@ -32,6 +32,12 @@ const {
 } = require('../controllers/transactionController');
 
 const {
+  getUserAccounts,
+  addUserAccount,
+  deleteUserAccount
+} = require('../controllers/accountController');
+
+const {
   getGoals,
   createGoal,
   updateGoal,

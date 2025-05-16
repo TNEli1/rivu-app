@@ -117,10 +117,10 @@ const createTransaction = async (req, res) => {
       // Extract subcategory from request body
       const { subcategory } = req.body;
     
-      // Create transaction with validated data
+      // Create transaction with validated data - store amount as string
       const transactionData = {
         userId: userId, // Explicitly set from authenticated user
-        amount: parseFloat(amount),
+        amount: amount, // Keep as string to maintain exact decimal precision
         merchant,
         type,
         // FIXED: Store exact date string provided by user without any conversion
@@ -181,6 +181,28 @@ const createTransaction = async (req, res) => {
           console.error('Error updating budget for transaction:', budgetError);
           // Don't fail the transaction creation if budget update fails
         }
+      }
+      
+      // Track the account for future use if it's not already saved
+      try {
+        const Account = require('../models/Account');
+        // Check if the account exists for this user
+        const existingAccount = await Account.findOne({ 
+          userId: userId, 
+          name: account 
+        });
+        
+        // If account doesn't exist, create it
+        if (!existingAccount && account) {
+          await Account.create({
+            userId: userId,
+            name: account.trim()
+          });
+          console.log(`Created new account: ${account} for user: ${userId}`);
+        }
+      } catch (accountError) {
+        console.error('Error saving account:', accountError);
+        // Don't fail the transaction creation if account saving fails
       }
 
       res.status(201).json(transaction);
