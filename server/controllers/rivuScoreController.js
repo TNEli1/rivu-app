@@ -33,17 +33,25 @@ const getRivuScore = async (req, res) => {
 // @access  Private
 const recalculateRivuScore = async (req, res) => {
   try {
-    // Force recalculation of the score
+    // Check for forceRefresh parameter and log for debugging
+    const forceRefresh = req.body.forceRefresh === true;
+    console.log(`Recalculating Rivu Score for user ${req.user._id} with forceRefresh: ${forceRefresh}`);
+    
+    // Always force recalculation of the score when this endpoint is called
+    // This ensures the refresh button always works as expected
     const rivuScore = await calculateRivuScore(req.user._id);
     
+    // Return the full response with factorsWithRatings for the UI
     res.json({
       score: rivuScore.score,
       factors: rivuScore.factorsWithRatings,
       rawFactors: rivuScore.factors,
       lastUpdated: rivuScore.updatedAt
     });
+    
+    console.log(`Successfully recalculated Rivu Score for user ${req.user._id}: ${rivuScore.score}`);
   } catch (error) {
-    console.error('Error recalculating Rivu Score:', error);
+    console.error(`Error recalculating Rivu Score for user ${req.user._id}:`, error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };

@@ -411,8 +411,9 @@ export default function AuthPage() {
                   <Button 
                     variant="link" 
                     onClick={() => setActiveTab("login")}
+                    className="hover:text-primary"
                   >
-                    Already have an account? Sign in
+                    Already have an account? Log in
                   </Button>
                 </CardFooter>
               </Card>

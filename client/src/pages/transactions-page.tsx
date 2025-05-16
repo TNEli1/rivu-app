@@ -371,12 +371,13 @@ export default function TransactionsPage() {
     console.log("Submitting transaction with date:", formData.date);
     
     // Ensure we have defaults for optional fields but preserve user-selected date
-    const submissionData = {
+    const submissionData: TransactionFormData = {
       ...formData,
       type: formData.type || 'expense',
       // Important: Keep the original date selected by user, don't default to today
       date: formData.date,
-      amount: parseFloat(formData.amount.toString()),
+      // Keep amount as string in the form data as required by the type
+      amount: formData.amount,
       notes: formData.notes || ''
     };
     
