@@ -1,0 +1,98 @@
+Implement the following updates and resolve all outstanding issues. Treat this as a hardening pass before public release.
+
+⸻
+
+1. All Buttons Must Be Fully Functional
+
+Action:
+	•	Audit every page and verify that every button performs its intended function:
+	•	Save / Edit / Delete actions must persist changes to MongoDB or relevant backend store
+	•	Navigation buttons (e.g., “Back,” “View More,” “Save Goal,” “Add Transaction”) must redirect or reload properly
+	•	All click handlers must be connected and responsive
+	•	If any button has placeholder code, missing handlers, or is visually present but non-functional — fix it or remove it
+
+⸻
+
+2. Fix Transaction Log Date Entry (Still Broken)
+
+Problem:
+	•	Users are still unable to add transactions for any date other than today
+
+Fix:
+	•	Ensure the transaction form’s date input field:
+	•	Is a fully functioning <input type="date" /> in the frontend
+	•	Sends a properly formatted ISO date string to the backend
+	•	On backend POST /api/transactions:
+
+date: validated.date ? new Date(validated.date) : new Date()
+
+	•	Validate that validated.date is respected and stored accurately
+
+Test Case:
+	•	Create a transaction for 7 days ago
+	•	Confirm in database and UI that the transaction shows correct date
+
+⸻
+
+3. Add Subcategories and Defaults for Budgeting & Transactions
+
+Schema Update:
+	•	Add optional subCategory field to budget and transactions
+
+Category Suggestions:
+
+{
+  "Housing": ["Rent", "Mortgage", "Property Tax", "HOA Fees"],
+  "Utilities": ["Electric", "Water", "Gas", "Internet", "Trash"],
+  "Groceries": ["Produce", "Meat & Seafood", "Snacks", "Beverages"],
+  "Transportation": ["Gas", "Car Payment", "Insurance", "Rideshare"],
+  "Entertainment": ["Streaming", "Dining Out", "Movies", "Events"],
+  "Health": ["Doctor", "Dentist", "Pharmacy", "Insurance"],
+  "Savings": ["Emergency Fund", "Vacation", "Investments"],
+  "Income": ["Primary Job", "Side Hustle", "Freelance"]
+}
+
+Frontend Behavior:
+	•	Category dropdown shows suggestions
+	•	Subcategory dropdown appears after category is selected
+	•	Users can skip or enter custom subcategories
+	•	Maintain backwards compatibility (don’t break existing users)
+
+⸻
+
+4. Fix Sidebar Bug on Goals Page
+
+Issue: Navigating to the Goals page removes the sidebar
+Fix: Render Goals within the same layout as other pages — it should not be a full redirect or route that uses a standalone component
+
+⸻
+
+5. Clean Up UX Consistency
+	•	Remove “Update Spending” button from Budget view (redundant with Edit)
+	•	Fix sign-up screen link: “Already have an account? Log in” must navigate to login screen
+	•	Ensure all pages render properly inside layout with sidebar and consistent header/footer
+
+⸻
+
+6. Validate MongoDB User Isolation
+	•	Every record (transactions, budget, goals, scores) must be stored with and filtered by userId
+	•	Fix any bug where one user’s data appears under another account
+	•	Ensure user context is passed to all queries
+
+⸻
+
+7. Fix Rivu Score Refresh Button
+	•	Button must trigger a fresh score calculation:
+
+await storage.calculateRivuScore(userId);
+
+	•	Update UI immediately after response returns
+	•	Ensure score is not cached unless explicitly requested
+
+⸻
+
+Once these are complete, confirm:
+	•	All data is stored properly
+	•	All pages and features work across users
+	•	No errors or null returns
+	•	UX is consistent across screens

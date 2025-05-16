@@ -519,13 +519,20 @@ export default function TransactionsPage() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="date">Date</Label>
+                    <Label htmlFor="date">Date <span className="text-destructive">*</span></Label>
                     <Input 
                       id="date" 
                       type="date" 
                       value={formData.date}
-                      onChange={(e) => setFormData({...formData, date: e.target.value})}
+                      onChange={(e) => {
+                        console.log("Date changed to:", e.target.value);
+                        setFormData({...formData, date: e.target.value});
+                      }}
+                      required
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Select any date for this transaction
+                    </p>
                   </div>
                 </div>
                 
