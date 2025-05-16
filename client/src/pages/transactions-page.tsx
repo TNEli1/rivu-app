@@ -1129,21 +1129,23 @@ export default function TransactionsPage() {
               </div>
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="edit-merchant">Merchant / Source</Label>
+            <div className="form-group-luxury">
+              <Label htmlFor="edit-merchant" className="label-luxury">Merchant / Source</Label>
               <Input 
                 id="edit-merchant" 
+                className="form-input-luxury"
                 value={formData.merchant}
                 onChange={(e) => setFormData({...formData, merchant: e.target.value})}
               />
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="edit-category">Category</Label>
+            <div className="form-group-luxury">
+              <Label htmlFor="edit-category" className="label-luxury">Category</Label>
               <div className="space-y-2">
                 <Input 
                   id="edit-category" 
                   placeholder="Enter category (e.g., Groceries, Utilities)" 
+                  className="form-input-luxury"
                   value={formData.category}
                   onChange={(e) => setFormData({
                     ...formData, 
@@ -1152,20 +1154,21 @@ export default function TransactionsPage() {
                   autoComplete="off"
                 />
                 {categories.length > 0 && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Suggestions: {categories.slice(0, 3).map(cat => cat.name).join(', ')}
+                  <div className="text-xs text-primary/70 mt-1">
+                    <span className="font-medium">Suggestions:</span> {categories.slice(0, 3).map(cat => cat.name).join(', ')}
                     {categories.length > 3 && ', and more'}
                   </div>
                 )}
               </div>
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="edit-account">Account</Label>
+            <div className="form-group-luxury">
+              <Label htmlFor="edit-account" className="label-luxury">Account</Label>
               <div className="space-y-2">
                 <Input 
                   id="edit-account" 
                   placeholder="Enter account (e.g., Checking, Credit Card)" 
+                  className="form-input-luxury"
                   value={formData.account}
                   onChange={(e) => setFormData({
                     ...formData, 
@@ -1173,8 +1176,8 @@ export default function TransactionsPage() {
                   })}
                   autoComplete="off"
                 />
-                <div className="text-xs text-muted-foreground mt-1">
-                  Common accounts: Checking, Savings, Credit Card, Cash
+                <div className="text-xs text-primary/70 mt-1">
+                  <span className="font-medium">Common accounts:</span> Checking, Savings, Credit Card, Cash
                 </div>
               </div>
             </div>
@@ -1182,6 +1185,7 @@ export default function TransactionsPage() {
             <div className="flex justify-end">
               <Button 
                 type="submit" 
+                className="btn-luxury btn-luxury-primary glow-effect"
                 disabled={!formData.amount || !formData.merchant || !formData.category || !formData.account || updateMutation.isPending}
               >
                 {updateMutation.isPending ? (
