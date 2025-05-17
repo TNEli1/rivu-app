@@ -1,0 +1,133 @@
+We are in the final stretch of development for the Rivu personal finance app. Please complete the following feature additions and integrations with precision:
+
+⸻
+
+1. CSV Upload & Plaid Integration (Transactions Page)
+	•	Add a CSV upload feature on the Transactions page that allows users to upload transaction files.
+	•	Parse uploaded CSVs, categorize transactions, and store them in PostgreSQL.
+	•	Automatically label each transaction source as: manual, csv, or plaid.
+	•	Implement a Plaid sandbox connection:
+	•	When Plaid is not connected, show a “No token” error pop-up as a test.
+	•	After that, display a modal or toast that says: “Plaid connection coming soon.”
+
+⸻
+
+2. Tailor AI Coaching Prompts
+	•	Improve AI prompt templates used for the financial coach to give more relevant and accurate advice.
+	•	Use data from the user’s budgeting behavior, transactions, Rivu Score, and demographic survey answers.
+	•	Make sure the survey data is linked to the correct user and passed into AI prompt context when advice is requested.
+
+⸻
+
+3. Category & Subcategory Improvements
+	•	Update default category and subcategory lists for:
+	•	Budgeting
+	•	Transactions
+	•	Ensure categories and subcategories are editable and stored in PostgreSQL per user.
+
+⸻
+
+4. Reusable Transaction Accounts
+	•	Enable users to create and save transaction accounts (e.g., “CHASE 1234”, “Venmo”).
+	•	Store these accounts in PostgreSQL.
+	•	On the transaction form, offer an account dropdown so users don’t need to retype the same account each time.
+
+⸻
+
+5. Password Reset Integration (Postmark)
+	•	Use Postmark to send real password reset emails.
+	•	Connect this functionality to the “Forgot Password” button on the login page and the follow-up reset page.
+	•	Ensure emails are actually sent when a user requests a reset.
+	•	If necessary, ask the user to configure their Postmark API key and verified sender domain.
+
+⸻
+
+6. Duplicate Transaction Detection
+	•	Implement backend logic to check for possible duplicates:
+	•	Compare amount, date, and merchant for close matches across the user’s transactions.
+	•	If duplicates are detected, flag them and allow the user to confirm or dismiss the duplicate status.
+
+⸻
+
+7. Data Labeling by Source
+	•	Ensure every transaction record includes a source field with values:
+	•	manual
+	•	csv
+	•	plaid
+
+Please implement the following for the user registration system:
+	•	When a user tries to register with a username that is already taken, show a clear error message such as:
+
+“That username is already in use. Please choose a different one.”
+
+	•	This check should be performed server-side, using a query to the PostgreSQL database before creating the user.
+	•	Make sure the error message appears on the front end during sign-up and prevents the user from proceeding.
+	•	If this logic already exists, double-check that:
+	•	The uniqueness constraint is properly enforced at the database level.
+	•	The frontend displays the correct error state without crashing or defaulting to a generic error.
+
+Please implement a secure password reset feature using Postmark for email delivery. Follow the steps below carefully:
+
+⸻
+
+1. Trigger Point
+	•	On the Login page, ensure the “Forgot Password?” button routes to a ResetPasswordRequest page with an email input field.
+
+⸻
+
+2. Backend – Request Handling
+
+Create a secure endpoint, e.g., POST /api/reset-password-request, that performs the following:
+	•	Validates the email.
+	•	Looks up the user in PostgreSQL.
+	•	Generates a secure, time-limited token (e.g., using crypto.randomBytes(32).toString('hex')).
+	•	Stores the token + expiration (e.g., 1 hour) in the user’s database row.
+
+⸻
+
+3. Postmark Email Integration
+
+Send a real email via Postmark using the verified support@tryrivu.com sender address. Email body should include:
+	•	A secure reset link, like:
+https://tryrivu.com/reset-password/<token>
+	•	Include a short message:
+“We received a request to reset your Rivu password. If this was you, click the link below to set a new password. If not, ignore this email.”
+
+Use the Postmark API or Node SDK, and include error handling in case of failed delivery.
+
+⸻
+
+4. Frontend – Reset Form Page
+
+Build the ResetPassword page accessible via the link above. It should:
+	•	Validate the token via API (GET /api/verify-reset-token/:token)
+	•	If valid, show fields to enter new password + confirm
+	•	Submit to POST /api/reset-password/:token
+
+⸻
+
+5. Backend – Finalize Reset
+
+On POST /api/reset-password/:token:
+	•	Verify the token is valid and not expired
+	•	Hash and save the new password
+	•	Clear the reset token and expiration
+	•	Respond with success message
+
+⸻
+
+6. UX
+	•	Add loading and error states for both forms.
+	•	Add success/failure banners on reset page.
+
+⸻
+
+7. Security
+	•	Do not leak user existence in response messages.
+	•	Expire reset tokens after use or time limit.
+
+⸻
+
+Next Steps
+
+Once these features are implemented, we will proceed with final bug sweeps, UI polish, and security checks before pushing v1 live.
