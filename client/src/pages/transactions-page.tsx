@@ -161,6 +161,15 @@ export default function TransactionsPage() {
       return res.json();
     }
   });
+  
+  // Get transaction accounts for the dropdown
+  const { data: accounts = [], isLoading: isAccountsLoading } = useQuery({
+    queryKey: ['/api/accounts'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/accounts');
+      return res.json();
+    }
+  });
 
   // Add new transaction
   const addMutation = useMutation({
@@ -525,10 +534,17 @@ export default function TransactionsPage() {
             <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Transactions</h1>
             <p className="text-muted-foreground">View and manage your financial transactions</p>
           </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="mt-4 md:mt-0 bg-primary hover:bg-primary/90 text-white">
-                <PlusCircle className="mr-2 h-4 w-4" /> Add Transaction
+          <div className="flex gap-2 mt-4 md:mt-0">
+            <Button 
+              variant="outline"
+              onClick={() => setIsCSVUploadOpen(true)}
+            >
+              <Link2 className="mr-2 h-4 w-4" /> Import CSV
+            </Button>
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-primary hover:bg-primary/90 text-white">
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add Transaction
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
