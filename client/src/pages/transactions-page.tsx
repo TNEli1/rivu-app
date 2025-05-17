@@ -809,7 +809,6 @@ export default function TransactionsPage() {
                       variant="outline"
                       className="border-destructive text-destructive hover:bg-destructive/10"
                       onClick={() => {
-                        if (transactions.length === 0) return;
                         const dialog = document.getElementById('clear-all-transactions-dialog') as HTMLDialogElement;
                         if (dialog) dialog.showModal();
                       }}
