@@ -364,12 +364,16 @@ export default function CSVUploadDialog({ isOpen, onClose }: CSVUploadDialogProp
       setUploadStatus('success');
       setCurrentStep('success');
       
-      // Force invalidate queries to refresh transaction data
+      // Force invalidate and refresh queries to ensure UI updates
       await queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
       await queryClient.invalidateQueries({ queryKey: ['/api/transactions/summary'] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
       
-      // Additional invalidation to ensure UI updates
-      queryClient.refetchQueries({ queryKey: ['/api/transactions'] });
+      // Explicitly force refetch all transaction-related data
+      await queryClient.refetchQueries({ queryKey: ['/api/transactions'] });
+      await queryClient.refetchQueries({ queryKey: ['/api/transactions/summary'] });
+      
+      console.log('Transaction data refreshed after CSV import');
       
       toast({
         title: "Import successful",
