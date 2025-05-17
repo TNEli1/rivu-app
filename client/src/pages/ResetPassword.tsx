@@ -57,7 +57,7 @@ export default function ResetPassword() {
       
       // Redirect to login after successful reset
       setTimeout(() => {
-        window.location.href = "/auth";
+        window.location.href = "/login";
       }, 3000);
     },
     onError: (error: any) => {
@@ -132,7 +132,7 @@ export default function ResetPassword() {
             <Button 
               variant="ghost" 
               size="icon" 
-              onClick={() => window.location.href = "/auth"}
+              onClick={() => window.location.href = "/login"}
               className="mr-2"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -157,6 +157,12 @@ export default function ResetPassword() {
                 Your password has been reset successfully. You will be redirected to the login page.
               </AlertDescription>
             </Alert>
+            <Button 
+              onClick={() => window.location.href = "/login"}
+              className="w-full mt-4"
+            >
+              Return to Login
+            </Button>
           </CardContent>
         ) : (
           <form onSubmit={handleSubmit}>
