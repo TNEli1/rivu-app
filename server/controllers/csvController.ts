@@ -85,7 +85,7 @@ export const importTransactionsFromCSV = async (req: AuthenticatedRequest, res: 
 };
 
 // Controller for marking a transaction as not a duplicate
-export const markTransactionAsNotDuplicate = async (req: Request, res: Response) => {
+export const markTransactionAsNotDuplicate = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const transactionId = parseInt(req.params.id);
     
