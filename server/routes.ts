@@ -55,19 +55,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     // Import transaction account controller
     const {
-      getTransactionAccounts,
-      getTransactionAccountById,
-      createTransactionAccount,
-      updateTransactionAccount,
-      deleteTransactionAccount
-    } = await import('./controllers/transactionAccountController');
+      getAccounts,
+      getAccountById,
+      createAccount,
+      updateAccount,
+      deleteAccount
+    } = await import('./controllers-ts/accountController');
     
     // Transaction account routes
-    app.get(`${apiPath}/accounts`, protect, getTransactionAccounts);
-    app.get(`${apiPath}/accounts/:id`, protect, getTransactionAccountById);
-    app.post(`${apiPath}/accounts`, protect, createTransactionAccount);
-    app.put(`${apiPath}/accounts/:id`, protect, updateTransactionAccount);
-    app.delete(`${apiPath}/accounts/:id`, protect, deleteTransactionAccount);
+    app.get(`${apiPath}/accounts`, protect, getAccounts);
+    app.get(`${apiPath}/accounts/:id`, protect, getAccountById);
+    app.post(`${apiPath}/accounts`, protect, createAccount);
+    app.put(`${apiPath}/accounts/:id`, protect, updateAccount);
+    app.delete(`${apiPath}/accounts/:id`, protect, deleteAccount);
     
     // Import CSV controllers for transaction imports
     const {
