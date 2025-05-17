@@ -73,6 +73,7 @@ export const transactions = pgTable("transactions", {
   account: text("account").notNull(),
   date: timestamp("date").defaultNow().notNull(),
   type: text("type").notNull().default("expense"), // 'income' or 'expense'
+  notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -84,6 +85,7 @@ export const insertTransactionSchema = createInsertSchema(transactions).pick({
   account: true,
   type: true,
   date: true,
+  notes: true,
 });
 
 // Savings Goals

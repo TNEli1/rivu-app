@@ -105,16 +105,7 @@ export default function SettingsPage() {
               />
             </div>
             
-            <div className="flex items-center justify-between mt-4 pt-4 border-t">
-              <div className="flex items-center space-x-2">
-                <ClipboardCheck className="h-5 w-5" />
-                <span>Skip Onboarding Survey</span>
-              </div>
-              <Switch 
-                checked={skipSurvey} 
-                onCheckedChange={toggleSkipSurvey} 
-              />
-            </div>
+            {/* Skip onboarding survey toggle removed as per bug report */}
           </Card>
           
           {/* Account Actions */}

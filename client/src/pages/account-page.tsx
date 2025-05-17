@@ -281,15 +281,7 @@ export default function AccountPage() {
             
             <Separator />
             
-            <div className="space-y-1">
-              <p className="text-sm font-medium">Rivu Score</p>
-              <div className="flex items-center">
-                <div className="h-10 w-10 rounded-full bg-gradient-to-r from-green-400 to-blue-500 flex items-center justify-center text-white font-bold">
-                  75
-                </div>
-                <p className="ml-3 text-sm text-muted-foreground">Based on your financial activity, budget adherence, and savings progress.</p>
-              </div>
-            </div>
+            {/* Rivu Score section removed as per bug report */}
           </CardContent>
           <CardFooter>
             <Button 
