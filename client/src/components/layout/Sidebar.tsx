@@ -49,7 +49,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="hidden md:flex flex-col w-64 bg-card border-r border-border p-6 fixed h-screen overflow-y-auto">
+    <aside className="hidden md:flex flex-col w-64 bg-card border-r border-border p-6 fixed h-screen overflow-y-auto max-h-screen">
       <div className="flex items-center mb-10">
         <i className="ri-line-chart-fill text-primary text-3xl mr-2"></i>
         <h1 className="text-2xl font-bold text-foreground">Rivu</h1>
