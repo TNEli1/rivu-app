@@ -62,9 +62,18 @@ export default function TransactionsPage() {
   
   const { toast } = useToast();
   
+  // Function to get current date in local timezone format (YYYY-MM-DD)
+  const getLocalDate = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [formData, setFormData] = useState<TransactionFormData>({
     type: 'expense',
-    date: new Date().toISOString().split('T')[0],
+    date: getLocalDate(),
     amount: '',
     merchant: '',
     category: '',
@@ -223,7 +232,7 @@ export default function TransactionsPage() {
   const resetForm = () => {
     setFormData({
       type: 'expense',
-      date: new Date().toISOString().split('T')[0],
+      date: getLocalDate(),
       amount: '',
       merchant: '',
       category: '',
@@ -232,12 +241,21 @@ export default function TransactionsPage() {
     });
   };
 
+  // Format date from API to local date format YYYY-MM-DD
+  const formatDateForEdit = (dateString: string) => {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // Handle opening the edit dialog for a transaction
   const openEditDialog = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
     setFormData({
       type: transaction.type as 'expense' | 'income',
-      date: new Date(transaction.date).toISOString().split('T')[0],
+      date: formatDateForEdit(transaction.date),
       amount: Math.abs(parseFloat(transaction.amount.toString())).toString(),
       merchant: transaction.merchant,
       category: transaction.category,

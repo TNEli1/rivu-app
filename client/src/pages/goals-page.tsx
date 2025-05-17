@@ -159,7 +159,7 @@ export default function GoalsPage() {
     }
   });
 
-  // Delete goal mutation - fixed to properly handle API errors
+  // Delete goal mutation - fixed to properly handle API responses
   const deleteGoalMutation = useMutation({
     mutationFn: async (id: string | number) => {
       try {
@@ -174,11 +174,28 @@ export default function GoalsPage() {
         
         // Check if the response is ok
         if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.message || "Failed to delete goal");
+          try {
+            const errorData = await res.json();
+            throw new Error(errorData.message || "Failed to delete goal");
+          } catch (jsonError) {
+            // If the response isn't JSON, use the status text
+            throw new Error(`Failed to delete goal: ${res.statusText}`);
+          }
         }
         
-        return res.json();
+        // For successful deletion (2xx responses)
+        // Don't try to parse the response if it's 204 No Content
+        if (res.status === 204) {
+          return { success: true };
+        }
+        
+        // Try to parse JSON if there is content, but handle cases where there isn't
+        try {
+          return await res.json();
+        } catch (e) {
+          // Just return success if no JSON content
+          return { success: true };
+        }
       } catch (error) {
         console.error("Error deleting goal:", error);
         throw error; // Re-throw to trigger onError
