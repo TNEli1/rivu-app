@@ -12,6 +12,9 @@ export const users = pgTable("users", {
   lastName: text("last_name").notNull(),
   avatarInitials: text("avatar_initials").notNull(),
   themePreference: text("theme_preference").default("dark"),
+  // Password reset fields
+  resetToken: text("reset_token"),
+  resetTokenExpiry: timestamp("reset_token_expiry"),
   // Demographics fields
   ageRange: text("age_range"),
   incomeBracket: text("income_bracket"),
@@ -71,10 +74,13 @@ export const transactions = pgTable("transactions", {
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   merchant: text("merchant").notNull(),
   category: text("category").notNull(),
+  subcategory: text("subcategory"),
   account: text("account").notNull(),
   date: timestamp("date").defaultNow().notNull(),
   type: text("type").notNull().default("expense"), // 'income' or 'expense'
   notes: text("notes"),
+  source: text("source").notNull().default("manual"), // 'manual', 'csv', or 'plaid'
+  isDuplicate: boolean("is_duplicate").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -83,10 +89,13 @@ export const insertTransactionSchema = createInsertSchema(transactions).pick({
   amount: true,
   merchant: true,
   category: true,
+  subcategory: true,
   account: true,
   type: true,
   date: true,
   notes: true,
+  source: true,
+  isDuplicate: true,
 });
 
 // Savings Goals
@@ -172,3 +181,63 @@ export const insertNudgeSchema = createInsertSchema(nudges).pick({
 
 export type Nudge = typeof nudges.$inferSelect;
 export type InsertNudge = z.infer<typeof insertNudgeSchema>;
+
+// Transaction Accounts
+export const transactionAccounts = pgTable("transaction_accounts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  name: text("name").notNull(),
+  type: text("type").default("bank").notNull(), // 'bank', 'credit', 'cash', etc.
+  institutionName: text("institution_name"),
+  lastFour: text("last_four"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertTransactionAccountSchema = createInsertSchema(transactionAccounts).pick({
+  userId: true,
+  name: true,
+  type: true,
+  institutionName: true,
+  lastFour: true,
+});
+
+export type TransactionAccount = typeof transactionAccounts.$inferSelect;
+export type InsertTransactionAccount = z.infer<typeof insertTransactionAccountSchema>;
+
+// User Categories
+export const categories = pgTable("categories", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  name: text("name").notNull(),
+  type: text("type").default("expense").notNull(), // 'expense' or 'income'
+  isDefault: boolean("is_default").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertCategorySchema = createInsertSchema(categories).pick({
+  userId: true,
+  name: true,
+  type: true,
+  isDefault: true,
+});
+
+// User Subcategories
+export const subcategories = pgTable("subcategories", {
+  id: serial("id").primaryKey(),
+  categoryId: integer("category_id").notNull(),
+  name: text("name").notNull(),
+  isDefault: boolean("is_default").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertSubcategorySchema = createInsertSchema(subcategories).pick({
+  categoryId: true,
+  name: true,
+  isDefault: true,
+});
+
+export type Category = typeof categories.$inferSelect;
+export type InsertCategory = z.infer<typeof insertCategorySchema>;
+
+export type Subcategory = typeof subcategories.$inferSelect;
+export type InsertSubcategory = z.infer<typeof insertSubcategorySchema>;
