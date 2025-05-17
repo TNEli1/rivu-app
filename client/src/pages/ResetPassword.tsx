@@ -23,7 +23,7 @@ export default function ResetPassword() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [token, setToken] = useState("");
-  const [, setLocation] = useLocation();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
 
   // Extract token from URL
@@ -57,7 +57,7 @@ export default function ResetPassword() {
       
       // Redirect to login immediately (reduced timeout for better UX)
       setTimeout(() => {
-        setLocation("/login"); // Use wouter's setLocation instead of direct window.location
+        navigate("/login"); // Use wouter's navigate instead of direct window.location
       }, 1500);
     },
     onError: (error: any) => {
@@ -132,7 +132,7 @@ export default function ResetPassword() {
             <Button 
               variant="ghost" 
               size="icon" 
-              onClick={() => setLocation("/login")}
+              onClick={() => navigate("/login")}
               className="mr-2"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -158,7 +158,7 @@ export default function ResetPassword() {
               </AlertDescription>
             </Alert>
             <Button 
-              onClick={() => setLocation("/login")}
+              onClick={() => navigate("/login")}
               className="w-full mt-4"
             >
               Return to Login
