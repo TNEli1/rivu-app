@@ -11,6 +11,7 @@ export const users = pgTable("users", {
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   avatarInitials: text("avatar_initials").notNull(),
+  themePreference: text("theme_preference").default("light"),
   loginCount: integer("login_count").default(0),
   lastLogin: timestamp("last_login"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

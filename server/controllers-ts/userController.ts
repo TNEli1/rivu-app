@@ -225,7 +225,7 @@ export const getUserProfile = async (req: any, res: any) => {
  */
 export const updateThemePreference = async (req: any, res: any) => {
   try {
-    const userId = req.user.id;
+    const userId = parseInt(req.user.id, 10);
     const { themePreference } = req.body;
     
     if (!themePreference || (themePreference !== 'light' && themePreference !== 'dark')) {
@@ -235,11 +235,8 @@ export const updateThemePreference = async (req: any, res: any) => {
       });
     }
     
-    // Import User model dynamically
-    const { default: User } = await import('../models/User.js');
-    
-    // Find user by ID
-    const user = await User.findById(userId);
+    // Get user from PostgreSQL storage
+    const user = await storage.getUser(userId);
     
     if (!user) {
       return res.status(404).json({ 
@@ -249,14 +246,20 @@ export const updateThemePreference = async (req: any, res: any) => {
     }
     
     // Update theme preference
-    user.themePreference = themePreference;
+    const updatedUser = await storage.updateUser(userId, {
+      themePreference: themePreference
+    });
     
-    // Save updates
-    await user.save();
+    if (!updatedUser) {
+      return res.status(500).json({
+        message: 'Failed to update theme preference',
+        code: 'UPDATE_FAILED'
+      });
+    }
     
     // Return updated theme preference
     res.json({
-      themePreference: user.themePreference
+      themePreference: updatedUser.themePreference
     });
   } catch (error: any) {
     console.error('Update theme preference error:', error);
@@ -272,14 +275,11 @@ export const updateThemePreference = async (req: any, res: any) => {
  */
 export const updateUserProfile = async (req: any, res: any) => {
   try {
-    const userId = req.user.id;
+    const userId = parseInt(req.user.id, 10);
     const { username, email, firstName, lastName, password } = req.body;
     
-    // Import User model dynamically
-    const { default: User } = await import('../models/User.js');
-    
-    // Find user by ID
-    const user = await User.findById(userId);
+    // Get user from PostgreSQL storage
+    const user = await storage.getUser(userId);
     
     if (!user) {
       return res.status(404).json({ 
@@ -288,52 +288,57 @@ export const updateUserProfile = async (req: any, res: any) => {
       });
     }
     
+    // Data to update
+    const updateData: Partial<User> = {};
+    
     // If changing username, check if it's already in use
     if (username && username !== user.username) {
-      const usernameExists = await User.findOne({ username });
+      const usernameExists = await storage.getUserByUsername(username);
       if (usernameExists) {
         return res.status(400).json({ 
           message: 'Username already in use',
           code: 'USERNAME_EXISTS'
         });
       }
-      user.username = username;
-    }
-    
-    // If changing email, check if it's already in use
-    if (email && email !== user.email) {
-      const emailExists = await User.findOne({ email });
-      if (emailExists) {
-        return res.status(400).json({ 
-          message: 'Email already in use',
-          code: 'EMAIL_EXISTS'
-        });
-      }
-      user.email = email;
+      updateData.username = username;
     }
     
     // Update other fields if provided
-    if (firstName !== undefined) user.firstName = firstName;
-    if (lastName !== undefined) user.lastName = lastName;
+    if (email !== undefined && email !== user.email) updateData.email = email;
+    if (firstName !== undefined) updateData.firstName = firstName;
+    if (lastName !== undefined) updateData.lastName = lastName;
     
     // If password is provided, hash and update
     if (password) {
       const hashedPassword = await bcrypt.hash(password, 12);
-      user.password = hashedPassword;
+      updateData.password = hashedPassword;
     }
     
-    // Save updates
-    await user.save();
+    // Only update if there are changes
+    if (Object.keys(updateData).length === 0) {
+      // Return current user data if no updates
+      const { password: userPass, ...userData } = user;
+      return res.json({
+        _id: userData.id,
+        ...userData
+      });
+    }
+    
+    // Update the user in PostgreSQL
+    const updatedUser = await storage.updateUser(userId, updateData);
+    
+    if (!updatedUser) {
+      return res.status(500).json({
+        message: 'Failed to update user profile',
+        code: 'UPDATE_FAILED'
+      });
+    }
     
     // Return updated user without password
+    const { password: updatedPass, ...updatedData } = updatedUser;
     res.json({
-      _id: user._id,
-      username: user.username,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      profilePicture: user.profilePicture,
-      updatedAt: user.updatedAt
+      _id: updatedData.id,
+      ...updatedData
     });
   } catch (error: any) {
     console.error('Update profile error:', error);
