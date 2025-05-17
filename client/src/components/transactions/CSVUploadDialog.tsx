@@ -364,16 +364,32 @@ export default function CSVUploadDialog({ isOpen, onClose }: CSVUploadDialogProp
       setUploadStatus('success');
       setCurrentStep('success');
       
+      // First completely clear the React Query cache to ensure no stale data
+      queryClient.clear();
+      console.log('React Query cache cleared to eliminate stale data');
+      
       // Force invalidate and refresh queries to ensure UI updates
-      await queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
-      await queryClient.invalidateQueries({ queryKey: ['/api/transactions/summary'] });
-      await queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['/api/transactions'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/transactions/summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/accounts'] })
+      ]);
       
-      // Explicitly force refetch all transaction-related data
-      await queryClient.refetchQueries({ queryKey: ['/api/transactions'] });
-      await queryClient.refetchQueries({ queryKey: ['/api/transactions/summary'] });
+      // Wait to ensure invalidation completes
+      await new Promise(resolve => setTimeout(resolve, 100));
       
-      console.log('Transaction data refreshed after CSV import');
+      // Now explicitly force refetch all transaction-related data
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['/api/transactions'] }),
+        queryClient.refetchQueries({ queryKey: ['/api/transactions/summary'] }),
+        queryClient.refetchQueries({ queryKey: ['/api/accounts'] })
+      ]);
+      
+      // Verify the data was refreshed
+      const verifyTransactions = await fetch('/api/transactions');
+      const refreshedTransactions = await verifyTransactions.json();
+      console.log(`Transaction data refreshed after CSV import: ${refreshedTransactions.length} transactions now available`);
       
       toast({
         title: "Import successful",

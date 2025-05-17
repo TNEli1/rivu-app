@@ -204,14 +204,22 @@ export default function TransactionsPage() {
         
         // Create a new transaction account that will persist in the database
         try {
-          console.log('Creating new custom account:', data.customAccount);
+          // Ensure customAccount is defined before using it
+          if (!data.customAccount) {
+            console.log('Custom account name is empty, using "Other" as account name');
+            account = 'Other';
+            return; // Skip account creation
+          }
+          
+          const customAccount = data.customAccount || '';
+          console.log('Creating new custom account:', customAccount);
           
           // First check if this account already exists to avoid duplicates
           const existingAccount = accounts.find(
-            (a: any) => a.name.toLowerCase() === data.customAccount.toLowerCase()
+            (a: any) => a.name.toLowerCase() === customAccount.toLowerCase()
           );
           
-          if (!existingAccount) {
+          if (!existingAccount && data.customAccount) {
             // Create a new account
             const accountRes = await apiRequest('POST', '/api/accounts', {
               name: data.customAccount,

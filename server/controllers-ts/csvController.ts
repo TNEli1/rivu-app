@@ -211,11 +211,26 @@ export const importMappedTransactions = async (req: Request, res: Response) => {
       }
     }
     
-    // Return the result
+    // Update user's lastTransactionDate to trigger nudge system
+    if (importedCount > 0) {
+      await storage.updateUser(userId, {
+        lastTransactionDate: new Date()
+      });
+      
+      // Recalculate Rivu score to reflect the new transactions
+      await storage.calculateRivuScore(userId);
+    }
+    
+    // Get the newly imported transactions to verify
+    const allTransactions = await storage.getTransactions(userId);
+    console.log(`After CSV import: User ${userId} now has ${allTransactions.length} transactions total`);
+    
+    // Return the result with detailed information
     res.json({
       message: `Successfully imported ${importedCount} transactions (${duplicateCount} potential duplicates detected)`,
       imported: importedCount,
-      duplicates: duplicateCount
+      duplicates: duplicateCount,
+      totalTransactions: allTransactions.length
     });
   } catch (error: any) {
     console.error('Error importing mapped transactions:', error);
