@@ -224,7 +224,13 @@ export default function AuthPage() {
                 <CardFooter className="flex justify-center">
                   <Button 
                     variant="link" 
-                    onClick={() => setActiveTab("register")}
+                    onClick={() => {
+                      setActiveTab("register");
+                      // Force TabsList to update by directly triggering click on the register tab
+                      document.querySelector('[data-value="register"]')?.dispatchEvent(
+                        new MouseEvent('click', { bubbles: true })
+                      );
+                    }}
                     className="hover:text-primary"
                   >
                     Don't have an account? Register
@@ -411,7 +417,13 @@ export default function AuthPage() {
                 <CardFooter className="flex justify-center">
                   <Button 
                     variant="link" 
-                    onClick={() => setActiveTab("login")}
+                    onClick={() => {
+                      setActiveTab("login");
+                      // Force TabsList to update by directly triggering click on the login tab
+                      document.querySelector('[data-value="login"]')?.dispatchEvent(
+                        new MouseEvent('click', { bubbles: true })
+                      );
+                    }}
                     className="hover:text-primary"
                   >
                     Already have an account? Log in
