@@ -31,15 +31,19 @@ export default function TransactionsSection() {
   const [activeTab, setActiveTab] = useState<"all" | "income" | "expenses">("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [editDate, setEditDate] = useState<Date | undefined>(new Date());
+  // Create a date that uses local time zone to fix the date picker issue
+  const today = new Date();
+  const localDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(localDate);
+  const [editDate, setEditDate] = useState<Date | undefined>(localDate);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [newTransaction, setNewTransaction] = useState({
     amount: "",
     merchant: "",
     category: "",
     account: "Credit Card",
-    date: new Date().toISOString().split('T')[0], // Default to today's date in YYYY-MM-DD format
+    date: localDate.toISOString().split('T')[0], // Default to today's date in YYYY-MM-DD format, using local time
   });
   const [editTransaction, setEditTransaction] = useState({
     id: "",

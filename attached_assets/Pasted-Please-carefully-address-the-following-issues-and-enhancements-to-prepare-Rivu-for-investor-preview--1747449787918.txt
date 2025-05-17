@@ -1,0 +1,70 @@
+Please carefully address the following issues and enhancements to prepare Rivu for investor preview and public launch:
+
+⸻
+
+1. Date Picker Bug
+	•	The transaction date picker defaults to tomorrow’s date (e.g., 5/17/25 instead of 5/16/25).
+	•	Actual saved date is correct, but the UI creates confusion.
+	•	Fix: Ensure date picker initializes using local device time, not UTC.
+
+⸻
+
+2. Goal Deletion Fails
+	•	Deleting a savings goal throws an error.
+	•	Fix: Ensure delete action hits the database, removes goal, recalculates Rivu Score if needed, and returns 200/204 response.
+
+⸻
+
+3. Login & Auth Page Navigation Broken
+	•	Buttons like:
+	•	“Don’t have an account? Register” → should go to /register
+	•	“Already have an account? Login” → should go to /login
+	•	These still do nothing. Fix all auth navigation logic across screens.
+
+⸻
+
+4. CSV Upload for Transactions
+
+Implement a step-by-step flow:
+	1.	Upload UI: File upload field (CSV only) on Transactions page.
+	2.	Parse file using csv-parser or papaparse.
+	3.	Required fields: date, amount, merchant, category, account, type
+	4.	Optional: notes, subcategory
+	5.	Validation: Check format, required fields, and parse errors.
+	6.	Tag entries with source: "csv" vs manual.
+	7.	Check for duplicates:
+	•	Flag as possible duplicate if same merchant/amount appears from both CSV and manual within 48–72 hrs.
+	8.	Show preview of parsed entries before saving.
+	9.	Store all parsed transactions with user ID in PostgreSQL.
+
+⸻
+
+5. Account Selection Field
+	•	Users are currently re-entering account names like “CHASE 1234” or “AMEX 5678” each time.
+	•	Fix:
+	•	Add a dropdown or saved list of previously used accounts.
+	•	Store these accounts by user ID in PostgreSQL.
+	•	Make account selection fast and intuitive.
+
+⸻
+
+6. Dark Mode
+	•	App resets to light mode after login.
+	•	Fix:
+	•	Default all users to dark mode unless preference is set.
+	•	Save theme preference to PostgreSQL per user.
+	•	Load user’s preference immediately on login or refresh.
+
+
+10. UI & Layout Bugs
+	•	Some pages prevent scrolling on mobile or small screens.
+	•	For example: On Transactions page, choosing category/subcategory pushes the Submit button off screen.
+	•	In this case, user must hit Enter on keyboard, which is not intuitive.
+	•	Fix:
+	•	Ensure scroll works everywhere
+	•	Make all buttons accessible with standard scroll behavior
+	•	Use overflow-y: auto where needed, and ensure layout adapts to mobile height constraints.
+
+Confirm all math, UX flows, and dark/light mode interactions work.
+
+This build is preparing for a v1 public launch. Accuracy, consistency, and usability are critical. Please debug thoroughly, test every flow, and ensure full PostgreSQL integration across all features.
