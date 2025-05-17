@@ -1,10 +1,12 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import OpenAI from "openai";
 import cors from "cors";
 import { BudgetCategory, Transaction } from "@shared/schema";
+import path from "path";
+import fs from "fs";
 
 // Initialize OpenAI client
 const openai = new OpenAI({ 

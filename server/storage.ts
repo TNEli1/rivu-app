@@ -506,6 +506,182 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
+  // Transaction Accounts operations
+  async getTransactionAccounts(userId: number): Promise<TransactionAccount[]> {
+    return db
+      .select()
+      .from(transactionAccounts)
+      .where(eq(transactionAccounts.userId, userId));
+  }
+
+  async getTransactionAccount(id: number): Promise<TransactionAccount | undefined> {
+    const [account] = await db
+      .select()
+      .from(transactionAccounts)
+      .where(eq(transactionAccounts.id, id));
+    return account || undefined;
+  }
+
+  async createTransactionAccount(account: InsertTransactionAccount): Promise<TransactionAccount> {
+    const [newAccount] = await db
+      .insert(transactionAccounts)
+      .values({
+        ...account,
+        createdAt: new Date(),
+      })
+      .returning();
+    return newAccount;
+  }
+
+  async updateTransactionAccount(id: number, data: Partial<TransactionAccount>): Promise<TransactionAccount | undefined> {
+    const [updatedAccount] = await db
+      .update(transactionAccounts)
+      .set(data)
+      .where(eq(transactionAccounts.id, id))
+      .returning();
+    return updatedAccount || undefined;
+  }
+
+  async deleteTransactionAccount(id: number): Promise<boolean> {
+    const result = await db
+      .delete(transactionAccounts)
+      .where(eq(transactionAccounts.id, id));
+    return !!result;
+  }
+  
+  // Category and Subcategory operations
+  async getCategories(userId: number, type?: string): Promise<Category[]> {
+    let query = db
+      .select()
+      .from(categories)
+      .where(eq(categories.userId, userId));
+    
+    if (type) {
+      query = query.where(eq(categories.type, type));
+    }
+    
+    return query;
+  }
+
+  async getCategory(id: number): Promise<Category | undefined> {
+    const [category] = await db
+      .select()
+      .from(categories)
+      .where(eq(categories.id, id));
+    return category || undefined;
+  }
+
+  async createCategory(category: InsertCategory): Promise<Category> {
+    const [newCategory] = await db
+      .insert(categories)
+      .values({
+        ...category,
+        createdAt: new Date(),
+      })
+      .returning();
+    return newCategory;
+  }
+
+  async updateCategory(id: number, data: Partial<Category>): Promise<Category | undefined> {
+    const [updatedCategory] = await db
+      .update(categories)
+      .set(data)
+      .where(eq(categories.id, id))
+      .returning();
+    return updatedCategory || undefined;
+  }
+
+  async deleteCategory(id: number): Promise<boolean> {
+    // First delete all subcategories
+    await db
+      .delete(subcategories)
+      .where(eq(subcategories.categoryId, id));
+    
+    // Then delete the category
+    const result = await db
+      .delete(categories)
+      .where(eq(categories.id, id));
+    return !!result;
+  }
+
+  async getSubcategories(categoryId: number): Promise<Subcategory[]> {
+    return db
+      .select()
+      .from(subcategories)
+      .where(eq(subcategories.categoryId, categoryId));
+  }
+
+  async getSubcategory(id: number): Promise<Subcategory | undefined> {
+    const [subcategory] = await db
+      .select()
+      .from(subcategories)
+      .where(eq(subcategories.id, id));
+    return subcategory || undefined;
+  }
+
+  async createSubcategory(subcategory: InsertSubcategory): Promise<Subcategory> {
+    const [newSubcategory] = await db
+      .insert(subcategories)
+      .values({
+        ...subcategory,
+        createdAt: new Date(),
+      })
+      .returning();
+    return newSubcategory;
+  }
+
+  async updateSubcategory(id: number, data: Partial<Subcategory>): Promise<Subcategory | undefined> {
+    const [updatedSubcategory] = await db
+      .update(subcategories)
+      .set(data)
+      .where(eq(subcategories.id, id))
+      .returning();
+    return updatedSubcategory || undefined;
+  }
+
+  async deleteSubcategory(id: number): Promise<boolean> {
+    const result = await db
+      .delete(subcategories)
+      .where(eq(subcategories.id, id));
+    return !!result;
+  }
+  
+  async createDefaultCategoriesForUser(userId: number): Promise<void> {
+    // Create default expense categories
+    const defaultExpenseCategories = [
+      'Housing', 'Utilities', 'Food', 'Transportation', 
+      'Healthcare', 'Entertainment', 'Shopping', 'Personal Care',
+      'Education', 'Travel', 'Debt Payments', 'Savings', 'Investments', 
+      'Gifts & Donations', 'Taxes', 'Insurance', 'Miscellaneous'
+    ];
+    
+    // Create default income categories
+    const defaultIncomeCategories = [
+      'Salary', 'Freelance', 'Business', 'Investments', 
+      'Rental Income', 'Gifts', 'Refunds', 'Other Income'
+    ];
+    
+    // Insert all expense categories
+    for (const name of defaultExpenseCategories) {
+      await this.createCategory({
+        userId,
+        name,
+        type: 'expense',
+        isDefault: true
+      });
+    }
+    
+    // Insert all income categories
+    for (const name of defaultIncomeCategories) {
+      await this.createCategory({
+        userId,
+        name,
+        type: 'income',
+        isDefault: true
+      });
+    }
+  }
+  
   // Savings Goal operations
   async getSavingsGoals(userId: number): Promise<SavingsGoal[]> {
     return db
