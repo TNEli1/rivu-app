@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
 import crypto from 'crypto';
 import { storage } from '../storage';
+import { User } from '@shared/schema';
 
 // JWT Secret Key
 const JWT_SECRET = process.env.JWT_SECRET || 'rivu_jwt_secret_dev_key';
@@ -205,11 +206,23 @@ export const getUserProfile = async (req: any, res: any) => {
       });
     }
     
+    // Format demographics for client-side consistency
+    const demographics = {
+      ageRange: user.ageRange,
+      incomeBracket: user.incomeBracket,
+      goals: user.goals ? user.goals.split(',') : [],
+      riskTolerance: user.riskTolerance,
+      experienceLevel: user.experienceLevel,
+      completed: user.demographicsCompleted,
+      skipPermanently: user.skipDemographics
+    };
+    
     // Return user data (exclude password)
     const { password, ...userData } = user;
     res.json({
       _id: userData.id,
-      ...userData
+      ...userData,
+      demographics
     });
   } catch (error: any) {
     console.error('Get profile error:', error);
@@ -354,7 +367,7 @@ export const updateUserProfile = async (req: any, res: any) => {
  */
 export const updateDemographics = async (req: any, res: any) => {
   try {
-    const userId = req.user.id;
+    const userId = parseInt(req.user.id, 10);
     const { demographics } = req.body;
     
     if (!demographics) {
@@ -364,11 +377,8 @@ export const updateDemographics = async (req: any, res: any) => {
       });
     }
     
-    // Import User model dynamically
-    const { default: User } = await import('../models/User.js');
-    
-    // Find user by ID
-    const user = await User.findById(userId);
+    // Get user from PostgreSQL storage
+    const user = await storage.getUser(userId);
     
     if (!user) {
       return res.status(404).json({ 
@@ -377,30 +387,67 @@ export const updateDemographics = async (req: any, res: any) => {
       });
     }
     
-    // Update demographics
-    const updatedDemographics = {
-      ...demographics,
-      updatedAt: new Date()
-    };
+    // Prepare the update data
+    const updateData: Partial<User> = {};
+    
+    // Update individual demographic fields
+    if (demographics.ageRange !== undefined) {
+      updateData.ageRange = demographics.ageRange;
+    }
+    
+    if (demographics.incomeBracket !== undefined) {
+      updateData.incomeBracket = demographics.incomeBracket;
+    }
+    
+    if (demographics.goals !== undefined) {
+      // Convert array to string for storage
+      updateData.goals = Array.isArray(demographics.goals) 
+        ? demographics.goals.join(',') 
+        : demographics.goals;
+    }
+    
+    if (demographics.riskTolerance !== undefined) {
+      updateData.riskTolerance = demographics.riskTolerance;
+    }
+    
+    if (demographics.experienceLevel !== undefined) {
+      updateData.experienceLevel = demographics.experienceLevel;
+    }
     
     // Ensure the completed flag is set if provided
     if (demographics.completed !== undefined) {
-      updatedDemographics.completed = demographics.completed;
+      updateData.demographicsCompleted = demographics.completed;
     }
     
     // Handle "Do not show again" option
     if (demographics.skipPermanently !== undefined) {
-      updatedDemographics.skipPermanently = demographics.skipPermanently;
+      updateData.skipDemographics = demographics.skipPermanently;
     }
     
-    // Update user demographics
-    user.demographics = updatedDemographics;
+    // Update user in database
+    const updatedUser = await storage.updateUser(userId, updateData);
     
-    // Save changes
-    await user.save();
+    if (!updatedUser) {
+      return res.status(500).json({
+        message: 'Failed to update demographics',
+        code: 'UPDATE_FAILED'
+      });
+    }
+    
+    // Format response to match expected client format
+    const formattedDemographics = {
+      ageRange: updatedUser.ageRange,
+      incomeBracket: updatedUser.incomeBracket,
+      goals: updatedUser.goals ? updatedUser.goals.split(',') : [],
+      riskTolerance: updatedUser.riskTolerance,
+      experienceLevel: updatedUser.experienceLevel,
+      completed: updatedUser.demographicsCompleted,
+      skipPermanently: updatedUser.skipDemographics,
+      updatedAt: new Date().toISOString(),
+    };
     
     res.json({
-      demographics: user.demographics
+      demographics: formattedDemographics
     });
   } catch (error: any) {
     console.error('Update demographics error:', error);

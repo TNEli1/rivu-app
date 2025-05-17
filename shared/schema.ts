@@ -12,6 +12,15 @@ export const users = pgTable("users", {
   lastName: text("last_name").notNull(),
   avatarInitials: text("avatar_initials").notNull(),
   themePreference: text("theme_preference").default("light"),
+  // Demographics fields
+  ageRange: text("age_range"),
+  incomeBracket: text("income_bracket"),
+  goals: text("goals"),
+  riskTolerance: text("risk_tolerance"),
+  experienceLevel: text("experience_level"),
+  demographicsCompleted: boolean("demographics_completed").default(false),
+  skipDemographics: boolean("skip_demographics").default(false),
+  // Metrics
   loginCount: integer("login_count").default(0),
   lastLogin: timestamp("last_login"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
