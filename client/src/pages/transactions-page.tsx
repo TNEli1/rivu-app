@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import CSVUploadDialog from "@/components/transactions/CSVUploadDialog";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate, getCategoryIconAndColor } from "@/lib/utils";
 import { 
@@ -97,6 +98,7 @@ const CATEGORY_SUGGESTIONS: Record<string, string[]> = {
 export default function TransactionsPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isCSVUploadOpen, setIsCSVUploadOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
