@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate, getCategoryIconAndColor } from "@/lib/utils";
+import Papa from 'papaparse';
 import { 
   Loader2, 
   PlusCircle, 
@@ -20,7 +21,9 @@ import {
   ChevronDown,
   FilterX,
   Link2,
-  CreditCard
+  CreditCard,
+  Upload,
+  FileText
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 

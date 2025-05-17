@@ -159,11 +159,30 @@ export default function GoalsPage() {
     }
   });
 
-  // Delete goal mutation
+  // Delete goal mutation - fixed to properly handle API errors
   const deleteGoalMutation = useMutation({
     mutationFn: async (id: string | number) => {
-      const res = await apiRequest('DELETE', `/api/goals/${id}`);
-      return res.json();
+      try {
+        // Make sure id is properly handled as a number for backend
+        const goalId = typeof id === 'string' ? parseInt(id, 10) : id;
+        
+        if (isNaN(goalId)) {
+          throw new Error("Invalid goal ID format");
+        }
+        
+        const res = await apiRequest('DELETE', `/api/goals/${goalId}`);
+        
+        // Check if the response is ok
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || "Failed to delete goal");
+        }
+        
+        return res.json();
+      } catch (error) {
+        console.error("Error deleting goal:", error);
+        throw error; // Re-throw to trigger onError
+      }
     },
     onSuccess: () => {
       // Use helper function to invalidate all related queries
@@ -175,10 +194,10 @@ export default function GoalsPage() {
       });
       setSelectedGoal(null);
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast({
         title: "Error deleting goal",
-        description: error.message,
+        description: error.message || "Failed to delete goal. Please try again.",
         variant: "destructive",
       });
     }

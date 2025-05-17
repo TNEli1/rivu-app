@@ -222,12 +222,14 @@ export default function AuthPage() {
                   </form>
                 </CardContent>
                 <CardFooter className="flex justify-center">
-                  <Button 
-                    variant="link" 
-                    onClick={() => setActiveTab("register")}
-                  >
-                    Don't have an account? Register
-                  </Button>
+                  <Link href="/auth?tab=register">
+                    <Button 
+                      variant="link" 
+                      onClick={() => setActiveTab("register")}
+                    >
+                      Don't have an account? Register
+                    </Button>
+                  </Link>
                 </CardFooter>
               </Card>
             </TabsContent>
@@ -408,13 +410,15 @@ export default function AuthPage() {
                   </form>
                 </CardContent>
                 <CardFooter className="flex justify-center">
-                  <Button 
-                    variant="link" 
-                    onClick={() => setActiveTab("login")}
-                    className="hover:text-primary"
-                  >
-                    Already have an account? Log in
-                  </Button>
+                  <Link href="/auth?tab=login">
+                    <Button 
+                      variant="link" 
+                      onClick={() => setActiveTab("login")}
+                      className="hover:text-primary"
+                    >
+                      Already have an account? Log in
+                    </Button>
+                  </Link>
                 </CardFooter>
               </Card>
             </TabsContent>
