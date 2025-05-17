@@ -292,7 +292,7 @@ export default function ResetPasswordPage() {
             </p>
           </CardContent>
           <CardFooter className="flex justify-center">
-            <Link href="/auth">
+            <Link href="/login">
               <Button>
                 Go to login
               </Button>
@@ -444,7 +444,7 @@ export default function ResetPasswordPage() {
           </form>
         </CardContent>
         <CardFooter className="flex justify-center">
-          <Link href="/auth">
+          <Link href="/login">
             <Button variant="link">
               Back to login
             </Button>
