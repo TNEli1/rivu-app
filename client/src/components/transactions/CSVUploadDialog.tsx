@@ -1,23 +1,23 @@
-import React, { useState, useRef } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle 
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { 
-  Upload, 
-  FileWarning, 
-  Check, 
-  Info, 
-  Loader2 
-} from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import React, { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@/components/ui/alert';
+import { Loader2, AlertCircle, FileText, Upload as UploadIcon, CheckCircle2 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 
 interface CSVUploadDialogProps {
   isOpen: boolean;
@@ -26,224 +26,227 @@ interface CSVUploadDialogProps {
 
 export default function CSVUploadDialog({ isOpen, onClose }: CSVUploadDialogProps) {
   const [file, setFile] = useState<File | null>(null);
-  const [dragActive, setDragActive] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
+  const [uploadResult, setUploadResult] = useState<{ imported: number; duplicates: number } | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const uploadMutation = useMutation({
-    mutationFn: async (data: FormData) => {
-      const response = await fetch('/api/transactions/import-csv', {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0] || null;
+    
+    // Reset states when selecting a new file
+    setFile(selectedFile);
+    setUploadStatus('idle');
+    setUploadProgress(0);
+    setUploadResult(null);
+    setErrorMessage(null);
+    
+    // Basic file validation
+    if (selectedFile) {
+      if (selectedFile.type !== 'text/csv' && !selectedFile.name.endsWith('.csv')) {
+        setErrorMessage('Please select a valid CSV file');
+        setFile(null);
+      } else if (selectedFile.size > 5 * 1024 * 1024) { // 5MB limit
+        setErrorMessage('File size should be less than 5MB');
+        setFile(null);
+      }
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file) {
+      setErrorMessage('Please select a CSV file');
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      setUploadStatus('uploading');
+      setUploadProgress(10);
+
+      // Create form data
+      const formData = new FormData();
+      formData.append('csv', file);
+
+      // Simulate progress (for UX purposes)
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          const newProgress = prev + 5;
+          return newProgress < 90 ? newProgress : prev;
+        });
+      }, 200);
+
+      // Upload the CSV file
+      const response = await fetch('/api/transactions/import', {
         method: 'POST',
-        body: data,
-        credentials: 'include',
+        body: formData,
       });
-      
+
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Error uploading CSV file');
+        throw new Error(errorData.message || 'Failed to upload CSV file');
       }
+
+      const result = await response.json();
+      setUploadResult(result);
+      setUploadStatus('success');
       
-      return response.json();
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "CSV Import Successful",
-        description: data.message || `Successfully imported transactions`,
-      });
-      
-      // Invalidate transactions query to refresh the list
+      // Invalidate queries to refresh transaction data
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions/summary'] });
       
-      // Close the dialog after successful upload
+      toast({
+        title: "Import successful",
+        description: `Imported ${result.imported} transactions. ${result.duplicates} duplicates were detected.`,
+      });
+      
+      // Auto close dialog after a successful upload (optional)
       setTimeout(() => {
-        setFile(null);
         onClose();
-      }, 2000);
-    },
-    onError: (error: any) => {
-      console.error('CSV Upload Error:', error);
+      }, 3000);
+
+    } catch (error) {
+      setUploadStatus('error');
+      setErrorMessage(error instanceof Error ? error.message : 'An unknown error occurred');
+      console.error('CSV upload error:', error);
+      
       toast({
-        title: "Import Failed",
-        description: error.message || "Failed to import transactions from CSV",
+        title: "Import failed",
+        description: error instanceof Error ? error.message : 'Failed to import transactions from CSV',
         variant: "destructive",
       });
-    },
-  });
-
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
+    } finally {
+      setIsUploading(false);
     }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const selectedFile = e.dataTransfer.files[0];
-      validateAndSetFile(selectedFile);
+  const handleClose = () => {
+    // Reset states when closing the dialog
+    if (!isUploading) {
+      onClose();
+      setFile(null);
+      setUploadStatus('idle');
+      setUploadProgress(0);
+      setUploadResult(null);
+      setErrorMessage(null);
     }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0];
-      validateAndSetFile(selectedFile);
-    }
-  };
-
-  const validateAndSetFile = (selectedFile: File) => {
-    // Check if it's a CSV file
-    if (!selectedFile.name.endsWith('.csv') && selectedFile.type !== 'text/csv') {
-      toast({
-        title: "Invalid File Type",
-        description: "Please upload a CSV file",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Check file size (max 2MB)
-    if (selectedFile.size > 2 * 1024 * 1024) {
-      toast({
-        title: "File Too Large",
-        description: "File size should be less than 2MB",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setFile(selectedFile);
-  };
-
-  const handleUpload = () => {
-    if (!file) return;
-    
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    uploadMutation.mutate(formData);
-  };
-
-  const handleFileSelect = () => {
-    fileInputRef.current?.click();
-  };
-
-  const resetState = () => {
-    setFile(null);
-    onClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={resetState}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Import Transactions from CSV</DialogTitle>
           <DialogDescription>
-            Upload a CSV file with your transaction data. The file should have headers and include date, amount, and merchant columns.
+            Upload a CSV file containing your transactions to import them into Rivu.
           </DialogDescription>
         </DialogHeader>
         
-        {uploadMutation.isSuccess ? (
-          <div className="py-6">
-            <Alert className="bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800">
-              <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
-              <AlertTitle className="text-green-600 dark:text-green-400">Import Successful</AlertTitle>
-              <AlertDescription className="text-green-600 dark:text-green-400">
-                {uploadMutation.data?.message || "Your transactions have been imported successfully"}
-              </AlertDescription>
+        <div className="space-y-6 py-4">
+          {errorMessage && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{errorMessage}</AlertDescription>
             </Alert>
-          </div>
-        ) : (
-          <>
-            <div 
-              className={`
-                flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-8 
-                ${dragActive ? 'border-primary bg-primary/5' : 'border-gray-300 dark:border-gray-600'} 
-                ${file ? 'bg-green-50 dark:bg-green-900/10' : 'bg-gray-50 dark:bg-gray-800/50'}
-                transition-all duration-200
-              `}
-              onDragEnter={handleDrag}
-              onDragOver={handleDrag}
-              onDragLeave={handleDrag}
-              onDrop={handleDrop}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-              
-              {file ? (
-                <div className="text-center">
-                  <Check className="h-8 w-8 text-green-500 mx-auto mb-2" />
-                  <p className="font-medium">{file.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {(file.size / 1024).toFixed(1)} KB
-                  </p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setFile(null)}
-                    className="mt-2"
-                  >
-                    Change File
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  <Upload className="h-10 w-10 text-muted-foreground mb-2" />
-                  <p className="font-medium mb-1">Drag & drop your CSV file here</p>
-                  <p className="text-sm text-muted-foreground mb-4">or</p>
-                  <Button
-                    variant="secondary"
-                    onClick={handleFileSelect}
-                    disabled={uploadMutation.isPending}
-                  >
-                    Select CSV File
-                  </Button>
-                </>
-              )}
-            </div>
-            
-            <Alert>
-              <Info className="h-4 w-4" />
+          )}
+          
+          {uploadStatus === 'success' && uploadResult && (
+            <Alert className="mb-4 bg-green-50 border-green-200 text-green-800 dark:bg-green-950 dark:border-green-900 dark:text-green-300">
+              <CheckCircle2 className="h-4 w-4" />
+              <AlertTitle>Import Successful</AlertTitle>
               <AlertDescription>
-                CSV should contain columns for date, amount, merchant/description. 
-                Additional columns like category and account will be used if present.
+                Imported {uploadResult.imported} transactions. 
+                {uploadResult.duplicates > 0 ? 
+                  ` ${uploadResult.duplicates} potential duplicates were detected and marked.` : 
+                  ' No duplicates were detected.'}
               </AlertDescription>
             </Alert>
-            
-            <DialogFooter className="gap-2 sm:gap-0">
-              <Button variant="outline" onClick={resetState} disabled={uploadMutation.isPending}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleUpload} 
-                disabled={!file || uploadMutation.isPending}
-              >
-                {uploadMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Importing...
-                  </>
-                ) : (
-                  'Import Transactions'
+          )}
+          
+          {uploadStatus !== 'success' && (
+            <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg border-muted-foreground/25 hover:border-muted-foreground/50 transition-colors">
+              <FileText className="h-10 w-10 mb-4 text-muted-foreground" />
+              <div className="text-center mb-4">
+                <p className="text-sm text-muted-foreground mb-1">
+                  {file ? file.name : 'Click to select or drag and drop a CSV file'}
+                </p>
+                {file && (
+                  <p className="text-xs text-muted-foreground">
+                    {(file.size / 1024).toFixed(2)} KB
+                  </p>
                 )}
-              </Button>
-            </DialogFooter>
-          </>
-        )}
+              </div>
+              <label htmlFor="csv-file" className="cursor-pointer">
+                <div className="bg-secondary hover:bg-secondary/80 text-secondary-foreground px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                  {file ? 'Change File' : 'Browse Files'}
+                </div>
+                <input 
+                  id="csv-file" 
+                  type="file" 
+                  accept=".csv" 
+                  className="hidden" 
+                  onChange={handleFileChange}
+                  disabled={isUploading}
+                />
+              </label>
+            </div>
+          )}
+          
+          {uploadStatus === 'uploading' && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Uploading...</span>
+                <span>{uploadProgress}%</span>
+              </div>
+              <Progress value={uploadProgress} className="h-2" />
+            </div>
+          )}
+          
+          <div className="text-xs text-muted-foreground">
+            <p className="font-medium mb-1">Expected CSV Format:</p>
+            <p className="mb-2">Your CSV file should have the following columns:</p>
+            <code className="block bg-muted p-2 rounded text-xs overflow-x-auto whitespace-pre mb-2">
+              date,amount,merchant,category,subcategory,account,type
+            </code>
+            <p>Date format should be YYYY-MM-DD or MM/DD/YYYY</p>
+          </div>
+        </div>
+        
+        <DialogFooter className="flex justify-between sm:justify-end">
+          <Button 
+            variant="outline" 
+            onClick={handleClose}
+            disabled={isUploading}
+          >
+            Cancel
+          </Button>
+          <Button 
+            type="submit" 
+            onClick={handleUpload}
+            disabled={!file || isUploading || uploadStatus === 'success'}
+            className="gap-2"
+          >
+            {isUploading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Uploading...
+              </>
+            ) : (
+              <>
+                <UploadIcon className="h-4 w-4" />
+                Import
+              </>
+            )}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
