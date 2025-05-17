@@ -27,12 +27,19 @@ export async function sendEmail(emailData: EmailData): Promise<boolean> {
       });
       return true;
     } else {
-      // In development, just log to console
-      console.log('\n--- EMAIL WOULD BE SENT IN PRODUCTION ---');
+      // In development, just log to console with more visible formatting
+      console.log('\n\n====== DEVELOPMENT MODE: EMAIL WOULD BE SENT IN PRODUCTION ======');
       console.log(`To: ${emailData.to}`);
       console.log(`Subject: ${emailData.subject}`);
-      console.log(`Text: ${emailData.text}`);
-      console.log('--- END EMAIL ---\n');
+      console.log(`Text content: ${emailData.text.substring(0, 100)}...`);
+      
+      // Extract the reset URL from the email content to make it easy to test
+      const resetUrlMatch = emailData.html.match(/href="([^"]+)"/);
+      if (resetUrlMatch && resetUrlMatch[1]) {
+        console.log('\n✅ PASSWORD RESET LINK: ' + resetUrlMatch[1]);
+      }
+      
+      console.log('====== END EMAIL CONTENT ======\n\n');
       return true;
     }
   } catch (error) {

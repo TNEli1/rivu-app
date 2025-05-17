@@ -779,16 +779,60 @@ export default function TransactionsPage() {
               <Upload className="mr-2 h-4 w-4" /> Import CSV
             </Button>
             {transactions.length > 0 && (
-              <Button 
-                variant="outline"
-                className="border-destructive text-destructive hover:bg-destructive/10"
-                onClick={() => {
-                  const dialog = document.getElementById('clear-all-transactions-dialog') as HTMLDialogElement;
-                  if (dialog) dialog.showModal();
-                }}
-              >
-                <Trash2 className="mr-2 h-4 w-4" /> Clear All
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    variant="outline"
+                    className="border-destructive text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" /> Clear All
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Clear All Transactions</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete ALL transactions? This action cannot be undone and will permanently remove all your transaction history.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={() => {
+                        const deleteAllMutation = async () => {
+                          try {
+                            const res = await apiRequest('DELETE', '/api/transactions/all');
+                            await res.json();
+                            
+                            // Refresh transactions and related data
+                            queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+                            queryClient.invalidateQueries({ queryKey: ['/api/transactions/summary'] });
+                            queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
+                            
+                            toast({
+                              title: "All transactions cleared",
+                              description: "All transactions have been deleted successfully.",
+                            });
+                          } catch (error) {
+                            console.error('Error clearing all transactions:', error);
+                            toast({
+                              title: "Error",
+                              description: "There was an error clearing all transactions.",
+                              variant: "destructive",
+                            });
+                          }
+                        };
+                        
+                        // Execute the mutation
+                        deleteAllMutation();
+                      }}
+                    >
+                      Clear All
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </div>
           
@@ -1116,56 +1160,7 @@ export default function TransactionsPage() {
         onClose={() => setIsPlaidConnectionOpen(false)}
       />
       
-      {/* Clear All Transactions Dialog */}
-      <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <div id="clear-all-transactions-dialog" className="hidden"></div>
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Clear All Transactions</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete ALL transactions? This action cannot be undone and will permanently remove all your transaction history.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                const deleteAllMutation = async () => {
-                  try {
-                    const res = await apiRequest('DELETE', '/api/transactions/all');
-                    const data = await res.json();
-                    
-                    // Refresh transactions and related data
-                    queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
-                    queryClient.invalidateQueries({ queryKey: ['/api/transactions/summary'] });
-                    queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
-                    
-                    toast({
-                      title: "All transactions cleared",
-                      description: "All transactions have been deleted successfully.",
-                    });
-                  } catch (error) {
-                    console.error('Error clearing all transactions:', error);
-                    toast({
-                      title: "Error",
-                      description: "There was an error clearing all transactions.",
-                      variant: "destructive",
-                    });
-                  }
-                };
-                
-                // Execute the mutation
-                deleteAllMutation();
-              }}
-            >
-              Clear All
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* We no longer need this hidden dialog element since we're using AlertDialog directly */}
     </div>
   );
 }
