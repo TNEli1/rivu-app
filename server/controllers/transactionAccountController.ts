@@ -29,7 +29,7 @@ export const getTransactionAccounts = async (req: AuthenticatedRequest, res: Res
 };
 
 // Get a specific transaction account by ID
-export const getTransactionAccountById = async (req: Request, res: Response) => {
+export const getTransactionAccountById = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const accountId = parseInt(req.params.id);
     
@@ -58,7 +58,7 @@ export const getTransactionAccountById = async (req: Request, res: Response) => 
 };
 
 // Create a new transaction account for the authenticated user
-export const createTransactionAccount = async (req: Request, res: Response) => {
+export const createTransactionAccount = async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user || !req.user.id) {
       return res.status(401).json({ message: 'User not authenticated' });
@@ -93,7 +93,7 @@ export const createTransactionAccount = async (req: Request, res: Response) => {
 };
 
 // Update an existing transaction account
-export const updateTransactionAccount = async (req: Request, res: Response) => {
+export const updateTransactionAccount = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const accountId = parseInt(req.params.id);
     
@@ -133,7 +133,7 @@ export const updateTransactionAccount = async (req: Request, res: Response) => {
 };
 
 // Delete a transaction account
-export const deleteTransactionAccount = async (req: Request, res: Response) => {
+export const deleteTransactionAccount = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const accountId = parseInt(req.params.id);
     
