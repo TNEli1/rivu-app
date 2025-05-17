@@ -92,6 +92,7 @@ export const registerUser = async (req: any, res: any) => {
     const avatarInitials = (firstName?.[0] || '') + (lastName?.[0] || '');
     
     // Create new user with hashed password and initialize onboarding
+    // Ensuring users start with a clean slate (no preloaded data)
     const user = await storage.createUser({
       username,
       email,
@@ -99,6 +100,7 @@ export const registerUser = async (req: any, res: any) => {
       firstName: firstName || '',
       lastName: lastName || '',
       avatarInitials: avatarInitials || username.substring(0, 2).toUpperCase(),
+      themePreference: 'dark', // Default to dark mode per bug report
       onboardingStage: 'new',
       onboardingCompleted: false,
       accountCreationDate: new Date(),
