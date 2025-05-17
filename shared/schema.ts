@@ -11,7 +11,7 @@ export const users = pgTable("users", {
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   avatarInitials: text("avatar_initials").notNull(),
-  themePreference: text("theme_preference").default("light"),
+  themePreference: text("theme_preference").default("dark"),
   // Demographics fields
   ageRange: text("age_range"),
   incomeBracket: text("income_bracket"),
@@ -40,6 +40,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   firstName: true,
   lastName: true,
   avatarInitials: true,
+  themePreference: true,
   onboardingStage: true,
   onboardingCompleted: true,
   accountCreationDate: true,

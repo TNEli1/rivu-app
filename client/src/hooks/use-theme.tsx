@@ -40,10 +40,36 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   // If user has a preference stored in their profile, use that
   useEffect(() => {
-    if (user?.themePreference && (user.themePreference === 'light' || user.themePreference === 'dark')) {
-      setThemeState(user.themePreference);
+    if (user) {
+      if (user.themePreference && (user.themePreference === 'light' || user.themePreference === 'dark')) {
+        // Use user's stored preference if available
+        setThemeState(user.themePreference);
+      } else {
+        // Default to dark mode for users without a preference 
+        setThemeState('dark');
+        
+        // We can't call setTheme here as it creates a circular dependency
+        // Instead, we'll update the user preference in a separate effect
+      }
     }
   }, [user]);
+  
+  // Save the dark mode preference for new users
+  useEffect(() => {
+    // Only execute this when a user is logged in but has no theme preference
+    if (user && !user.themePreference && theme === 'dark') {
+      // Save dark mode as the preference to database
+      const savePreference = async () => {
+        try {
+          await apiRequest('PUT', '/api/user/theme-preference', { themePreference: 'dark' });
+        } catch (error) {
+          console.error('Failed to save initial theme preference to profile', error);
+        }
+      };
+      
+      savePreference();
+    }
+  }, [user, theme]);
 
   // Set theme and persist to backend if user is logged in
   const setTheme = async (newTheme: Theme) => {
