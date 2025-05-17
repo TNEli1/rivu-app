@@ -171,7 +171,7 @@ export const importMappedTransactions = async (req: Request, res: Response) => {
         }
         
         // Create transaction object
-        const transactionData = {
+        const transactionData: any = {
           userId,
           amount,
           date: transactionDate,

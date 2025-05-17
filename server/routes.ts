@@ -67,15 +67,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.put(`${apiPath}/accounts/:id`, protect, updateTransactionAccount);
     app.delete(`${apiPath}/accounts/:id`, protect, deleteTransactionAccount);
     
-    // Import CSV controller for transaction imports
+    // Import CSV controllers for transaction imports
     const {
       uploadCSV,
       importTransactionsFromCSV,
       markTransactionAsNotDuplicate
     } = await import('./controllers/csvController');
     
+    // Import TypeScript CSV controllers for mapped data import
+    const {
+      importMappedTransactions
+    } = await import('./controllers-ts/csvController');
+    
     // CSV upload routes
     app.post(`${apiPath}/transactions/import`, protect, uploadCSV, importTransactionsFromCSV);
+    app.post(`${apiPath}/transactions/import-mapped`, protect, importMappedTransactions);
     app.put(`${apiPath}/transactions/:id/not-duplicate`, protect, markTransactionAsNotDuplicate);
     
     // Import category controller
