@@ -89,30 +89,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Delete all transactions route
     app.delete(`${apiPath}/transactions/all`, protect, async (req: any, res) => {
       try {
-        const userId = parseInt(req.user.id, 10);
-        console.log('Attempting to delete all transactions for user:', userId);
-
-        // Attempt the deletion
-        const result = await storage.deleteAllTransactions(userId);
+        // Ensure we have a valid user ID from the auth token
+        // This comes from the JWT token, which is validated by the protect middleware
+        const userId = req.user.id;
         
-        if (result) {
-          // Verify all transactions were deleted
-          const remaining = await db
-            .select()
-            .from(transactions)
-            .where(eq(transactions.userId, userId));
-            
-          console.log(`After deletion: User ${userId} has ${remaining.length} remaining transactions`);
+        if (!userId) {
+          return res.status(401).json({
+            message: 'User ID not found in request. Authentication may have failed.',
+            code: 'AUTH_ERROR'
+          });
+        }
+        
+        // Convert to number if it's a string
+        const userIdNum = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+        
+        console.log(`Attempting to delete all transactions for user ID: ${userIdNum}`);
+        
+        // Get current transactions to verify deletion worked
+        const beforeTransactions = await db
+          .select()
+          .from(transactions)
+          .where(eq(transactions.userId, userIdNum));
           
+        console.log(`Found ${beforeTransactions.length} transactions before deletion`);
+        
+        if (beforeTransactions.length === 0) {
+          return res.json({
+            message: 'No transactions to delete',
+            success: true,
+            count: 0
+          });
+        }
+
+        // Execute deletion directly through SQL for maximum reliability
+        await db.execute(sql`DELETE FROM "transactions" WHERE "user_id" = ${userIdNum}`);
+        
+        // Verify deletion worked
+        const afterTransactions = await db
+          .select()
+          .from(transactions)
+          .where(eq(transactions.userId, userIdNum));
+          
+        const deletedCount = beforeTransactions.length - afterTransactions.length;
+        const success = afterTransactions.length === 0;
+        
+        console.log(`Deletion result: Deleted ${deletedCount} transactions, ${afterTransactions.length} remain`);
+        
+        if (success) {
           res.json({ 
             message: 'All transactions deleted successfully',
-            success: remaining.length === 0
+            success: true,
+            count: deletedCount
           });
         } else {
-          console.error('Database reported deletion failure');
+          console.error(`Deletion partially failed: ${afterTransactions.length} transactions remain`);
           res.status(500).json({ 
-            message: 'Failed to delete all transactions',
-            code: 'DELETE_FAILED' 
+            message: `Failed to delete all transactions (${afterTransactions.length} remain)`,
+            code: 'DELETE_PARTIAL',
+            deletedCount,
+            remainingCount: afterTransactions.length
           });
         }
       } catch (error: any) {

@@ -812,7 +812,12 @@ export default function TransactionsPage() {
                             
                             console.log(`Before deletion: ${initialCount} transactions in the list`);
                             
-                            // Execute the delete operation
+                            // Get authenticated user information
+                            const userResponse = await fetch('/api/user');
+                            const userData = await userResponse.json();
+                            console.log('Authenticated user:', userData);
+                            
+                            // Execute the delete operation with explicit user context
                             const res = await apiRequest('DELETE', '/api/transactions/all');
                             const data = await res.json();
                             

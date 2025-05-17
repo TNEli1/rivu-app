@@ -1,0 +1,39 @@
+Please investigate and resolve the following critical issues related to the Transactions page in the Rivu app:
+
+⸻
+
+1. “Clear All Transactions” Button:
+	•	The “Clear All Transactions” button worked on the first use, but now consistently shows a “Failed to delete” error.
+	•	This suggests that either:
+	•	The deletion request is no longer reaching the server, or
+	•	The server route is failing to execute or return a proper status code.
+	•	Please verify:
+	•	That the DELETE endpoint for batch deletion is correctly implemented and still accessible.
+	•	That user authentication is passed along with the request so the server knows which transactions to clear.
+	•	That the database call correctly removes all relevant transactions and triggers a UI refresh to reflect the empty state.
+
+⸻
+
+2. User-Defined Transaction Accounts Not Persisting:
+	•	When a user manually enters a transaction with a new account name (e.g., “CHASE 1234”), this information is not being saved to PostgreSQL.
+	•	This results in users having to retype the same account name each time.
+	•	Fix:
+	•	Ensure that custom account names are stored in a dedicated accounts table (or similar structure) and linked to the correct user ID.
+	•	When users manually enter a new account, check if it exists — if not, save it.
+	•	Preload saved accounts in the UI for future use via dropdown or autosuggest.
+
+⸻
+
+3. CSV Upload: Transactions Not Displaying:
+	•	CSV-uploaded transactions are being successfully stored in PostgreSQL, but they do not appear on the transactions log in the UI.
+	•	Possible causes:
+	•	The UI isn’t refreshing after upload.
+	•	The fetch request that populates the transactions log is not pulling the latest data.
+	•	There may be filtering logic (e.g., date range, source type) that is inadvertently excluding these entries.
+	•	Fix:
+	•	Ensure the frontend fetches and displays all transactions, regardless of entry method (manual, CSV, Plaid).
+	•	Tag source types internally if needed but do not hide them from the default list view.
+
+⸻
+
+Please address all three of these issues thoroughly and test each flow to confirm resolution. This is part of a v1 release push and must be production-ready.
