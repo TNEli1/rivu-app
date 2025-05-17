@@ -189,13 +189,14 @@ export default function AuthPage() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label htmlFor="login-password">Password</Label>
-                        <Button 
-                          variant="link" 
-                          className="p-0 h-auto text-xs"
-                          onClick={() => window.location.href = "/forgot-password"}
-                        >
-                          Forgot password?
-                        </Button>
+                        <Link href="/forgot-password">
+                          <Button 
+                            variant="link" 
+                            className="p-0 h-auto text-xs"
+                          >
+                            Forgot password?
+                          </Button>
+                        </Link>
                       </div>
                       <Input 
                         id="login-password" 
