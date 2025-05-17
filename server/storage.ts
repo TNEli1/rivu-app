@@ -146,8 +146,8 @@ export class DatabaseStorage implements IStorage {
       const categories = await this.getBudgetCategories(transaction.userId);
       const category = categories.find(c => c.name === transaction.category);
       if (category) {
-        const currentSpent = parseFloat(category.spentAmount.toString());
-        const transAmount = parseFloat(transaction.amount.toString());
+        const currentSpent = parseFloat(String(category.spentAmount));
+        const transAmount = parseFloat(String(transaction.amount));
         await this.updateBudgetCategory(category.id, {
           spentAmount: (currentSpent + transAmount).toString()
         });
@@ -248,8 +248,8 @@ export class DatabaseStorage implements IStorage {
     // Check if we have any budget categories to calculate adherence
     if (totalCategories > 0) {
       for (const category of categories) {
-        const spent = parseFloat(category.spentAmount.toString());
-        const budget = parseFloat(category.budgetAmount.toString());
+        const spent = parseFloat(String(category.spentAmount));
+        const budget = parseFloat(String(category.budgetAmount));
         
         if (spent <= budget) {
           categoriesUnderBudget++;
@@ -286,8 +286,8 @@ export class DatabaseStorage implements IStorage {
     const incomeTransactions = transactions.filter(t => t.type === 'income');
     const expenseTransactions = transactions.filter(t => t.type === 'expense');
     
-    const totalIncome = incomeTransactions.reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
-    const totalExpenses = expenseTransactions.reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
+    const totalIncome = incomeTransactions.reduce((sum, t) => sum + parseFloat(String(t.amount)), 0);
+    const totalExpenses = expenseTransactions.reduce((sum, t) => sum + parseFloat(String(t.amount)), 0);
     
     // If no income, default to 0% savings
     let savingsProgress = 0;
