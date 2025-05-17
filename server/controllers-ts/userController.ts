@@ -17,133 +17,121 @@ const TOKEN_COOKIE_NAME = 'rivu_token';
 // Rate limiter settings based on environment
 const isProduction = process.env.NODE_ENV === 'production';
 
-// Set stricter rate limiting for production
-const MAX_LOGIN_ATTEMPTS = isProduction ? 5 : 1000;
-const RATE_LIMIT_WINDOW_MS = isProduction ? 60 * 1000 : 15 * 60 * 1000; // 1 min in prod, 15 mins in dev
-
-// Create rate limiter for login attempts
-export const loginLimiter = rateLimit({
-  windowMs: RATE_LIMIT_WINDOW_MS,
-  max: MAX_LOGIN_ATTEMPTS,
-  message: { 
-    message: `Too many login attempts. Please try again after ${isProduction ? '1 minute' : '15 minutes'}`,
-    code: 'RATE_LIMITED'
-  },
+// Login throttling rate limit
+const loginLimiter = rateLimit({
+  windowMs: isProduction ? 15 * 60 * 1000 : 5 * 60 * 1000, // 15 minutes in prod, 5 minutes in dev
+  max: isProduction ? 5 : 20, // 5 failed attempts in prod, 20 in dev
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req, res) => {
+    // In development mode, check for header to skip rate limiting for testing
+    if (process.env.NODE_ENV !== 'production' && 
+        req.headers['x-skip-rate-limit'] === 'development') {
+      console.log("⚠️ Rate limiting skipped for development");
+      return true;
+    }
+    return false;
+  },
+  message: {
+    message: 'Too many login attempts, please try again later.',
+    code: 'RATE_LIMIT_EXCEEDED'
+  }
 });
 
-// Generate JWT Token
-const generateToken = (id: string) => {
-  return jwt.sign({ id }, JWT_SECRET, {
-    expiresIn: JWT_EXPIRY,
-  });
-};
-
-// Set JWT in HTTP-only cookie for security
-const setTokenCookie = (res: any, token: string) => {
-  res.cookie(TOKEN_COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production', // Use secure in production
-    maxAge: JWT_EXPIRY * 1000, // Convert to milliseconds
-    sameSite: 'strict',
-  });
-};
-
-// Clear token cookie on logout
-const clearTokenCookie = (res: any) => {
-  res.cookie(TOKEN_COOKIE_NAME, '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    expires: new Date(0),
+/**
+ * Generate a JWT token for the user
+ */
+const generateToken = (userId: number): string => {
+  return jwt.sign({ id: userId }, JWT_SECRET, {
+    expiresIn: JWT_EXPIRY
   });
 };
 
 /**
- * @desc    Register a new user
+ * Set JWT as HTTP-Only Cookie
  */
-export const registerUser = async (req: any, res: any) => {
+const setTokenCookie = (res: any, token: string) => {
+  // Set cookie options
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+    maxAge: JWT_EXPIRY * 1000 // Convert seconds to milliseconds
+  };
+  
+  // Set the cookie
+  res.cookie(TOKEN_COOKIE_NAME, token, cookieOptions);
+};
+
+/**
+ * @desc    Generate a name's initials (e.g. John Doe -> JD)
+ */
+const generateInitials = (firstName: string, lastName: string): string => {
+  // Get first character of first name
+  const firstInitial = firstName.charAt(0).toUpperCase();
+  
+  // Get first character of last name 
+  const lastInitial = lastName.charAt(0).toUpperCase();
+  
+  return `${firstInitial}${lastInitial}`;
+};
+
+/**
+ * @desc    Protect routes - Authentication middleware
+ */
+export const protect = async (req: any, res: any, next: any) => {
   try {
-    const { username, email, password, firstName, lastName } = req.body;
+    let token;
     
-    if (!username || !email || !password) {
-      return res.status(400).json({ 
-        message: 'Please provide username, email and password',
-        code: 'VALIDATION_ERROR'
+    // Get token from cookie
+    token = req.cookies[TOKEN_COOKIE_NAME];
+    
+    // Check if token exists
+    if (!token) {
+      return res.status(401).json({ 
+        message: 'Not authorized, please log in',
+        code: 'AUTH_REQUIRED'
       });
     }
     
-    // Check if user already exists with username
-    const existingUsername = await storage.getUserByUsername(username);
-    if (existingUsername) {
-      return res.status(400).json({ 
-        message: 'An account with this username already exists',
-        code: 'USER_EXISTS'
+    // Verify token and extract user ID
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: number };
+    
+    // Get user from storage
+    const user = await storage.getUser(decoded.id);
+    
+    // If user not found
+    if (!user) {
+      return res.status(401).json({ 
+        message: 'User not found',
+        code: 'USER_NOT_FOUND'
       });
     }
     
-    // Note: We need to add email check in storage interface
-    // For now, assume username uniqueness is sufficient
+    // Set req.user for route handlers
+    req.user = {
+      _id: user.id,
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      avatarInitials: user.avatarInitials,
+      themePreference: user.themePreference
+    };
     
-    // Hash password with bcrypt (salt factor 12)
-    const hashedPassword = await bcrypt.hash(password, 12);
-    
-    // Create user initials for avatar
-    const avatarInitials = (firstName?.[0] || '') + (lastName?.[0] || '');
-    
-    // Create new user with hashed password and initialize onboarding
-    // Ensuring users start with a clean slate (no preloaded data)
-    const user = await storage.createUser({
-      username,
-      email,
-      password: hashedPassword,
-      firstName: firstName || '',
-      lastName: lastName || '',
-      avatarInitials: avatarInitials || username.substring(0, 2).toUpperCase(),
-      themePreference: 'dark', // Default to dark mode per bug report
-      onboardingStage: 'new',
-      onboardingCompleted: false,
-      accountCreationDate: new Date(),
-      loginCount: 1,
-      lastLogin: new Date() // matches schema field name
-    });
-    
-    if (user) {
-      // Generate JWT token
-      const token = generateToken(user.id.toString());
-      
-      // Set token as HTTP-only cookie
-      setTokenCookie(res, token);
-      
-      // Check for initial nudges to create for the new user
-      try {
-        await storage.checkAndCreateNudges(user.id);
-      } catch (nudgeError) {
-        console.warn('Error creating initial nudges for new user:', nudgeError);
-        // Don't fail registration if nudge creation fails
-      }
-      
-      // Return user info without password
-      res.status(201).json({
-        _id: user.id,
-        username: user.username,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        onboardingStage: user.onboardingStage,
-        token // Include token in response for clients not using cookies
-      });
-    } else {
-      res.status(400).json({ 
-        message: 'Invalid user data', 
-        code: 'INVALID_DATA'
-      });
-    }
-    
+    next();
   } catch (error: any) {
-    console.error('Register error:', error);
+    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+      return res.status(401).json({ 
+        message: 'Not authorized, please log in again',
+        code: 'TOKEN_INVALID'
+      });
+    }
+    
+    console.error('Auth middleware error:', error);
     res.status(500).json({ 
-      message: error.message || 'Server error during registration',
+      message: 'Server error during authentication',
       code: 'SERVER_ERROR'
     });
   }
@@ -151,68 +139,59 @@ export const registerUser = async (req: any, res: any) => {
 
 /**
  * @desc    Login user
+ * @route   POST /api/login
+ * @access  Public
  */
 export const loginUser = async (req: any, res: any) => {
   try {
     const { username, password } = req.body;
     
+    // Validate required fields
     if (!username || !password) {
       return res.status(400).json({ 
-        message: 'Please provide username and password',
+        message: 'Username and password are required',
         code: 'VALIDATION_ERROR'
       });
     }
     
-    // Find user by username
+    // Get user by username from storage
     const user = await storage.getUserByUsername(username);
-
-    // Check if user exists and password matches
-    if (user && await bcrypt.compare(password, user.password)) {
-      // Update login metrics
-      const loginCount = (user.loginCount || 0) + 1;
-      const lastLogin = new Date();
-      
-      // Update user login statistics
-      await storage.updateUser(user.id, {
-        loginCount,
-        lastLogin
-      });
-      
-      // Check for and create any new nudges based on user activity
-      try {
-        await storage.checkAndCreateNudges(user.id);
-      } catch (nudgeError) {
-        console.warn('Error checking for nudges on login:', nudgeError);
-        // Don't fail login if nudge creation fails
-      }
-      
-      // Generate JWT token
-      const token = generateToken(user.id.toString());
-      
-      // Set HTTP-only cookie with the token
-      setTokenCookie(res, token);
-
-      res.json({
-        _id: user.id,
-        username: user.username,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        createdAt: user.createdAt,
-        lastLogin,
-        loginCount,
-        onboardingStage: user.onboardingStage,
-        onboardingCompleted: user.onboardingCompleted,
-        token // Include token in response for clients not using cookies
-      });
-    } else {
-      // Generic error message for security (don't specify if user doesn't exist or password is wrong)
-      res.status(401).json({ 
-        message: 'Invalid credentials',
-        code: 'INVALID_CREDENTIALS'
+    
+    // If user not found
+    if (!user) {
+      return res.status(401).json({ 
+        message: 'Invalid username or password',
+        code: 'AUTH_FAILED'
       });
     }
     
+    // Compare passwords
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    
+    // If passwords don't match
+    if (!passwordMatch) {
+      return res.status(401).json({ 
+        message: 'Invalid username or password',
+        code: 'AUTH_FAILED'
+      });
+    }
+    
+    // Generate token
+    const token = generateToken(user.id);
+    
+    // Set token cookie
+    setTokenCookie(res, token);
+    
+    // Send user data (excluding password)
+    res.json({
+      _id: user.id,
+      username: user.username,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      avatarInitials: user.avatarInitials,
+      themePreference: user.themePreference
+    });
   } catch (error: any) {
     console.error('Login error:', error);
     res.status(500).json({ 
@@ -223,50 +202,110 @@ export const loginUser = async (req: any, res: any) => {
 };
 
 /**
- * @desc    Get user profile
+ * @desc    Register a new user
+ * @route   POST /api/register
+ * @access  Public
  */
-export const getUserProfile = async (req: any, res: any) => {
+export const registerUser = async (req: any, res: any) => {
   try {
-    const userId = parseInt(req.user.id, 10);
+    const { username, email, password, firstName, lastName } = req.body;
     
-    // Get user from PostgreSQL storage
-    const user = await storage.getUser(userId);
-    
-    if (!user) {
-      return res.status(404).json({ 
-        message: 'User not found',
-        code: 'USER_NOT_FOUND'
+    // Validate required fields
+    if (!username || !email || !password) {
+      return res.status(400).json({ 
+        message: 'Username, email, and password are required',
+        code: 'VALIDATION_ERROR'
       });
     }
     
-    // Format demographics for client-side consistency
-    const demographics = {
-      ageRange: user.ageRange,
-      incomeBracket: user.incomeBracket,
-      goals: user.goals ? user.goals.split(',') : [],
-      riskTolerance: user.riskTolerance,
-      experienceLevel: user.experienceLevel,
-      completed: user.demographicsCompleted,
-      skipPermanently: user.skipDemographics
-    };
-    
-    // Get active nudges for the user
-    let activeNudges: any[] = [];
-    try {
-      activeNudges = await storage.getNudges(userId, 'active');
-    } catch (nudgeError) {
-      console.warn('Error fetching nudges for user profile:', nudgeError);
-      // Continue with profile response even if nudges fail
+    // Check if username is already taken
+    const existingUser = await storage.getUserByUsername(username);
+    if (existingUser) {
+      return res.status(409).json({ 
+        message: 'Username is already taken',
+        code: 'USERNAME_TAKEN'
+      });
     }
     
-    // Return user data (exclude password)
-    const { password, ...userData } = user;
-    res.json({
-      _id: userData.id,
-      ...userData,
-      demographics,
-      activeNudges
+    // Generate avatar initials from name
+    const firstNameValue = firstName || username.charAt(0).toUpperCase();
+    const lastNameValue = lastName || username.charAt(1).toUpperCase();
+    const avatarInitials = generateInitials(firstNameValue, lastNameValue);
+    
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Create user
+    const newUser = await storage.createUser({
+      email,
+      password: hashedPassword,
+      username,
+      firstName: firstName || username,
+      lastName: lastName || '',
+      avatarInitials,
+      themePreference: 'dark', // Default to dark theme for new users
+      onboardingStage: 'new',
+      onboardingCompleted: false,
+      accountCreationDate: new Date()
     });
+    
+    // Generate token
+    const token = generateToken(newUser.id);
+    
+    // Set token cookie
+    setTokenCookie(res, token);
+    
+    // Send user data (excluding password)
+    res.status(201).json({
+      _id: newUser.id,
+      username: newUser.username,
+      email: newUser.email,
+      firstName: newUser.firstName,
+      lastName: newUser.lastName,
+      avatarInitials: newUser.avatarInitials,
+      themePreference: newUser.themePreference
+    });
+  } catch (error: any) {
+    console.error('Registration error:', error);
+    res.status(500).json({ 
+      message: error.message || 'Server error during registration',
+      code: 'SERVER_ERROR'
+    });
+  }
+};
+
+/**
+ * @desc    Logout user
+ * @route   POST /api/logout
+ * @access  Private
+ */
+export const logoutUser = (req: any, res: any) => {
+  try {
+    // Clear the JWT cookie
+    res.clearCookie(TOKEN_COOKIE_NAME);
+    
+    res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ 
+      message: 'Server error during logout',
+      code: 'SERVER_ERROR'
+    });
+  }
+};
+
+/**
+ * @desc    Get user profile
+ * @route   GET /api/user
+ * @access  Private
+ */
+export const getUserProfile = async (req: any, res: any) => {
+  try {
+    // req.user is set in the protect middleware
+    const user = req.user;
+    
+    // Send user profile data
+    res.json(user);
   } catch (error: any) {
     console.error('Get profile error:', error);
     res.status(500).json({ 
@@ -278,6 +317,8 @@ export const getUserProfile = async (req: any, res: any) => {
 
 /**
  * @desc    Update user theme preference
+ * @route   PUT /api/user/theme-preference
+ * @access  Private
  */
 export const updateThemePreference = async (req: any, res: any) => {
   try {
@@ -328,14 +369,16 @@ export const updateThemePreference = async (req: any, res: any) => {
 
 /**
  * @desc    Update user profile
+ * @route   PUT /api/user
+ * @access  Private
  */
 export const updateUserProfile = async (req: any, res: any) => {
   try {
     const userId = parseInt(req.user.id, 10);
-    const { username, email, firstName, lastName, password } = req.body;
+    const { email, firstName, lastName } = req.body;
     
     // Get user from PostgreSQL storage
-    const user = await storage.getUser(userId);
+    let user = await storage.getUser(userId);
     
     if (!user) {
       return res.status(404).json({ 
@@ -344,43 +387,28 @@ export const updateUserProfile = async (req: any, res: any) => {
       });
     }
     
-    // Data to update
+    // Update user fields
     const updateData: Partial<User> = {};
     
-    // If changing username, check if it's already in use
-    if (username && username !== user.username) {
-      const usernameExists = await storage.getUserByUsername(username);
-      if (usernameExists) {
-        return res.status(400).json({ 
-          message: 'Username already in use',
-          code: 'USERNAME_EXISTS'
-        });
-      }
-      updateData.username = username;
+    if (email) updateData.email = email;
+    if (firstName) {
+      updateData.firstName = firstName;
+      // Update avatar initials if first name changed
+      updateData.avatarInitials = generateInitials(
+        firstName, 
+        lastName || user.lastName
+      );
+    }
+    if (lastName) {
+      updateData.lastName = lastName;
+      // Update avatar initials if last name changed
+      updateData.avatarInitials = generateInitials(
+        firstName || user.firstName,
+        lastName
+      );
     }
     
-    // Update other fields if provided
-    if (email !== undefined && email !== user.email) updateData.email = email;
-    if (firstName !== undefined) updateData.firstName = firstName;
-    if (lastName !== undefined) updateData.lastName = lastName;
-    
-    // If password is provided, hash and update
-    if (password) {
-      const hashedPassword = await bcrypt.hash(password, 12);
-      updateData.password = hashedPassword;
-    }
-    
-    // Only update if there are changes
-    if (Object.keys(updateData).length === 0) {
-      // Return current user data if no updates
-      const { password: userPass, ...userData } = user;
-      return res.json({
-        _id: userData.id,
-        ...userData
-      });
-    }
-    
-    // Update the user in PostgreSQL
+    // Send update to PostgreSQL storage
     const updatedUser = await storage.updateUser(userId, updateData);
     
     if (!updatedUser) {
@@ -390,11 +418,15 @@ export const updateUserProfile = async (req: any, res: any) => {
       });
     }
     
-    // Return updated user without password
-    const { password: updatedPass, ...updatedData } = updatedUser;
+    // Send updated user data
     res.json({
-      _id: updatedData.id,
-      ...updatedData
+      _id: updatedUser.id,
+      username: updatedUser.username,
+      email: updatedUser.email,
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      avatarInitials: updatedUser.avatarInitials,
+      themePreference: updatedUser.themePreference
     });
   } catch (error: any) {
     console.error('Update profile error:', error);
@@ -407,21 +439,16 @@ export const updateUserProfile = async (req: any, res: any) => {
 
 /**
  * @desc    Update user demographics
+ * @route   PUT /api/user/demographics
+ * @access  Private
  */
 export const updateDemographics = async (req: any, res: any) => {
   try {
     const userId = parseInt(req.user.id, 10);
-    const { demographics } = req.body;
-    
-    if (!demographics) {
-      return res.status(400).json({ 
-        message: 'Demographics data required',
-        code: 'VALIDATION_ERROR'
-      });
-    }
+    const { ageRange, incomeBracket, goals, riskTolerance, experienceLevel, skip } = req.body;
     
     // Get user from PostgreSQL storage
-    const user = await storage.getUser(userId);
+    let user = await storage.getUser(userId);
     
     if (!user) {
       return res.status(404).json({ 
@@ -430,44 +457,24 @@ export const updateDemographics = async (req: any, res: any) => {
       });
     }
     
-    // Prepare the update data
+    // Update user fields
     const updateData: Partial<User> = {};
     
-    // Update individual demographic fields
-    if (demographics.ageRange !== undefined) {
-      updateData.ageRange = demographics.ageRange;
+    // If skipping demographics, just mark as completed
+    if (skip) {
+      updateData.skipDemographics = true;
+      updateData.demographicsCompleted = true;
+    } else {
+      // Otherwise update all fields
+      updateData.ageRange = ageRange;
+      updateData.incomeBracket = incomeBracket;
+      updateData.goals = goals;
+      updateData.riskTolerance = riskTolerance;
+      updateData.experienceLevel = experienceLevel;
+      updateData.demographicsCompleted = true;
     }
     
-    if (demographics.incomeBracket !== undefined) {
-      updateData.incomeBracket = demographics.incomeBracket;
-    }
-    
-    if (demographics.goals !== undefined) {
-      // Convert array to string for storage
-      updateData.goals = Array.isArray(demographics.goals) 
-        ? demographics.goals.join(',') 
-        : demographics.goals;
-    }
-    
-    if (demographics.riskTolerance !== undefined) {
-      updateData.riskTolerance = demographics.riskTolerance;
-    }
-    
-    if (demographics.experienceLevel !== undefined) {
-      updateData.experienceLevel = demographics.experienceLevel;
-    }
-    
-    // Ensure the completed flag is set if provided
-    if (demographics.completed !== undefined) {
-      updateData.demographicsCompleted = demographics.completed;
-    }
-    
-    // Handle "Do not show again" option
-    if (demographics.skipPermanently !== undefined) {
-      updateData.skipDemographics = demographics.skipPermanently;
-    }
-    
-    // Update user in database
+    // Send update to PostgreSQL storage
     const updatedUser = await storage.updateUser(userId, updateData);
     
     if (!updatedUser) {
@@ -477,20 +484,11 @@ export const updateDemographics = async (req: any, res: any) => {
       });
     }
     
-    // Format response to match expected client format
-    const formattedDemographics = {
-      ageRange: updatedUser.ageRange,
-      incomeBracket: updatedUser.incomeBracket,
-      goals: updatedUser.goals ? updatedUser.goals.split(',') : [],
-      riskTolerance: updatedUser.riskTolerance,
-      experienceLevel: updatedUser.experienceLevel,
-      completed: updatedUser.demographicsCompleted,
-      skipPermanently: updatedUser.skipDemographics,
-      updatedAt: new Date().toISOString(),
-    };
-    
+    // Send confirmation
     res.json({
-      demographics: formattedDemographics
+      message: 'Demographics updated successfully',
+      demographicsCompleted: true,
+      skipped: !!skip
     });
   } catch (error: any) {
     console.error('Update demographics error:', error);
@@ -502,14 +500,16 @@ export const updateDemographics = async (req: any, res: any) => {
 };
 
 /**
- * @desc    Update login metrics
+ * @desc    Update login metrics (count and last login date)
+ * @route   POST /api/user/login-metric
+ * @access  Private
  */
 export const updateLoginMetrics = async (req: any, res: any) => {
   try {
     const userId = parseInt(req.user.id, 10);
     
-    // Find user using PostgreSQL storage
-    const user = await storage.getUser(userId);
+    // Get user from PostgreSQL storage
+    let user = await storage.getUser(userId);
     
     if (!user) {
       return res.status(404).json({ 
@@ -518,14 +518,14 @@ export const updateLoginMetrics = async (req: any, res: any) => {
       });
     }
     
-    // Calculate new login metrics
-    const currentTime = new Date();
-    const newLoginCount = (user.loginCount || 0) + 1;
+    // Update login metrics
+    const loginCount = (user.loginCount || 0) + 1;
+    const lastLogin = new Date();
     
-    // Update user with new login metrics
+    // Send update to PostgreSQL storage
     const updatedUser = await storage.updateUser(userId, {
-      lastLogin: currentTime,
-      loginCount: newLoginCount
+      loginCount,
+      lastLogin
     });
     
     if (!updatedUser) {
@@ -535,13 +535,11 @@ export const updateLoginMetrics = async (req: any, res: any) => {
       });
     }
     
-    // Return updated metrics
-    const loginMetrics = {
+    // Send confirmation
+    res.json({
       lastLogin: updatedUser.lastLogin,
       loginCount: updatedUser.loginCount
-    };
-    
-    res.json(loginMetrics);
+    });
   } catch (error: any) {
     console.error('Update login metrics error:', error);
     res.status(500).json({ 
@@ -552,26 +550,17 @@ export const updateLoginMetrics = async (req: any, res: any) => {
 };
 
 /**
- * @desc    Logout user / clear cookie
- */
-export const logoutUser = (req: any, res: any) => {
-  // Clear the token cookie
-  clearTokenCookie(res);
-  
-  res.json({ message: 'Logged out successfully' });
-};
-
-/**
- * @desc    Generate a password reset token
+ * @desc    Request password reset email
+ * @route   POST /api/forgot-password
+ * @access  Public
  */
 export const forgotPassword = async (req: any, res: any) => {
   try {
     const { email } = req.body;
     
-    // Validate email
     if (!email) {
       return res.status(400).json({
-        message: 'Please provide an email address',
+        message: 'Email is required',
         code: 'INVALID_INPUT'
       });
     }
@@ -602,57 +591,67 @@ export const forgotPassword = async (req: any, res: any) => {
     // Save the hashed token with expiration
     user.resetPasswordToken = resetTokenHashed;
     user.resetPasswordExpires = Date.now() + 30 * 60 * 1000; // 30 minutes
-    
     await user.save();
     
-    // In a real app, send email with reset link, for development return token
-    // You would use Nodemailer or similar to send an actual email
-    if (process.env.NODE_ENV === 'development') {
-      return res.status(200).json({
-        message: 'Password reset token generated (Development mode)',
-        resetToken,
-        resetUrl: `${req.protocol}://${req.get('host')}/reset-password/${resetToken}`,
-        code: 'RESET_TOKEN_GENERATED'
-      });
-    }
+    // Create reset URL (in production, this would point to the frontend)
+    const resetUrl = `${req.protocol}://${req.get('host')}/reset-password/${resetToken}`;
     
-    // Production response (would actually send email in production)
+    // In a real application, send an email with the reset link here.
+    // For now, we'll just log it to the console
+    console.log(`Password reset token: ${resetToken}`);
+    console.log(`Password reset URL: ${resetUrl}`);
+    
+    // Respond with success message
     res.status(200).json({
       message: 'If an account with that email exists, a password reset link has been sent.',
-      code: 'RESET_EMAIL_SENT'
+      code: 'RESET_EMAIL_SENT',
+      // In development only, return the token and URL
+      ...(process.env.NODE_ENV !== 'production' && {
+        resetToken,
+        resetUrl
+      })
     });
-  } catch (error) {
-    console.error('Error in forgot password:', error);
-    res.status(500).json({
-      message: 'Password reset failed',
+  } catch (error: any) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ 
+      message: error.message || 'Server error sending reset email',
       code: 'SERVER_ERROR'
     });
   }
 };
 
 /**
- * @desc    Reset password with token
+ * @desc    Reset password
+ * @route   POST /api/reset-password/:token
+ * @access  Public
  */
 export const resetPassword = async (req: any, res: any) => {
   try {
-    const resetToken = req.params.token;
     const { password } = req.body;
+    const { token } = req.params;
     
-    if (!resetToken || !password) {
+    if (!password) {
       return res.status(400).json({
-        message: 'Missing token or new password',
+        message: 'New password is required',
         code: 'INVALID_INPUT'
       });
     }
     
-    // Import User model and crypto dynamically
-    const { default: User } = await import('../models/User.js');
-    const crypto = require('crypto');
+    if (!token) {
+      return res.status(400).json({
+        message: 'Reset token is required',
+        code: 'INVALID_TOKEN'
+      });
+    }
     
-    // Hash the token for comparison
+    // Import User model dynamically
+    const { default: User } = await import('../models/User.js');
+    
+    // Hash the provided token to compare with stored hash
+    const crypto = require('crypto');
     const resetTokenHashed = crypto
       .createHash('sha256')
-      .update(resetToken)
+      .update(token)
       .digest('hex');
     
     // Find user with matching token and valid expiration
@@ -664,107 +663,30 @@ export const resetPassword = async (req: any, res: any) => {
     if (!user) {
       return res.status(400).json({
         message: 'Invalid or expired reset token',
-        code: 'INVALID_RESET_TOKEN'
+        code: 'INVALID_TOKEN'
       });
     }
     
-    // Validate password strength
-    if (password.length < 8) {
-      return res.status(400).json({
-        message: 'Password must be at least 8 characters',
-        code: 'WEAK_PASSWORD'
-      });
-    }
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(password, 10);
     
-    // Set new password and clear reset token fields
-    user.password = await bcrypt.hash(password, 12);
+    // Update user password and clear reset token fields
+    user.password = hashedPassword;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     
     await user.save();
     
-    // Generate a new JWT token and log the user in
-    const authToken = generateToken(user._id);
-    setTokenCookie(res, authToken);
-    
+    // Respond with success message
     res.status(200).json({
       message: 'Password reset successful',
-      _id: user._id,
-      username: user.username,
-      email: user.email,
-      firstName: user.firstName || '',
-      lastName: user.lastName || '',
-      token: authToken,
       code: 'PASSWORD_RESET_SUCCESS'
     });
-    
-  } catch (error) {
-    console.error('Error in reset password:', error);
-    res.status(500).json({
-      message: 'Password reset failed',
+  } catch (error: any) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ 
+      message: error.message || 'Server error resetting password',
       code: 'SERVER_ERROR'
     });
   }
-};
-
-// Authentication middleware
-export const protect = async (req: any, res: any, next: any) => {
-  try {
-    // Get token from cookie
-    const token = req.cookies[TOKEN_COOKIE_NAME];
-    
-    if (!token) {
-      return res.status(401).json({ 
-        message: 'Not authorized, no token',
-        code: 'AUTH_REQUIRED'
-      });
-    }
-    
-    // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
-    
-    // Get user ID and convert to number for PostgreSQL
-    const userId = parseInt(decoded.id.toString(), 10);
-    
-    // Verify user exists in database
-    const user = await storage.getUser(userId);
-    if (!user) {
-      return res.status(401).json({
-        message: 'User not found or session invalid',
-        code: 'INVALID_SESSION'
-      });
-    }
-    
-    // Set user ID in request
-    req.user = { id: userId };
-    next();
-  } catch (error: any) {
-    // Check if token expired
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ 
-        message: 'Token expired, please login again',
-        code: 'TOKEN_EXPIRED'
-      });
-    }
-    
-    // Other token errors
-    return res.status(401).json({ 
-      message: 'Not authorized, token failed',
-      code: 'INVALID_TOKEN'
-    });
-  }
-};
-
-// Export a default object with all functions for compatibility with ESM
-export default {
-  registerUser,
-  loginUser,
-  getUserProfile,
-  updateUserProfile,
-  updateDemographics,
-  updateLoginMetrics,
-  logoutUser,
-  forgotPassword,
-  resetPassword,
-  protect
 };
