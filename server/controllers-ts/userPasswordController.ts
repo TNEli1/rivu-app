@@ -52,8 +52,14 @@ export const forgotPassword = async (req: Request, res: Response) => {
       });
     }
     
-    // Create reset URL
-    const resetUrl = `${req.protocol}://${req.get('host')}/reset-password/${resetToken}`;
+    // Create reset URL - In development, ensure the port matches Vite's frontend port (5173)
+    let resetUrl = '';
+    if (process.env.NODE_ENV === 'development') {
+      // Use port 5173 in development which is where Vite serves the frontend
+      resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
+    } else {
+      resetUrl = `${req.protocol}://${req.get('host')}/reset-password/${resetToken}`;
+    }
     
     // In development mode, return token for testing
     if (process.env.NODE_ENV === 'development') {

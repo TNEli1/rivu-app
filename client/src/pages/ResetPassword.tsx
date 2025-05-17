@@ -112,12 +112,13 @@ export default function ResetPassword() {
             </Alert>
           </CardContent>
           <CardFooter>
-            <Button 
-              onClick={() => window.location.href = "/auth"}
-              className="w-full"
-            >
-              Return to Login
-            </Button>
+            <Link href="/login">
+              <Button 
+                className="w-full"
+              >
+                Return to Login
+              </Button>
+            </Link>
           </CardFooter>
         </Card>
       </div>

@@ -58,14 +58,15 @@ export default function ForgotPassword() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex items-center">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => setLocation("/login")}
-              className="mr-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
+            <Link href="/login">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="mr-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
             <CardTitle className="text-2xl">Forgot Password</CardTitle>
           </div>
           <CardDescription>
@@ -82,12 +83,13 @@ export default function ForgotPassword() {
                 If an account exists with that email, we've sent instructions to reset your password.
               </AlertDescription>
             </Alert>
-            <Button 
-              onClick={() => setLocation("/login")}
-              className="w-full"
-            >
-              Return to Login
-            </Button>
+            <Link href="/login">
+              <Button 
+                className="w-full"
+              >
+                Return to Login
+              </Button>
+            </Link>
           </CardContent>
         ) : (
           <form onSubmit={handleSubmit}>
