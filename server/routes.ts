@@ -19,8 +19,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Set up API routes using PostgreSQL database
   try {
-    // Import our TypeScript controller
-    // Get all the individual exports from userController
+    // Import our user controllers
     const {
       registerUser,
       loginUser,
@@ -29,10 +28,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       updateUserProfile,
       updateDemographics,
       updateLoginMetrics,
-      protect,
-      forgotPassword,
-      resetPassword
+      protect
     } = await import('./controllers-ts/userController');
+    
+    // Import password reset controllers
+    const {
+      forgotPassword,
+      verifyResetToken,
+      resetPassword
+    } = await import('./controllers-ts/userPasswordController');
 
     // Register auth routes with our TypeScript controller
     const apiPath = '/api';
@@ -44,6 +48,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.put(`${apiPath}/user/demographics`, protect, updateDemographics);
     app.post(`${apiPath}/user/login-metric`, protect, updateLoginMetrics);
     app.post(`${apiPath}/forgot-password`, forgotPassword);
+    app.get(`${apiPath}/verify-reset-token/:token`, verifyResetToken);
     app.post(`${apiPath}/reset-password/:token`, resetPassword);
     
     // Import transaction account controller

@@ -31,9 +31,9 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
-  createPasswordResetToken(email: string): Promise<{token: string, expiry: Date} | null>;
-  verifyPasswordResetToken(token: string): Promise<User | null>;
-  resetPassword(token: string, newPassword: string): Promise<boolean>;
+  createPasswordResetToken(email: string, tokenHash: string, expiry: Date): Promise<boolean>;
+  verifyPasswordResetToken(tokenHash: string): Promise<User | null>;
+  resetPassword(tokenHash: string, newPassword: string): Promise<boolean>;
   
   // Budget category operations
   getBudgetCategories(userId: number): Promise<BudgetCategory[]>;
