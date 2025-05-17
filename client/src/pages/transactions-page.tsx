@@ -675,12 +675,23 @@ export default function TransactionsPage() {
             <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Transactions</h1>
             <p className="text-muted-foreground">View and manage your financial transactions</p>
           </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="mt-4 md:mt-0 bg-primary hover:bg-primary/90 text-white">
-                <PlusCircle className="mr-2 h-4 w-4" /> Add Transaction
-              </Button>
-            </DialogTrigger>
+          <div className="flex flex-col md:flex-row gap-3 mt-4 md:mt-0">
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-primary hover:bg-primary/90 text-white">
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add Transaction
+                </Button>
+              </DialogTrigger>
+            </Dialog>
+            
+            <Button 
+              variant="outline" 
+              onClick={() => setIsCsvDialogOpen(true)}
+              className="flex items-center"
+            >
+              <FileText className="mr-2 h-4 w-4" /> Import CSV
+            </Button>
+          </div>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle>Add New Transaction</DialogTitle>
@@ -999,12 +1010,18 @@ export default function TransactionsPage() {
                   <p className="text-muted-foreground mb-6">
                     Start tracking your finances by adding your transactions manually.
                   </p>
-                  <div className="flex justify-center">
+                  <div className="flex justify-center gap-3">
                     <Button 
                       className="bg-primary hover:bg-primary/90 text-white"
                       onClick={() => setIsAddDialogOpen(true)}
                     >
                       <PlusCircle className="mr-2 h-4 w-4" /> Add transaction
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => setIsCsvDialogOpen(true)}
+                    >
+                      <FileText className="mr-2 h-4 w-4" /> Import CSV
                     </Button>
                   </div>
                 </div>
