@@ -292,8 +292,9 @@ export default function TransactionsPage() {
   // Delete transaction
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await apiRequest('DELETE', `/api/transactions/${id}`);
-      return res.json();
+      await apiRequest('DELETE', `/api/transactions/${id}`);
+      // For 204 responses (no content), don't try to parse JSON
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
@@ -330,7 +331,7 @@ export default function TransactionsPage() {
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Ensure required fields are filled
+    // Ensure only truly required fields are filled
     if (!formData.amount || !formData.merchant) {
       toast({
         title: "Validation error",
@@ -370,11 +371,11 @@ export default function TransactionsPage() {
     e.preventDefault();
     if (!selectedTransaction) return;
     
-    // Ensure required fields are filled
-    if (!formData.amount || !formData.merchant || !formData.category || !formData.account) {
+    // Only amount and merchant are required
+    if (!formData.amount || !formData.merchant) {
       toast({
         title: "Validation error",
-        description: "Please fill in all required fields: description, category, account, and amount.",
+        description: "Please fill in all required fields: description and amount.",
         variant: "destructive",
       });
       return;
