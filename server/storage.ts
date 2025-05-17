@@ -4,6 +4,14 @@ import {
   Transaction, InsertTransaction,
   RivuScore, InsertRivuScore
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and, desc } from "drizzle-orm";
+import { 
+  users, 
+  budgetCategories, 
+  transactions, 
+  rivuScores 
+} from "@shared/schema";
 
 // Storage interface
 export interface IStorage {
