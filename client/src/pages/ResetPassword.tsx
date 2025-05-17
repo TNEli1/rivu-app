@@ -10,6 +10,15 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
+interface TokenResponse {
+  message: string;
+  code: string;
+  user?: {
+    id: number;
+    email: string;
+  };
+}
+
 export default function ResetPassword() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -27,10 +36,13 @@ export default function ResetPassword() {
   }, []);
 
   // Verify token validity
-  const { data: tokenStatus, isLoading: isVerifying, isError: tokenInvalid } = useQuery({
+  const { data: tokenStatus, isLoading: isVerifying, isError: tokenInvalid } = useQuery<TokenResponse>({
     queryKey: [`/api/verify-reset-token/${token}`],
     enabled: !!token,
   });
+
+  // Check if token is valid based on the response
+  const isTokenValid = tokenStatus ? tokenStatus.code === 'VALID_TOKEN' : false;
 
   const resetMutation = useMutation({
     mutationFn: async (formData: { password: string }) => {
@@ -83,7 +95,7 @@ export default function ResetPassword() {
   };
 
   // Handle invalid or expired token
-  if (tokenInvalid || (tokenStatus && tokenStatus.valid === false)) {
+  if (tokenInvalid || (tokenStatus && !isTokenValid)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 px-4">
         <Card className="w-full max-w-md">

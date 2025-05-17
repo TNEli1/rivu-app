@@ -1,132 +1,128 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import React, { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft, CheckCircle2 } from "lucide-react";
-import { Link } from "wouter";
-import { apiRequest } from "@/lib/queryClient";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-export default function ForgotPasswordPage() {
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+export default function ForgotPassword() {
   const [email, setEmail] = useState("");
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      // Send request to the API
-      const response = await apiRequest("POST", "/api/forgot-password", { email });
-      const data = await response.json();
-      
-      // Set submitted status to true to show success view
-      setSubmitted(true);
-      
-      // Check if we're in development mode - show the reset URL
-      if (data.resetToken) {
-        console.log("Development mode - reset token:", data.resetToken);
-        console.log("Reset URL:", data.resetUrl);
-      }
-      
+  const forgotPasswordMutation = useMutation({
+    mutationFn: async (formData: { email: string }) => {
+      const response = await apiRequest("POST", "/api/forgot-password", formData);
+      return response.json();
+    },
+    onSuccess: () => {
       toast({
-        title: "Email sent",
-        description: "If an account exists with this email, you'll receive a reset link.",
+        title: "Password reset email sent",
+        description: "If an account exists with that email, we've sent password reset instructions.",
       });
-    } catch (error) {
-      console.error("Password reset error:", error);
+    },
+    onError: (error: any) => {
+      console.error("Forgot password error:", error);
       toast({
         title: "Error",
-        description: "There was an error sending the reset email. Please try again.",
+        description: "There was an error sending the password reset email. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
     }
+    
+    forgotPasswordMutation.mutate({ email });
   };
 
-  if (submitted) {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-4 sm:p-8">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle className="text-2xl">Check your email</CardTitle>
-            <CardDescription>
-              We've sent a password reset link to {email}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center py-8">
-            <CheckCircle2 className="h-12 w-12 text-green-500 mb-4" />
-            <p className="text-center text-muted-foreground">
-              Please check your email and click the link to reset your password. 
-              The link will expire in 30 minutes.
-            </p>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-2">
-            <Button variant="outline" className="w-full" onClick={() => setSubmitted(false)}>
-              Send again
-            </Button>
-            <Link href="/auth">
-              <Button variant="link" className="w-full">
-                Back to login
-              </Button>
-            </Link>
-          </CardFooter>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 sm:p-8">
+    <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 px-4">
       <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl">Reset Password</CardTitle>
+        <CardHeader className="space-y-1">
+          <div className="flex items-center">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setLocation("/login")}
+              className="mr-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <CardTitle className="text-2xl">Forgot Password</CardTitle>
+          </div>
           <CardDescription>
-            Enter your email and we'll send you a reset link
+            Enter your email address and we'll send you a link to reset your password
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email" 
-                name="email" 
-                type="email" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email address" 
-                required 
-              />
-            </div>
+        
+        {forgotPasswordMutation.isSuccess ? (
+          <CardContent className="space-y-4 py-6">
+            <Alert className="bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800">
+              <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <AlertTitle className="text-green-600 dark:text-green-400">Check your email</AlertTitle>
+              <AlertDescription className="text-green-600 dark:text-green-400">
+                If an account exists with that email, we've sent instructions to reset your password.
+              </AlertDescription>
+            </Alert>
             <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={loading}
+              onClick={() => setLocation("/login")}
+              className="w-full"
             >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                "Send Reset Link"
-              )}
+              Return to Login
             </Button>
+          </CardContent>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={forgotPasswordMutation.isPending}
+                />
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={forgotPasswordMutation.isPending}
+              >
+                {forgotPasswordMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sending Reset Link...
+                  </>
+                ) : (
+                  "Send Reset Link"
+                )}
+              </Button>
+            </CardFooter>
           </form>
-        </CardContent>
-        <CardFooter className="flex justify-center">
-          <Link href="/auth">
-            <Button variant="link" className="flex items-center">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to login
-            </Button>
-          </Link>
-        </CardFooter>
+        )}
       </Card>
     </div>
   );
