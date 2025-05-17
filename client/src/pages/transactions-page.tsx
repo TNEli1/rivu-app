@@ -477,7 +477,6 @@ export default function TransactionsPage() {
         toast({
           title: 'Possible duplicates detected',
           description: `${duplicates.length} transactions may be duplicates. Review carefully.`,
-          variant: 'warning',
         });
       }
       
@@ -496,7 +495,7 @@ export default function TransactionsPage() {
       
       // Create transactions one by one
       for (const transaction of formattedTransactions) {
-        await createMutation.mutate(transaction);
+        await addMutation.mutate(transaction);
       }
       
       // Success
@@ -1263,6 +1262,114 @@ export default function TransactionsPage() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* CSV Import Dialog */}
+      <Dialog open={isCsvDialogOpen} onOpenChange={setIsCsvDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Import Transactions from CSV</DialogTitle>
+          </DialogHeader>
+
+          {csvStep === 'upload' && (
+            <div className="space-y-4">
+              <div className="bg-muted/50 p-4 rounded-lg border border-dashed border-muted-foreground/50">
+                <div className="flex flex-col items-center justify-center space-y-2 text-center">
+                  <FileText className="h-8 w-8 text-muted-foreground" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Upload CSV file</p>
+                    <p className="text-xs text-muted-foreground">
+                      File should include date, amount, merchant, and optional category/account fields
+                    </p>
+                  </div>
+                  <Input
+                    type="file"
+                    accept=".csv"
+                    onChange={handleCsvUpload}
+                    className="w-full max-w-xs"
+                  />
+                </div>
+              </div>
+              
+              {importError && (
+                <div className="bg-destructive/10 p-3 rounded text-destructive text-sm">
+                  {importError}
+                </div>
+              )}
+              
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p><strong>Required CSV columns:</strong> date, amount, merchant</p>
+                <p><strong>Optional columns:</strong> category, account, notes, type (income/expense)</p>
+                <p><strong>Example:</strong> 2025-05-16,45.99,Groceries,Food,Checking Account,Weekly shopping,expense</p>
+              </div>
+            </div>
+          )}
+
+          {csvStep === 'preview' && (
+            <div className="space-y-4">
+              <div className="text-sm">
+                <p className="font-medium">Preview ({csvData.length} transactions)</p>
+                <div className="max-h-[300px] overflow-y-auto mt-2 border rounded-md">
+                  <table className="w-full text-xs">
+                    <thead className="bg-muted">
+                      <tr>
+                        <th className="p-2 text-left">Date</th>
+                        <th className="p-2 text-left">Description</th>
+                        <th className="p-2 text-right">Amount</th>
+                        <th className="p-2 text-left">Category</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {csvData.slice(0, 10).map((row, index) => (
+                        <tr key={index} className="border-t">
+                          <td className="p-2">{row.date}</td>
+                          <td className="p-2">{row.merchant}</td>
+                          <td className="p-2 text-right">${parseFloat(row.amount.toString()).toFixed(2)}</td>
+                          <td className="p-2">{row.category || 'Uncategorized'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {csvData.length > 10 && (
+                    <div className="p-2 text-center text-xs text-muted-foreground">
+                      Showing 10 of {csvData.length} transactions
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {importError && (
+                <div className="bg-destructive/10 p-3 rounded text-destructive text-sm">
+                  {importError}
+                </div>
+              )}
+              
+              <div className="flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setCsvStep('upload');
+                    setCsvFile(null);
+                    setCsvData([]);
+                  }}
+                >
+                  Back
+                </Button>
+                <Button 
+                  onClick={importTransactionsFromCsv}
+                  disabled={isParsingCsv}
+                >
+                  {isParsingCsv ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Importing...
+                    </>
+                  ) : 'Import Transactions'}
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
