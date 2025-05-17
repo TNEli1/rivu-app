@@ -52,6 +52,17 @@ async function initializeRoutes() {
     const rivuScoreController = await importController('../controllers-ts/rivuScoreController.ts');
     const { getRivuScore, refreshRivuScore } = rivuScoreController;
     
+    // Import nudge controller
+    const nudgeController = await importController('../controllers-ts/nudgeController.ts');
+    const { 
+      getNudges, 
+      createNudge,
+      dismissNudge,
+      completeNudge,
+      checkAndCreateNudges,
+      updateOnboardingStage 
+    } = nudgeController;
+    
     const adviceController = await importController('../controllers/adviceController.js');
     const { getAdvice } = adviceController;
     
@@ -113,6 +124,14 @@ async function initializeRoutes() {
     // Rivu Score Routes
     router.get('/rivu-score', protect, getRivuScore);
     router.post('/rivu-score/refresh', protect, refreshRivuScore);
+    
+    // Nudge System Routes
+    router.get('/nudges', protect, getNudges);
+    router.post('/nudges', protect, createNudge);
+    router.post('/nudges/check', protect, checkAndCreateNudges);
+    router.put('/nudges/:id/dismiss', protect, dismissNudge);
+    router.put('/nudges/:id/complete', protect, completeNudge);
+    router.put('/onboarding-stage', protect, updateOnboardingStage);
     
     // AI Advice Route
     router.post('/advice', protect, getAdvice);

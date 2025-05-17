@@ -115,6 +115,17 @@ export const createTransaction = async (req: any, res: any) => {
     // Create transaction in PostgreSQL
     const transaction = await storage.createTransaction(transactionData);
     
+    // Update user's lastTransactionDate to track activity for nudge system
+    await storage.updateUser(userId, {
+      lastTransactionDate: new Date()
+    });
+    
+    // Also update user's onboarding stage if they're still in onboarding
+    const user = await storage.getUser(userId);
+    if (user && (user.onboardingStage === 'new' || user.onboardingStage === 'budget_created')) {
+      await storage.updateOnboardingStage(userId, 'transaction_added');
+    }
+    
     // Format transaction for client response
     const formattedTransaction = {
       id: transaction.id,

@@ -105,6 +105,17 @@ export const createBudget = async (req: any, res: any) => {
     // Create budget category in PostgreSQL
     const category = await storage.createBudgetCategory(categoryData);
     
+    // Update user's lastBudgetUpdateDate to track activity for nudge system
+    await storage.updateUser(userId, {
+      lastBudgetUpdateDate: new Date()
+    });
+    
+    // Also update user's onboarding stage if they're still in onboarding
+    const user = await storage.getUser(userId);
+    if (user && user.onboardingStage === 'new') {
+      await storage.updateOnboardingStage(userId, 'budget_created');
+    }
+    
     // Format category for client response
     const formattedCategory = {
       id: category.id,

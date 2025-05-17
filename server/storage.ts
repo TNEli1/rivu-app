@@ -3,16 +3,18 @@ import {
   BudgetCategory, InsertBudgetCategory,
   Transaction, InsertTransaction,
   SavingsGoal, InsertSavingsGoal,
-  RivuScore, InsertRivuScore
+  RivuScore, InsertRivuScore,
+  Nudge, InsertNudge
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, gte, lt, isNull, sql } from "drizzle-orm";
 import { 
   users, 
   budgetCategories, 
   transactions, 
   savingsGoals,
-  rivuScores 
+  rivuScores,
+  nudges
 } from "@shared/schema";
 
 // Storage interface
@@ -509,6 +511,245 @@ export class DatabaseStorage implements IStorage {
   
   private async calculateAndUpdateRivuScore(userId: number): Promise<void> {
     await this.calculateRivuScore(userId);
+  }
+  
+  // Nudge system methods
+  async getNudges(userId: number, status?: string): Promise<Nudge[]> {
+    try {
+      if (status) {
+        return await db
+          .select()
+          .from(nudges)
+          .where(and(
+            eq(nudges.userId, userId),
+            eq(nudges.status, status)
+          ))
+          .orderBy(desc(nudges.createdAt));
+      } else {
+        return await db
+          .select()
+          .from(nudges)
+          .where(eq(nudges.userId, userId))
+          .orderBy(desc(nudges.createdAt));
+      }
+    } catch (error) {
+      console.error('Error fetching nudges:', error);
+      throw error;
+    }
+  }
+  
+  async createNudge(nudgeData: InsertNudge): Promise<Nudge> {
+    try {
+      const [nudge] = await db.insert(nudges).values(nudgeData).returning();
+      return nudge;
+    } catch (error) {
+      console.error('Error creating nudge:', error);
+      throw error;
+    }
+  }
+  
+  async updateNudgeStatus(id: number, status: string): Promise<Nudge | undefined> {
+    try {
+      const now = new Date();
+      const updateData: Record<string, any> = { status };
+      
+      if (status === 'dismissed') {
+        updateData.dismissedAt = now;
+      } else if (status === 'completed') {
+        updateData.completedAt = now;
+      }
+      
+      const [nudge] = await db
+        .update(nudges)
+        .set(updateData)
+        .where(eq(nudges.id, id))
+        .returning();
+      
+      return nudge;
+    } catch (error) {
+      console.error('Error updating nudge status:', error);
+      throw error;
+    }
+  }
+  
+  async dismissNudge(id: number): Promise<boolean> {
+    try {
+      const result = await this.updateNudgeStatus(id, 'dismissed');
+      return !!result;
+    } catch (error) {
+      console.error('Error dismissing nudge:', error);
+      throw error;
+    }
+  }
+  
+  async completeNudge(id: number): Promise<boolean> {
+    try {
+      const result = await this.updateNudgeStatus(id, 'completed');
+      return !!result;
+    } catch (error) {
+      console.error('Error completing nudge:', error);
+      throw error;
+    }
+  }
+  
+  async checkAndCreateNudges(userId: number): Promise<Nudge[]> {
+    try {
+      const newNudges: Nudge[] = [];
+      const user = await this.getUser(userId);
+      
+      if (!user) {
+        throw new Error('User not found');
+      }
+      
+      // Check if user is still in onboarding period (first 7 days)
+      const isNewUser = await this.isNewUser(userId);
+      
+      if (isNewUser) {
+        // Create onboarding nudges based on onboarding stage
+        const onboardingStage = user.onboardingStage || 'new';
+        
+        if (onboardingStage === 'new') {
+          // First-time user nudge
+          const nudge = await this.createNudge({
+            userId,
+            type: 'onboarding',
+            message: 'Welcome to Rivu! Start by creating a budget category.',
+            status: 'active',
+            triggerCondition: JSON.stringify({ type: 'new_user' }),
+          });
+          newNudges.push(nudge);
+        } else if (onboardingStage === 'budget_created' && !user.lastTransactionDate) {
+          // User created budget but hasn't added transactions
+          const nudge = await this.createNudge({
+            userId,
+            type: 'onboarding',
+            message: "Let's add your first transaction together.",
+            status: 'active',
+            triggerCondition: JSON.stringify({ type: 'budget_created_no_transactions' }),
+          });
+          newNudges.push(nudge);
+        } else if (onboardingStage === 'transaction_added') {
+          // User has added transactions but no savings goal
+          const goals = await this.getSavingsGoals(userId);
+          if (goals.length === 0) {
+            const nudge = await this.createNudge({
+              userId,
+              type: 'onboarding',
+              message: 'Set a savings goal to start tracking your progress.',
+              status: 'active',
+              triggerCondition: JSON.stringify({ type: 'transactions_no_goals' }),
+            });
+            newNudges.push(nudge);
+          }
+        }
+      } else {
+        // User is past onboarding period, check for behavioral nudges
+        const now = new Date();
+        
+        // Check for transaction inactivity (no transactions in 5 days)
+        if (user.lastTransactionDate) {
+          const lastTransactionDate = new Date(user.lastTransactionDate);
+          const daysSinceLastTransaction = Math.floor((now.getTime() - lastTransactionDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysSinceLastTransaction >= 5) {
+            const nudge = await this.createNudge({
+              userId,
+              type: 'transaction_reminder',
+              message: 'You haven\'t logged a transaction in 5 days. Keep tracking to improve your Rivu Score!',
+              status: 'active',
+              triggerCondition: JSON.stringify({ type: 'transaction_inactivity', days: daysSinceLastTransaction }),
+            });
+            newNudges.push(nudge);
+          }
+        }
+        
+        // Check for goal inactivity (no updates in 14 days)
+        if (user.lastGoalUpdateDate) {
+          const lastGoalDate = new Date(user.lastGoalUpdateDate);
+          const daysSinceLastGoalUpdate = Math.floor((now.getTime() - lastGoalDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysSinceLastGoalUpdate >= 14) {
+            const nudge = await this.createNudge({
+              userId,
+              type: 'goal_reminder',
+              message: 'Your savings goals haven\'t been updated in 2 weeks. Make progress towards your financial targets!',
+              status: 'active',
+              triggerCondition: JSON.stringify({ type: 'goal_inactivity', days: daysSinceLastGoalUpdate }),
+            });
+            newNudges.push(nudge);
+          }
+        }
+        
+        // Check budget categories at risk of being exceeded (> 80% spent)
+        const categories = await this.getBudgetCategories(userId);
+        const categoriesAtRisk = categories.filter(category => {
+          const spent = parseFloat(String(category.spentAmount));
+          const budget = parseFloat(String(category.budgetAmount));
+          return (spent / budget) >= 0.8 && (spent / budget) < 1.0; // 80-99% of budget used
+        });
+        
+        for (const category of categoriesAtRisk) {
+          const percentUsed = Math.round((parseFloat(String(category.spentAmount)) / parseFloat(String(category.budgetAmount))) * 100);
+          const nudge = await this.createNudge({
+            userId,
+            type: 'budget_warning',
+            message: `Your ${category.name} budget is ${percentUsed}% used. Be careful with your spending!`,
+            status: 'active',
+            triggerCondition: JSON.stringify({ type: 'budget_at_risk', categoryId: category.id, percentUsed }),
+          });
+          newNudges.push(nudge);
+        }
+      }
+      
+      return newNudges;
+    } catch (error) {
+      console.error('Error checking and creating nudges:', error);
+      throw error;
+    }
+  }
+  
+  async updateOnboardingStage(userId: number, stage: string): Promise<User | undefined> {
+    try {
+      // Valid stages: 'new', 'budget_created', 'transaction_added', 'goal_created', 'completed'
+      const updateData: Record<string, any> = { 
+        onboardingStage: stage 
+      };
+      
+      if (stage === 'completed') {
+        updateData.onboardingCompleted = true;
+      }
+      
+      const [user] = await db
+        .update(users)
+        .set(updateData)
+        .where(eq(users.id, userId))
+        .returning();
+      
+      return user;
+    } catch (error) {
+      console.error('Error updating onboarding stage:', error);
+      throw error;
+    }
+  }
+  
+  async isNewUser(userId: number): Promise<boolean> {
+    try {
+      const user = await this.getUser(userId);
+      if (!user) return false;
+      
+      if (user.onboardingCompleted) return false;
+      
+      // Check if user was created less than 7 days ago
+      const now = new Date();
+      const creationDate = user.accountCreationDate || user.createdAt;
+      if (!creationDate) return true; // Default to true if no creation date
+      
+      const daysSinceCreation = Math.floor((now.getTime() - new Date(creationDate).getTime()) / (1000 * 60 * 60 * 24));
+      return daysSinceCreation < 7;
+    } catch (error) {
+      console.error('Error checking if user is new:', error);
+      return false; // Default to false on error
+    }
   }
 }
 
