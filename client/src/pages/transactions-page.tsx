@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import CSVUploadDialog from "@/components/transactions/CSVUploadDialog";
+import PlaidConnectionDialog from "@/components/transactions/PlaidConnectionDialog";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate, getCategoryIconAndColor } from "@/lib/utils";
 import { 
@@ -22,7 +23,8 @@ import {
   FilterX,
   Link2,
   CreditCard,
-  Upload
+  Upload,
+  Building
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
@@ -111,6 +113,7 @@ export default function TransactionsPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCSVUploadOpen, setIsCSVUploadOpen] = useState(false);
+  const [isPlaidConnectionOpen, setIsPlaidConnectionOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
@@ -467,17 +470,25 @@ export default function TransactionsPage() {
             <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Transactions</h1>
             <p className="text-muted-foreground">View and manage your financial transactions</p>
           </div>
-          <div className="flex gap-2 mt-4 md:mt-0">
+          <div className="flex flex-wrap gap-2 mt-4 md:mt-0">
+            <Button 
+              variant="outline"
+              onClick={() => setIsPlaidConnectionOpen(true)}
+              className="gap-2"
+            >
+              <Building className="h-4 w-4" /> Connect Bank
+            </Button>
             <Button 
               variant="outline"
               onClick={() => setIsCSVUploadOpen(true)}
+              className="gap-2"
             >
-              <Upload className="mr-2 h-4 w-4" /> Import CSV
+              <Upload className="h-4 w-4" /> Import CSV
             </Button>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-primary hover:bg-primary/90 text-white">
-                  <PlusCircle className="mr-2 h-4 w-4" /> Add Transaction
+                <Button className="bg-primary hover:bg-primary/90 text-white gap-2">
+                  <PlusCircle className="h-4 w-4" /> Add Transaction
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
@@ -780,12 +791,18 @@ export default function TransactionsPage() {
                   <p className="text-muted-foreground mb-6">
                     Start tracking your finances by adding your transactions manually.
                   </p>
-                  <div className="flex justify-center">
+                  <div className="flex flex-col sm:flex-row gap-2 justify-center">
                     <Button 
                       className="bg-primary hover:bg-primary/90 text-white"
                       onClick={() => setIsAddDialogOpen(true)}
                     >
                       <PlusCircle className="mr-2 h-4 w-4" /> Add transaction
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => setIsCSVUploadOpen(true)}
+                    >
+                      <Upload className="mr-2 h-4 w-4" /> Import CSV
                     </Button>
                   </div>
                 </div>
@@ -1076,6 +1093,12 @@ export default function TransactionsPage() {
       <CSVUploadDialog
         isOpen={isCSVUploadOpen}
         onClose={() => setIsCSVUploadOpen(false)}
+      />
+      
+      {/* Plaid Connection Dialog */}
+      <PlaidConnectionDialog
+        isOpen={isPlaidConnectionOpen}
+        onClose={() => setIsPlaidConnectionOpen(false)}
       />
     </div>
   );
