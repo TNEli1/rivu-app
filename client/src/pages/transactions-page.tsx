@@ -103,9 +103,13 @@ export default function TransactionsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [accountFilter, setAccountFilter] = useState<string | null>(null);
   
+  // Create a date object using local date values to avoid timezone issues
+  const today = new Date();
+  const localDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  
   const [formData, setFormData] = useState<TransactionFormData>({
     type: 'expense',
-    date: new Date().toISOString().split('T')[0],
+    date: localDate.toISOString().split('T')[0],
     amount: "",
     merchant: "",
     category: "",
