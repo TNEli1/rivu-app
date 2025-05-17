@@ -779,9 +779,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const categories = await storage.getBudgetCategories(userId);
       const rivuScore = await storage.getRivuScore(userId);
       
+      // Get user demographic data
+      const user = await storage.getUser(userId);
+      
       // Extract relevant financial information
       const financialContext = {
         rivuScore: rivuScore?.score,
+        demographics: {
+          ageRange: user?.ageRange || 'Not specified',
+          incomeBracket: user?.incomeBracket || 'Not specified',
+          riskTolerance: user?.riskTolerance || 'Not specified',
+          experienceLevel: user?.experienceLevel || 'Not specified',
+          financialGoals: user?.goals || 'Not specified'
+        },
         budgetCategories: categories.map(c => ({
           name: c.name,
           budgeted: c.budgetAmount,
@@ -817,11 +827,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         activityLevel = "Medium";
       }
       
+      // Format demographics for prompt
+      const demographicsText = `
+- Age Range: ${financialContext.demographics.ageRange}
+- Income Bracket: ${financialContext.demographics.incomeBracket}
+- Risk Tolerance: ${financialContext.demographics.riskTolerance}
+- Financial Experience: ${financialContext.demographics.experienceLevel}
+- Financial Goals: ${financialContext.demographics.financialGoals}`;
+
       // Build the prompt according to new template
-      let prompt = `You are Rivu, an AI personal finance coach. Analyze this user's financial data and provide clear, actionable advice.
+      let prompt = `You are Rivu, an AI personal finance coach. Analyze this user's financial data and provide clear, actionable advice tailored to their specific demographic profile.
 
 User profile:
 - Rivu Score: ${financialContext.rivuScore || 'Not available'}
+- User Demographics: ${demographicsText}
 - Budget categories: 
 - ${budgetCategoriesText}
 - Last 5 Transactions: 
@@ -833,12 +852,17 @@ User profile:
         prompt += `\n\nUser's question: ${userPrompt}`;
       }
       
-      prompt += `\n\nReturn 2-3 sentences of personalized advice using this data. Do not generalize. Reference specifics from spending and savings trends.`;
+      prompt += `\n\nReturn 2-3 sentences of personalized advice using this data. Do not generalize. Reference specifics from spending and savings trends. Tailor your recommendations to the user's specific demographics including age range, income bracket, risk tolerance, and financial experience level.`;
       
       // Add conditional prompting instructions based on financial situation
       const hasOverspending = financialContext.budgetCategories.some(cat => 
         parseFloat(cat.spent) > parseFloat(cat.budgeted)
       );
+      
+      // Add demographic-specific advice
+      const ageRange = financialContext.demographics.ageRange;
+      const riskTolerance = financialContext.demographics.riskTolerance;
+      const experienceLevel = financialContext.demographics.experienceLevel;
       
       if (hasOverspending) {
         prompt += `\n\nFocus on identifying categories where the user is overspending and suggest specific corrections.`;
@@ -846,6 +870,43 @@ User profile:
         prompt += `\n\nEncourage more check-ins and regular tracking of finances.`;
       } else {
         prompt += `\n\nReinforce good behavior and suggest next steps for financial progress (e.g., investing, debt payoff).`;
+      }
+      
+      // Add age-specific advice
+      if (ageRange && ageRange !== 'Not specified') {
+        if (ageRange.includes('18-25')) {
+          prompt += `\n\nFor this younger user (${ageRange}), emphasize building credit, emergency funds, and habits that will benefit them long-term.`;
+        } else if (ageRange.includes('26-35')) {
+          prompt += `\n\nFor this user in their late 20s/early 30s, balance advice between debt management, career growth, and beginning serious investment/retirement planning.`;
+        } else if (ageRange.includes('36-50')) {
+          prompt += `\n\nFor this mid-career user, focus on accelerating retirement savings, optimizing tax strategies, and balancing multiple financial priorities.`;
+        } else if (ageRange.includes('51-65')) {
+          prompt += `\n\nFor this pre-retirement user, emphasize retirement readiness, healthcare planning, and preserving capital while still growing assets.`;
+        } else if (ageRange.includes('65+')) {
+          prompt += `\n\nFor this retirement-age user, focus on sustainable withdrawal strategies, legacy planning, and maintaining financial security.`;
+        }
+      }
+      
+      // Add risk tolerance context
+      if (riskTolerance && riskTolerance !== 'Not specified') {
+        if (riskTolerance.includes('conservative')) {
+          prompt += `\n\nAlways keep their ${riskTolerance} risk tolerance in mind - prioritize security and stability in your recommendations.`;
+        } else if (riskTolerance.includes('moderate')) {
+          prompt += `\n\nWith their ${riskTolerance} risk tolerance, balance growth opportunities with adequate risk management.`;
+        } else if (riskTolerance.includes('aggressive')) {
+          prompt += `\n\nFor this user with ${riskTolerance} risk tolerance, you can suggest more growth-oriented strategies while still emphasizing diversification.`;
+        }
+      }
+      
+      // Consider experience level
+      if (experienceLevel && experienceLevel !== 'Not specified') {
+        if (experienceLevel.includes('beginner')) {
+          prompt += `\n\nKeep explanations simple and educational since they identify as a ${experienceLevel} with finances.`;
+        } else if (experienceLevel.includes('intermediate')) {
+          prompt += `\n\nWith their ${experienceLevel} experience, you can use more specific terminology but still provide context for more advanced concepts.`;
+        } else if (experienceLevel.includes('advanced')) {
+          prompt += `\n\nFor this ${experienceLevel} user, you can reference more sophisticated financial strategies and concepts.`;
+        }
       }
       
       try {

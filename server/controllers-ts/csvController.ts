@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { InsertTransaction } from '@shared/schema';
 
 // Set up multer for temporary file storage
 const upload = multer({
@@ -170,8 +171,8 @@ export const importMappedTransactions = async (req: Request, res: Response) => {
           transactionDate = new Date();
         }
         
-        // Create transaction object
-        const transactionData: any = {
+        // Create transaction object with proper type
+        const transactionData: InsertTransaction = {
           userId,
           amount,
           date: transactionDate,
@@ -181,7 +182,8 @@ export const importMappedTransactions = async (req: Request, res: Response) => {
           account: transaction.account || 'Imported',
           type,
           notes: transaction.notes || '',
-          source: 'csv'
+          source: 'csv',
+          isDuplicate: false
         };
         
         // Check for duplicates
