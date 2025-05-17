@@ -399,22 +399,31 @@ export class DatabaseStorage implements IStorage {
     let totalCategories = categories.length;
     let categoriesUnderBudget = 0;
     
-    // Check if we have any budget categories to calculate adherence
+    // Calculate total budgeted amount and overspent amount
+    let totalBudgeted = 0;
+    let totalOverspent = 0;
+    
     if (totalCategories > 0) {
       for (const category of categories) {
         const spent = parseFloat(String(category.spentAmount));
         const budget = parseFloat(String(category.budgetAmount));
         
-        if (spent <= budget) {
-          categoriesUnderBudget++;
+        totalBudgeted += budget;
+        
+        // Calculate overspent amount for each category
+        if (spent > budget) {
+          totalOverspent += (spent - budget);
         }
       }
     }
     
-    // If no categories, set to 0 as there's nothing to adhere to yet
-    const budgetAdherence = totalCategories > 0 
-      ? Math.round((categoriesUnderBudget / totalCategories) * 100)
-      : 0;
+    // Budget Adherence = (total budgeted - overspent amount) / total budgeted
+    // If no budget categories, set to 0 as there's nothing to adhere to yet
+    let budgetAdherence = 0;
+    if (totalBudgeted > 0) {
+      const adherenceRatio = (totalBudgeted - totalOverspent) / totalBudgeted;
+      budgetAdherence = Math.round(Math.max(0, Math.min(adherenceRatio, 1)) * 100);
+    }
     
     // Get transactions to calculate user activity
     const transactions = await this.getTransactions(userId);
@@ -436,18 +445,27 @@ export class DatabaseStorage implements IStorage {
     const user = await this.getUser(userId);
     const loginCount = user?.loginCount || 0;
     
-    // Calculate savings progress based on income vs expenses
-    const incomeTransactions = transactions.filter(t => t.type === 'income');
-    const expenseTransactions = transactions.filter(t => t.type === 'expense');
+    // Get active savings goals
+    const goals = await this.getSavingsGoals(userId);
     
-    const totalIncome = incomeTransactions.reduce((sum, t) => sum + parseFloat(String(t.amount)), 0);
-    const totalExpenses = expenseTransactions.reduce((sum, t) => sum + parseFloat(String(t.amount)), 0);
+    // Calculate savings progress based on active goals
+    // Savings Progress = total saved / total target goal (only for active goals)
+    let totalTargetAmount = 0;
+    let totalSavedAmount = 0;
     
-    // If no income, default to 0% savings
+    for (const goal of goals) {
+      const targetAmount = parseFloat(String(goal.targetAmount));
+      const currentAmount = parseFloat(String(goal.currentAmount));
+      
+      totalTargetAmount += targetAmount;
+      totalSavedAmount += currentAmount;
+    }
+    
+    // If no active goals or target amounts, default to 0% savings progress
     let savingsProgress = 0;
-    if (totalIncome > 0) {
-      const savingsRate = Math.max(0, (totalIncome - totalExpenses) / totalIncome);
-      savingsProgress = Math.min(Math.round(savingsRate * 100), 100);
+    if (totalTargetAmount > 0) {
+      const progressRatio = totalSavedAmount / totalTargetAmount;
+      savingsProgress = Math.min(Math.round(progressRatio * 100), 100);
     }
     
     // Determine if we have enough data to calculate a meaningful score

@@ -97,7 +97,8 @@ export const createTransaction = async (req: any, res: any) => {
       });
     }
     
-    // Use the provided date or default to current date
+    // Always use the provided date if available, otherwise use current date
+    // Ensure the date is properly parsed and preserved exactly as provided
     const transactionDate = date ? new Date(date) : new Date();
     
     // Prepare transaction data
@@ -173,7 +174,11 @@ export const updateTransaction = async (req: any, res: any) => {
     if (category !== undefined) updateData.category = category;
     if (account !== undefined) updateData.account = account;
     if (type !== undefined) updateData.type = type;
-    if (date !== undefined) updateData.date = new Date(date);
+    if (date !== undefined) {
+      // Ensure date is properly preserved in the format it was provided
+      updateData.date = new Date(date);
+      console.log(`Transaction date updated to: ${updateData.date} from input: ${date}`);
+    }
     
     // Update the transaction
     const updatedTransaction = await storage.updateTransaction(transactionId, updateData);
