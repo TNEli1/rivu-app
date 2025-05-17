@@ -57,7 +57,7 @@ export default function ResetPassword() {
       
       // Redirect to login after successful reset
       setTimeout(() => {
-        setLocation("/auth");
+        window.location.href = "/auth";
       }, 3000);
     },
     onError: (error: any) => {
@@ -113,7 +113,7 @@ export default function ResetPassword() {
           </CardContent>
           <CardFooter>
             <Button 
-              onClick={() => setLocation("/auth")}
+              onClick={() => window.location.href = "/auth"}
               className="w-full"
             >
               Return to Login
@@ -132,7 +132,7 @@ export default function ResetPassword() {
             <Button 
               variant="ghost" 
               size="icon" 
-              onClick={() => setLocation("/auth")}
+              onClick={() => window.location.href = "/auth"}
               className="mr-2"
             >
               <ArrowLeft className="h-4 w-4" />

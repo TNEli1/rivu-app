@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -16,8 +16,25 @@ import {
   AlertDescription,
   AlertTitle,
 } from '@/components/ui/alert';
-import { Loader2, AlertCircle, FileText, Upload as UploadIcon, CheckCircle2 } from 'lucide-react';
+import { 
+  Loader2, 
+  AlertCircle, 
+  FileText, 
+  Upload as UploadIcon, 
+  CheckCircle2,
+  ArrowLeft,
+  ArrowRight
+} from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface CSVUploadDialogProps {
   isOpen: boolean;
