@@ -329,6 +329,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
+  // Recalculate Rivu Score endpoint
+  app.post("/api/rivu-score/recalculate", async (req, res) => {
+    try {
+      const userId = getCurrentUserId();
+      
+      // Explicitly force a full recalculation
+      const newScore = await storage.calculateRivuScore(userId);
+      
+      // Get the updated score
+      const rivuScore = await storage.getRivuScore(userId);
+      
+      if (!rivuScore) {
+        return res.status(500).json({ 
+          message: 'Failed to recalculate Rivu score', 
+          code: 'SCORE_CALCULATION_FAILED' 
+        });
+      }
+      
+      // New users should get a grace period - apply a time-weighted adjustment
+      // for users who are within their first week
+      const isNewUser = await storage.isNewUser(userId);
+      
+      // Format the response
+      res.json({
+        score: rivuScore.score,
+        factors: [
+          { 
+            name: "Budget Adherence", 
+            percentage: rivuScore.budgetAdherence, 
+            rating: getRating(rivuScore.budgetAdherence), 
+            color: "bg-[#00C2A8]" 
+          },
+          { 
+            name: "Savings Goal Progress", 
+            percentage: rivuScore.savingsProgress, 
+            rating: getRating(rivuScore.savingsProgress), 
+            color: "bg-[#2F80ED]" 
+          },
+          { 
+            name: "Weekly Activity", 
+            percentage: isNewUser ? Math.max(rivuScore.weeklyActivity, 50) : rivuScore.weeklyActivity, // Give new users a boost
+            rating: getRating(isNewUser ? Math.max(rivuScore.weeklyActivity, 50) : rivuScore.weeklyActivity), 
+            color: "bg-[#D0F500]" 
+          },
+        ]
+      });
+    } catch (error) {
+      console.error('Error recalculating Rivu score:', error);
+      res.status(500).json({ 
+        message: 'Failed to recalculate Rivu score', 
+        code: 'SERVER_ERROR' 
+      });
+    }
+  });
+  
   // Transaction Summary API
   app.get("/api/transactions/summary", async (req, res) => {
     try {
@@ -392,20 +447,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
       const prevMonthSavings = prevMonthIncome - prevMonthSpending;
       
-      // Calculate percent changes
+      // Calculate percent changes with limits to prevent extreme values
       const calculateChange = (current: number, previous: number) => {
+        // If previous is 0, return 0 to avoid infinity
         if (previous === 0) return 0;
-        return Number(((current - previous) / previous * 100).toFixed(1));
+        
+        // Calculate percentage change
+        const change = ((current - previous) / previous * 100);
+        
+        // Cap at reasonable limits to prevent unrealistic displays like +396.6%
+        return Math.max(Math.min(change, 100), -100).toFixed(1);
       };
       
-      const spendingChange = calculateChange(currentMonthSpending, prevMonthSpending);
-      const incomeChange = calculateChange(currentMonthIncome, prevMonthIncome);
-      const savingsChange = calculateChange(currentMonthSavings, prevMonthSavings);
+      // Round to 2 decimal places for display
+      const formatCurrency = (amount: number) => {
+        return Math.round(amount * 100) / 100;
+      };
+      
+      const spendingChange = Number(calculateChange(currentMonthSpending, prevMonthSpending));
+      const incomeChange = Number(calculateChange(currentMonthIncome, prevMonthIncome));
+      const savingsChange = Number(calculateChange(currentMonthSavings, prevMonthSavings));
+      
+      // Calculate actual monthly savings (income - expenses)
+      // Only display as positive if there are actual savings
+      const actualSavings = currentMonthIncome - currentMonthSpending;
       
       res.json({
-        monthlySpending: currentMonthSpending,
-        monthlyIncome: currentMonthIncome,
-        monthlySavings: currentMonthSavings > 0 ? currentMonthSavings : 0,
+        monthlySpending: formatCurrency(currentMonthSpending),
+        monthlyIncome: formatCurrency(currentMonthIncome),
+        monthlySavings: formatCurrency(actualSavings > 0 ? actualSavings : 0),
         spendingChange: spendingChange,
         incomeChange: incomeChange,
         savingsChange: savingsChange
