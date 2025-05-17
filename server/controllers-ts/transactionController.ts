@@ -126,6 +126,9 @@ export const createTransaction = async (req: any, res: any) => {
       await storage.updateOnboardingStage(userId, 'transaction_added');
     }
     
+    // Recalculate Rivu score to reflect the new transaction
+    await storage.calculateRivuScore(userId);
+    
     // Format transaction for client response
     const formattedTransaction = {
       id: transaction.id,
@@ -201,6 +204,14 @@ export const updateTransaction = async (req: any, res: any) => {
       });
     }
     
+    // Update user's lastTransactionDate to track activity for nudge system
+    await storage.updateUser(userId, {
+      lastTransactionDate: new Date()
+    });
+    
+    // Update Rivu score since transaction data affects financial health calculation
+    await storage.calculateRivuScore(userId);
+    
     // Format updated transaction for client
     const formattedTransaction = {
       id: updatedTransaction.id,
@@ -251,6 +262,14 @@ export const deleteTransaction = async (req: any, res: any) => {
         code: 'DELETE_FAILED'
       });
     }
+    
+    // Update user's lastTransactionDate to track activity for nudge system
+    await storage.updateUser(userId, {
+      lastTransactionDate: new Date()
+    });
+    
+    // Recalculate Rivu score as deleting a transaction affects financial health
+    await storage.calculateRivuScore(userId);
     
     res.json({ message: 'Transaction deleted successfully' });
   } catch (error: any) {

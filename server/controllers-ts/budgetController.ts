@@ -187,6 +187,16 @@ export const updateBudget = async (req: any, res: any) => {
       });
     }
     
+    // Update user's lastBudgetUpdateDate to track activity for nudge system
+    await storage.updateUser(userId, {
+      lastBudgetUpdateDate: new Date()
+    });
+    
+    // If the spent amount or budget amount was updated, trigger a Rivu score recalculation
+    if (updateData.spentAmount !== undefined || updateData.budgetAmount !== undefined) {
+      await storage.calculateRivuScore(userId);
+    }
+    
     // Format updated category for client
     const formattedCategory = {
       id: updatedCategory.id,
