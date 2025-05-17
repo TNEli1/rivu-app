@@ -19,17 +19,29 @@ async function initializeDatabase() {
         username VARCHAR(255) NOT NULL UNIQUE,
         email VARCHAR(255) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
-        name VARCHAR(255),
+        first_name VARCHAR(255) NOT NULL,
+        last_name VARCHAR(255) NOT NULL,
+        avatar_initials VARCHAR(10) NOT NULL,
+        theme_preference VARCHAR(50) DEFAULT 'light',
+        -- Demographics fields
+        age_range VARCHAR(50),
+        income_bracket VARCHAR(50),
+        goals TEXT,
+        risk_tolerance VARCHAR(50),
+        experience_level VARCHAR(50),
+        demographics_completed BOOLEAN DEFAULT FALSE,
+        skip_demographics BOOLEAN DEFAULT FALSE,
+        -- Metrics
         login_count INTEGER DEFAULT 0,
-        account_creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        last_login_date TIMESTAMP,
+        last_login TIMESTAMP,
         last_transaction_date TIMESTAMP,
         last_budget_update_date TIMESTAMP,
         last_goal_update_date TIMESTAMP,
         onboarding_stage VARCHAR(50) DEFAULT 'new',
         onboarding_completed BOOLEAN DEFAULT FALSE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        account_creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        nudge_settings TEXT DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
       )
     `);
     

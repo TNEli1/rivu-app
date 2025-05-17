@@ -103,7 +103,7 @@ export const registerUser = async (req: any, res: any) => {
       onboardingCompleted: false,
       accountCreationDate: new Date(),
       loginCount: 1,
-      lastLoginDate: new Date()
+      lastLogin: new Date() // matches schema field name
     });
     
     if (user) {
@@ -166,8 +166,23 @@ export const loginUser = async (req: any, res: any) => {
 
     // Check if user exists and password matches
     if (user && await bcrypt.compare(password, user.password)) {
-      // Note: We need to add update method to storage interface for login metrics
-      // For now, we'll skip the update and just authenticate the user
+      // Update login metrics
+      const loginCount = (user.loginCount || 0) + 1;
+      const lastLogin = new Date();
+      
+      // Update user login statistics
+      await storage.updateUser(user.id, {
+        loginCount,
+        lastLogin
+      });
+      
+      // Check for and create any new nudges based on user activity
+      try {
+        await storage.checkAndCreateNudges(user.id);
+      } catch (nudgeError) {
+        console.warn('Error checking for nudges on login:', nudgeError);
+        // Don't fail login if nudge creation fails
+      }
       
       // Generate JWT token
       const token = generateToken(user.id.toString());
@@ -182,8 +197,10 @@ export const loginUser = async (req: any, res: any) => {
         firstName: user.firstName,
         lastName: user.lastName,
         createdAt: user.createdAt,
-        lastLogin: user.lastLogin,
-        loginCount: user.loginCount,
+        lastLogin,
+        loginCount,
+        onboardingStage: user.onboardingStage,
+        onboardingCompleted: user.onboardingCompleted,
         token // Include token in response for clients not using cookies
       });
     } else {
@@ -231,12 +248,22 @@ export const getUserProfile = async (req: any, res: any) => {
       skipPermanently: user.skipDemographics
     };
     
+    // Get active nudges for the user
+    let activeNudges: any[] = [];
+    try {
+      activeNudges = await storage.getNudges(userId, 'active');
+    } catch (nudgeError) {
+      console.warn('Error fetching nudges for user profile:', nudgeError);
+      // Continue with profile response even if nudges fail
+    }
+    
     // Return user data (exclude password)
     const { password, ...userData } = user;
     res.json({
       _id: userData.id,
       ...userData,
-      demographics
+      demographics,
+      activeNudges
     });
   } catch (error: any) {
     console.error('Get profile error:', error);
