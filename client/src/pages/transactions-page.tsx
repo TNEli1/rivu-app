@@ -201,6 +201,34 @@ export default function TransactionsPage() {
       
       if (data.account === 'Other' && data.customAccount) {
         account = data.customAccount;
+        
+        // Create a new transaction account that will persist in the database
+        try {
+          console.log('Creating new custom account:', data.customAccount);
+          
+          // First check if this account already exists to avoid duplicates
+          const existingAccount = accounts.find(
+            (a: any) => a.name.toLowerCase() === data.customAccount.toLowerCase()
+          );
+          
+          if (!existingAccount) {
+            // Create a new account
+            const accountRes = await apiRequest('POST', '/api/accounts', {
+              name: data.customAccount,
+              type: 'manual',
+              institutionName: 'Custom'
+            });
+            console.log('New account created:', await accountRes.json());
+            
+            // Make sure to refresh accounts after we're done
+            queryClient.invalidateQueries({ queryKey: ['/api/accounts'] });
+          } else {
+            console.log('Account already exists, using existing record:', existingAccount);
+          }
+        } catch (error) {
+          console.error('Error creating account:', error);
+          // Continue with transaction creation even if account creation fails
+        }
       }
       
       // Category and account are now optional but will use default values if missing
