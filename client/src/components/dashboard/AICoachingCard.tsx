@@ -181,16 +181,17 @@ export default function AICoachingCard() {
           )}
         </div>
         
-        {/* Suggested Prompts */}
+        {/* Suggested Prompts - Fix display issue where prompts are cut off */}
         <div className="mb-4 flex flex-wrap gap-2">
           {suggestedPrompts.map((prompt, index) => (
             <Badge 
               key={index}
               variant="outline"
-              className="cursor-pointer px-3 py-1 bg-background/80 hover:bg-primary/10 transition-colors text-xs border-primary/20"
+              title={prompt} /* Add title attribute to show full text on hover */
+              className="cursor-pointer px-3 py-1 bg-background/80 hover:bg-primary/10 transition-colors text-xs border-primary/20 max-w-full whitespace-normal"
               onClick={() => handleSuggestedPrompt(prompt)}
             >
-              {prompt.length > 30 ? prompt.substring(0, 27) + '...' : prompt}
+              {prompt}
             </Badge>
           ))}
         </div>

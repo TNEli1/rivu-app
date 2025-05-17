@@ -208,6 +208,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       category: z.string().optional(),
       account: z.string().optional(),
       type: z.enum(['income', 'expense']).optional(),
+      date: z.string().optional(), // Allow date updates
+      notes: z.string().optional(), // Allow notes updates
     });
 
     try {
@@ -242,10 +244,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updateData.account = validated.account;
       }
       
+      if (validated.date !== undefined) {
+        updateData.date = new Date(validated.date);
+      }
+      
+      if (validated.notes !== undefined) {
+        updateData.notes = validated.notes;
+      }
+      
       const updatedTransaction = await storage.updateTransaction(id, updateData);
       res.json(updatedTransaction);
     } catch (error) {
-      res.status(400).json({ message: "Invalid input", error });
+      console.error('Error updating transaction:', error);
+      res.status(400).json({ message: "Invalid input", error: JSON.stringify(error) });
     }
   });
 
