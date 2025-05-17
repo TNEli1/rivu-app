@@ -272,12 +272,18 @@ export default function TransactionsPage() {
       // Remove unnecessary fields before sending to API
       const { customCategory, customAccount, ...cleanData } = data;
       
+      // Fix date issues by keeping the exact date string from the form
+      // This prevents timezone conversion issues where the date shifts
+      console.log(`Using exact date from form: ${data.date}`);
+      
       const res = await apiRequest('POST', '/api/transactions', {
         ...cleanData,
         category,
         account,
         amount: parseFloat(data.amount),
-        date: new Date(data.date).toISOString(),
+        // Pass the date exactly as entered without converting to Date object first
+        // This prevents timezone issues from shifting the date
+        date: data.date,
         type: data.type || 'expense',
         source: 'manual'
       });

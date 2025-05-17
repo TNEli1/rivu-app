@@ -134,8 +134,24 @@ export const createTransaction = async (req: any, res: any) => {
       date: transactionDate
     };
     
+    // IMPORTANT FIX: Ensure transactions are stored with correct user ID
+    // Force the userId to match the authenticated user, not ID 1
+    transactionData.userId = userId;
+    console.log(`Creating transaction with enforced user ID: ${userId}`);
+    
     // Create transaction in PostgreSQL
     const transaction = await storage.createTransaction(transactionData);
+    console.log(`Transaction created successfully with ID ${transaction.id} for user ${transaction.userId}`);
+    
+    // Verify the created transaction has the correct user ID
+    if (transaction.userId !== userId) {
+      console.error(`Transaction user ID mismatch! Expected: ${userId}, Actual: ${transaction.userId}`);
+      // Fix the transaction by updating its user ID if needed
+      await db
+        .update(transactions)
+        .set({ userId })
+        .where(eq(transactions.id, transaction.id));
+    }
     
     // Update user's lastTransactionDate to track activity for nudge system
     await storage.updateUser(userId, {
