@@ -46,6 +46,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.post(`${apiPath}/forgot-password`, forgotPassword);
     app.post(`${apiPath}/reset-password/:token`, resetPassword);
     
+    // Import transaction account controller
+    const {
+      getTransactionAccounts,
+      getTransactionAccountById,
+      createTransactionAccount,
+      updateTransactionAccount,
+      deleteTransactionAccount
+    } = await import('./controllers-ts/transactionAccountController');
+    
+    // Transaction account routes
+    app.get(`${apiPath}/accounts`, protect, getTransactionAccounts);
+    app.get(`${apiPath}/accounts/:id`, protect, getTransactionAccountById);
+    app.post(`${apiPath}/accounts`, protect, createTransactionAccount);
+    app.put(`${apiPath}/accounts/:id`, protect, updateTransactionAccount);
+    app.delete(`${apiPath}/accounts/:id`, protect, deleteTransactionAccount);
+    
+    // Import CSV controller
+    const {
+      uploadCSV, 
+      importCSV,
+      handleMulterError
+    } = await import('./controllers-ts/csvController');
+    
+    // CSV upload route
+    app.post(`${apiPath}/transactions/import-csv`, protect, uploadCSV, handleMulterError, importCSV);
+    
+    // Import category controller
+    const {
+      getCategories,
+      getCategoryById,
+      createCategory,
+      updateCategory,
+      deleteCategory,
+      getSubcategories,
+      createSubcategory,
+      updateSubcategory,
+      deleteSubcategory
+    } = await import('./controllers-ts/categoryController');
+    
+    // Category routes
+    app.get(`${apiPath}/categories`, protect, getCategories);
+    app.get(`${apiPath}/categories/:id`, protect, getCategoryById);
+    app.post(`${apiPath}/categories`, protect, createCategory);
+    app.put(`${apiPath}/categories/:id`, protect, updateCategory);
+    app.delete(`${apiPath}/categories/:id`, protect, deleteCategory);
+    
+    // Subcategory routes
+    app.get(`${apiPath}/categories/:categoryId/subcategories`, protect, getSubcategories);
+    app.post(`${apiPath}/categories/:categoryId/subcategories`, protect, createSubcategory);
+    app.put(`${apiPath}/subcategories/:id`, protect, updateSubcategory);
+    app.delete(`${apiPath}/subcategories/:id`, protect, deleteSubcategory);
+    
     console.log('✅ Auth routes successfully mounted at /api');
   } catch (error) {
     console.error('⚠️ Error setting up API routes:', error);

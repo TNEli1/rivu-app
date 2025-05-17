@@ -551,16 +551,20 @@ export class DatabaseStorage implements IStorage {
   
   // Category and Subcategory operations
   async getCategories(userId: number, type?: string): Promise<Category[]> {
-    let query = db
-      .select()
-      .from(categories)
-      .where(eq(categories.userId, userId));
-    
     if (type) {
-      query = query.where(eq(categories.type, type));
+      return db
+        .select()
+        .from(categories)
+        .where(and(
+          eq(categories.userId, userId),
+          eq(categories.type, type)
+        ));
+    } else {
+      return db
+        .select()
+        .from(categories)
+        .where(eq(categories.userId, userId));
     }
-    
-    return query;
   }
 
   async getCategory(id: number): Promise<Category | undefined> {
