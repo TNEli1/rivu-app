@@ -132,7 +132,7 @@ export default function ResetPassword() {
             <Button 
               variant="ghost" 
               size="icon" 
-              onClick={() => window.location.href = "/login"}
+              onClick={() => setLocation("/login")}
               className="mr-2"
             >
               <ArrowLeft className="h-4 w-4" />

@@ -764,6 +764,34 @@ export default function TransactionsPage() {
 
         {/* Transactions List */}
         <Card className="overflow-hidden">
+          {/* Common action buttons - Always visible at the top */}
+          <div className="p-4 flex flex-wrap justify-end gap-2 border-b">
+            <Button 
+              variant="outline"
+              onClick={() => setIsAddDialogOpen(true)}
+            >
+              <PlusCircle className="mr-2 h-4 w-4" /> Add Transaction
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => setIsCSVUploadOpen(true)}
+            >
+              <Upload className="mr-2 h-4 w-4" /> Import CSV
+            </Button>
+            {transactions.length > 0 && (
+              <Button 
+                variant="outline"
+                className="border-destructive text-destructive hover:bg-destructive/10"
+                onClick={() => {
+                  const dialog = document.getElementById('clear-all-transactions-dialog') as HTMLDialogElement;
+                  if (dialog) dialog.showModal();
+                }}
+              >
+                <Trash2 className="mr-2 h-4 w-4" /> Clear All
+              </Button>
+            )}
+          </div>
+          
           {isTransactionsLoading ? (
             <div className="p-8 space-y-4">
               <Skeleton className="h-8 w-full max-w-sm" />
@@ -792,30 +820,6 @@ export default function TransactionsPage() {
                   <p className="text-muted-foreground mb-6">
                     Start tracking your finances by adding your transactions manually.
                   </p>
-                  <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                    <Button 
-                      className="bg-primary hover:bg-primary/90 text-white"
-                      onClick={() => setIsAddDialogOpen(true)}
-                    >
-                      <PlusCircle className="mr-2 h-4 w-4" /> Add transaction
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      onClick={() => setIsCSVUploadOpen(true)}
-                    >
-                      <Upload className="mr-2 h-4 w-4" /> Import CSV
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      className="border-destructive text-destructive hover:bg-destructive/10"
-                      onClick={() => {
-                        const dialog = document.getElementById('clear-all-transactions-dialog') as HTMLDialogElement;
-                        if (dialog) dialog.showModal();
-                      }}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" /> Clear All
-                    </Button>
-                  </div>
                 </div>
               )}
             </div>
