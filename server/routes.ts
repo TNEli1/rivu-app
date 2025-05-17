@@ -122,7 +122,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         // Execute deletion directly through SQL for maximum reliability
-        await db.execute(sql`DELETE FROM "transactions" WHERE "user_id" = ${userIdNum}`);
+        console.log(`Executing SQL: DELETE FROM "transactions" WHERE "user_id" = ${userIdNum}`);
+        
+        // First get all transaction IDs we're going to delete for logging
+        const transactionsToDelete = await db
+          .select({ id: transactions.id })
+          .from(transactions)
+          .where(eq(transactions.userId, userIdNum));
+          
+        console.log(`Transaction IDs to delete: ${transactionsToDelete.map(t => t.id).join(', ')}`);
+        
+        // Execute the deletion with explicit await to ensure completion
+        const result = await db.execute(sql`DELETE FROM "transactions" WHERE "user_id" = ${userIdNum}`);
+        console.log('SQL deletion result:', result);
         
         // Verify deletion worked
         const afterTransactions = await db

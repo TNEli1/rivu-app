@@ -250,12 +250,18 @@ export default function TransactionsPage() {
         data.account = 'Default Account';
       }
       
-      // Date is optional, will default to today if not provided
-      const currentDate = new Date().toISOString().split('T')[0];
+      // Fix date handling to ensure accurate date selection
       if (!data.date) {
-        data.date = currentDate;
+        // If no date provided, use local date (current day in user's timezone)
+        const now = new Date();
+        const localDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        data.date = localDate.toISOString().split('T')[0];
+        console.log(`No date provided, using local date: ${data.date}`);
       } else if (isNaN(new Date(data.date).getTime())) {
         throw new Error("Please select a valid date");
+      } else {
+        // Ensure date is handled in user's local timezone
+        console.log(`Using provided date: ${data.date}`);
       }
       
       // Type is optional, default to expense
@@ -841,42 +847,51 @@ export default function TransactionsPage() {
                           try {
                             setIsLoading(true); // Show loading state while deleting
                             
-                            // First, get a count of current transactions
+                            // First, get a count of current transactions to verify before/after
                             const currentTransactionsRes = await fetch('/api/transactions');
                             const currentTransactions = await currentTransactionsRes.json();
                             const initialCount = currentTransactions.length;
                             
                             console.log(`Before deletion: ${initialCount} transactions in the list`);
                             
-                            // Get authenticated user information
-                            const userResponse = await fetch('/api/user');
-                            const userData = await userResponse.json();
-                            console.log('Authenticated user:', userData);
+                            // Get the user info to ensure we have the correct user ID
+                            const userRes = await fetch('/api/user');
+                            const user = await userRes.json();
+                            console.log(`Attempting to delete all transactions for user ID: ${user.id}`);
                             
-                            // Execute the delete operation with explicit user context
-                            const res = await apiRequest('DELETE', '/api/transactions/all');
+                            // Execute the delete operation with explicit error handling
+                            const res = await fetch('/api/transactions/all', {
+                              method: 'DELETE',
+                              headers: {
+                                'Content-Type': 'application/json',
+                              },
+                            });
+                            
+                            if (!res.ok) {
+                              const errorText = await res.text();
+                              throw new Error(`Failed to delete transactions: ${res.status} ${errorText}`);
+                            }
+                            
                             const data = await res.json();
+                            console.log('Delete response:', data);
                             
-                            // Log the result
-                            console.log('Delete all transactions response:', data);
+                            // Complete cache invalidation to ensure fresh data
+                            queryClient.removeQueries();
+                            console.log('Cleared all queries from cache');
                             
-                            // Clear React Query cache completely to ensure fresh data
-                            queryClient.clear();
+                            // Add a small delay to ensure DB operations complete
+                            await new Promise(resolve => setTimeout(resolve, 300));
                             
-                            // Force refetch all needed data
-                            await Promise.all([
-                              queryClient.refetchQueries({ queryKey: ['/api/transactions'] }),
-                              queryClient.refetchQueries({ queryKey: ['/api/transactions/summary'] }),
-                              queryClient.refetchQueries({ queryKey: ['/api/rivu-score'] })
-                            ]);
+                            // Explicitly fetch fresh data
+                            const refreshedDataRes = await fetch('/api/transactions');
+                            const refreshedTransactions = await refreshedDataRes.json();
+                            console.log(`After deletion: ${refreshedTransactions.length} transactions remain`);
                             
-                            // Verify transaction deletion
-                            const verifyRes = await fetch('/api/transactions');
-                            const remainingTransactions = await verifyRes.json();
+                            // Force refresh all relevant queries
+                            queryClient.invalidateQueries();
                             
-                            console.log(`After deletion: ${remainingTransactions.length} transactions remain`);
-                            
-                            if (remainingTransactions.length === 0) {
+                            // Show success or error message based on actual result
+                            if (refreshedTransactions.length === 0) {
                               toast({
                                 title: "All transactions cleared",
                                 description: `Successfully deleted all ${initialCount} transactions.`,
@@ -884,7 +899,7 @@ export default function TransactionsPage() {
                             } else {
                               toast({
                                 title: "Transaction deletion issue",
-                                description: `${remainingTransactions.length} transactions remain. Please try again.`,
+                                description: `${refreshedTransactions.length} transactions remain. Please try again.`,
                                 variant: "destructive",
                               });
                             }
@@ -892,7 +907,9 @@ export default function TransactionsPage() {
                             console.error('Error clearing all transactions:', error);
                             toast({
                               title: "Error",
-                              description: "There was an error clearing all transactions.",
+                              description: error instanceof Error 
+                                ? error.message 
+                                : "There was an error clearing all transactions.",
                               variant: "destructive",
                             });
                           } finally {
@@ -900,7 +917,7 @@ export default function TransactionsPage() {
                           }
                         };
                         
-                        // Execute the mutation
+                        // Execute the deletion
                         deleteAllMutation();
                       }}
                     >

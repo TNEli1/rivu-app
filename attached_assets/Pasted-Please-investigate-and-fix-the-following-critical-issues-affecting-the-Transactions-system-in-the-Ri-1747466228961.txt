@@ -1,0 +1,53 @@
+Please investigate and fix the following critical issues affecting the Transactions system in the Rivu personal finance web app:
+
+⸻
+
+1. “Clear All Transactions” Button Not Working
+	•	The “Clear All Transactions” button no longer deletes transactions, even though the UI previously showed a success popup.
+	•	Likely causes:
+	•	The DELETE route is no longer processing the request correctly.
+	•	The response is not triggering a state refresh on the frontend.
+	•	Transaction deletions may be failing silently due to user ID mismatch, bad route binding, or a missing database commit.
+
+What to check:
+	•	Confirm that the route handling the bulk delete (e.g., DELETE /api/transactions) exists and is properly authenticated.
+	•	Log the userId used in the delete operation — make sure it matches the currently logged-in user.
+	•	Ensure await is used when calling the deletion logic (e.g., Transaction.deleteMany() in PostgreSQL).
+	•	After deletion, trigger a refetch of the updated transaction list to refresh the frontend state.
+
+⸻
+
+2. Date Consistency Issue:
+	•	Manually added transactions are being posted with the date May 16, even though it’s already May 17 at midnight local time.
+	•	Root problem is likely a timezone mismatch between the client and the server.
+
+What to do:
+	•	Check whether the server is applying new Date() or Date.now() without adjusting for the user’s local time.
+	•	Use a consistent format (e.g., ISO 8601) and either:
+	•	Convert all dates to UTC on input and back to local time on display, or
+	•	Store and interpret dates in the user’s timezone if captured in their profile.
+	•	Update the UI date picker to explicitly display and pass the user’s selected date, not system time.
+
+⸻
+
+3. CSV Upload Not Populating Transaction Log
+	•	CSV uploads appear to be writing to PostgreSQL, but the transactions do not appear in the frontend log.
+	•	This is a critical UI/backend desync.
+
+Likely causes:
+	•	Data validation rejection: The CSV parser may be skipping rows with null/invalid fields (e.g., missing dates, malformed numbers).
+	•	Backend ingestion issue: Uploaded transactions may lack the required userId, so they are saved but not tied to the current user.
+	•	Frontend exclusion: The GET /api/transactions call might be filtering only manual transactions and excluding source=“csv”.
+
+Fix instructions:
+	•	Inspect the API used after uploading CSV to refresh transaction data — it must include CSV entries.
+	•	When saving parsed CSV entries:
+	•	Ensure each row includes a valid userId.
+	•	Validate that amount, merchant, and date fields are all in the expected format.
+	•	Apply default fallbacks or skip faulty rows gracefully — but log skipped rows for debugging.
+	•	Add a "source" field to all transactions and show all sources by default in the frontend log (CSV, manual, Plaid).
+	•	Optionally: show an upload preview before submitting the CSV.
+
+⸻
+
+Please investigate and resolve these issues comprehensively. They are critical to the usability of the transaction logging system and must be addressed for the v1 production launch.

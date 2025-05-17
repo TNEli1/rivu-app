@@ -97,9 +97,31 @@ export const createTransaction = async (req: any, res: any) => {
       });
     }
     
-    // Always use the provided date if available, otherwise use current date
-    // Ensure the date is properly parsed and preserved exactly as provided
-    const transactionDate = date ? new Date(date) : new Date();
+    // Handle date with better timezone awareness
+    let transactionDate;
+    
+    if (date) {
+      // Format the provided date correctly, preserving user's timezone intention
+      console.log(`Processing date from client: ${date}`);
+      
+      // Parse the date string exactly as provided
+      transactionDate = new Date(date);
+      
+      // Set the time to 12 noon to avoid timezone issues causing date shift
+      if (!isNaN(transactionDate.getTime())) {
+        // For dates like "2025-05-17", make sure they're treated as local dates
+        transactionDate.setHours(12, 0, 0, 0);
+        console.log(`Parsed transaction date: ${transactionDate.toISOString()}`);
+      } else {
+        console.error(`Invalid date format: ${date}, using current date instead`);
+        transactionDate = new Date();
+        transactionDate.setHours(12, 0, 0, 0);
+      }
+    } else {
+      // Use current date if none provided
+      transactionDate = new Date();
+      transactionDate.setHours(12, 0, 0, 0);
+    }
     
     // Prepare transaction data
     const transactionData: InsertTransaction = {

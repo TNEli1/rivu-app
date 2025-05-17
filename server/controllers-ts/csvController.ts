@@ -174,9 +174,11 @@ export const importMappedTransactions = async (req: Request, res: Response) => {
         }
         
         // Create transaction object with proper type - ensure userId is correct
-        // Using userId = 1 as fallback for development if needed
+        // Using the authenticated user's ID, NEVER a hardcoded value
+        console.log(`Preparing CSV transaction for user ID: ${userId}`);
+        
         const transactionData: InsertTransaction = {
-          userId: userId || 1, // Ensure userId is valid
+          userId, // Use the authenticated user's ID
           amount,
           date: transactionDate,
           merchant: transaction.merchant,
@@ -188,6 +190,12 @@ export const importMappedTransactions = async (req: Request, res: Response) => {
           source: 'csv',
           isDuplicate: false
         };
+        
+        // Verify critical fields before submission
+        if (!transactionData.userId || isNaN(Number(transactionData.userId))) {
+          console.error('Invalid user ID for CSV transaction:', transactionData.userId);
+          throw new Error('Invalid user ID for transaction');
+        }
         
         console.log('Creating transaction:', {
           userId: transactionData.userId,
@@ -202,9 +210,20 @@ export const importMappedTransactions = async (req: Request, res: Response) => {
           transactionData.isDuplicate = true;
         }
         
-        // Insert the transaction
-        await storage.createTransaction(transactionData);
-        importedCount++;
+        // Insert the transaction - Use proper error handling and verification
+        try {
+          const newTransaction = await storage.createTransaction(transactionData);
+          console.log(`Successfully created transaction ID: ${newTransaction.id} for user ${newTransaction.userId}`);
+          importedCount++;
+          
+          // Verify transaction was created with correct user ID
+          if (newTransaction.userId !== userId) {
+            console.error(`Transaction created with wrong user ID: expected ${userId}, got ${newTransaction.userId}`);
+          }
+        } catch (txError) {
+          console.error('Failed to create transaction in CSV import:', txError);
+          throw txError; // Re-throw to be caught by outer try-catch
+        }
       } catch (err) {
         console.error('Error importing mapped transaction:', err);
         // Continue with next transaction
