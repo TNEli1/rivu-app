@@ -1,0 +1,66 @@
+Please review and address the following problems immediately. These bugs impact data accuracy, user experience, and onboarding integrity.
+
+⸻
+
+1. Remove Test Data / Preloaded State
+	•	Eliminate all preloaded or test user data (likely created during early dev).
+	•	Every new user should begin with a clean slate (no transactions, goals, or budgets).
+	•	Prevent any shared or global default values from populating on sign-up.
+
+⸻
+
+2. Fix Dashboard Calculations
+	•	The top three boxes on the dashboard are calculating incorrectly:
+	•	“Monthly Spending” increase shows +396.6% — this seems inflated or broken.
+	•	“Monthly Income” displays a number even when there’s no monthly savings — which doesn’t make logical sense.
+	•	“Monthly Savings” often shows $0 even when income and spending exist.
+	•	Action: Audit the full logic behind all three metrics and correct the formula.
+	•	Double-check all math, rounding, and data filters (e.g. by current month only).
+	•	Compare results with actual transaction records for the month.
+
+⸻
+
+3. Fix Rivu Score Refresh Buttons
+	•	The Rivu Score refresh buttons currently fail to refresh the score.
+	•	Investigate whether this is a UI issue, an API call error, or backend logic failure.
+	•	Also check that Rivu Score calculations do not unfairly penalize brand new users due to low weekly activity — possibly add a grace logic or time-weighted adjustment.
+
+⸻
+
+4. Fix AI Coach Suggestions Display
+	•	Chat prompt suggestions from the AI Coach are cut off visually.
+	•	Ensure they are fully visible at all times — at minimum, show full content on hover.
+	•	Improve spacing, card style, or container width to accommodate longer suggestions.
+
+⸻
+
+5. Fix Transaction Editing Bug
+	•	When users try to edit an existing transaction, the app throws an error.
+	•	Debug the PUT/UPDATE transaction logic in both frontend and backend.
+	•	Ensure that values like date, amount, category, etc., are editable and persisted correctly.
+
+⸻
+
+6. Default to Dark Mode + Store Preference
+	•	The app should launch in dark mode by default, including:
+	•	The homepage
+	•	The logged-in dashboard
+	•	Also, store the user’s preferred theme in PostgreSQL, so it persists across sessions and devices.
+
+⸻
+
+7. Remove Irrelevant UI Elements
+	•	In Account Settings, remove this placeholder message:
+	•	“Rivu Score 75 based on your financial activity, budget adherence, and savings progress”
+	•	Also remove the “Skip onboarding survey” toggle from settings. It should not be visible to users anymore.
+
+⸻
+
+8. Validate All Insights & Chart Logic
+	•	Inspect the Insights graphs and charts to ensure they reflect real user data.
+	•	Check month-over-month calculations, category distribution percentages, and any percentage changes.
+	•	Charts must match the actual underlying transactions and budget data pulled from the database.
+
+⸻
+
+Please prioritize accuracy, stability, and user trust. This version will be shown to investors, so ensure all bugs are resolved, math is correct, and the interface is fully functional and clean.
