@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,9 +55,9 @@ export default function ResetPassword() {
         description: "Your password has been updated. You can now log in with your new password.",
       });
       
-      // Redirect to login immediately (reduced timeout for better UX)
+      // Redirect to login after a brief delay to show success message
       setTimeout(() => {
-        navigate("/login"); // Use wouter's navigate instead of direct window.location
+        window.location.href = "/login"; // Direct navigation after successful password reset
       }, 1500);
     },
     onError: (error: any) => {
@@ -129,14 +129,15 @@ export default function ResetPassword() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex items-center">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => navigate("/login")}
-              className="mr-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
+            <Link href="/login">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="mr-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
             <CardTitle className="text-2xl">Reset Password</CardTitle>
           </div>
           <CardDescription>
@@ -157,12 +158,13 @@ export default function ResetPassword() {
                 Your password has been reset successfully. You will be redirected to the login page.
               </AlertDescription>
             </Alert>
-            <Button 
-              onClick={() => navigate("/login")}
-              className="w-full mt-4"
-            >
-              Return to Login
-            </Button>
+            <Link href="/login">
+              <Button 
+                className="w-full mt-4"
+              >
+                Return to Login
+              </Button>
+            </Link>
           </CardContent>
         ) : (
           <form onSubmit={handleSubmit}>
