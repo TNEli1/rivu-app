@@ -1,0 +1,61 @@
+Full Replit Debugging Prompt for Rivu – May 17, 2025
+
+We are encountering three critical issues in the Rivu app that need to be resolved completely and permanently:
+
+⸻
+
+1. CSV Transactions Not Appearing in Transaction Log
+
+Issue:
+When users upload transactions via CSV, the data is saved correctly to PostgreSQL, but those transactions do not appear in the transaction log view on the frontend/dashboard.
+
+Expected Behavior:
+All transactions, regardless of source (manual, CSV, or API), should be displayed in the transaction log UI immediately after saving, with proper filtering and sorting by date.
+
+Instructions:
+	•	Investigate whether the frontend query that loads transaction logs is omitting or filtering out CSV-uploaded transactions.
+	•	Ensure there is no mismatch in user_id, source, date, or status fields that causes CSV transactions to be excluded from query results.
+	•	Confirm the frontend fetches all transaction types from PostgreSQL and displays them correctly.
+	•	Log backend responses and frontend state to verify that CSV-uploaded transactions are retrieved and rendered.
+
+⸻
+
+2. Date Picker Saving Transactions One Day Behind
+
+Issue:
+When a user selects a date (e.g., May 17, 2025) via the date picker, the transaction is saved with a date of May 16, 2025.
+
+Expected Behavior:
+The system should store the exact date selected in the user’s local time zone (Pacific Time), and this date should be preserved in PostgreSQL and reflected accurately in the UI.
+
+Instructions:
+	•	Audit how dates are handled on both the frontend and backend.
+	•	Ensure that JavaScript Date objects are not being converted to UTC without timezone compensation.
+	•	Avoid using toISOString() unless you’re also accounting for timezone offsets correctly.
+	•	Confirm that the backend writes and reads dates in the user’s local time zone and that the frontend renders them accordingly.
+
+⸻
+
+3. Password Reset Emails Not Being Sent (Postmark Integration)
+
+Issue:
+Users are not receiving password reset emails. Postmark is configured, but the system is failing silently with no confirmation or error message.
+
+Expected Behavior:
+When a user submits a valid password reset request, a properly formatted email should be sent using Postmark, and the app should confirm success or show an error message if the email fails.
+
+Instructions:
+	•	Confirm that Postmark is fully integrated with correct .env variables (API key, sender domain, etc.).
+	•	Ensure password reset endpoints are actually triggering email events and handling errors (e.g., invalid API key, rate limits, missing templates).
+	•	Add logging for success/failure of all email attempts.
+	•	Manually test a password reset and verify that the email is received.
+	•	Confirm Replit allows outbound requests to Postmark’s API.
+
+⸻
+
+Final Confirmation Checklist
+
+Please confirm all of the following are fixed and tested:
+	•	CSV-uploaded transactions appear correctly in the transaction log, filtered and sorted with other transactions.
+	•	Transaction dates match the selected date in the user’s local timezone (Pacific Time) with no 1-day offset.
+	•	Password reset emails are delivered successfully via Postmark, with all errors logged and handled properly.

@@ -13,22 +13,36 @@ interface EmailData {
  */
 export async function sendEmail(emailData: EmailData): Promise<boolean> {
   try {
-    if (process.env.NODE_ENV === 'production' && process.env.POSTMARK_API_KEY) {
-      // In production, use Postmark to send actual emails
-      const postmarkClient = require('postmark').ServerClient;
-      const client = new postmarkClient(process.env.POSTMARK_API_KEY);
-      
-      await client.sendEmail({
-        From: process.env.EMAIL_FROM || 'noreply@rivufinance.com',
-        To: emailData.to,
-        Subject: emailData.subject,
-        TextBody: emailData.text,
-        HtmlBody: emailData.html
-      });
-      return true;
+    // CRITICAL FIX: Always use Postmark if API key is available, regardless of environment
+    if (process.env.POSTMARK_API_KEY) {
+      console.log('Sending email via Postmark API');
+      try {
+        // Import postmark dynamically to ensure it's loaded
+        const postmark = require('postmark');
+        const client = new postmark.ServerClient(process.env.POSTMARK_API_KEY);
+        
+        const result = await client.sendEmail({
+          From: process.env.EMAIL_FROM || 'noreply@rivufinance.com',
+          To: emailData.to,
+          Subject: emailData.subject,
+          TextBody: emailData.text,
+          HtmlBody: emailData.html
+        });
+        
+        console.log('Postmark email sent successfully:', result.MessageID);
+        return true;
+      } catch (postmarkError) {
+        console.error('Postmark API error:', postmarkError);
+        // Also log the email that we tried to send for debugging
+        console.log('Failed email details:', {
+          to: emailData.to,
+          subject: emailData.subject
+        });
+        throw postmarkError; // Re-throw to be caught by outer try-catch
+      }
     } else {
-      // In development, just log to console with more visible formatting
-      console.log('\n\n====== DEVELOPMENT MODE: EMAIL WOULD BE SENT IN PRODUCTION ======');
+      // Fallback to console logging in development or if no API key is provided
+      console.log('\n\n====== EMAIL DELIVERY SIMULATION ======');
       console.log(`To: ${emailData.to}`);
       console.log(`Subject: ${emailData.subject}`);
       console.log(`Text content: ${emailData.text.substring(0, 100)}...`);
@@ -40,10 +54,11 @@ export async function sendEmail(emailData: EmailData): Promise<boolean> {
       }
       
       console.log('====== END EMAIL CONTENT ======\n\n');
+      console.log('⚠️ To send real emails, set POSTMARK_API_KEY environment variable');
       return true;
     }
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error('Email sending failed:', error);
     return false;
   }
 }
