@@ -613,7 +613,7 @@ export const resetPassword = async (req: any, res: any) => {
 };
 
 // Authentication middleware
-export const protect = (req: any, res: any, next: any) => {
+export const protect = async (req: any, res: any, next: any) => {
   try {
     // Get token from cookie
     const token = req.cookies[TOKEN_COOKIE_NAME];
@@ -628,8 +628,20 @@ export const protect = (req: any, res: any, next: any) => {
     // Verify token
     const decoded = jwt.verify(token, JWT_SECRET);
     
+    // Get user ID and convert to number for PostgreSQL
+    const userId = parseInt(decoded.id, 10);
+    
+    // Verify user exists in database
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(401).json({
+        message: 'User not found or session invalid',
+        code: 'INVALID_SESSION'
+      });
+    }
+    
     // Set user ID in request
-    req.user = { id: decoded.id };
+    req.user = { id: userId };
     next();
   } catch (error: any) {
     // Check if token expired
