@@ -210,16 +210,15 @@ export const importMappedTransactions = async (req: Request, res: Response) => {
           transactionData.isDuplicate = true;
         }
         
-        // Insert the transaction - Use proper error handling and verification
+        // CRITICAL FIX: Force CSV transactions to use authenticated user ID
         try {
-          const newTransaction = await storage.createTransaction(transactionData);
-          console.log(`Successfully created transaction ID: ${newTransaction.id} for user ${newTransaction.userId}`);
-          importedCount++;
+          // Explicitly set userId to ensure it matches the authenticated user
+          transactionData.userId = userId;
           
-          // Verify transaction was created with correct user ID
-          if (newTransaction.userId !== userId) {
-            console.error(`Transaction created with wrong user ID: expected ${userId}, got ${newTransaction.userId}`);
-          }
+          // Create the transaction with the verified user ID
+          const newTransaction = await storage.createTransaction(transactionData);
+          console.log(`Successfully created CSV transaction ID: ${newTransaction.id} for user ${newTransaction.userId}`);
+          importedCount++;
         } catch (txError) {
           console.error('Failed to create transaction in CSV import:', txError);
           throw txError; // Re-throw to be caught by outer try-catch

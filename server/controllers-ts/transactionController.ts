@@ -97,31 +97,56 @@ export const createTransaction = async (req: any, res: any) => {
       });
     }
     
-    // Handle date with better timezone awareness
+    // CRITICAL FIX: Handle date exactly as provided to prevent timezone issues
     let transactionDate;
     
     if (date) {
-      // Format the provided date correctly, preserving user's timezone intention
       console.log(`Processing date from client: ${date}`);
       
-      // Parse the date string exactly as provided
-      transactionDate = new Date(date);
-      
-      // Set the time to 12 noon to avoid timezone issues causing date shift
-      if (!isNaN(transactionDate.getTime())) {
-        // For dates like "2025-05-17", make sure they're treated as local dates
-        transactionDate.setHours(12, 0, 0, 0);
-        console.log(`Parsed transaction date: ${transactionDate.toISOString()}`);
+      // For ISO format dates like "2025-05-17", parse using manual components to avoid timezone shifts
+      if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // Split the date string into components
+        const [year, month, day] = date.split('-').map(Number);
+        
+        // Create the date object with explicit year, month, day (month is 0-indexed in JS)
+        transactionDate = new Date(year, month - 1, day, 12, 0, 0, 0);
+        console.log(`Created transaction date from ISO string: ${transactionDate.toISOString()}`);
       } else {
-        console.error(`Invalid date format: ${date}, using current date instead`);
-        transactionDate = new Date();
-        transactionDate.setHours(12, 0, 0, 0);
+        // Handle other date formats or already converted dates
+        const tempDate = new Date(date);
+        if (!isNaN(tempDate.getTime())) {
+          // Create a new date with just the year, month, day components
+          transactionDate = new Date(
+            tempDate.getFullYear(),
+            tempDate.getMonth(),
+            tempDate.getDate(),
+            12, 0, 0, 0
+          );
+          console.log(`Standardized date: ${transactionDate.toISOString()}`);
+        } else {
+          console.error(`Invalid date format: ${date}, using current date instead`);
+          const now = new Date();
+          transactionDate = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate(),
+            12, 0, 0, 0
+          );
+        }
       }
     } else {
       // Use current date if none provided
-      transactionDate = new Date();
-      transactionDate.setHours(12, 0, 0, 0);
+      const now = new Date();
+      transactionDate = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        12, 0, 0, 0
+      );
     }
+    
+    console.log(`Final transaction date to be stored: ${transactionDate.toISOString()}`);
+    console.log(`Year: ${transactionDate.getFullYear()}, Month: ${transactionDate.getMonth() + 1}, Day: ${transactionDate.getDate()}`);
     
     // Prepare transaction data
     const transactionData: InsertTransaction = {
@@ -142,16 +167,6 @@ export const createTransaction = async (req: any, res: any) => {
     // Create transaction in PostgreSQL
     const transaction = await storage.createTransaction(transactionData);
     console.log(`Transaction created successfully with ID ${transaction.id} for user ${transaction.userId}`);
-    
-    // Verify the created transaction has the correct user ID
-    if (transaction.userId !== userId) {
-      console.error(`Transaction user ID mismatch! Expected: ${userId}, Actual: ${transaction.userId}`);
-      // Fix the transaction by updating its user ID if needed
-      await db
-        .update(transactions)
-        .set({ userId })
-        .where(eq(transactions.id, transaction.id));
-    }
     
     // Update user's lastTransactionDate to track activity for nudge system
     await storage.updateUser(userId, {
