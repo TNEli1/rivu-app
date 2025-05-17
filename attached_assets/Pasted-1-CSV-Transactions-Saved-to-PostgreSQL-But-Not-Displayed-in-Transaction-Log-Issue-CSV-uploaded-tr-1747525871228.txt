@@ -1,0 +1,49 @@
+1. CSV Transactions Saved to PostgreSQL But Not Displayed in Transaction Log
+
+Issue:
+CSV-uploaded transactions are confirmed to be stored in PostgreSQL, but they do not appear in the frontend transaction log view.
+
+Requirements:
+	•	DO NOT exclude or discard transactions if fields like category, source, or type are missing.
+	•	Instead, gracefully handle or sort incomplete transactions so that they still display, even if some fields are null or empty.
+	•	Ensure user ID filtering is correct, so only that user’s transactions are shown.
+	•	Confirm that CSV transactions are being included in API responses used to populate the transaction log and are rendered properly in the UI.
+
+⸻
+
+2. Date Saved One Day Earlier Than Selected
+
+Issue:
+When selecting May 17 via the date picker, transactions are saved as May 16.
+
+Requirements:
+	•	Use the user’s local time zone (Pacific Time) for all date operations—frontend and backend.
+	•	Ensure that all transaction timestamps reflect the actual local date selected.
+	•	Avoid saving or converting to UTC unless you’re applying the correct time zone offsets on both save and fetch.
+	•	Audit all places where new Date() or toISOString() is used—ensure there’s no unintentional time shifting.
+	•	Check how dates are stored in PostgreSQL (DATE, TIMESTAMP, etc.) and ensure there is no mismatch between storage format and frontend rendering logic.
+
+⸻
+
+3. Password Reset Emails Failing to Send (Postmark Integration)
+
+Issue:
+When a user submits a password reset request, an error message appears: “Unable to send email.”
+
+Requirements:
+	•	Ensure Postmark is properly configured in .env with:
+	•	Valid POSTMARK_API_TOKEN
+	•	Valid SENDER_EMAIL domain
+	•	Add detailed error logging for all outbound Postmark requests (status code, error body, etc.).
+	•	Confirm Replit allows outbound HTTPS requests to Postmark’s API.
+	•	If the issue is from rate limits, incorrect headers, or malformed body—fix the request structure.
+	•	Trigger a manual test password reset and confirm receipt of the email.
+
+⸻
+
+Action Items Checklist:
+	•	CSV-uploaded transactions must be queryable and displayable, even if partially incomplete. No silent exclusions.
+	•	Date fields must match user-selected local dates exactly (e.g., selecting May 17 must never show as May 16).
+	•	Password reset emails via Postmark must send successfully, with full error logging if something fails.
+
+Please investigate all root causes, correct the issues, and confirm that the fixes work under real user conditions.
