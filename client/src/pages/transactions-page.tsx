@@ -114,6 +114,7 @@ export default function TransactionsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCSVUploadOpen, setIsCSVUploadOpen] = useState(false);
   const [isPlaidConnectionOpen, setIsPlaidConnectionOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
@@ -802,17 +803,24 @@ export default function TransactionsPage() {
                       onClick={() => {
                         const deleteAllMutation = async () => {
                           try {
+                            setIsLoading(true); // Show loading state while deleting
                             const res = await apiRequest('DELETE', '/api/transactions/all');
-                            await res.json();
+                            const data = await res.json();
                             
-                            // Refresh transactions and related data
-                            queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
-                            queryClient.invalidateQueries({ queryKey: ['/api/transactions/summary'] });
-                            queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
+                            // Log the result
+                            console.log('Delete all transactions response:', data);
+                            
+                            // Force refetch transactions and related data
+                            await queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+                            await queryClient.invalidateQueries({ queryKey: ['/api/transactions/summary'] });
+                            await queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
+                            
+                            // Force refetch to ensure we get latest data
+                            await queryClient.refetchQueries({ queryKey: ['/api/transactions'] });
                             
                             toast({
                               title: "All transactions cleared",
-                              description: "All transactions have been deleted successfully.",
+                              description: `Successfully deleted ${data.deletedCount || 'all'} transactions.`,
                             });
                           } catch (error) {
                             console.error('Error clearing all transactions:', error);
@@ -821,6 +829,8 @@ export default function TransactionsPage() {
                               description: "There was an error clearing all transactions.",
                               variant: "destructive",
                             });
+                          } finally {
+                            setIsLoading(false); // Hide loading state
                           }
                         };
                         

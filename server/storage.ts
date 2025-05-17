@@ -402,22 +402,37 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`Attempting to delete all transactions for user ID: ${userId}`);
       
-      // First, check how many transactions the user has
-      const userTransactions = await db
-        .select({ count: count() })
+      // First, get a count of transactions for this user
+      const userTransactionsCount = await db
+        .select()
         .from(transactions)
         .where(eq(transactions.userId, userId));
       
-      const transactionCount = userTransactions[0]?.count || 0;
-      console.log(`Found ${transactionCount} transactions to delete for user ${userId}`);
+      console.log(`Found ${userTransactionsCount.length} transactions to delete for user ${userId}`);
+      
+      if (userTransactionsCount.length === 0) {
+        console.log(`No transactions to delete for user ${userId}`);
+        return true; // No transactions to delete is still a "success"
+      }
       
       // Delete all transactions for the user with explicit user ID check
       const result = await db
         .delete(transactions)
         .where(eq(transactions.userId, userId))
-        .returning({ id: transactions.id });
+        .returning();
       
       console.log(`Successfully deleted ${result.length} transactions for user ${userId}`);
+      
+      // Verify deletion by checking if any transactions remain
+      const remainingTransactions = await db
+        .select()
+        .from(transactions)
+        .where(eq(transactions.userId, userId));
+      
+      if (remainingTransactions.length > 0) {
+        console.error(`Failed to delete all transactions. ${remainingTransactions.length} transactions remain for user ${userId}`);
+        return false;
+      }
       
       // Recalculate Rivu score after clearing all transactions
       await this.calculateAndUpdateRivuScore(userId);
