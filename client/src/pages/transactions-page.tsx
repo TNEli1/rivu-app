@@ -21,7 +21,8 @@ import {
   ChevronDown,
   FilterX,
   Link2,
-  CreditCard
+  CreditCard,
+  Upload
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
@@ -49,23 +50,34 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-// Removed Plaid import to focus on manual transactions only
 
 type Transaction = {
-  id: number;
-  type: string;
+  id: string;
+  amount: number;
   date: string;
-  amount: string;
   merchant: string;
   category: string;
-  subcategory?: string; // Added subcategory support
+  subcategory?: string;
   account: string;
+  type: 'income' | 'expense';
   notes?: string;
+  source?: 'manual' | 'csv' | 'plaid';
+  isDuplicate?: boolean;
 };
 
 type BudgetCategory = {
-  id: number;
+  id: string;
   name: string;
+  budgetAmount: string;
+  spentAmount: string;
+};
+
+type TransactionAccount = {
+  id: string;
+  name: string;
+  type: string;
+  institutionName?: string;
+  lastFour?: string;
 };
 
 type TransactionFormData = {
@@ -187,16 +199,6 @@ export default function TransactionsPage() {
         account = data.customAccount;
       }
       
-      // Perform client-side validation
-      // Required fields: description (merchant) and amount
-      if (!data.amount || isNaN(parseFloat(data.amount)) || parseFloat(data.amount) <= 0) {
-        throw new Error("Please enter a valid amount greater than 0");
-      }
-      
-      if (!data.merchant.trim()) {
-        throw new Error("Please enter a description for the transaction");
-      }
-      
       // Category and account are now optional but will use default values if missing
       if (!data.category) {
         // Default category for expenses and income
@@ -231,7 +233,7 @@ export default function TransactionsPage() {
         amount: parseFloat(data.amount),
         date: new Date(data.date).toISOString(),
         type: data.type || 'expense',
-        // All transactions are now manual entry
+        source: 'manual'
       });
       return res.json();
     },
@@ -248,83 +250,27 @@ export default function TransactionsPage() {
     onError: (error) => {
       toast({
         title: "Failed to add transaction",
-        description: error.message,
+        description: "An error occurred while adding your transaction.",
         variant: "destructive",
       });
-    }
+      console.error("Transaction add error:", error);
+    },
   });
 
   // Update transaction
   const updateMutation = useMutation({
-    mutationFn: async (data: { id: number, updates: Partial<TransactionFormData> }) => {
-      const updates = {...data.updates};
-      
-      // Process custom fields
-      let category = updates.category;
-      let account = updates.account;
-      
-      if (updates.category === 'Other' && updates.customCategory) {
-        category = updates.customCategory;
-        updates.category = updates.customCategory;
-      }
-      
-      if (updates.account === 'Other' && updates.customAccount) {
-        account = updates.customAccount;
-        updates.account = updates.customAccount;
-      }
-      
-      // Perform validation
-      // Required fields check for updates: only amount and merchant are required
-      if (updates.amount !== undefined && (isNaN(parseFloat(updates.amount)) || parseFloat(updates.amount) <= 0)) {
-        throw new Error("Please enter a valid amount greater than 0");
-      }
-      
-      if (updates.merchant !== undefined && !updates.merchant.trim()) {
-        throw new Error("Please enter a description for the transaction");
-      }
-      
-      // Category and account now get default values if missing
-      if (updates.category !== undefined && !updates.category) {
-        updates.category = updates.type === 'income' ? 'General Income' : 'Uncategorized';
-      }
-      
-      if (updates.account !== undefined && !updates.account) {
-        updates.account = 'Default Account';
-      }
-      
-      // Date is optional, will default to current date if not provided
-      if (updates.date === '') {
-        updates.date = new Date().toISOString().split('T')[0];
-      } else if (updates.date && isNaN(new Date(updates.date).getTime())) {
-        throw new Error("Please select a valid date");
-      }
-      
-      // Type is optional, default to expense
-      if (!updates.type) {
-        updates.type = 'expense';
-      }
-      
-      // Remove custom fields before sending to API
-      const { customCategory, customAccount, ...cleanUpdates } = updates;
-      
-      // Convert amount to string if present
-      if (cleanUpdates.amount) {
-        cleanUpdates.amount = cleanUpdates.amount.toString();
-      }
-      
-      // Convert date to ISO string if present
-      if (cleanUpdates.date) {
-        cleanUpdates.date = new Date(cleanUpdates.date).toISOString();
-      }
-      
-      const res = await apiRequest('PUT', `/api/transactions/${data.id}`, cleanUpdates);
+    mutationFn: async ({ id, updates }: { id: string, updates: TransactionFormData }) => {
+      const res = await apiRequest('PUT', `/api/transactions/${id}`, {
+        ...updates,
+        amount: parseFloat(updates.amount),
+        date: new Date(updates.date).toISOString(),
+      });
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions/summary'] });
       setIsEditDialogOpen(false);
-      setSelectedTransaction(null);
       toast({
         title: "Transaction updated",
         description: "Your transaction has been updated successfully.",
@@ -333,55 +279,59 @@ export default function TransactionsPage() {
     onError: (error) => {
       toast({
         title: "Failed to update transaction",
-        description: error.message,
+        description: "An error occurred while updating your transaction.",
         variant: "destructive",
       });
-    }
+      console.error("Transaction update error:", error);
+    },
   });
 
   // Delete transaction
   const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
+    mutationFn: async (id: string) => {
       const res = await apiRequest('DELETE', `/api/transactions/${id}`);
-      return res.status === 204;
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions/summary'] });
       toast({
         title: "Transaction deleted",
-        description: "Your transaction has been removed successfully.",
+        description: "Your transaction has been deleted successfully.",
       });
     },
     onError: (error) => {
       toast({
         title: "Failed to delete transaction",
-        description: error.message,
+        description: "An error occurred while deleting your transaction.",
         variant: "destructive",
       });
-    }
+      console.error("Transaction delete error:", error);
+    },
   });
 
   const resetForm = () => {
     setFormData({
       type: 'expense',
-      date: new Date().toISOString().split('T')[0],
+      date: localDate.toISOString().split('T')[0],
       amount: "",
       merchant: "",
       category: "",
+      subcategory: "",
       account: "",
-      notes: '',
+      notes: ""
     });
+    setSelectedMainCategory("");
   };
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     // Ensure required fields are filled
-    if (!formData.amount || !formData.merchant || !formData.category || !formData.account) {
+    if (!formData.amount || !formData.merchant) {
       toast({
         title: "Validation error",
-        description: "Please fill in all required fields: description, category, account, and amount.",
+        description: "Please fill in all required fields: description and amount.",
         variant: "destructive",
       });
       return;
@@ -392,16 +342,6 @@ export default function TransactionsPage() {
       toast({
         title: "Validation error",
         description: "Amount must be a positive number greater than zero.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Validate date is provided and in the correct format
-    if (!formData.date) {
-      toast({
-        title: "Validation error",
-        description: "Please select a valid date for the transaction.",
         variant: "destructive",
       });
       return;
@@ -460,19 +400,12 @@ export default function TransactionsPage() {
     });
   };
 
-  const openEditDialog = (transaction: Transaction) => {
+  const handleEditTransaction = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
-    
-    // Convert ISO date to YYYY-MM-DD for the input
-    const date = new Date(transaction.date).toISOString().split('T')[0];
-    
-    // Set selected main category to properly load subcategories
-    setSelectedMainCategory(transaction.category);
-    
     setFormData({
-      type: transaction.type as 'expense' | 'income',
-      date,
-      amount: transaction.amount,
+      type: transaction.type,
+      date: new Date(transaction.date).toISOString().split('T')[0],
+      amount: transaction.amount.toString(),
       merchant: transaction.merchant,
       category: transaction.category,
       subcategory: transaction.subcategory || '',
@@ -539,25 +472,24 @@ export default function TransactionsPage() {
               variant="outline"
               onClick={() => setIsCSVUploadOpen(true)}
             >
-              <Link2 className="mr-2 h-4 w-4" /> Import CSV
+              <Upload className="mr-2 h-4 w-4" /> Import CSV
             </Button>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-primary hover:bg-primary/90 text-white">
                   <PlusCircle className="mr-2 h-4 w-4" /> Add Transaction
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Add New Transaction</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleAddSubmit} className="space-y-4 mt-4">
-                <div className="grid grid-cols-2 gap-4">
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Add New Transaction</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleAddSubmit} className="space-y-4 mt-4">
                   <div className="space-y-2">
                     <Label htmlFor="type">Type</Label>
-                    <Select 
-                      value={formData.type} 
-                      onValueChange={(value) => setFormData({...formData, type: value as 'expense' | 'income'})}
+                    <Select
+                      value={formData.type}
+                      onValueChange={(value: 'income' | 'expense') => setFormData({...formData, type: value})}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select type" />
@@ -568,150 +500,185 @@ export default function TransactionsPage() {
                       </SelectContent>
                     </Select>
                   </div>
+                  
                   <div className="space-y-2">
-                    <Label htmlFor="date">Date <span className="text-destructive">*</span></Label>
-                    <Input 
-                      id="date" 
-                      type="date" 
-                      value={formData.date}
-                      onChange={(e) => {
-                        console.log("Date changed to:", e.target.value);
-                        setFormData({...formData, date: e.target.value});
-                      }}
-                      required
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Select any date for this transaction
-                    </p>
+                    <Label htmlFor="date">Date</Label>
+                    <div className="space-y-2">
+                      <Input 
+                        id="date" 
+                        type="date" 
+                        value={formData.date}
+                        onChange={(e) => setFormData({...formData, date: e.target.value})}
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Select any date for this transaction
+                      </p>
+                    </div>
                   </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="amount">Amount <span className="text-destructive">*</span></Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
-                    <Input 
-                      id="amount" 
-                      type="number" 
-                      step="0.01"
-                      placeholder="0.00" 
-                      className="pl-7"
-                      value={formData.amount}
-                      onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Required: Enter a positive number
-                  </p>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="merchant">Description <span className="text-destructive">*</span></Label>
-                  <Input 
-                    id="merchant" 
-                    placeholder="e.g., Starbucks, Employer" 
-                    value={formData.merchant}
-                    onChange={(e) => setFormData({...formData, merchant: e.target.value})}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Required: Briefly describe what this transaction is for
-                  </p>
-                </div>
-                
-                <div className="space-y-4">
+                  
                   <div className="space-y-2">
-                    <Label htmlFor="category">Category <span className="text-muted-foreground text-xs">(optional)</span></Label>
-                    <Select 
-                      value={formData.category} 
-                      onValueChange={(value) => {
-                        setSelectedMainCategory(value);
-                        setFormData({
-                          ...formData, 
-                          category: value,
-                          // Reset subcategory when main category changes
-                          subcategory: ""
-                        });
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.keys(CATEGORY_SUGGESTIONS).map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="amount">Amount <span className="text-destructive">*</span></Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
+                      <Input 
+                        id="amount" 
+                        type="number" 
+                        step="0.01"
+                        placeholder="0.00" 
+                        className="pl-7"
+                        value={formData.amount}
+                        onChange={(e) => setFormData({...formData, amount: e.target.value})}
+                      />
+                    </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      If left blank, will default to "Uncategorized" or "General Income"
+                      Required: Enter a positive number
                     </p>
                   </div>
                   
-                  {/* Subcategory selection - only show if a main category is selected */}
-                  {formData.category && availableSubcategories.length > 0 && (
+                  <div className="space-y-2">
+                    <Label htmlFor="merchant">Description <span className="text-destructive">*</span></Label>
+                    <Input 
+                      id="merchant" 
+                      placeholder="e.g., Starbucks, Employer" 
+                      value={formData.merchant}
+                      onChange={(e) => setFormData({...formData, merchant: e.target.value})}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Required: Briefly describe what this transaction is for
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="subcategory">Subcategory</Label>
+                      <Label htmlFor="category">Category <span className="text-muted-foreground text-xs">(optional)</span></Label>
                       <Select 
-                        value={formData.subcategory} 
-                        onValueChange={(value) => setFormData({...formData, subcategory: value})}
+                        value={formData.category} 
+                        onValueChange={(value) => {
+                          setSelectedMainCategory(value);
+                          setFormData({
+                            ...formData, 
+                            category: value,
+                            subcategory: ''
+                          });
+                        }}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select subcategory" />
+                          <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                         <SelectContent>
-                          {availableSubcategories.map((subcat) => (
-                            <SelectItem key={subcat} value={subcat}>
-                              {subcat}
+                          {Object.keys(CATEGORY_SUGGESTIONS).map(category => (
+                            <SelectItem key={category} value={category}>
+                              {category}
                             </SelectItem>
                           ))}
+                          <SelectItem value="Other">Other (Custom)</SelectItem>
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Further categorize your {formData.type}
-                      </p>
+                      
+                      {formData.category === 'Other' && (
+                        <Input 
+                          placeholder="Enter custom category" 
+                          value={formData.customCategory || ''}
+                          onChange={(e) => setFormData({
+                            ...formData, 
+                            customCategory: e.target.value
+                          })}
+                          className="mt-2"
+                        />
+                      )}
                     </div>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="account">Account <span className="text-muted-foreground text-xs">(optional)</span></Label>
-                  <div className="space-y-2">
-                    <Input 
-                      id="account" 
-                      placeholder="Enter account (e.g., Checking, Credit Card)" 
-                      value={formData.account}
-                      onChange={(e) => setFormData({
-                        ...formData, 
-                        account: e.target.value
-                      })}
-                      autoComplete="off"
-                    />
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Common accounts: Checking, Savings, Credit Card, Cash
-                      <br />
-                      If left blank, will default to "Default Account"
-                    </div>
+                    
+                    {formData.category && availableSubcategories.length > 0 && (
+                      <div className="space-y-2">
+                        <Label htmlFor="subcategory">Subcategory <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                        <Select 
+                          value={formData.subcategory} 
+                          onValueChange={(value) => setFormData({...formData, subcategory: value})}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select subcategory" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableSubcategories.map(subcategory => (
+                              <SelectItem key={subcategory} value={subcategory}>
+                                {subcategory}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
-                </div>
-                
-                <div className="flex justify-end">
-                  <Button 
-                    type="submit" 
-                    disabled={!formData.amount || !formData.merchant || !formData.category || !formData.account || addMutation.isPending}
-                  >
-                    {addMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Adding...
-                      </>
-                    ) : 'Add Transaction'}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="account">Account <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                    <Select 
+                      value={formData.account} 
+                      onValueChange={(value) => setFormData({...formData, account: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select account" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {accounts && accounts.length > 0 ? (
+                          accounts.map((account: TransactionAccount) => (
+                            <SelectItem key={account.id} value={account.name}>
+                              {account.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <>
+                            <SelectItem value="Checking">Checking</SelectItem>
+                            <SelectItem value="Savings">Savings</SelectItem>
+                            <SelectItem value="Credit Card">Credit Card</SelectItem>
+                            <SelectItem value="Cash">Cash</SelectItem>
+                          </>
+                        )}
+                        <SelectItem value="Other">Other (Custom)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    
+                    {formData.account === 'Other' && (
+                      <Input 
+                        placeholder="Enter custom account" 
+                        value={formData.customAccount || ''}
+                        onChange={(e) => setFormData({
+                          ...formData, 
+                          customAccount: e.target.value
+                        })}
+                        className="mt-2"
+                      />
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="notes">Notes <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                    <Input 
+                      id="notes" 
+                      placeholder="Add any additional details here" 
+                      value={formData.notes || ''}
+                      onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div className="flex justify-end">
+                    <Button 
+                      type="submit" 
+                      disabled={!formData.amount || !formData.merchant || addMutation.isPending}
+                    >
+                      {addMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Adding...
+                        </>
+                      ) : 'Add Transaction'}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {/* Filters */}
@@ -752,10 +719,7 @@ export default function TransactionsPage() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   {uniqueCategories.map(category => (
-                    <DropdownMenuItem 
-                      key={category}
-                      onClick={() => setCategoryFilter(category)}
-                    >
+                    <DropdownMenuItem key={category} onClick={() => setCategoryFilter(category)}>
                       {category}
                     </DropdownMenuItem>
                   ))}
@@ -770,10 +734,7 @@ export default function TransactionsPage() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   {uniqueAccounts.map(account => (
-                    <DropdownMenuItem 
-                      key={account}
-                      onClick={() => setAccountFilter(account)}
-                    >
+                    <DropdownMenuItem key={account} onClick={() => setAccountFilter(account)}>
                       {account}
                     </DropdownMenuItem>
                   ))}
@@ -781,79 +742,33 @@ export default function TransactionsPage() {
               </DropdownMenu>
               
               {hasActiveFilters && (
-                <Button 
-                  variant="ghost" 
-                  onClick={clearAllFilters}
-                  className="text-destructive"
-                >
-                  <FilterX className="h-4 w-4 mr-1" />
-                  Clear filters
+                <Button variant="ghost" onClick={clearAllFilters} className="flex items-center">
+                  <FilterX className="mr-2 h-4 w-4" /> Clear Filters
                 </Button>
               )}
             </div>
           </div>
-          
-          {/* Active filters */}
-          {hasActiveFilters && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {typeFilter && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  Type: {typeFilter}
-                  <Trash2 
-                    className="h-3 w-3 ml-1 cursor-pointer" 
-                    onClick={() => setTypeFilter(null)}
-                  />
-                </Badge>
-              )}
-              {categoryFilter && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  Category: {categoryFilter}
-                  <Trash2 
-                    className="h-3 w-3 ml-1 cursor-pointer" 
-                    onClick={() => setCategoryFilter(null)}
-                  />
-                </Badge>
-              )}
-              {accountFilter && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  Account: {accountFilter}
-                  <Trash2 
-                    className="h-3 w-3 ml-1 cursor-pointer" 
-                    onClick={() => setAccountFilter(null)}
-                  />
-                </Badge>
-              )}
-              {searchTerm && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  Search: {searchTerm}
-                  <Trash2 
-                    className="h-3 w-3 ml-1 cursor-pointer" 
-                    onClick={() => setSearchTerm("")}
-                  />
-                </Badge>
-              )}
-            </div>
-          )}
         </Card>
 
-        {/* Transactions Table */}
+        {/* Transactions List */}
         <Card className="overflow-hidden">
           {isTransactionsLoading ? (
-            <div className="p-8">
-              <div className="flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
+            <div className="p-8 space-y-4">
+              <Skeleton className="h-8 w-full max-w-sm" />
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
             </div>
           ) : sortedTransactions.length === 0 ? (
-            <div className="text-center py-8">
+            <div className="p-8 py-16">
               {hasActiveFilters ? (
-                <div>
-                  <p className="text-muted-foreground mb-4">No transactions match your filters.</p>
-                  <Button 
-                    variant="outline"
-                    onClick={clearAllFilters}
-                  >
-                    Clear all filters
+                <div className="text-center">
+                  <h3 className="text-lg font-medium mb-2">No matching transactions</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Try adjusting your filters to see more transactions.
+                  </p>
+                  <Button variant="outline" onClick={clearAllFilters}>
+                    <FilterX className="mr-2 h-4 w-4" /> Clear Filters
                   </Button>
                 </div>
               ) : (
@@ -893,10 +808,10 @@ export default function TransactionsPage() {
                 <tbody>
                   {sortedTransactions.map((transaction) => {
                     const { icon, color } = getCategoryIconAndColor(transaction.category);
-                    const isExpense = transaction.type === 'expense';
+                    const isIncome = transaction.type === 'income';
                     
                     return (
-                      <tr key={transaction.id} className="border-b hover:bg-muted/20">
+                      <tr key={transaction.id} className="border-b hover:bg-muted/50">
                         <td className="p-4 align-middle">
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -906,7 +821,7 @@ export default function TransactionsPage() {
                         <td className="p-4 align-middle">
                           <div className="flex flex-col">
                             <span>{transaction.merchant}</span>
-                            {false && (
+                            {transaction.isDuplicate && (
                               <div className="flex flex-col mt-1">
                                 <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-800">
                                   Possible Duplicate
@@ -950,58 +865,55 @@ export default function TransactionsPage() {
                             <div className="flex flex-col">
                               <span>{transaction.category}</span>
                               {transaction.subcategory && (
-                                <span className="text-xs text-muted-foreground">
-                                  {transaction.subcategory}
-                                </span>
+                                <span className="text-xs text-muted-foreground">{transaction.subcategory}</span>
                               )}
                             </div>
                           </div>
                         </td>
                         <td className="p-4 align-middle">{transaction.account}</td>
                         <td className="p-4 align-middle">
-                          <Badge variant="outline">
-                            Manual Entry
+                          <Badge variant="outline" className="capitalize">
+                            {transaction.source || 'manual'}
                           </Badge>
                         </td>
-                        <td className={`p-4 align-middle text-right font-medium ${isExpense ? 'text-destructive' : 'text-[#00C2A8]'}`}>
-                          {isExpense ? '-' : '+'}{formatCurrency(parseFloat(transaction.amount))}
+                        <td className="p-4 text-right align-middle">
+                          <span className={isIncome ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                            {isIncome ? '+' : '-'}{formatCurrency(Math.abs(transaction.amount))}
+                          </span>
                         </td>
-                        <td className="p-4 align-middle text-right">
-                          <div className="flex justify-end items-center space-x-1">
+                        <td className="p-4 text-right align-middle">
+                          <div className="flex justify-end gap-2">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8"
-                              onClick={() => openEditDialog(transaction)}
+                              onClick={() => handleEditTransaction(transaction)}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4" />
+                                <Button variant="ghost" size="icon">
+                                  <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                  <AlertDialogTitle>Delete Transaction</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    This will permanently delete the transaction from {transaction.merchant} for {formatCurrency(parseFloat(transaction.amount))}.
-                                    This action cannot be undone.
+                                    Are you sure you want to delete this transaction? This action cannot be undone.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                                   <AlertDialogAction
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                     onClick={() => deleteMutation.mutate(transaction.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                   >
                                     {deleteMutation.isPending ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                      <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Deleting...
+                                      </>
                                     ) : 'Delete'}
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
@@ -1029,12 +941,12 @@ export default function TransactionsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-type">Type</Label>
-                <Select 
-                  value={formData.type} 
-                  onValueChange={(value) => setFormData({...formData, type: value as 'expense' | 'income'})}
+                <Select
+                  value={formData.type}
+                  onValueChange={(value: 'income' | 'expense') => setFormData({...formData, type: value})}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="expense">Expense</SelectItem>
@@ -1042,6 +954,7 @@ export default function TransactionsPage() {
                   </SelectContent>
                 </Select>
               </div>
+              
               <div className="space-y-2">
                 <Label htmlFor="edit-date">Date</Label>
                 <Input 
@@ -1076,48 +989,73 @@ export default function TransactionsPage() {
             <div className="space-y-2">
               <Label htmlFor="edit-category">Category</Label>
               <div className="space-y-2">
-                <Input 
-                  id="edit-category" 
-                  placeholder="Enter category (e.g., Groceries, Utilities)" 
-                  value={formData.category}
-                  onChange={(e) => setFormData({
-                    ...formData, 
-                    category: e.target.value
-                  })}
-                  autoComplete="off"
-                />
-                {categories.length > 0 && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Suggestions: {categories.slice(0, 3).map(cat => cat.name).join(', ')}
-                    {categories.length > 3 && ', and more'}
-                  </div>
-                )}
+                <Select 
+                  value={formData.category} 
+                  onValueChange={(value) => setFormData({...formData, category: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.keys(CATEGORY_SUGGESTIONS).map(category => (
+                      <SelectItem key={category} value={category}>{category}</SelectItem>
+                    ))}
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="edit-account">Account</Label>
               <div className="space-y-2">
-                <Input 
-                  id="edit-account" 
-                  placeholder="Enter account (e.g., Checking, Credit Card)" 
-                  value={formData.account}
-                  onChange={(e) => setFormData({
-                    ...formData, 
-                    account: e.target.value
-                  })}
-                  autoComplete="off"
-                />
-                <div className="text-xs text-muted-foreground mt-1">
-                  Common accounts: Checking, Savings, Credit Card, Cash
-                </div>
+                <Select 
+                  value={formData.account} 
+                  onValueChange={(value) => setFormData({...formData, account: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select account" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accounts && accounts.length > 0 ? (
+                      accounts.map((account: TransactionAccount) => (
+                        <SelectItem key={account.id} value={account.name}>
+                          {account.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <>
+                        <SelectItem value="Checking">Checking</SelectItem>
+                        <SelectItem value="Savings">Savings</SelectItem>
+                        <SelectItem value="Credit Card">Credit Card</SelectItem>
+                        <SelectItem value="Cash">Cash</SelectItem>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             
-            <div className="flex justify-end">
+            <div className="space-y-2">
+              <Label htmlFor="edit-notes">Notes</Label>
+              <Input 
+                id="edit-notes" 
+                value={formData.notes || ''}
+                onChange={(e) => setFormData({...formData, notes: e.target.value})}
+              />
+            </div>
+            
+            <div className="flex justify-end gap-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setIsEditDialogOpen(false)}
+              >
+                Cancel
+              </Button>
               <Button 
                 type="submit" 
-                disabled={!formData.amount || !formData.merchant || !formData.category || !formData.account || updateMutation.isPending}
+                disabled={updateMutation.isPending}
               >
                 {updateMutation.isPending ? (
                   <>
@@ -1133,6 +1071,12 @@ export default function TransactionsPage() {
 
       {/* Mobile Bottom Navigation */}
       <MobileNav />
+      
+      {/* CSV Upload Dialog */}
+      <CSVUploadDialog
+        isOpen={isCSVUploadOpen}
+        onClose={() => setIsCSVUploadOpen(false)}
+      />
     </div>
   );
 }
