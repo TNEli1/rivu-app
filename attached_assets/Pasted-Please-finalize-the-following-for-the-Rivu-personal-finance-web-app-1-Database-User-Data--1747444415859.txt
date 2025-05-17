@@ -1,0 +1,89 @@
+Please finalize the following for the Rivu personal finance web app:
+
+⸻
+
+1. Database & User Data
+	•	Switch fully to PostgreSQL — no more MongoDB.
+	•	Make sure all user data is being stored in PostgreSQL:
+	•	Transaction history
+	•	Budget and category data
+	•	Savings goals
+	•	Rivu Score and subcomponents
+	•	Achievement/level progress
+	•	AI advice history (optional)
+	•	User survey answers (linked to the correct user ID)
+	•	Ensure every user is assigned a unique user ID, and all data is scoped to that user.
+
+⸻
+
+Only actions that reflect financial discipline should raise the rivu score:
+	•	Hitting or staying within budget
+	•	Saving consistently toward a goal
+	•	Returning to the app regularly (engagement)
+	•	Actually completing a goal
+	•	Display Rivu Score subcomponents visually, and ensure they refresh dynamically, not just on logout.
+
+⸻
+
+3. AI Coach Upgrades
+
+Functionality:
+	•	Improve GPT prompts for better financial advice. Here are example templates:
+	•	“Give me advice based on my top spending categories this month.”
+	•	“Am I saving enough based on my income and spending habits?”
+	•	“Which goal should I focus on next?”
+	•	“How does my spending compare to last month?”
+	•	“What are 3 quick ways I can improve my financial health?”
+
+Design:
+	•	The AI chat box currently looks unstyled and basic. Please:
+	•	Add rounded card edges, spacing, and a proper text area input
+	•	Add a soft gradient background or card hover effect for luxury feel
+	•	Use consistent fonts and button design from the rest of the app
+	•	Add loading animation (e.g. animated dots) while the AI is thinking
+
+⸻
+
+4. Nudge System Implementation
+
+Behavior-based Nudges:
+	•	Add an intelligent “nudge” system that reminds users of key behaviors:
+	•	Haven’t logged a transaction in 5 days
+	•	No activity on a savings goal in 2 weeks
+	•	Budget category likely to be exceeded
+	•	Weekly spending trend increasing
+
+New User Exception:
+	•	Do not show nudges to brand-new users during their first 7 days.
+	•	Instead, show onboarding nudges like:
+	•	“Welcome to Rivu! Start by creating a budget category.”
+	•	“Let’s add your first transaction together.”
+
+Only begin behavior-based nudges after they’ve either:
+	•	Had the account for 7+ days
+	•	OR completed: 1 budget + 1 transaction + 1 savings goal
+
+Store nudge triggers and responses in the user profile for personalization.
+
+⸻
+
+	•	Ensure all pages (including Goals) stay within the app layout — no full-page redirects
+	•	All buttons (e.g. “Already have an account? Log in”) should be functional and navigable.
+	•	Update the AI Coach section with better spacing, card layouts, hover effects, and responsiveness.
+	•	Ensure scrolling works on all screen sizes, especially on mobile.
+	•	
+	•	Fix the date picker — allow backdated entries
+	•	Connect transaction log on dashboard with full transaction page
+	•	Ensure categories have subcategories
+	•	Add support for accounts so users don’t retype the same account each time
+
+⸻
+
+6. Data Tracking + Analytics
+	•	Data should be persistently tracked over time for each user.
+	•	Keep month-by-month tracking to enable long-term habit analysis
+	•	Do not discard data even if user is inactive
+
+⸻
+
+This is for a v1 production launch and will be shown to investors. Please proceed carefully and double-check all functionality.
