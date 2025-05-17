@@ -491,7 +491,7 @@ export default function TransactionsPage() {
                   <PlusCircle className="h-4 w-4" /> Add Transaction
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
+              <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Add New Transaction</DialogTitle>
                 </DialogHeader>
