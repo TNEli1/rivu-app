@@ -400,10 +400,24 @@ export class DatabaseStorage implements IStorage {
   
   async deleteAllTransactions(userId: number): Promise<boolean> {
     try {
-      // Delete all transactions for the user
-      await db
-        .delete(transactions)
+      console.log(`Attempting to delete all transactions for user ID: ${userId}`);
+      
+      // First, check how many transactions the user has
+      const userTransactions = await db
+        .select({ count: count() })
+        .from(transactions)
         .where(eq(transactions.userId, userId));
+      
+      const transactionCount = userTransactions[0]?.count || 0;
+      console.log(`Found ${transactionCount} transactions to delete for user ${userId}`);
+      
+      // Delete all transactions for the user with explicit user ID check
+      const result = await db
+        .delete(transactions)
+        .where(eq(transactions.userId, userId))
+        .returning({ id: transactions.id });
+      
+      console.log(`Successfully deleted ${result.length} transactions for user ${userId}`);
       
       // Recalculate Rivu score after clearing all transactions
       await this.calculateAndUpdateRivuScore(userId);
@@ -416,6 +430,7 @@ export class DatabaseStorage implements IStorage {
       return true;
     } catch (error) {
       console.error('Error deleting all transactions:', error);
+      console.error(error.stack); // Log the full error stack trace
       return false;
     }
   }
