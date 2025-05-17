@@ -245,6 +245,14 @@ export const deleteBudget = async (req: any, res: any) => {
       });
     }
     
+    // Update user's lastBudgetUpdateDate to track activity for nudge system
+    await storage.updateUser(userId, {
+      lastBudgetUpdateDate: new Date()
+    });
+    
+    // Recalculate Rivu score as deleting a budget category affects financial health
+    await storage.calculateRivuScore(userId);
+    
     res.json({ message: 'Budget category deleted successfully' });
   } catch (error: any) {
     console.error('Error deleting budget category:', error);

@@ -275,6 +275,14 @@ export const deleteGoal = async (req: any, res: any) => {
       });
     }
     
+    // Update user's lastGoalUpdateDate to track activity for nudge system
+    await storage.updateUser(userId, {
+      lastGoalUpdateDate: new Date()
+    });
+    
+    // Recalculate Rivu score as deleting a savings goal affects financial health score
+    await storage.calculateRivuScore(userId);
+    
     res.json({ message: 'Goal deleted successfully' });
   } catch (error: any) {
     console.error('Error deleting goal:', error);
