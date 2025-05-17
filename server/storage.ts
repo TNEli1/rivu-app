@@ -4,17 +4,23 @@ import {
   Transaction, InsertTransaction,
   SavingsGoal, InsertSavingsGoal,
   RivuScore, InsertRivuScore,
-  Nudge, InsertNudge
+  Nudge, InsertNudge,
+  TransactionAccount, InsertTransactionAccount,
+  Category, InsertCategory,
+  Subcategory, InsertSubcategory
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, gte, lt, isNull, sql } from "drizzle-orm";
+import { eq, and, desc, gte, lt, isNull, sql, or, between } from "drizzle-orm";
 import { 
   users, 
   budgetCategories, 
   transactions, 
   savingsGoals,
   rivuScores,
-  nudges
+  nudges,
+  transactionAccounts,
+  categories,
+  subcategories
 } from "@shared/schema";
 
 // Storage interface
@@ -22,8 +28,12 @@ export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
+  createPasswordResetToken(email: string): Promise<{token: string, expiry: Date} | null>;
+  verifyPasswordResetToken(token: string): Promise<User | null>;
+  resetPassword(token: string, newPassword: string): Promise<boolean>;
   
   // Budget category operations
   getBudgetCategories(userId: number): Promise<BudgetCategory[]>;
@@ -38,6 +48,9 @@ export interface IStorage {
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   updateTransaction(id: number, data: Partial<Transaction>): Promise<Transaction | undefined>;
   deleteTransaction(id: number): Promise<boolean>;
+  importTransactionsFromCSV(userId: number, csvData: string): Promise<{imported: number, duplicates: number}>;
+  checkForDuplicateTransactions(transaction: InsertTransaction): Promise<boolean>;
+  markTransactionAsNotDuplicate(id: number): Promise<boolean>;
   
   // Savings Goal operations
   getSavingsGoals(userId: number): Promise<SavingsGoal[]>;
@@ -57,11 +70,33 @@ export interface IStorage {
   dismissNudge(id: number): Promise<boolean>;
   completeNudge(id: number): Promise<boolean>;
   checkAndCreateNudges(userId: number): Promise<Nudge[]>;
+  
+  // Transaction Account operations
+  getTransactionAccounts(userId: number): Promise<TransactionAccount[]>;
+  getTransactionAccount(id: number): Promise<TransactionAccount | undefined>;
+  createTransactionAccount(account: InsertTransactionAccount): Promise<TransactionAccount>;
+  updateTransactionAccount(id: number, data: Partial<TransactionAccount>): Promise<TransactionAccount | undefined>;
+  deleteTransactionAccount(id: number): Promise<boolean>;
+  
+  // Category operations
+  getCategories(userId: number, type?: string): Promise<Category[]>;
+  getCategory(id: number): Promise<Category | undefined>;
+  createCategory(category: InsertCategory): Promise<Category>;
+  updateCategory(id: number, data: Partial<Category>): Promise<Category | undefined>;
+  deleteCategory(id: number): Promise<boolean>;
+  
+  // Subcategory operations
+  getSubcategories(categoryId: number): Promise<Subcategory[]>;
+  getSubcategory(id: number): Promise<Subcategory | undefined>;
+  createSubcategory(subcategory: InsertSubcategory): Promise<Subcategory>;
+  updateSubcategory(id: number, data: Partial<Subcategory>): Promise<Subcategory | undefined>;
+  deleteSubcategory(id: number): Promise<boolean>;
 
   // Helper methods
   calculateRivuScore(userId: number): Promise<number>;
   updateOnboardingStage(userId: number, stage: string): Promise<User | undefined>;
   isNewUser(userId: number): Promise<boolean>; // Check if user is within first 7 days
+  createDefaultCategoriesForUser(userId: number): Promise<void>; // Create default categories for new users
 }
 
 export class DatabaseStorage implements IStorage {
@@ -75,6 +110,11 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db.select().from(users).where(eq(users.username, username));
     return user || undefined;
   }
+  
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
+  }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db
@@ -85,6 +125,10 @@ export class DatabaseStorage implements IStorage {
         createdAt: new Date(),
       })
       .returning();
+      
+    // Create default categories for the user
+    await this.createDefaultCategoriesForUser(user.id);
+    
     return user;
   }
   
@@ -95,6 +139,75 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return updatedUser || undefined;
+  }
+  
+  async createPasswordResetToken(email: string): Promise<{token: string, expiry: Date} | null> {
+    // Find user by email
+    const user = await this.getUserByEmail(email);
+    if (!user) return null;
+    
+    // Generate a secure random token
+    const crypto = await import('crypto');
+    const token = crypto.randomBytes(32).toString('hex');
+    
+    // Set expiration to 1 hour from now
+    const expiry = new Date();
+    expiry.setHours(expiry.getHours() + 1);
+    
+    // Save the token and expiry to the user's record
+    await db.update(users)
+      .set({
+        resetToken: token,
+        resetTokenExpiry: expiry
+      })
+      .where(eq(users.id, user.id));
+    
+    return { token, expiry };
+  }
+  
+  async verifyPasswordResetToken(token: string): Promise<User | null> {
+    // Find user with this token
+    const [user] = await db.select()
+      .from(users)
+      .where(eq(users.resetToken, token));
+    
+    if (!user) return null;
+    
+    // Check if token is expired
+    if (!user.resetTokenExpiry || new Date() > new Date(user.resetTokenExpiry)) {
+      // Clear expired token
+      await db.update(users)
+        .set({
+          resetToken: null,
+          resetTokenExpiry: null
+        })
+        .where(eq(users.id, user.id));
+      
+      return null;
+    }
+    
+    return user;
+  }
+  
+  async resetPassword(token: string, newPassword: string): Promise<boolean> {
+    // Verify token is valid
+    const user = await this.verifyPasswordResetToken(token);
+    if (!user) return false;
+    
+    // Hash the new password
+    const bcrypt = await import('bcrypt');
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    // Update password and clear token
+    await db.update(users)
+      .set({
+        password: hashedPassword,
+        resetToken: null,
+        resetTokenExpiry: null
+      })
+      .where(eq(users.id, user.id));
+    
+    return true;
   }
 
   // Budget category operations
