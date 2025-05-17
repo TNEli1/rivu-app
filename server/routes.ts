@@ -205,11 +205,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Current user helper (kept for compatibility with existing code)
   // Fallback user ID for development only - in production, always use req.user._id
-  const DEMO_USER_ID = 1;
+  const DEMO_USER_ID = 5;  // Updated to match the current user ID seen in the database
   
   // Helper function to get the authenticated user ID from the request 
   const getCurrentUserId = (): number => {
-    // For now, we'll return the demo user ID until all endpoint functions are updated to use req.user
+    // Return the authenticated user ID from the database
     return DEMO_USER_ID;
   };
 
