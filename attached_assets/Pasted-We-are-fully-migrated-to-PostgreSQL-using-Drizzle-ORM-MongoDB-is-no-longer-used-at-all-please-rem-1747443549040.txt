@@ -1,0 +1,80 @@
+We are fully migrated to PostgreSQL using Drizzle ORM. MongoDB is no longer used at all — please remove any remaining references.
+
+⸻
+
+Confirm the Following Fixes and Additions:
+
+1. Transactions
+	•	Formatting issues on the transactions page are now resolved — no need to fix layout.
+	•	However, users still cannot enter custom dates. This is critical. Ensure a new date picker is implemented that:
+	•	Accepts clean YYYY-MM-DD format.
+	•	Stores the selected date in PostgreSQL correctly.
+	•	Updates the UI and database without forcing today’s date.
+
+2. Rivu Score Logic Fix
+
+The current Rivu Score calculation is incorrect. Fix the logic with these rules:
+	•	Budget Adherence = (total budgeted - overspent amount) / total budgeted
+	•	Savings Progress = total saved / total target goal (only for active goals)
+	•	Activity = number of interactions (transactions, logins, updates) this week / baseline
+	•	Adding a budget should not increase Rivu Score. Only spending within budget should.
+
+Add a refresh function so the user can manually re-trigger Rivu Score calculation and AI coach advice update.
+
+Ensure each user has a unique user ID and only accesses their own data from PostgreSQL.
+
+⸻
+
+3. AI Coach Prompting Logic
+
+Replace existing prompt with the following format and logic:
+
+Prompt Template:
+
+You are Rivu, an AI personal finance coach. Analyze this user’s financial data and provide clear, actionable advice.
+
+User profile:
+- Rivu Score: {score}
+- Budget categories: [{category name} | Budgeted: $X | Spent: $Y]
+- Goals: [{goal name} | Target: $X | Saved: $Y | % Complete: Z%]
+- Last 5 Transactions: [{date} | {merchant} | {amount} | {category}]
+- Activity level: High / Medium / Low
+
+User’s question (optional): {free-form input}
+
+Return 2-3 sentences of personalized advice using this data. Do not generalize. Reference specifics from spending and savings trends.
+
+AI Prompting Conditions:
+	•	If overspending → flag categories and suggest corrections.
+	•	If goals are off-track → recommend saving adjustments.
+	•	If activity is low → encourage more check-ins.
+	•	If everything is going well → reinforce behavior and suggest next steps (e.g., investing, debt payoff).
+
+⸻
+
+4. PostgreSQL Integration Check
+	•	All tables (users, transactions, goals, budgets, accounts, login sessions) should:
+	•	Store data using PostgreSQL.
+	•	Retrieve and filter by the correct userId.
+	•	Update only that user’s data.
+	•	Make sure every session properly assigns and uses the correct userId.
+
+⸻
+
+5. Data Integrity Audit
+	•	Users must never see other users’ data.
+	•	Every form entry, dashboard display, and data fetch should be isolated by user.
+	•	Audit and fix any instances where hardcoded or fallback demo data is still being used.
+
+⸻
+
+6. Summary Output (from Replit Agent)
+
+Once all the above is done, return a checklist showing:
+	•	PostgreSQL only — MongoDB fully removed?
+	•	Transactions date input fixed?
+	•	Rivu Score logic corrected?
+	•	Rivu Score refresh working?
+	•	AI coach prompts customized and tested?
+	•	User data fully isolated?
+	•	All user IDs properly assigned and used?
