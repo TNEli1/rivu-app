@@ -15,15 +15,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup CORS
   app.use(cors());
   
-  // CRITICAL FIX: Register manual bridge to the MongoDB API routes
+  // Set up API routes using PostgreSQL database
   try {
-    // Since we can't directly import the CommonJS router in ESM module,
-    // we'll manually create routes that call the controller functions
-    
-    // First, let's register the API routes with the MongoDB version
-    const apiPath = '/api';
-    console.log(`⚙️ Setting up MongoDB API routes at ${apiPath}...`);
-    
     // Import our TypeScript controller
     // Get all the individual exports from userController
     const {
@@ -40,6 +33,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } = await import('./controllers-ts/userController');
 
     // Register auth routes with our TypeScript controller
+    const apiPath = '/api';
     app.post(`${apiPath}/register`, registerUser);
     app.post(`${apiPath}/login`, loginUser);
     app.post(`${apiPath}/logout`, protect, logoutUser);
@@ -50,10 +44,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.post(`${apiPath}/forgot-password`, forgotPassword);
     app.post(`${apiPath}/reset-password/:token`, resetPassword);
     
-    console.log('✅ Auth routes (MongoDB) successfully mounted at /api');
+    console.log('✅ Auth routes successfully mounted at /api');
   } catch (error) {
-    console.error('⚠️ Error setting up MongoDB routes:', error);
-    console.log('⚠️ Falling back to in-memory API routes');
+    console.error('⚠️ Error setting up API routes:', error);
   }
   
   // Current user helper (kept for compatibility with existing code)

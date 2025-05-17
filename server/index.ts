@@ -2,7 +2,6 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import dotenv from "dotenv";
-import connectDB from "./config/database";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
@@ -108,11 +107,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Connect to MongoDB
-  await connectDB();
-  
-  // Load API routes
-  // Connect MongoDB models or fallback to memory storage if connection fails
+  // Load API routes using PostgreSQL database
   const server = await registerRoutes(app);
 
   // 404 handler for API routes (must come after API routes are registered)

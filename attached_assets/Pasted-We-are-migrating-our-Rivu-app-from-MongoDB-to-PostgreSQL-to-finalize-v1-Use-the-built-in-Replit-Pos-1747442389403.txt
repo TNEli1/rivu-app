@@ -1,0 +1,65 @@
+We are migrating our Rivu app from MongoDB to PostgreSQL to finalize v1. Use the built-in Replit PostgreSQL database or connect to an external one using .env variables. Here’s what you need to do:
+
+⸻
+
+1. PostgreSQL Setup
+	•	Use the Replit-provided PostgreSQL database, and connect using these .env values:
+
+POSTGRES_HOST=
+POSTGRES_USER=
+POSTGRES_PASSWORD=
+POSTGRES_DB=
+
+(If values are missing, generate them in the Replit Database tab.)
+
+	•	Connect to PostgreSQL using Drizzle ORM for all queries and schema modeling. Do not use Prisma or raw SQL.
+
+⸻
+
+2. Replace All MongoDB Dependencies
+	•	Completely remove mongoose, connectDB, and all MongoDB-specific logic from:
+	•	models/
+	•	controllers/
+	•	routes/
+	•	config/database.js
+	•	Migrate all models and queries to PostgreSQL using Drizzle ORM.
+	•	Use existing schema definitions in schema.ts if available and compatible. Otherwise, recreate tables for:
+	•	users
+	•	transactions
+	•	budgets
+	•	goals
+	•	accounts
+	•	achievements
+
+⸻
+
+3. Update App Logic to Use Drizzle Queries
+	•	Replace all instances of Model.find(), Model.create(), etc. with Drizzle’s query builder methods.
+	•	Ensure that all routes under /api/* work end-to-end with the new PostgreSQL logic, including:
+	•	register, login, logout
+	•	CRUD for transactions, budgets, goals, and accounts
+	•	Summary calculations
+	•	Rivu Score updates and evaluation
+	•	Test the data flow for each user. Make sure no user sees another’s data.
+
+⸻
+
+4. Verify Data Persistence
+	•	When users create accounts, log in, or submit data, it must be saved in PostgreSQL and persist across sessions.
+	•	Ensure no fallback to memory or local storage.
+	•	Confirm transactions store correct userId, date, amount, category, and source.
+
+⸻
+
+5. Clean and Finalize
+	•	Remove all MongoDB-related packages and config files.
+	•	Remove any references to fallback memory stores or mock data.
+	•	Update logs to confirm PostgreSQL queries and table access.
+	•	Migrate .env access points to reference PostgreSQL, not MongoDB.
+
+⸻
+
+Once finished, confirm that:
+	•	Users can register, log in, and log out.
+	•	All data is properly saved in PostgreSQL.
+	•	Transactions work with accurate dates and Rivu Score updates correctly.
