@@ -74,6 +74,28 @@ export const insertTransactionSchema = createInsertSchema(transactions).pick({
   date: true,
 });
 
+// Savings Goals
+export const savingsGoals = pgTable("savings_goals", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  name: text("name").notNull(),
+  targetAmount: decimal("target_amount", { precision: 10, scale: 2 }).notNull(),
+  currentAmount: decimal("current_amount", { precision: 10, scale: 2 }).default("0").notNull(),
+  targetDate: timestamp("target_date"),
+  monthlySavings: text("monthly_savings").default("[]"), // JSON string of monthly savings data
+  progressPercentage: decimal("progress_percentage", { precision: 5, scale: 2 }).default("0").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertSavingsGoalSchema = createInsertSchema(savingsGoals).pick({
+  userId: true,
+  name: true,
+  targetAmount: true,
+  currentAmount: true,
+  targetDate: true,
+});
+
 // Rivu Score
 export const rivuScores = pgTable("rivu_scores", {
   id: serial("id").primaryKey(),
@@ -103,6 +125,9 @@ export type InsertBudgetCategory = z.infer<typeof insertBudgetCategorySchema>;
 
 export type Transaction = typeof transactions.$inferSelect;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
+
+export type SavingsGoal = typeof savingsGoals.$inferSelect;
+export type InsertSavingsGoal = z.infer<typeof insertSavingsGoalSchema>;
 
 export type RivuScore = typeof rivuScores.$inferSelect;
 export type InsertRivuScore = z.infer<typeof insertRivuScoreSchema>;

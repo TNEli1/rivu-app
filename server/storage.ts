@@ -2,6 +2,7 @@ import {
   User, InsertUser, 
   BudgetCategory, InsertBudgetCategory,
   Transaction, InsertTransaction,
+  SavingsGoal, InsertSavingsGoal,
   RivuScore, InsertRivuScore
 } from "@shared/schema";
 import { db } from "./db";
@@ -10,6 +11,7 @@ import {
   users, 
   budgetCategories, 
   transactions, 
+  savingsGoals,
   rivuScores 
 } from "@shared/schema";
 
@@ -34,6 +36,13 @@ export interface IStorage {
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   updateTransaction(id: number, data: Partial<Transaction>): Promise<Transaction | undefined>;
   deleteTransaction(id: number): Promise<boolean>;
+  
+  // Savings Goal operations
+  getSavingsGoals(userId: number): Promise<SavingsGoal[]>;
+  getSavingsGoal(id: number): Promise<SavingsGoal | undefined>;
+  createSavingsGoal(goal: InsertSavingsGoal): Promise<SavingsGoal>;
+  updateSavingsGoal(id: number, data: Partial<SavingsGoal>): Promise<SavingsGoal | undefined>;
+  deleteSavingsGoal(id: number): Promise<boolean>;
   
   // Rivu Score operations
   getRivuScore(userId: number): Promise<RivuScore | undefined>;
@@ -204,6 +213,141 @@ export class DatabaseStorage implements IStorage {
       .where(eq(transactions.id, id));
     
     // Recalculate Rivu score after deleting a transaction
+    if (result) {
+      await this.calculateAndUpdateRivuScore(userId);
+    }
+    
+    return !!result;
+  }
+  
+  // Savings Goal operations
+  async getSavingsGoals(userId: number): Promise<SavingsGoal[]> {
+    return db
+      .select()
+      .from(savingsGoals)
+      .where(eq(savingsGoals.userId, userId))
+      .orderBy(desc(savingsGoals.createdAt));
+  }
+
+  async getSavingsGoal(id: number): Promise<SavingsGoal | undefined> {
+    const [goal] = await db
+      .select()
+      .from(savingsGoals)
+      .where(eq(savingsGoals.id, id));
+    return goal || undefined;
+  }
+
+  async createSavingsGoal(goal: InsertSavingsGoal): Promise<SavingsGoal> {
+    // Calculate initial progress percentage if both target and current amounts are provided
+    let progressPercentage = "0";
+    if (goal.targetAmount && goal.currentAmount) {
+      const target = parseFloat(String(goal.targetAmount));
+      const current = parseFloat(String(goal.currentAmount));
+      if (target > 0) {
+        progressPercentage = ((current / target) * 100).toFixed(2);
+      }
+    }
+    
+    const [newGoal] = await db
+      .insert(savingsGoals)
+      .values({
+        ...goal,
+        progressPercentage,
+        monthlySavings: "[]", // Initialize with empty array
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+    
+    // Recalculate Rivu score after creating a new goal
+    await this.calculateAndUpdateRivuScore(goal.userId);
+    
+    return newGoal;
+  }
+
+  async updateSavingsGoal(id: number, data: Partial<SavingsGoal>): Promise<SavingsGoal | undefined> {
+    const [goal] = await db
+      .select()
+      .from(savingsGoals)
+      .where(eq(savingsGoals.id, id));
+    
+    if (!goal) return undefined;
+    
+    // If amountToAdd is provided, update currentAmount and recalculate progress
+    if (data.currentAmount !== undefined) {
+      const target = parseFloat(String(goal.targetAmount));
+      const newCurrent = parseFloat(String(data.currentAmount));
+      
+      if (target > 0) {
+        data.progressPercentage = ((newCurrent / target) * 100).toFixed(2);
+      }
+      
+      // Handle monthly savings update if this is adding money
+      if (newCurrent > parseFloat(String(goal.currentAmount))) {
+        const addedAmount = newCurrent - parseFloat(String(goal.currentAmount));
+        
+        // Update the monthly savings data
+        try {
+          const monthlySavings = JSON.parse(goal.monthlySavings || '[]');
+          const now = new Date();
+          const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+          
+          // Find the entry for this month
+          const monthEntry = monthlySavings.find((entry: any) => entry.month === monthKey);
+          
+          if (monthEntry) {
+            // Update existing month
+            monthEntry.amount += addedAmount;
+          } else {
+            // Add new month entry
+            monthlySavings.push({
+              month: monthKey,
+              amount: addedAmount
+            });
+          }
+          
+          // Update the data
+          data.monthlySavings = JSON.stringify(monthlySavings);
+        } catch (error) {
+          console.error('Error updating monthly savings data', error);
+          // Initialize with new data if parsing fails
+          data.monthlySavings = JSON.stringify([{
+            month: `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`,
+            amount: addedAmount
+          }]);
+        }
+      }
+    }
+    
+    // Always update the timestamp
+    data.updatedAt = new Date();
+    
+    const [updatedGoal] = await db
+      .update(savingsGoals)
+      .set(data)
+      .where(eq(savingsGoals.id, id))
+      .returning();
+    
+    // Recalculate Rivu score after updating a goal
+    await this.calculateAndUpdateRivuScore(goal.userId);
+    
+    return updatedGoal || undefined;
+  }
+
+  async deleteSavingsGoal(id: number): Promise<boolean> {
+    const [goal] = await db
+      .select()
+      .from(savingsGoals)
+      .where(eq(savingsGoals.id, id));
+    
+    if (!goal) return false;
+    
+    const userId = goal.userId;
+    const result = await db
+      .delete(savingsGoals)
+      .where(eq(savingsGoals.id, id));
+    
+    // Recalculate Rivu score after deleting a goal
     if (result) {
       await this.calculateAndUpdateRivuScore(userId);
     }
