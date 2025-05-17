@@ -162,7 +162,12 @@ export default function GoalsPage() {
   // Delete goal mutation
   const deleteGoalMutation = useMutation({
     mutationFn: async (id: string | number) => {
+      // Use a try-catch to handle HTTP 204 responses which don't return JSON
       const res = await apiRequest('DELETE', `/api/goals/${id}`);
+      // Handle both 204 No Content and JSON responses
+      if (res.status === 204) {
+        return { message: 'Goal deleted successfully' };
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -176,9 +181,10 @@ export default function GoalsPage() {
       setSelectedGoal(null);
     },
     onError: (error: Error) => {
+      console.error('Delete goal error:', error);
       toast({
         title: "Error deleting goal",
-        description: error.message,
+        description: error.message || "Failed to delete goal",
         variant: "destructive",
       });
     }

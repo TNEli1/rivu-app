@@ -42,6 +42,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (user?.themePreference && (user.themePreference === 'light' || user.themePreference === 'dark')) {
       setThemeState(user.themePreference);
+    } else if (user) {
+      // If user exists but doesn't have a theme preference, default to dark mode
+      setThemeState('dark');
     }
   }, [user]);
 
@@ -50,7 +53,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setThemeState(newTheme);
     
     // If user is logged in, save preference to their profile
-    if (user?._id) {
+    if (user) {
       try {
         await apiRequest('PUT', '/api/user/theme-preference', { themePreference: newTheme });
       } catch (error) {
