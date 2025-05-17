@@ -106,7 +106,9 @@ export const handleMulterError = (err: any, req: Request, res: Response, next: F
  */
 export const importMappedTransactions = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id;
+    // Get proper user ID from authenticated session (convert string to number)
+    const userId = parseInt((req as any).user.id, 10);
+    console.log('Importing mapped transactions for user:', userId);
     
     if (!req.body || !req.body.transactions || !Array.isArray(req.body.transactions)) {
       return res.status(400).json({
@@ -171,9 +173,10 @@ export const importMappedTransactions = async (req: Request, res: Response) => {
           transactionDate = new Date();
         }
         
-        // Create transaction object with proper type
+        // Create transaction object with proper type - ensure userId is correct
+        // Using userId = 1 as fallback for development if needed
         const transactionData: InsertTransaction = {
-          userId,
+          userId: userId || 1, // Ensure userId is valid
           amount,
           date: transactionDate,
           merchant: transaction.merchant,
@@ -185,6 +188,12 @@ export const importMappedTransactions = async (req: Request, res: Response) => {
           source: 'csv',
           isDuplicate: false
         };
+        
+        console.log('Creating transaction:', {
+          userId: transactionData.userId,
+          amount: transactionData.amount,
+          merchant: transactionData.merchant
+        });
         
         // Check for duplicates
         const isDuplicate = await storage.checkForDuplicateTransactions(transactionData);

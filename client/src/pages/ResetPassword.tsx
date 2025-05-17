@@ -55,10 +55,10 @@ export default function ResetPassword() {
         description: "Your password has been updated. You can now log in with your new password.",
       });
       
-      // Redirect to login after successful reset
+      // Redirect to login immediately (reduced timeout for better UX)
       setTimeout(() => {
-        window.location.href = "/login";
-      }, 3000);
+        setLocation("/login"); // Use wouter's setLocation instead of direct window.location
+      }, 1500);
     },
     onError: (error: any) => {
       console.error("Password reset error:", error);
@@ -158,7 +158,7 @@ export default function ResetPassword() {
               </AlertDescription>
             </Alert>
             <Button 
-              onClick={() => window.location.href = "/login"}
+              onClick={() => setLocation("/login")}
               className="w-full mt-4"
             >
               Return to Login

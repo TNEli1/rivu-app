@@ -364,9 +364,12 @@ export default function CSVUploadDialog({ isOpen, onClose }: CSVUploadDialogProp
       setUploadStatus('success');
       setCurrentStep('success');
       
-      // Invalidate queries to refresh transaction data
-      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/transactions/summary'] });
+      // Force invalidate queries to refresh transaction data
+      await queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/transactions/summary'] });
+      
+      // Additional invalidation to ensure UI updates
+      queryClient.refetchQueries({ queryKey: ['/api/transactions'] });
       
       toast({
         title: "Import successful",

@@ -85,9 +85,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.put(`${apiPath}/transactions/:id/not-duplicate`, protect, markTransactionAsNotDuplicate);
     
     // Delete all transactions route
-    app.delete(`${apiPath}/transactions/all`, protect, async (req, res) => {
+    app.delete(`${apiPath}/transactions/all`, protect, async (req: any, res) => {
       try {
         const userId = parseInt(req.user.id, 10);
+        console.log('Attempting to delete all transactions for user:', userId);
         const result = await storage.deleteAllTransactions(userId);
         
         if (result) {
