@@ -17,7 +17,7 @@ interface AuthenticatedRequest extends Request {
 const csvUpload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
-      const uploadDir = path.join(__dirname, '../../tmp');
+      const uploadDir = path.join(process.cwd(), 'tmp');
       
       // Create directory if it doesn't exist
       if (!fs.existsSync(uploadDir)) {
