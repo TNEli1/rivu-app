@@ -275,12 +275,19 @@ export class DatabaseStorage implements IStorage {
     // Make sure we have the required type field
     const typeValue = transaction.type || 'expense';
     
+    // Check for duplicate transactions
+    const isDuplicate = await this.checkForDuplicateTransactions(transaction);
+    
+    const dateValue = transaction.date ? new Date(transaction.date) : new Date();
+    
     const [newTransaction] = await db
       .insert(transactions)
       .values({
         ...transaction,
         type: typeValue,
-        date: transaction.date || new Date(),
+        date: dateValue,
+        source: transaction.source || 'manual',
+        isDuplicate: isDuplicate,
         createdAt: new Date(),
       })
       .returning();
@@ -302,6 +309,49 @@ export class DatabaseStorage implements IStorage {
     await this.calculateAndUpdateRivuScore(transaction.userId);
     
     return newTransaction;
+  }
+  
+  async checkForDuplicateTransactions(transaction: InsertTransaction): Promise<boolean> {
+    // Check for transactions with similar amount, date and merchant
+    const amount = parseFloat(transaction.amount.toString());
+    const minAmount = amount * 0.95; // 5% tolerance below
+    const maxAmount = amount * 1.05; // 5% tolerance above
+    
+    const transactionDate = transaction.date ? new Date(transaction.date) : new Date();
+    
+    // Get the date range (one day before and after)
+    const startDate = new Date(transactionDate);
+    startDate.setDate(startDate.getDate() - 1);
+    
+    const endDate = new Date(transactionDate);
+    endDate.setDate(endDate.getDate() + 1);
+    
+    // Find similar transactions
+    const similarTransactions = await db
+      .select()
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.userId, transaction.userId),
+          eq(transactions.merchant, transaction.merchant),
+          // Check type if it exists
+          transaction.type ? eq(transactions.type, transaction.type) : undefined,
+          between(transactions.date, startDate, endDate),
+          gte(transactions.amount, minAmount.toString()),
+          lt(transactions.amount, maxAmount.toString())
+        )
+      );
+    
+    return similarTransactions.length > 0;
+  }
+  
+  async markTransactionAsNotDuplicate(id: number): Promise<boolean> {
+    await db
+      .update(transactions)
+      .set({ isDuplicate: false })
+      .where(eq(transactions.id, id));
+    
+    return true;
   }
 
   async updateTransaction(id: number, data: Partial<Transaction>): Promise<Transaction | undefined> {
@@ -343,6 +393,117 @@ export class DatabaseStorage implements IStorage {
     }
     
     return !!result;
+  }
+  
+  async importTransactionsFromCSV(userId: number, csvData: string): Promise<{imported: number, duplicates: number}> {
+    let importedCount = 0;
+    let duplicateCount = 0;
+    
+    try {
+      // Parse CSV data
+      const lines = csvData.split('\n');
+      if (lines.length <= 1) {
+        throw new Error('CSV file appears to be empty or only contains headers');
+      }
+      
+      // Get headers and normalize them
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      
+      // Find required column indices
+      const dateIndex = headers.indexOf('date');
+      const amountIndex = headers.indexOf('amount');
+      // For merchant/description, we'll accept either column name
+      const merchantIndex = headers.indexOf('merchant') !== -1 ? 
+                            headers.indexOf('merchant') : 
+                            headers.indexOf('description');
+      
+      // Find optional columns
+      const typeIndex = headers.indexOf('type');
+      const categoryIndex = headers.indexOf('category');
+      const accountIndex = headers.indexOf('account');
+      const notesIndex = headers.indexOf('notes');
+      
+      // Ensure required fields exist
+      if (dateIndex === -1 || amountIndex === -1 || merchantIndex === -1) {
+        throw new Error('CSV is missing required columns (date, amount, and merchant/description)');
+      }
+      
+      // Process each transaction row
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue; // Skip empty lines
+        
+        const values = line.split(',').map(v => v.trim());
+        
+        // Process date - try to parse it properly
+        let transactionDate: Date;
+        try {
+          transactionDate = new Date(values[dateIndex]);
+          if (isNaN(transactionDate.getTime())) {
+            // If date parsing fails, default to today
+            transactionDate = new Date();
+          }
+        } catch (e) {
+          transactionDate = new Date();
+        }
+        
+        // Process amount - clean up amount string
+        let amount = values[amountIndex].replace(/[^0-9.-]/g, '');
+        
+        // Determine transaction type based on amount sign or explicit type column
+        let type = 'expense';
+        if (typeIndex !== -1) {
+          const typeValue = values[typeIndex].toLowerCase();
+          type = typeValue.includes('income') || typeValue.includes('deposit') ? 'income' : 'expense';
+        } else if (amount.startsWith('-')) {
+          // Negative amounts are expenses by default
+          type = 'expense';
+          amount = amount.substring(1); // Remove the negative sign
+        } else {
+          // Otherwise assume income if not specified
+          type = 'income';
+        }
+        
+        const merchant = values[merchantIndex] || 'Unknown';
+        const category = categoryIndex !== -1 ? values[categoryIndex] || 'Uncategorized' : 'Uncategorized';
+        const account = accountIndex !== -1 ? values[accountIndex] || 'Imported' : 'Imported';
+        const notes = notesIndex !== -1 ? values[notesIndex] || '' : '';
+        
+        // Create transaction object
+        const transactionData: InsertTransaction = {
+          userId,
+          amount,
+          date: transactionDate,
+          merchant,
+          category,
+          account,
+          type,
+          notes,
+          source: 'csv'
+        };
+        
+        try {
+          // Check for duplicates
+          const isDuplicate = await this.checkForDuplicateTransactions(transactionData);
+          if (isDuplicate) {
+            duplicateCount++;
+            transactionData.isDuplicate = true;
+          }
+          
+          // Insert the transaction
+          await this.createTransaction(transactionData);
+          importedCount++;
+        } catch (err) {
+          console.error('Error importing CSV transaction:', err);
+          // Continue with next transaction
+        }
+      }
+      
+      return { imported: importedCount, duplicates: duplicateCount };
+    } catch (error) {
+      console.error('Error importing transactions from CSV:', error);
+      throw error;
+    }
   }
   
   // Savings Goal operations
