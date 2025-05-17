@@ -225,10 +225,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const schema = z.object({
       amount: z.number().positive("Amount must be positive"),
       merchant: z.string().min(1, "Merchant is required"),
-      category: z.string().min(1, "Category is required"),
-      account: z.string().min(1, "Account is required"),
+      category: z.string().optional().default("Uncategorized"),
+      account: z.string().optional().default("Default Account"),
       type: z.enum(['expense', 'income']).default('expense'),
       date: z.string().optional(),
+      notes: z.string().optional(),
     });
 
     try {
