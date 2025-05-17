@@ -193,13 +193,10 @@ export const loginUser = async (req: any, res: any) => {
  */
 export const getUserProfile = async (req: any, res: any) => {
   try {
-    const userId = req.user.id;
+    const userId = parseInt(req.user.id, 10);
     
-    // Import User model dynamically
-    const { default: User } = await import('../models/User.js');
-    
-    // Find user by ID, excluding password field
-    const user = await User.findById(userId).select('-password');
+    // Get user from PostgreSQL storage
+    const user = await storage.getUser(userId);
     
     if (!user) {
       return res.status(404).json({ 
@@ -208,8 +205,12 @@ export const getUserProfile = async (req: any, res: any) => {
       });
     }
     
-    // Return user data
-    res.json(user);
+    // Return user data (exclude password)
+    const { password, ...userData } = user;
+    res.json({
+      _id: userData.id,
+      ...userData
+    });
   } catch (error: any) {
     console.error('Get profile error:', error);
     res.status(500).json({ 
@@ -410,13 +411,10 @@ export const updateDemographics = async (req: any, res: any) => {
  */
 export const updateLoginMetrics = async (req: any, res: any) => {
   try {
-    const userId = req.user.id;
+    const userId = parseInt(req.user.id, 10);
     
-    // Import User model dynamically
-    const { default: User } = await import('../models/User.js');
-    
-    // Find user by ID
-    const user = await User.findById(userId);
+    // Find user using PostgreSQL storage
+    const user = await storage.getUser(userId);
     
     if (!user) {
       return res.status(404).json({ 
@@ -425,17 +423,27 @@ export const updateLoginMetrics = async (req: any, res: any) => {
       });
     }
     
-    // Update login metrics
-    user.lastLogin = new Date();
-    user.loginCount = (user.loginCount || 0) + 1;
+    // Calculate new login metrics
+    const currentTime = new Date();
+    const newLoginCount = (user.loginCount || 0) + 1;
     
-    // Save changes
-    await user.save();
+    // Update user with new login metrics
+    const updatedUser = await storage.updateUser(userId, {
+      lastLogin: currentTime,
+      loginCount: newLoginCount
+    });
+    
+    if (!updatedUser) {
+      return res.status(500).json({
+        message: 'Failed to update login metrics',
+        code: 'UPDATE_FAILED'
+      });
+    }
     
     // Return updated metrics
     const loginMetrics = {
-      lastLogin: user.lastLogin,
-      loginCount: user.loginCount
+      lastLogin: updatedUser.lastLogin,
+      loginCount: updatedUser.loginCount
     };
     
     res.json(loginMetrics);
