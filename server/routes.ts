@@ -27,7 +27,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       updateUserProfile,
       updateDemographics,
       updateLoginMetrics,
-      updateThemePreference,
       protect,
       forgotPassword,
       resetPassword
@@ -41,7 +40,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.get(`${apiPath}/user`, protect, getUserProfile);
     app.put(`${apiPath}/user`, protect, updateUserProfile);
     app.put(`${apiPath}/user/demographics`, protect, updateDemographics);
-    app.put(`${apiPath}/user/theme-preference`, protect, updateThemePreference);
     app.post(`${apiPath}/user/login-metric`, protect, updateLoginMetrics);
     app.post(`${apiPath}/forgot-password`, forgotPassword);
     app.post(`${apiPath}/reset-password/:token`, resetPassword);

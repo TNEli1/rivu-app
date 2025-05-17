@@ -159,47 +159,11 @@ export default function GoalsPage() {
     }
   });
 
-  // Delete goal mutation - fixed to properly handle API responses
+  // Delete goal mutation
   const deleteGoalMutation = useMutation({
     mutationFn: async (id: string | number) => {
-      try {
-        // Make sure id is properly handled as a number for backend
-        const goalId = typeof id === 'string' ? parseInt(id, 10) : id;
-        
-        if (isNaN(goalId)) {
-          throw new Error("Invalid goal ID format");
-        }
-        
-        const res = await apiRequest('DELETE', `/api/goals/${goalId}`);
-        
-        // Check if the response is ok
-        if (!res.ok) {
-          try {
-            const errorData = await res.json();
-            throw new Error(errorData.message || "Failed to delete goal");
-          } catch (jsonError) {
-            // If the response isn't JSON, use the status text
-            throw new Error(`Failed to delete goal: ${res.statusText}`);
-          }
-        }
-        
-        // For successful deletion (2xx responses)
-        // Don't try to parse the response if it's 204 No Content
-        if (res.status === 204) {
-          return { success: true };
-        }
-        
-        // Try to parse JSON if there is content, but handle cases where there isn't
-        try {
-          return await res.json();
-        } catch (e) {
-          // Just return success if no JSON content
-          return { success: true };
-        }
-      } catch (error) {
-        console.error("Error deleting goal:", error);
-        throw error; // Re-throw to trigger onError
-      }
+      const res = await apiRequest('DELETE', `/api/goals/${id}`);
+      return res.json();
     },
     onSuccess: () => {
       // Use helper function to invalidate all related queries
@@ -211,10 +175,10 @@ export default function GoalsPage() {
       });
       setSelectedGoal(null);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Error deleting goal",
-        description: error.message || "Failed to delete goal. Please try again.",
+        description: error.message,
         variant: "destructive",
       });
     }
