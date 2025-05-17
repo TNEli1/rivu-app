@@ -804,24 +804,49 @@ export default function TransactionsPage() {
                         const deleteAllMutation = async () => {
                           try {
                             setIsLoading(true); // Show loading state while deleting
+                            
+                            // First, get a count of current transactions
+                            const currentTransactionsRes = await fetch('/api/transactions');
+                            const currentTransactions = await currentTransactionsRes.json();
+                            const initialCount = currentTransactions.length;
+                            
+                            console.log(`Before deletion: ${initialCount} transactions in the list`);
+                            
+                            // Execute the delete operation
                             const res = await apiRequest('DELETE', '/api/transactions/all');
                             const data = await res.json();
                             
                             // Log the result
                             console.log('Delete all transactions response:', data);
                             
-                            // Force refetch transactions and related data
-                            await queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
-                            await queryClient.invalidateQueries({ queryKey: ['/api/transactions/summary'] });
-                            await queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
+                            // Clear React Query cache completely to ensure fresh data
+                            queryClient.clear();
                             
-                            // Force refetch to ensure we get latest data
-                            await queryClient.refetchQueries({ queryKey: ['/api/transactions'] });
+                            // Force refetch all needed data
+                            await Promise.all([
+                              queryClient.refetchQueries({ queryKey: ['/api/transactions'] }),
+                              queryClient.refetchQueries({ queryKey: ['/api/transactions/summary'] }),
+                              queryClient.refetchQueries({ queryKey: ['/api/rivu-score'] })
+                            ]);
                             
-                            toast({
-                              title: "All transactions cleared",
-                              description: `Successfully deleted ${data.deletedCount || 'all'} transactions.`,
-                            });
+                            // Verify transaction deletion
+                            const verifyRes = await fetch('/api/transactions');
+                            const remainingTransactions = await verifyRes.json();
+                            
+                            console.log(`After deletion: ${remainingTransactions.length} transactions remain`);
+                            
+                            if (remainingTransactions.length === 0) {
+                              toast({
+                                title: "All transactions cleared",
+                                description: `Successfully deleted all ${initialCount} transactions.`,
+                              });
+                            } else {
+                              toast({
+                                title: "Transaction deletion issue",
+                                description: `${remainingTransactions.length} transactions remain. Please try again.`,
+                                variant: "destructive",
+                              });
+                            }
                           } catch (error) {
                             console.error('Error clearing all transactions:', error);
                             toast({

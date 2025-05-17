@@ -91,30 +91,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const userId = parseInt(req.user.id, 10);
         console.log('Attempting to delete all transactions for user:', userId);
-        
-        // Log the current database state before deletion
-        const beforeTransactions = await db
-          .select({ count: sql`count(*)` })
-          .from(transactions)
-          .where(eq(transactions.userId, userId));
-        
-        console.log(`Before deletion: User ${userId} has ${beforeTransactions[0]?.count || 0} transactions`);
-        
+
         // Attempt the deletion
         const result = await storage.deleteAllTransactions(userId);
         
-        // Log the database state after deletion
-        const afterTransactions = await db
-          .select({ count: sql`count(*)` })
-          .from(transactions)
-          .where(eq(transactions.userId, userId));
-        
-        console.log(`After deletion: User ${userId} has ${afterTransactions[0]?.count || 0} transactions`);
-        
         if (result) {
+          // Verify all transactions were deleted
+          const remaining = await db
+            .select()
+            .from(transactions)
+            .where(eq(transactions.userId, userId));
+            
+          console.log(`After deletion: User ${userId} has ${remaining.length} remaining transactions`);
+          
           res.json({ 
             message: 'All transactions deleted successfully',
-            deletedCount: parseInt(beforeTransactions[0]?.count as string || '0') - parseInt(afterTransactions[0]?.count as string || '0')
+            success: remaining.length === 0
           });
         } else {
           console.error('Database reported deletion failure');

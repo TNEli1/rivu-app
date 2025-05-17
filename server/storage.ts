@@ -402,45 +402,12 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`Attempting to delete all transactions for user ID: ${userId}`);
       
-      // First, get a count of transactions for this user
-      const userTransactions = await db
-        .select()
-        .from(transactions)
+      // Delete transactions directly without additional queries
+      const result = await db
+        .delete(transactions)
         .where(eq(transactions.userId, userId));
       
-      console.log(`Found ${userTransactions.length} transactions to delete for user ${userId}`);
-      
-      if (userTransactions.length === 0) {
-        console.log(`No transactions to delete for user ${userId}`);
-        return true; // No transactions to delete is still a "success"
-      }
-      
-      // Log IDs of transactions to be deleted
-      const transactionIds = userTransactions.map(t => t.id).join(', ');
-      console.log(`Transaction IDs to delete: ${transactionIds}`);
-      
-      // Use direct SQL query to ensure the delete operation works
-      const result = await db.execute(
-        sql`DELETE FROM "transactions" WHERE "user_id" = ${userId} RETURNING id`
-      );
-      
-      console.log(`SQL DELETE operation completed, affected rows:`, result);
-      
-      // Verify deletion by checking if any transactions remain
-      const remainingTransactions = await db
-        .select()
-        .from(transactions)
-        .where(eq(transactions.userId, userId));
-      
-      if (remainingTransactions.length > 0) {
-        console.error(`Failed to delete all transactions. ${remainingTransactions.length} transactions remain for user ${userId}`);
-        return false;
-      } else {
-        console.log(`Successfully verified: no transactions remain for user ${userId}`);
-      }
-      
-      // Recalculate Rivu score after clearing all transactions
-      await this.calculateAndUpdateRivuScore(userId);
+      console.log(`Delete operation completed for user ${userId}`);
       
       // Update user's lastTransactionDate to track this activity
       await this.updateUser(userId, {
@@ -450,9 +417,7 @@ export class DatabaseStorage implements IStorage {
       return true;
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      const errorStack = error instanceof Error ? error.stack : '';
       console.error('Error deleting all transactions:', errorMessage);
-      console.error(errorStack); // Log the full error stack trace
       return false;
     }
   }
