@@ -48,6 +48,7 @@ export interface IStorage {
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   updateTransaction(id: number, data: Partial<Transaction>): Promise<Transaction | undefined>;
   deleteTransaction(id: number): Promise<boolean>;
+  deleteAllTransactions(userId: number): Promise<boolean>;
   importTransactionsFromCSV(userId: number, csvData: string): Promise<{imported: number, duplicates: number}>;
   checkForDuplicateTransactions(transaction: InsertTransaction): Promise<boolean>;
   markTransactionAsNotDuplicate(id: number): Promise<boolean>;
@@ -395,6 +396,28 @@ export class DatabaseStorage implements IStorage {
     }
     
     return !!result;
+  }
+  
+  async deleteAllTransactions(userId: number): Promise<boolean> {
+    try {
+      // Delete all transactions for the user
+      await db
+        .delete(transactions)
+        .where(eq(transactions.userId, userId));
+      
+      // Recalculate Rivu score after clearing all transactions
+      await this.calculateAndUpdateRivuScore(userId);
+      
+      // Update user's lastTransactionDate to track this activity
+      await this.updateUser(userId, {
+        lastTransactionDate: new Date()
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting all transactions:', error);
+      return false;
+    }
   }
   
   async importTransactionsFromCSV(userId: number, csvData: string): Promise<{imported: number, duplicates: number}> {

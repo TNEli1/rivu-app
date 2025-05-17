@@ -84,6 +84,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.post(`${apiPath}/transactions/import-mapped`, protect, importMappedTransactions);
     app.put(`${apiPath}/transactions/:id/not-duplicate`, protect, markTransactionAsNotDuplicate);
     
+    // Delete all transactions route
+    app.delete(`${apiPath}/transactions/all`, protect, async (req, res) => {
+      try {
+        const userId = parseInt(req.user.id, 10);
+        const result = await storage.deleteAllTransactions(userId);
+        
+        if (result) {
+          res.json({ message: 'All transactions deleted successfully' });
+        } else {
+          res.status(500).json({ 
+            message: 'Failed to delete all transactions',
+            code: 'DELETE_FAILED' 
+          });
+        }
+      } catch (error: any) {
+        console.error('Error deleting all transactions:', error);
+        res.status(500).json({ 
+          message: error.message || 'Error deleting all transactions',
+          code: 'SERVER_ERROR'
+        });
+      }
+    });
+    
     // Import category controller
     const {
       getCategories,
