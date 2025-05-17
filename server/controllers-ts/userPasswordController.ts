@@ -52,34 +52,37 @@ export const forgotPassword = async (req: Request, res: Response) => {
       });
     }
     
-    // Create reset URL - In development, ensure the port matches Vite's frontend port (5173)
-    let resetUrl = '';
-    if (process.env.NODE_ENV === 'development') {
-      // Use port 5173 in development which is where Vite serves the frontend
-      resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
-    } else {
-      resetUrl = `${req.protocol}://${req.get('host')}/reset-password/${resetToken}`;
-    }
-    
-    // In development mode, return token for testing
-    if (process.env.NODE_ENV === 'development') {
-      // Send email (in development this just logs to console)
-      await sendPasswordResetEmail(email, resetToken, resetUrl);
+    // CRITICAL FIX: Always generate proper URLs that work in Replit environment
+    // Get the app host from environment or request
+    const appHost = process.env.REPL_SLUG && process.env.REPL_OWNER
+      ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
+      : `${req.protocol}://${req.get('host')}`;
       
-      return res.status(200).json({
-        message: 'Password reset email sent (check server logs in development)',
-        resetToken,
-        resetUrl,
-        code: 'RESET_TOKEN_GENERATED'
-      });
-    }
+    const resetUrl = `${appHost}/reset-password/${resetToken}`;
+    console.log(`Generated password reset URL: ${resetUrl}`);
     
-    // Send password reset email
+    // CRITICAL FIX: Always attempt to send real email if Postmark API key is available
+    console.log('Attempting to send password reset email via email service...');
     const emailSent = await sendPasswordResetEmail(email, resetToken, resetUrl);
     
-    if (!emailSent) {
+    // Always log detailed status for debugging
+    if (emailSent) {
+      console.log('✅ Password reset email sent successfully!');
+      
+      // In development, also return the token and URL for easier testing
+      if (process.env.NODE_ENV === 'development') {
+        return res.status(200).json({
+          message: 'Password reset email sent',
+          resetToken,
+          resetUrl,
+          code: 'RESET_TOKEN_GENERATED'
+        });
+      }
+    } else {
+      console.error('❌ Failed to send password reset email. Check email service configuration.');
+      
       return res.status(500).json({
-        message: 'Failed to send password reset email',
+        message: 'Failed to send password reset email. Please check system configuration.',
         code: 'EMAIL_FAILED'
       });
     }

@@ -173,14 +173,35 @@ export const importMappedTransactions = async (req: Request, res: Response) => {
           transactionDate = new Date();
         }
         
-        // Create transaction object with proper type - ensure userId is correct
-        // Using the authenticated user's ID, NEVER a hardcoded value
+        // CRITICAL FIX: Handle date without timezone shifting
+        let fixedDate: Date;
+        // If we've already created a Date object
+        if (transactionDate instanceof Date) {
+          // Set time to noon to prevent timezone issues
+          fixedDate = new Date(
+            transactionDate.getFullYear(),
+            transactionDate.getMonth(), 
+            transactionDate.getDate(),
+            12, 0, 0, 0
+          );
+        } else {
+          // Fallback to today at noon
+          const today = new Date();
+          fixedDate = new Date(
+            today.getFullYear(),
+            today.getMonth(),
+            today.getDate(),
+            12, 0, 0, 0
+          );
+        }
+        
+        console.log(`CSV Date: Original=${transaction.date}, Parsed=${fixedDate.toISOString()}`);
         console.log(`Preparing CSV transaction for user ID: ${userId}`);
         
         const transactionData: InsertTransaction = {
           userId, // Use the authenticated user's ID
           amount,
-          date: transactionDate,
+          date: fixedDate,
           merchant: transaction.merchant,
           category: transaction.category || 'Uncategorized',
           subcategory: transaction.subcategory || '',

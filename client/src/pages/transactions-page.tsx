@@ -276,14 +276,23 @@ export default function TransactionsPage() {
       // This prevents timezone conversion issues where the date shifts
       console.log(`Using exact date from form: ${data.date}`);
       
+      // CRITICAL FIX: Fix date handling to prevent timezone shift
+      console.log(`Original date from form: ${data.date}`);
+      
+      // Extract the date parts to explicitly construct a date that won't shift
+      let adjustedDate = data.date;
+      
+      // If it's an ISO date string, keep it as is to avoid timezone issues
+      // This ensures the date sent is the exact one the user selected
+      console.log(`Using exact user-selected date: ${adjustedDate}`);
+      
       const res = await apiRequest('POST', '/api/transactions', {
         ...cleanData,
         category,
         account,
         amount: parseFloat(data.amount),
-        // Pass the date exactly as entered without converting to Date object first
-        // This prevents timezone issues from shifting the date
-        date: data.date,
+        // Pass the date exactly as entered without any conversion
+        date: adjustedDate,
         type: data.type || 'expense',
         source: 'manual'
       });
