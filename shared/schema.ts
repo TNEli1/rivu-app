@@ -40,6 +40,11 @@ export const insertUserSchema = createInsertSchema(users).pick({
   firstName: true,
   lastName: true,
   avatarInitials: true,
+  onboardingStage: true,
+  onboardingCompleted: true,
+  accountCreationDate: true,
+  loginCount: true,
+  lastLogin: true,
 });
 
 // Budget Categories

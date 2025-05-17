@@ -91,7 +91,7 @@ export const registerUser = async (req: any, res: any) => {
     // Create user initials for avatar
     const avatarInitials = (firstName?.[0] || '') + (lastName?.[0] || '');
     
-    // Create new user with hashed password
+    // Create new user with hashed password and initialize onboarding
     const user = await storage.createUser({
       username,
       email,
@@ -99,6 +99,11 @@ export const registerUser = async (req: any, res: any) => {
       firstName: firstName || '',
       lastName: lastName || '',
       avatarInitials: avatarInitials || username.substring(0, 2).toUpperCase(),
+      onboardingStage: 'new',
+      onboardingCompleted: false,
+      accountCreationDate: new Date(),
+      loginCount: 1,
+      lastLoginDate: new Date()
     });
     
     if (user) {
@@ -108,6 +113,14 @@ export const registerUser = async (req: any, res: any) => {
       // Set token as HTTP-only cookie
       setTokenCookie(res, token);
       
+      // Check for initial nudges to create for the new user
+      try {
+        await storage.checkAndCreateNudges(user.id);
+      } catch (nudgeError) {
+        console.warn('Error creating initial nudges for new user:', nudgeError);
+        // Don't fail registration if nudge creation fails
+      }
+      
       // Return user info without password
       res.status(201).json({
         _id: user.id,
@@ -115,6 +128,7 @@ export const registerUser = async (req: any, res: any) => {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        onboardingStage: user.onboardingStage,
         token // Include token in response for clients not using cookies
       });
     } else {
