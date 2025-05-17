@@ -182,7 +182,7 @@ export const loginUser = async (req: any, res: any) => {
     // Set token cookie
     setTokenCookie(res, token);
     
-    // Send user data (excluding password)
+    // Send user data (excluding password) with token
     res.json({
       _id: user.id,
       username: user.username,
@@ -190,7 +190,8 @@ export const loginUser = async (req: any, res: any) => {
       firstName: user.firstName,
       lastName: user.lastName,
       avatarInitials: user.avatarInitials,
-      themePreference: user.themePreference
+      themePreference: user.themePreference,
+      token: token // Include token in the response so frontend can store it
     });
   } catch (error: any) {
     console.error('Login error:', error);
@@ -255,7 +256,7 @@ export const registerUser = async (req: any, res: any) => {
     // Set token cookie
     setTokenCookie(res, token);
     
-    // Send user data (excluding password)
+    // Send user data (excluding password) with token
     res.status(201).json({
       _id: newUser.id,
       username: newUser.username,
@@ -263,7 +264,8 @@ export const registerUser = async (req: any, res: any) => {
       firstName: newUser.firstName,
       lastName: newUser.lastName,
       avatarInitials: newUser.avatarInitials,
-      themePreference: newUser.themePreference
+      themePreference: newUser.themePreference,
+      token: token // Include token in the response so frontend can store it
     });
   } catch (error: any) {
     console.error('Registration error:', error);
@@ -302,10 +304,32 @@ export const logoutUser = (req: any, res: any) => {
 export const getUserProfile = async (req: any, res: any) => {
   try {
     // req.user is set in the protect middleware
-    const user = req.user;
+    const userId = req.user.id;
     
-    // Send user profile data
-    res.json(user);
+    // Get fresh user data from storage
+    const user = await storage.getUser(userId);
+    
+    if (!user) {
+      return res.status(404).json({ 
+        message: 'User not found',
+        code: 'USER_NOT_FOUND'
+      });
+    }
+    
+    // Generate a fresh token
+    const token = generateToken(user.id);
+    
+    // Send user profile data formatted for frontend
+    res.json({
+      _id: user.id,
+      username: user.username,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      avatarInitials: user.avatarInitials,
+      themePreference: user.themePreference,
+      token: token // Include token in response
+    });
   } catch (error: any) {
     console.error('Get profile error:', error);
     res.status(500).json({ 
