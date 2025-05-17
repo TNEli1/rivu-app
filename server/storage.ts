@@ -47,9 +47,19 @@ export interface IStorage {
   // Rivu Score operations
   getRivuScore(userId: number): Promise<RivuScore | undefined>;
   createOrUpdateRivuScore(score: InsertRivuScore): Promise<RivuScore>;
+  
+  // Nudge system operations
+  getNudges(userId: number, status?: string): Promise<Nudge[]>;
+  createNudge(nudge: InsertNudge): Promise<Nudge>;
+  updateNudgeStatus(id: number, status: string): Promise<Nudge | undefined>;
+  dismissNudge(id: number): Promise<boolean>;
+  completeNudge(id: number): Promise<boolean>;
+  checkAndCreateNudges(userId: number): Promise<Nudge[]>;
 
   // Helper methods
   calculateRivuScore(userId: number): Promise<number>;
+  updateOnboardingStage(userId: number, stage: string): Promise<User | undefined>;
+  isNewUser(userId: number): Promise<boolean>; // Check if user is within first 7 days
 }
 
 export class DatabaseStorage implements IStorage {

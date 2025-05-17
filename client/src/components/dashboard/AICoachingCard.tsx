@@ -15,6 +15,15 @@ export default function AICoachingCard() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const initialLoadCompleted = useRef(false);
 
+  // Suggested prompts that users can quickly click
+  const suggestedPrompts = [
+    "Give me advice based on my top spending categories this month.",
+    "Am I saving enough based on my income and spending habits?",
+    "Which goal should I focus on next?",
+    "How does my spending compare to last month?",
+    "What are 3 quick ways I can improve my financial health?"
+  ];
+
   // Scroll to bottom of messages
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -91,23 +100,42 @@ export default function AICoachingCard() {
     }
   };
 
+  const handleSuggestedPrompt = (prompt: string) => {
+    // Set the input value to the suggested prompt
+    setInputValue(prompt);
+  };
+
   return (
-    <Card className="bg-card rounded-xl">
-      <CardContent className="p-6">
+    <Card className="bg-card rounded-xl shadow-md overflow-hidden border border-border/50 hover:border-border/80 transition-all duration-300">
+      <CardContent className="p-6 bg-gradient-to-br from-background to-background/70">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-foreground">AI Financial Coach</h2>
-          <Button 
-            variant="outline" 
-            size="icon" 
-            className="w-8 h-8 rounded-full bg-background/60 flex items-center justify-center"
-            onClick={() => refreshAdvice.mutate()}
-            disabled={refreshAdvice.isPending}
-          >
-            <i className={`ri-refresh-line text-muted-foreground ${refreshAdvice.isPending ? 'animate-spin' : ''}`}></i>
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mr-2">
+              <i className="ri-robot-line text-primary text-lg"></i>
+            </div>
+            <h2 className="text-xl font-bold text-foreground">AI Financial Coach</h2>
+          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="w-8 h-8 rounded-full bg-background/80 flex items-center justify-center border-primary/20 hover:bg-primary/10 hover:border-primary/30 transition-all"
+                  onClick={() => refreshAdvice.mutate()}
+                  disabled={refreshAdvice.isPending}
+                >
+                  <i className={`ri-refresh-line text-primary ${refreshAdvice.isPending ? 'animate-spin' : ''}`}></i>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Refresh advice</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
         
-        <div className="max-h-[300px] overflow-y-auto mb-4 px-1">
+        <div className="max-h-[300px] overflow-y-auto mb-4 px-1 scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
           {messages.map((message, index) => (
             <div className={`flex mb-4 ${message.isUser ? 'justify-end' : ''}`} key={index}>
               {!message.isUser && (
@@ -116,9 +144,9 @@ export default function AICoachingCard() {
                 </div>
               )}
               <div 
-                className={`p-4 max-w-[80%] ${message.isUser 
-                  ? 'bg-primary text-white rounded-tl-xl rounded-tr-xl rounded-bl-xl ml-auto' 
-                  : 'ml-4 bg-background rounded-tr-xl rounded-br-xl rounded-bl-xl'}`}
+                className={`p-4 max-w-[80%] shadow-sm ${message.isUser 
+                  ? 'bg-primary text-white rounded-tl-xl rounded-tr-xl rounded-bl-xl ml-auto transition-transform hover:translate-x-[-2px]' 
+                  : 'ml-4 bg-background/90 backdrop-blur-sm rounded-tr-xl rounded-br-xl rounded-bl-xl transition-transform hover:translate-x-[2px]'}`}
               >
                 <p className={`text-sm ${message.isLoading ? 'animate-pulse-slow' : ''}`}>
                   {message.message}
@@ -128,7 +156,7 @@ export default function AICoachingCard() {
                 </div>
               </div>
               {message.isUser && (
-                <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0 ml-2">
+                <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0 ml-2 shadow-md">
                   <i className="ri-user-line text-white"></i>
                 </div>
               )}
@@ -141,7 +169,7 @@ export default function AICoachingCard() {
               <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
                 <i className="ri-robot-line text-primary"></i>
               </div>
-              <div className="ml-4 p-4 bg-background rounded-tr-xl rounded-br-xl rounded-bl-xl animate-pulse-slow">
+              <div className="ml-4 p-4 bg-background/90 backdrop-blur-sm rounded-tr-xl rounded-br-xl rounded-bl-xl animate-pulse-slow shadow-sm">
                 <div className="flex space-x-2 items-center">
                   <div className="h-2 w-2 rounded-full bg-primary/40 animate-bounce"></div>
                   <div className="h-2 w-2 rounded-full bg-primary/40 animate-bounce [animation-delay:0.2s]"></div>
@@ -153,12 +181,26 @@ export default function AICoachingCard() {
           )}
         </div>
         
+        {/* Suggested Prompts */}
+        <div className="mb-4 flex flex-wrap gap-2">
+          {suggestedPrompts.map((prompt, index) => (
+            <Badge 
+              key={index}
+              variant="outline"
+              className="cursor-pointer px-3 py-1 bg-background/80 hover:bg-primary/10 transition-colors text-xs border-primary/20"
+              onClick={() => handleSuggestedPrompt(prompt)}
+            >
+              {prompt.length > 30 ? prompt.substring(0, 27) + '...' : prompt}
+            </Badge>
+          ))}
+        </div>
+        
         {/* Ask AI Input */}
-        <form onSubmit={handleSendQuestion} className="mt-6 relative">
+        <form onSubmit={handleSendQuestion} className="mt-4 relative">
           <Input
             type="text"
             placeholder="Ask your AI coach a question..."
-            className="w-full bg-background border border-border rounded-lg px-4 py-3 pr-10 text-sm focus:outline-none focus:border-primary"
+            className="w-full bg-background/80 border border-border/50 rounded-lg px-4 py-3 pr-10 text-sm focus:outline-none focus:border-primary shadow-sm transition-all focus:ring-1 focus:ring-primary/20"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             disabled={sendQuestion.isPending}
@@ -167,7 +209,7 @@ export default function AICoachingCard() {
             type="submit" 
             size="icon" 
             variant="ghost" 
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-primary"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-primary hover:bg-primary/10 rounded-full"
             disabled={!inputValue.trim() || sendQuestion.isPending}
           >
             <i className="ri-send-plane-fill"></i>

@@ -23,6 +23,13 @@ export const users = pgTable("users", {
   // Metrics
   loginCount: integer("login_count").default(0),
   lastLogin: timestamp("last_login"),
+  lastTransactionDate: timestamp("last_transaction_date"),
+  lastGoalUpdateDate: timestamp("last_goal_update_date"),
+  lastBudgetUpdateDate: timestamp("last_budget_update_date"),
+  onboardingStage: text("onboarding_stage").default("new"), // 'new', 'budget_created', 'transaction_added', 'goal_created', 'completed'
+  onboardingCompleted: boolean("onboarding_completed").default(false),
+  accountCreationDate: timestamp("account_creation_date").defaultNow().notNull(),
+  nudgeSettings: text("nudge_settings").default("{}"), // JSON string with nudge preferences
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -131,3 +138,29 @@ export type InsertSavingsGoal = z.infer<typeof insertSavingsGoalSchema>;
 
 export type RivuScore = typeof rivuScores.$inferSelect;
 export type InsertRivuScore = z.infer<typeof insertRivuScoreSchema>;
+
+// Nudge System
+export const nudges = pgTable("nudges", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  type: text("type").notNull(), // 'transaction', 'goal', 'budget', 'onboarding', etc.
+  message: text("message").notNull(),
+  status: text("status").default("active").notNull(), // 'active', 'dismissed', 'completed'
+  triggerCondition: text("trigger_condition").notNull(), // Serialized JSON of the condition that triggered the nudge
+  dueDate: timestamp("due_date"), // When this nudge should be shown to the user
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  dismissedAt: timestamp("dismissed_at"),
+  completedAt: timestamp("completed_at"),
+});
+
+export const insertNudgeSchema = createInsertSchema(nudges).pick({
+  userId: true,
+  type: true,
+  message: true,
+  status: true,
+  triggerCondition: true,
+  dueDate: true,
+});
+
+export type Nudge = typeof nudges.$inferSelect;
+export type InsertNudge = z.infer<typeof insertNudgeSchema>;
