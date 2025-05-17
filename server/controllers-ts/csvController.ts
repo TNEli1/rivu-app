@@ -92,3 +92,126 @@ export const handleMulterError = (err: any, req: Request, res: Response, next: F
   // If no error, continue
   next();
 };
+
+/**
+ * @desc    Import transactions from mapped CSV data
+ * Expected request body format:
+ * {
+ *   transactions: [
+ *     { date: '2023-01-01', amount: '100', merchant: 'Store', category: 'Shopping', ... },
+ *     ...
+ *   ]
+ * }
+ */
+export const importMappedTransactions = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+    
+    if (!req.body || !req.body.transactions || !Array.isArray(req.body.transactions)) {
+      return res.status(400).json({
+        message: 'Invalid request format. Expected an array of transactions.',
+        code: 'INVALID_FORMAT'
+      });
+    }
+    
+    const transactions = req.body.transactions;
+    
+    if (transactions.length === 0) {
+      return res.status(400).json({
+        message: 'No transactions to import',
+        code: 'EMPTY_DATA'
+      });
+    }
+    
+    let importedCount = 0;
+    let duplicateCount = 0;
+    
+    // Process each transaction from the mapped data
+    for (const transaction of transactions) {
+      // Validate required fields
+      if (!transaction.date || !transaction.amount || !transaction.merchant) {
+        continue; // Skip invalid entries
+      }
+      
+      try {
+        // Prepare transaction data
+        let type = transaction.type || 'expense';
+        
+        // If amount is negative, it's an expense, and we need a positive number
+        let amount = transaction.amount.replace(/[^0-9.-]/g, ''); // Remove currency symbols
+        if (amount.startsWith('-')) {
+          type = 'expense';
+          amount = amount.substring(1); // Remove negative sign
+        } else if (type.toLowerCase().includes('income') || 
+                  type.toLowerCase().includes('deposit') ||
+                  type.toLowerCase().includes('credit')) {
+          type = 'income';
+        }
+        
+        // Parse date - try to handle various formats
+        let transactionDate;
+        try {
+          // Try to parse the date (handle both YYYY-MM-DD and MM/DD/YYYY formats)
+          if (transaction.date.includes('/')) {
+            // MM/DD/YYYY format
+            const [month, day, year] = transaction.date.split('/');
+            transactionDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+          } else {
+            // Assume YYYY-MM-DD format
+            transactionDate = new Date(transaction.date);
+          }
+          
+          // Check if date is valid
+          if (isNaN(transactionDate.getTime())) {
+            throw new Error('Invalid date');
+          }
+        } catch (error) {
+          // Default to today if date parsing fails
+          transactionDate = new Date();
+        }
+        
+        // Create transaction object
+        const transactionData = {
+          userId,
+          amount,
+          date: transactionDate,
+          merchant: transaction.merchant,
+          category: transaction.category || 'Uncategorized',
+          subcategory: transaction.subcategory || '',
+          account: transaction.account || 'Imported',
+          type,
+          notes: transaction.notes || '',
+          source: 'csv'
+        };
+        
+        // Check for duplicates
+        const isDuplicate = await storage.checkForDuplicateTransactions(transactionData);
+        if (isDuplicate) {
+          duplicateCount++;
+          transactionData.isDuplicate = true;
+        }
+        
+        // Insert the transaction
+        await storage.createTransaction(transactionData);
+        importedCount++;
+      } catch (err) {
+        console.error('Error importing mapped transaction:', err);
+        // Continue with next transaction
+      }
+    }
+    
+    // Return the result
+    res.json({
+      message: `Successfully imported ${importedCount} transactions (${duplicateCount} potential duplicates detected)`,
+      imported: importedCount,
+      duplicates: duplicateCount
+    });
+  } catch (error: any) {
+    console.error('Error importing mapped transactions:', error);
+    
+    res.status(500).json({
+      message: error.message || 'Error importing transactions',
+      code: 'IMPORT_ERROR'
+    });
+  }
+};
