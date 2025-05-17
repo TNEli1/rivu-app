@@ -141,73 +141,75 @@ export class DatabaseStorage implements IStorage {
     return updatedUser || undefined;
   }
   
-  async createPasswordResetToken(email: string): Promise<{token: string, expiry: Date} | null> {
+  async createPasswordResetToken(email: string, tokenHash: string, expiry: Date): Promise<boolean> {
     // Find user by email
     const user = await this.getUserByEmail(email);
-    if (!user) return null;
+    if (!user) return false;
     
-    // Generate a secure random token
-    const crypto = await import('crypto');
-    const token = crypto.randomBytes(32).toString('hex');
-    
-    // Set expiration to 1 hour from now
-    const expiry = new Date();
-    expiry.setHours(expiry.getHours() + 1);
-    
-    // Save the token and expiry to the user's record
+    // Save the token hash and expiry to the user's record
     await db.update(users)
       .set({
-        resetToken: token,
+        resetToken: tokenHash,
         resetTokenExpiry: expiry
       })
       .where(eq(users.id, user.id));
     
-    return { token, expiry };
+    return true;
   }
   
-  async verifyPasswordResetToken(token: string): Promise<User | null> {
-    // Find user with this token
-    const [user] = await db.select()
-      .from(users)
-      .where(eq(users.resetToken, token));
-    
-    if (!user) return null;
-    
-    // Check if token is expired
-    if (!user.resetTokenExpiry || new Date() > new Date(user.resetTokenExpiry)) {
-      // Clear expired token
+  async verifyPasswordResetToken(tokenHash: string): Promise<User | null> {
+    try {
+      // Find user with this token hash
+      const [user] = await db.select()
+        .from(users)
+        .where(eq(users.resetToken, tokenHash));
+      
+      if (!user) return null;
+      
+      // Check if token is expired
+      if (!user.resetTokenExpiry || new Date() > new Date(user.resetTokenExpiry)) {
+        // Clear expired token
+        await db.update(users)
+          .set({
+            resetToken: null,
+            resetTokenExpiry: null
+          })
+          .where(eq(users.id, user.id));
+        
+        return null;
+      }
+      
+      return user;
+    } catch (error) {
+      console.error('Error verifying password reset token:', error);
+      return null;
+    }
+  }
+  
+  async resetPassword(tokenHash: string, newPassword: string): Promise<boolean> {
+    try {
+      // Verify token is valid
+      const user = await this.verifyPasswordResetToken(tokenHash);
+      if (!user) return false;
+      
+      // Hash the new password
+      const bcrypt = await import('bcrypt');
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      
+      // Update password and clear token
       await db.update(users)
         .set({
+          password: hashedPassword,
           resetToken: null,
           resetTokenExpiry: null
         })
         .where(eq(users.id, user.id));
       
-      return null;
+      return true;
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      return false;
     }
-    
-    return user;
-  }
-  
-  async resetPassword(token: string, newPassword: string): Promise<boolean> {
-    // Verify token is valid
-    const user = await this.verifyPasswordResetToken(token);
-    if (!user) return false;
-    
-    // Hash the new password
-    const bcrypt = await import('bcrypt');
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    
-    // Update password and clear token
-    await db.update(users)
-      .set({
-        password: hashedPassword,
-        resetToken: null,
-        resetTokenExpiry: null
-      })
-      .where(eq(users.id, user.id));
-    
-    return true;
   }
 
   // Budget category operations
