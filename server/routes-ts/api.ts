@@ -39,6 +39,10 @@ async function initializeRoutes() {
     const budgetController = await importController('../controllers/budgetController.js');
     const { getBudgets, createBudget, updateBudget, deleteBudget } = budgetController;
     
+    // Import TypeScript transaction controllers for improved calculation
+    const transactionSummaryController = await importController('../controllers-ts/transactionSummaryController.ts');
+    const { getTransactionSummary } = transactionSummaryController;
+    
     const transactionController = await importController('../controllers/transactionController.js');
     const { 
       getTransactions, createTransaction, 
