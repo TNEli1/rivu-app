@@ -100,11 +100,20 @@ const CATEGORY_SUGGESTIONS: Record<string, string[]> = {
 export default function TransactionsPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isCsvDialogOpen, setIsCsvDialogOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [accountFilter, setAccountFilter] = useState<string | null>(null);
+  
+  // CSV import states
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [csvData, setCsvData] = useState<any[]>([]);
+  const [csvStep, setCsvStep] = useState<'upload' | 'preview' | 'mapping' | 'confirm'>('upload');
+  const [isParsingCsv, setIsParsingCsv] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [possibleDuplicates, setPossibleDuplicates] = useState<any[]>([]);
   
   const [formData, setFormData] = useState<TransactionFormData>({
     type: 'expense',
@@ -360,6 +369,151 @@ export default function TransactionsPage() {
       account: "",
       notes: '',
     });
+  };
+  
+  // CSV file upload handler
+  const handleCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImportError(null);
+    const file = e.target.files?.[0];
+    
+    if (!file) {
+      return;
+    }
+    
+    // Check if it's a CSV file
+    if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+      setImportError('Please upload a valid CSV file');
+      return;
+    }
+    
+    setCsvFile(file);
+    parseCsvFile(file);
+  };
+  
+  // Parse CSV data
+  const parseCsvFile = (file: File) => {
+    setIsParsingCsv(true);
+    setImportError(null);
+    
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        // Check if there's parsing errors
+        if (results.errors && results.errors.length > 0) {
+          setImportError(`Error parsing CSV: ${results.errors[0].message}`);
+          setIsParsingCsv(false);
+          return;
+        }
+        
+        // Validate that required fields are present
+        const data = results.data as any[];
+        if (data.length === 0) {
+          setImportError('CSV file is empty or has invalid format');
+          setIsParsingCsv(false);
+          return;
+        }
+        
+        // Check if required columns exist
+        const firstRow = data[0];
+        const requiredFields = ['date', 'amount', 'merchant'];
+        const missingFields = requiredFields.filter(field => 
+          !Object.keys(firstRow).some(key => key.toLowerCase() === field.toLowerCase())
+        );
+        
+        if (missingFields.length > 0) {
+          setImportError(`Missing required fields in CSV: ${missingFields.join(', ')}`);
+          setIsParsingCsv(false);
+          return;
+        }
+        
+        setCsvData(data);
+        setCsvStep('preview');
+        setIsParsingCsv(false);
+      },
+      error: (error) => {
+        setImportError(`Error parsing CSV: ${error.message}`);
+        setIsParsingCsv(false);
+      }
+    });
+  };
+  
+  // Check for duplicate transactions
+  const checkForDuplicates = (newTransactions: any[]) => {
+    // For each new transaction, check if it exists in the current transactions
+    const potentialDuplicates = newTransactions.filter(newTrans => {
+      return transactions.some(existingTrans => {
+        // Check by amount and merchant (within 48-72 hrs)
+        const newDate = new Date(newTrans.date);
+        const existingDate = new Date(existingTrans.date);
+        const timeDiff = Math.abs(existingDate.getTime() - newDate.getTime());
+        const hoursDiff = timeDiff / (1000 * 60 * 60);
+        
+        return (
+          parseFloat(newTrans.amount) === parseFloat(existingTrans.amount) &&
+          newTrans.merchant.toLowerCase() === existingTrans.merchant.toLowerCase() &&
+          hoursDiff <= 72 // Within 72 hours
+        );
+      });
+    });
+    
+    return potentialDuplicates;
+  };
+  
+  // Import transactions from CSV
+  const importTransactionsFromCsv = async () => {
+    if (csvData.length === 0) {
+      setImportError('No data to import');
+      return;
+    }
+    
+    try {
+      // Check for duplicates
+      const duplicates = checkForDuplicates(csvData);
+      
+      if (duplicates.length > 0) {
+        setPossibleDuplicates(duplicates);
+        // We could show a confirmation dialog here, but for now we'll just warn and continue
+        toast({
+          title: 'Possible duplicates detected',
+          description: `${duplicates.length} transactions may be duplicates. Review carefully.`,
+          variant: 'warning',
+        });
+      }
+      
+      // Process the data and import
+      const formattedTransactions = csvData.map(row => ({
+        date: row.date || new Date().toISOString().split('T')[0],
+        amount: parseFloat(row.amount.toString().replace(/[^\d.-]/g, '')),
+        merchant: row.merchant || 'Imported Transaction',
+        category: row.category || 'Uncategorized',
+        subcategory: row.subcategory || '',
+        account: row.account || 'Imported',
+        type: (row.type || 'expense').toLowerCase() === 'income' ? 'income' : 'expense',
+        notes: row.notes || `Imported from CSV on ${new Date().toLocaleDateString()}`,
+        source: 'csv' // Tag the source
+      }));
+      
+      // Create transactions one by one
+      for (const transaction of formattedTransactions) {
+        await createMutation.mutate(transaction);
+      }
+      
+      // Success
+      toast({
+        title: 'Import Successful',
+        description: `${formattedTransactions.length} transactions imported successfully`,
+      });
+      
+      // Close dialog and reset state
+      setIsCsvDialogOpen(false);
+      setCsvFile(null);
+      setCsvData([]);
+      setCsvStep('upload');
+      setPossibleDuplicates([]);
+    } catch (error: any) {
+      setImportError(error.message || 'Failed to import transactions');
+    }
   };
 
   const handleAddSubmit = (e: React.FormEvent) => {
