@@ -42,118 +42,104 @@ export interface IStorage {
   calculateRivuScore(userId: number): Promise<number>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private budgetCategories: Map<number, BudgetCategory>;
-  private transactions: Map<number, Transaction>;
-  private rivuScores: Map<number, RivuScore>;
-  
-  private userId = 1;
-  private categoryId = 1;
-  private transactionId = 1;
-  private scoreId = 1;
-
-  constructor() {
-    this.users = new Map();
-    this.budgetCategories = new Map();
-    this.transactions = new Map();
-    this.rivuScores = new Map();
-    
-    // Initialize with demo data
-    this.initializeDemoData();
-  }
-
+export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
   }
 
-  async createUser(user: InsertUser): Promise<User> {
-    const id = this.userId++;
-    const newUser: User = { 
-      ...user, 
-      id, 
-      loginCount: 0,
-      lastLogin: null,
-      createdAt: new Date() 
-    };
-    this.users.set(id, newUser);
-    return newUser;
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        ...insertUser,
+        loginCount: 0,
+        createdAt: new Date(),
+      })
+      .returning();
+    return user;
   }
 
   // Budget category operations
   async getBudgetCategories(userId: number): Promise<BudgetCategory[]> {
-    return Array.from(this.budgetCategories.values()).filter(
-      (category) => category.userId === userId
-    );
+    return db
+      .select()
+      .from(budgetCategories)
+      .where(eq(budgetCategories.userId, userId));
   }
 
   async getBudgetCategory(id: number): Promise<BudgetCategory | undefined> {
-    return this.budgetCategories.get(id);
+    const [category] = await db
+      .select()
+      .from(budgetCategories)
+      .where(eq(budgetCategories.id, id));
+    return category || undefined;
   }
 
   async createBudgetCategory(category: InsertBudgetCategory): Promise<BudgetCategory> {
-    const id = this.categoryId++;
-    const newCategory: BudgetCategory = {
-      ...category,
-      id,
-      spentAmount: "0", // Make sure it's a string to match the BudgetCategory type
-      createdAt: new Date(),
-    };
-    this.budgetCategories.set(id, newCategory);
+    const [newCategory] = await db
+      .insert(budgetCategories)
+      .values({
+        ...category,
+        spentAmount: "0",
+        createdAt: new Date(),
+      })
+      .returning();
     return newCategory;
   }
 
   async updateBudgetCategory(id: number, data: Partial<BudgetCategory>): Promise<BudgetCategory | undefined> {
-    const category = this.budgetCategories.get(id);
-    if (!category) return undefined;
-    
-    const updatedCategory = { ...category, ...data };
-    this.budgetCategories.set(id, updatedCategory);
-    return updatedCategory;
+    const [updatedCategory] = await db
+      .update(budgetCategories)
+      .set(data)
+      .where(eq(budgetCategories.id, id))
+      .returning();
+    return updatedCategory || undefined;
   }
 
   async deleteBudgetCategory(id: number): Promise<boolean> {
-    return this.budgetCategories.delete(id);
+    const result = await db
+      .delete(budgetCategories)
+      .where(eq(budgetCategories.id, id));
+    return !!result;
   }
 
   // Transaction operations
   async getTransactions(userId: number): Promise<Transaction[]> {
-    return Array.from(this.transactions.values())
-      .filter((transaction) => transaction.userId === userId)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.userId, userId))
+      .orderBy(desc(transactions.date));
   }
 
   async getTransaction(id: number): Promise<Transaction | undefined> {
-    return this.transactions.get(id);
+    const [transaction] = await db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.id, id));
+    return transaction || undefined;
   }
 
   async createTransaction(transaction: InsertTransaction): Promise<Transaction> {
-    const id = this.transactionId++;
-    
     // Make sure we have the required type field
     const typeValue = transaction.type || 'expense';
     
-    // Convert amount to string if it's a number
-    const amount = typeof transaction.amount === 'number' 
-      ? transaction.amount.toString() 
-      : transaction.amount;
-    
-    const newTransaction: Transaction = {
-      ...transaction,
-      id,
-      type: typeValue, // Ensure type is a string and not undefined
-      amount, // Ensure amount is a string
-      date: new Date(),
-      createdAt: new Date(),
-    };
-    this.transactions.set(id, newTransaction);
+    const [newTransaction] = await db
+      .insert(transactions)
+      .values({
+        ...transaction,
+        type: typeValue,
+        date: transaction.date || new Date(),
+        createdAt: new Date(),
+      })
+      .returning();
     
     // Update budget category spent amount
     if (transaction.type === 'expense') {
@@ -175,60 +161,77 @@ export class MemStorage implements IStorage {
   }
 
   async updateTransaction(id: number, data: Partial<Transaction>): Promise<Transaction | undefined> {
-    const transaction = this.transactions.get(id);
+    const [transaction] = await db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.id, id));
+    
     if (!transaction) return undefined;
     
-    const updatedTransaction = { ...transaction, ...data };
-    this.transactions.set(id, updatedTransaction);
+    const [updatedTransaction] = await db
+      .update(transactions)
+      .set(data)
+      .where(eq(transactions.id, id))
+      .returning();
     
     // Recalculate Rivu score after updating a transaction
     await this.calculateAndUpdateRivuScore(transaction.userId);
     
-    return updatedTransaction;
+    return updatedTransaction || undefined;
   }
 
   async deleteTransaction(id: number): Promise<boolean> {
-    const transaction = this.transactions.get(id);
+    const [transaction] = await db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.id, id));
+    
     if (!transaction) return false;
     
     const userId = transaction.userId;
-    const result = this.transactions.delete(id);
+    const result = await db
+      .delete(transactions)
+      .where(eq(transactions.id, id));
     
     // Recalculate Rivu score after deleting a transaction
     if (result) {
       await this.calculateAndUpdateRivuScore(userId);
     }
     
-    return result;
+    return !!result;
   }
 
   // Rivu Score operations
   async getRivuScore(userId: number): Promise<RivuScore | undefined> {
-    return Array.from(this.rivuScores.values()).find(
-      (score) => score.userId === userId
-    );
+    const [score] = await db
+      .select()
+      .from(rivuScores)
+      .where(eq(rivuScores.userId, userId));
+    return score || undefined;
   }
 
   async createOrUpdateRivuScore(scoreData: InsertRivuScore): Promise<RivuScore> {
     const existingScore = await this.getRivuScore(scoreData.userId);
     
     if (existingScore) {
-      const updatedScore: RivuScore = {
-        ...existingScore,
-        ...scoreData,
-        updatedAt: new Date(),
-      };
-      this.rivuScores.set(existingScore.id, updatedScore);
+      const [updatedScore] = await db
+        .update(rivuScores)
+        .set({
+          ...scoreData,
+          updatedAt: new Date(),
+        })
+        .where(eq(rivuScores.userId, scoreData.userId))
+        .returning();
       return updatedScore;
     } else {
-      const id = this.scoreId++;
-      const newScore: RivuScore = {
-        ...scoreData,
-        id,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      this.rivuScores.set(id, newScore);
+      const [newScore] = await db
+        .insert(rivuScores)
+        .values({
+          ...scoreData,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning();
       return newScore;
     }
   }
@@ -325,37 +328,6 @@ export class MemStorage implements IStorage {
   private async calculateAndUpdateRivuScore(userId: number): Promise<void> {
     await this.calculateRivuScore(userId);
   }
-
-  // Initialize demo data with just a user (no budget/transactions)
-  private initializeDemoData(): void {
-    // Create demo user
-    const demoUser: User = {
-      id: this.userId++,
-      username: 'jamiesmith',
-      password: 'password123',
-      email: 'jamie@example.com',
-      firstName: 'Jamie',
-      lastName: 'Smith',
-      avatarInitials: 'JS',
-      loginCount: 0,
-      lastLogin: null,
-      createdAt: new Date(),
-    };
-    this.users.set(demoUser.id, demoUser);
-    
-    // Create initial empty Rivu score
-    const rivuScore: RivuScore = {
-      id: this.scoreId++,
-      userId: demoUser.id,
-      score: 0,
-      budgetAdherence: 0,
-      savingsProgress: 0,
-      weeklyActivity: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    this.rivuScores.set(rivuScore.id, rivuScore);
-  }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
