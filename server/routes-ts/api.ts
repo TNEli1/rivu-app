@@ -5,7 +5,7 @@ import cookieParser from 'cookie-parser';
 // we need to use dynamic imports to avoid issues with default exports
 
 // This function will help us import controllers safely
-const importController = async (path) => {
+const importController = async (path: string) => {
   try {
     const controller = await import(path);
     return controller.default || controller;
@@ -48,8 +48,9 @@ async function initializeRoutes() {
     const goalController = await importController('../controllers/goalController.js');
     const { getGoals, createGoal, updateGoal, deleteGoal } = goalController;
     
-    const rivuScoreController = await importController('../controllers/rivuScoreController.js');
-    const { getRivuScore } = rivuScoreController;
+    // Use TypeScript controllers for better type safety
+    const rivuScoreController = await importController('../controllers-ts/rivuScoreController.ts');
+    const { getRivuScore, refreshRivuScore } = rivuScoreController;
     
     const adviceController = await importController('../controllers/adviceController.js');
     const { getAdvice } = adviceController;
@@ -109,8 +110,9 @@ async function initializeRoutes() {
       .put(protect, updateGoal)
       .delete(protect, deleteGoal);
     
-    // Rivu Score Route
+    // Rivu Score Routes
     router.get('/rivu-score', protect, getRivuScore);
+    router.post('/rivu-score/refresh', protect, refreshRivuScore);
     
     // AI Advice Route
     router.post('/advice', protect, getAdvice);
@@ -127,11 +129,11 @@ async function initializeRoutes() {
           });
         }
         
-        // Import User model dynamically
-        const { default: User } = await import('../models/User.js');
+        // Import storage to check against PostgreSQL database
+        const { storage } = await import('../storage.ts');
         
-        // Check if username exists
-        const existingUser = await User.findOne({ username });
+        // Check if username exists in PostgreSQL
+        const existingUser = await storage.getUserByUsername(username);
         
         // If no user with that username exists, it's available
         res.json({ 

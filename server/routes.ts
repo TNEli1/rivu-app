@@ -651,14 +651,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const userPrompt = req.body.prompt || '';
       
-      let prompt = 'As an AI financial coach, analyze this user\'s financial data and provide personalized advice:';
-      prompt += '\n\nFinancial Context: ' + JSON.stringify(financialContext, null, 2);
+      // Create formatted budget categories string
+      const budgetCategoriesText = financialContext.budgetCategories.map(cat => 
+        `${cat.name} | Budgeted: $${cat.budgeted} | Spent: $${cat.spent} | ${cat.percentUsed}`
+      ).join('\n- ');
       
-      if (userPrompt) {
-        prompt += `\n\nThe user is asking: "${userPrompt}"`;
+      // Format transactions
+      const transactionsText = financialContext.recentTransactions.map(tx => 
+        `${tx.date} | ${tx.merchant} | $${tx.amount} | ${tx.category}`
+      ).join('\n- ');
+      
+      // Determine activity level based on recent transactions
+      let activityLevel = "Low";
+      if (financialContext.recentTransactions.length >= 5) {
+        activityLevel = "High";
+      } else if (financialContext.recentTransactions.length >= 3) {
+        activityLevel = "Medium";
       }
       
-      prompt += '\n\nProvide specific, actionable financial advice based on the user\'s spending patterns, budget adherence, and Rivu score. Keep your response concise (1-2 short paragraphs) and easy to understand.';
+      // Build the prompt according to new template
+      let prompt = `You are Rivu, an AI personal finance coach. Analyze this user's financial data and provide clear, actionable advice.
+
+User profile:
+- Rivu Score: ${financialContext.rivuScore || 'Not available'}
+- Budget categories: 
+- ${budgetCategoriesText}
+- Last 5 Transactions: 
+- ${transactionsText}
+- Activity level: ${activityLevel}`;
+      
+      // Add user question if provided
+      if (userPrompt) {
+        prompt += `\n\nUser's question: ${userPrompt}`;
+      }
+      
+      prompt += `\n\nReturn 2-3 sentences of personalized advice using this data. Do not generalize. Reference specifics from spending and savings trends.`;
+      
+      // Add conditional prompting instructions based on financial situation
+      const hasOverspending = financialContext.budgetCategories.some(cat => 
+        parseFloat(cat.spent) > parseFloat(cat.budgeted)
+      );
+      
+      if (hasOverspending) {
+        prompt += `\n\nFocus on identifying categories where the user is overspending and suggest specific corrections.`;
+      } else if (activityLevel === "Low") {
+        prompt += `\n\nEncourage more check-ins and regular tracking of finances.`;
+      } else {
+        prompt += `\n\nReinforce good behavior and suggest next steps for financial progress (e.g., investing, debt payoff).`;
+      }
       
       try {
         // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
