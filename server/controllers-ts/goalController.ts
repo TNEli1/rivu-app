@@ -122,6 +122,29 @@ export const createGoal = async (req: any, res: any) => {
     // Create goal in PostgreSQL
     const goal = await storage.createSavingsGoal(goalData);
     
+    // Update user's lastGoalUpdateDate to track activity for nudge system
+    await storage.updateUser(userId, {
+      lastGoalUpdateDate: new Date()
+    });
+    
+    // Also update user's onboarding stage if they're still in onboarding
+    const user = await storage.getUser(userId);
+    if (user && (user.onboardingStage === 'new' || 
+                 user.onboardingStage === 'budget_created' || 
+                 user.onboardingStage === 'transaction_added')) {
+      await storage.updateOnboardingStage(userId, 'goal_created');
+      
+      // Check if user has completed all onboarding steps
+      const budgetCategories = await storage.getBudgetCategories(userId);
+      const transactions = await storage.getTransactions(userId);
+      const goals = await storage.getSavingsGoals(userId);
+      
+      if (budgetCategories.length > 0 && transactions.length > 0 && goals.length > 0) {
+        // User has created at least one budget, transaction, and goal - mark onboarding as complete
+        await storage.updateOnboardingStage(userId, 'completed');
+      }
+    }
+    
     // Format goal for client response
     const formattedGoal = {
       id: goal.id,
@@ -187,6 +210,17 @@ export const updateGoal = async (req: any, res: any) => {
         message: 'Failed to update goal',
         code: 'UPDATE_FAILED'
       });
+    }
+    
+    // Update user's lastGoalUpdateDate to track activity for nudge system
+    await storage.updateUser(userId, {
+      lastGoalUpdateDate: new Date()
+    });
+    
+    // If this was a contribution to the goal (amountToAdd was used), trigger Rivu score recalculation
+    if (amountToAdd !== undefined && amountToAdd > 0) {
+      // Recalculate Rivu score to reflect the savings progress
+      await storage.calculateRivuScore(userId);
     }
     
     // Format updated goal for client
