@@ -678,10 +678,10 @@ export const protect = async (req: any, res: any, next: any) => {
     }
     
     // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
     
     // Get user ID and convert to number for PostgreSQL
-    const userId = parseInt(decoded.id, 10);
+    const userId = parseInt(decoded.id.toString(), 10);
     
     // Verify user exists in database
     const user = await storage.getUser(userId);
