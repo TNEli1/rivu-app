@@ -1,4 +1,5 @@
 import * as dotenv from 'dotenv';
+import * as postmark from 'postmark';
 dotenv.config();
 
 interface EmailData {
@@ -18,11 +19,10 @@ export async function sendEmail(emailData: EmailData): Promise<boolean> {
       console.log('Sending email via Postmark API');
       console.log('Email configuration:');
       console.log(`- POSTMARK_API_KEY: ${process.env.POSTMARK_API_KEY ? 'Set (hidden)' : 'Not set'}`);
-      console.log(`- EMAIL_FROM: ${process.env.EMAIL_FROM || 'Not set, using default: noreply@rivufinance.com'}`);
+      console.log(`- EMAIL_FROM: ${process.env.EMAIL_FROM || 'Not set, using default: support@tryrivu.com'}`);
       
       try {
-        // Import postmark dynamically to ensure it's loaded
-        const postmark = require('postmark');
+        // Create Postmark client
         const client = new postmark.ServerClient(process.env.POSTMARK_API_KEY);
         
         // Use a valid sender email address that matches your Postmark verified domain
@@ -39,10 +39,12 @@ export async function sendEmail(emailData: EmailData): Promise<boolean> {
         
         console.log('Postmark email sent successfully:', result.MessageID);
         return true;
-      } catch (postmarkError) {
+      } catch (error) {
+        // Cast error to a standard Error type with optional Postmark properties
+        const postmarkError = error as any;
         console.error('Postmark API error:', postmarkError);
         
-        // Enhanced error logging
+        // Log error details if they exist
         if (postmarkError.code) {
           console.error(`Postmark error code: ${postmarkError.code}`);
         }
@@ -51,7 +53,7 @@ export async function sendEmail(emailData: EmailData): Promise<boolean> {
           console.error(`Postmark error message: ${postmarkError.message}`);
         }
         
-        // Check for common Postmark errors
+        // Check for common Postmark errors and provide specific guidance
         if (postmarkError.code === 422) {
           console.error('Invalid sender email. Make sure EMAIL_FROM is set to a valid email and domain is verified in Postmark.');
         } else if (postmarkError.code === 401) {
