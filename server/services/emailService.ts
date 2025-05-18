@@ -16,13 +16,21 @@ export async function sendEmail(emailData: EmailData): Promise<boolean> {
     // CRITICAL FIX: Always use Postmark if API key is available, regardless of environment
     if (process.env.POSTMARK_API_KEY) {
       console.log('Sending email via Postmark API');
+      console.log('Email configuration:');
+      console.log(`- POSTMARK_API_KEY: ${process.env.POSTMARK_API_KEY ? 'Set (hidden)' : 'Not set'}`);
+      console.log(`- EMAIL_FROM: ${process.env.EMAIL_FROM || 'Not set, using default: noreply@rivufinance.com'}`);
+      
       try {
         // Import postmark dynamically to ensure it's loaded
         const postmark = require('postmark');
         const client = new postmark.ServerClient(process.env.POSTMARK_API_KEY);
         
+        // Use a valid sender email address that matches your Postmark verified domain
+        const senderEmail = process.env.EMAIL_FROM || 'support@tryrivu.com';
+        console.log(`Attempting to send email from: ${senderEmail} to: ${emailData.to}`);
+        
         const result = await client.sendEmail({
-          From: process.env.EMAIL_FROM || 'noreply@rivufinance.com',
+          From: senderEmail,
           To: emailData.to,
           Subject: emailData.subject,
           TextBody: emailData.text,
@@ -33,6 +41,25 @@ export async function sendEmail(emailData: EmailData): Promise<boolean> {
         return true;
       } catch (postmarkError) {
         console.error('Postmark API error:', postmarkError);
+        
+        // Enhanced error logging
+        if (postmarkError.code) {
+          console.error(`Postmark error code: ${postmarkError.code}`);
+        }
+        
+        if (postmarkError.message) {
+          console.error(`Postmark error message: ${postmarkError.message}`);
+        }
+        
+        // Check for common Postmark errors
+        if (postmarkError.code === 422) {
+          console.error('Invalid sender email. Make sure EMAIL_FROM is set to a valid email and domain is verified in Postmark.');
+        } else if (postmarkError.code === 401) {
+          console.error('Authentication error. Make sure POSTMARK_API_KEY is correct.');
+        } else if (postmarkError.code === 429) {
+          console.error('Rate limit exceeded. Too many requests to Postmark API.');
+        }
+        
         // Also log the email that we tried to send for debugging
         console.log('Failed email details:', {
           to: emailData.to,

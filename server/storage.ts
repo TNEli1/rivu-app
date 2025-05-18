@@ -281,7 +281,39 @@ export class DatabaseStorage implements IStorage {
     // Check for duplicate transactions
     const isDuplicate = await this.checkForDuplicateTransactions(transaction);
     
-    const dateValue = transaction.date ? new Date(transaction.date) : new Date();
+    // Fix date handling to prevent timezone issues
+    let dateValue: Date;
+    if (transaction.date) {
+      // If the date is already a Date object
+      if (transaction.date instanceof Date) {
+        // Create a new date object with the same year, month, day at 12:00:00
+        dateValue = new Date(
+          transaction.date.getFullYear(),
+          transaction.date.getMonth(),
+          transaction.date.getDate(),
+          12, 0, 0, 0
+        );
+      } else {
+        // If it's a string, first convert to Date
+        const tempDate = new Date(transaction.date);
+        // Then create a new date at noon to avoid timezone issues
+        dateValue = new Date(
+          tempDate.getFullYear(),
+          tempDate.getMonth(),
+          tempDate.getDate(),
+          12, 0, 0, 0
+        );
+      }
+    } else {
+      // If no date provided, use today at noon
+      const now = new Date();
+      dateValue = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        12, 0, 0, 0
+      );
+    }
     
     const [newTransaction] = await db
       .insert(transactions)
