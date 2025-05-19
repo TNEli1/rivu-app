@@ -85,7 +85,12 @@ export default function GoalsPage() {
   // Create goal mutation
   const createGoalMutation = useMutation({
     mutationFn: async (data: GoalFormData) => {
-      const res = await apiRequest('POST', '/api/goals', data);
+      // Ensure target amount is a valid number
+      const payloadData = {
+        ...data,
+        targetAmount: parseFloat(data.targetAmount) || 0.01
+      };
+      const res = await apiRequest('POST', '/api/goals', payloadData);
       return res.json();
     },
     onSuccess: () => {
@@ -591,10 +596,14 @@ export default function GoalsPage() {
                   name="targetAmount" 
                   placeholder="0.00" 
                   type="number"
-                  min="0"
+                  min="0.01"
                   step="0.01"
                   value={formData.targetAmount}
-                  onChange={handleInputChange}
+                  onChange={(e) => {
+                    // Ensure we're passing a valid number
+                    const value = e.target.value;
+                    setFormData({...formData, targetAmount: value});
+                  }}
                 />
               </div>
               
