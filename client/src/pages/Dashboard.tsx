@@ -237,11 +237,11 @@ export default function Dashboard() {
             <CardContent className="p-0">
               <h2 className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-700'}`}>Monthly Net Flow</h2>
               <p className={`text-xl font-bold mt-2 ${
-                (summaryData?.monthlyIncome - summaryData?.monthlyExpenses > 0) 
+                ((summaryData?.monthlyIncome || 0) - (summaryData?.monthlyExpenses || 0) > 0) 
                   ? 'text-green-500' 
                   : 'text-red-500'
               }`}>
-                {formatCurrency(summaryData?.monthlyIncome - summaryData?.monthlyExpenses || 0)}
+                {formatCurrency((summaryData?.monthlyIncome || 0) - (summaryData?.monthlyExpenses || 0))}
               </p>
               <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                 Income minus expenses
@@ -282,7 +282,7 @@ export default function Dashboard() {
               <h2 className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-700'}`}>Goal Progress</h2>
               <p className={`text-xl font-bold mt-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
                 {goalsData && goalsData.length > 0 ? 
-                  `${Math.round(goalsData.reduce((acc, goal) => acc + goal.progressPercentage, 0) / goalsData.length)}%` :
+                  `${Math.round(goalsData.reduce((acc: number, goal: GoalData) => acc + goal.progressPercentage, 0) / goalsData.length)}%` :
                   'No Goals'
                 }
               </p>

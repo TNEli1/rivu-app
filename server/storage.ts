@@ -1011,9 +1011,14 @@ export class DatabaseStorage implements IStorage {
     let totalTargetAmount = 0;
     let totalSavedAmount = 0;
     
+    // Enhanced logging for goal progress calculation
+    console.log(`Calculating savings progress for ${goals.length} goals...`);
+    
     for (const goal of goals) {
       const targetAmount = parseFloat(String(goal.targetAmount));
       const currentAmount = parseFloat(String(goal.currentAmount));
+      
+      console.log(`Goal: ${goal.name}, Target: ${targetAmount}, Current: ${currentAmount}, Progress: ${(currentAmount/targetAmount*100).toFixed(2)}%`);
       
       totalTargetAmount += targetAmount;
       totalSavedAmount += currentAmount;
@@ -1024,7 +1029,6 @@ export class DatabaseStorage implements IStorage {
     if (totalTargetAmount > 0) {
       const progressRatio = totalSavedAmount / totalTargetAmount;
       // Always calculate the real percentage value to properly reflect progress
-      // Ensure that even small contributions show up in the Rivu Score
       savingsProgress = Math.min(Math.round(progressRatio * 100), 100);
       
       // Make sure a goal with any contribution shows at least 1% progress
@@ -1033,7 +1037,14 @@ export class DatabaseStorage implements IStorage {
       }
       
       // Log the calculation for debugging
-      console.log(`Savings Progress Calculation: ${totalSavedAmount} / ${totalTargetAmount} = ${progressRatio} => ${savingsProgress}%`);
+      console.log(`Overall Savings Progress: ${totalSavedAmount} / ${totalTargetAmount} = ${progressRatio} => ${savingsProgress}%`);
+    } else if (goals.length > 0) {
+      // If there are goals but no target amount (which shouldn't happen but just in case),
+      // we'll give a minimum progress score to reflect engagement
+      savingsProgress = 5;
+      console.log(`Goals exist but no target amounts - setting minimum progress: ${savingsProgress}%`);
+    } else {
+      console.log(`No goals found - savings progress: ${savingsProgress}%`);
     }
     
     // Determine if we have enough data to calculate a meaningful score
