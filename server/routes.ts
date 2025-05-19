@@ -49,6 +49,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.put(`${apiPath}/user`, protect, updateUserProfile);
     app.put(`${apiPath}/user/demographics`, protect, updateDemographics);
     app.post(`${apiPath}/user/login-metric`, protect, updateLoginMetrics);
+    
+    // Import theme preference controller
+    const { updateThemePreference } = await import('./controllers-ts/userController');
+    app.put(`${apiPath}/user/theme-preference`, protect, updateThemePreference);
     app.post(`${apiPath}/forgot-password`, forgotPassword);
     app.get(`${apiPath}/verify-reset-token/:token`, verifyResetToken);
     app.post(`${apiPath}/reset-password/:token`, resetPassword);
