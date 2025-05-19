@@ -331,14 +331,14 @@ export default function BudgetPage() {
               const percentage = calculatePercentage(spent, budget);
               
               return (
-                <Card key={category.id} className="p-6">
+                <Card key={category.id} className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-semibold">{category.name}</h3>
+                    <h3 className="font-semibold text-gray-800 dark:text-gray-100">{category.name}</h3>
                     <div className="flex space-x-1">
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="h-8 w-8" 
+                        className="h-8 w-8 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100" 
                         onClick={() => openEditDialog(category)}
                       >
                         <Pencil className="h-4 w-4" />
@@ -348,7 +348,7 @@ export default function BudgetPage() {
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="h-8 w-8 text-destructive"
+                            className="h-8 w-8 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -379,13 +379,13 @@ export default function BudgetPage() {
                   
                   <div className="mb-4">
                     <div className="flex justify-between items-center">
-                      <p className="text-lg font-bold">
-                        {formatCurrency(spent)} <span className="text-sm font-normal text-muted-foreground">of {formatCurrency(budget)}</span>
+                      <p className="text-lg font-bold text-gray-800 dark:text-gray-100">
+                        {formatCurrency(spent)} <span className="text-sm font-normal text-gray-500 dark:text-gray-400">of {formatCurrency(budget)}</span>
                       </p>
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="h-8" 
+                        className="h-8 border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700" 
                         onClick={() => {
                           const newSpent = prompt('Enter amount spent:', spent.toString());
                           if (newSpent !== null && !isNaN(parseFloat(newSpent))) {
@@ -406,17 +406,17 @@ export default function BudgetPage() {
                   </div>
                   
                   <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-sm text-gray-700 dark:text-gray-300">
                       <span>Used</span>
                       <span className="font-medium">{percentage.toFixed(0)}%</span>
                     </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div 
                         className={`h-full ${getProgressColor(percentage)}`} 
                         style={{ width: `${Math.min(100, percentage)}%` }}
                       ></div>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-2">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                       {budget > spent 
                         ? `${formatCurrency(budget - spent)} remaining` 
                         : `${formatCurrency(spent - budget)} over budget`}
