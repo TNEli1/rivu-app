@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { storage } from '../storage';
-import { plaidClient, getAccounts, fireWebhook } from '../services/plaidService';
+import { plaidClient, getAccounts, fireWebhook, createLinkToken as createPlaidLinkToken, exchangePublicToken as exchangePlaidPublicToken } from '../services/plaidService';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -9,6 +9,99 @@ dotenv.config();
 interface AuthenticatedRequest extends Request {
   user?: { id: number };
 }
+
+/**
+ * @desc    Create a link token for Plaid Link
+ * @route   POST /api/plaid/create-link-token
+ */
+export const createLinkToken = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    // Check for authentication
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        message: 'Not authenticated',
+        code: 'UNAUTHORIZED'
+      });
+    }
+    
+    // Generate a client_user_id based on the authenticated user
+    const clientUserId = `user-${req.user.id}`;
+    
+    // Get webhook URL from environment or use a default for testing
+    const webhookUrl = process.env.PLAID_WEBHOOK_URL || `${req.protocol}://${req.get('host')}/api/plaid/webhook`;
+    
+    console.log(`Creating link token for client user ID: ${clientUserId}`);
+    console.log(`Webhook URL: ${webhookUrl}`);
+    
+    // Create the link token
+    const linkTokenResponse = await createPlaidLinkToken(clientUserId, webhookUrl);
+    
+    // Return the link token to the client
+    return res.status(200).json({
+      message: 'Link token created successfully',
+      link_token: linkTokenResponse.link_token,
+      expiration: linkTokenResponse.expiration
+    });
+  } catch (error: any) {
+    console.error('Error creating link token:', error);
+    
+    return res.status(500).json({
+      message: error.message || 'Error creating link token',
+      code: 'LINK_TOKEN_ERROR'
+    });
+  }
+};
+
+/**
+ * @desc    Exchange a public token for an access token
+ * @route   POST /api/plaid/exchange-public-token
+ */
+export const exchangePublicToken = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    // Check for authentication
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        message: 'Not authenticated',
+        code: 'UNAUTHORIZED'
+      });
+    }
+    
+    const { public_token } = req.body;
+    
+    if (!public_token) {
+      return res.status(400).json({
+        message: 'Public token is required',
+        code: 'MISSING_PUBLIC_TOKEN'
+      });
+    }
+    
+    console.log(`Exchanging public token for access token. User ID: ${req.user.id}`);
+    
+    // Exchange the public token for an access token
+    const exchangeResponse = await exchangePlaidPublicToken(public_token);
+    
+    const accessToken = exchangeResponse.access_token;
+    const itemId = exchangeResponse.item_id;
+    
+    console.log(`Successfully exchanged public token for access token`);
+    console.log(`Access Token: ${accessToken}`); // Log the access token for verification
+    console.log(`Item ID: ${itemId}`);
+    
+    // Return the access token and item ID to the client
+    return res.status(200).json({
+      message: 'Public token exchanged successfully',
+      access_token: accessToken,
+      item_id: itemId
+    });
+  } catch (error: any) {
+    console.error('Error exchanging public token:', error);
+    
+    return res.status(500).json({
+      message: error.message || 'Error exchanging public token',
+      code: 'EXCHANGE_ERROR'
+    });
+  }
+};
 
 /**
  * @desc    Get accounts from Plaid
