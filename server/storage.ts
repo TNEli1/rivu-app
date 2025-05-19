@@ -1015,34 +1015,46 @@ export class DatabaseStorage implements IStorage {
     console.log(`Calculating savings progress for ${goals.length} goals...`);
     
     for (const goal of goals) {
-      const targetAmount = parseFloat(String(goal.targetAmount));
-      const currentAmount = parseFloat(String(goal.currentAmount));
+      const targetAmount = parseFloat(String(goal.targetAmount)) || 0;
+      const currentAmount = parseFloat(String(goal.currentAmount)) || 0;
       
-      console.log(`Goal: ${goal.name}, Target: ${targetAmount}, Current: ${currentAmount}, Progress: ${(currentAmount/targetAmount*100).toFixed(2)}%`);
+      // Force numeric conversion and calculate individual goal progress
+      const individualProgress = targetAmount > 0 
+        ? (currentAmount / targetAmount * 100).toFixed(2) 
+        : '0.00';
       
-      totalTargetAmount += targetAmount;
-      totalSavedAmount += currentAmount;
+      console.log(`Goal: ${goal.name}, Target: ${targetAmount}, Current: ${currentAmount}, Progress: ${individualProgress}%`);
+      
+      // Only count valid numeric values
+      if (!isNaN(targetAmount) && !isNaN(currentAmount)) {
+        totalTargetAmount += targetAmount;
+        totalSavedAmount += currentAmount;
+      }
     }
     
     // If no active goals or target amounts, default to 0% savings progress
     let savingsProgress = 0;
+    
     if (totalTargetAmount > 0) {
+      // Perform accurate calculation and round to nearest integer
       const progressRatio = totalSavedAmount / totalTargetAmount;
-      // Always calculate the real percentage value to properly reflect progress
-      savingsProgress = Math.min(Math.round(progressRatio * 100), 100);
+      savingsProgress = Math.round(progressRatio * 100);
       
-      // Make sure a goal with any contribution shows at least 1% progress
+      // Cap at 100% maximum
+      savingsProgress = Math.min(savingsProgress, 100);
+      
+      // Ensure that any amount saved shows at least 1% progress
       if (totalSavedAmount > 0 && savingsProgress === 0) {
         savingsProgress = 1;
       }
       
       // Log the calculation for debugging
-      console.log(`Overall Savings Progress: ${totalSavedAmount} / ${totalTargetAmount} = ${progressRatio} => ${savingsProgress}%`);
+      console.log(`Overall Savings Progress: ${totalSavedAmount.toFixed(2)} / ${totalTargetAmount.toFixed(2)} = ${progressRatio.toFixed(4)} => ${savingsProgress}%`);
     } else if (goals.length > 0) {
       // If there are goals but no target amount (which shouldn't happen but just in case),
       // we'll give a minimum progress score to reflect engagement
-      savingsProgress = 5;
-      console.log(`Goals exist but no target amounts - setting minimum progress: ${savingsProgress}%`);
+      savingsProgress = 0; // Changed to 0 instead of 5 to avoid showing progress when there isn't any
+      console.log(`Goals exist but no target amounts - setting to zero progress: ${savingsProgress}%`);
     } else {
       console.log(`No goals found - savings progress: ${savingsProgress}%`);
     }

@@ -299,16 +299,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return sum + amountAsNumber;
         }, 0);
       
-      // Calculate total budget from budget categories
+      // Calculate total budget from budget categories with proper error handling
       const totalBudget = budgetCategories.reduce((sum, category) => {
-        const budgetAmount = typeof category.budgetAmount === 'string' 
-          ? parseFloat(category.budgetAmount) 
-          : category.budgetAmount;
+        // Ensure we handle any format of budget amount (string, number, etc.)
+        let budgetAmount = 0;
+        
+        try {
+          budgetAmount = typeof category.budgetAmount === 'string' 
+            ? parseFloat(category.budgetAmount) 
+            : (category.budgetAmount || 0);
+            
+          // Ensure it's a valid number
+          if (isNaN(budgetAmount)) budgetAmount = 0;
+        } catch (err) {
+          console.error(`Error parsing budget amount for ${category.name}:`, err);
+          budgetAmount = 0;
+        }
+        
+        // Add detailed logging for budget calculation
+        console.log(`Budget category: ${category.name}, amount: ${budgetAmount.toFixed(2)}`);
+        
         return sum + budgetAmount;
       }, 0);
       
+      console.log(`Total budget calculated: ${totalBudget}, Monthly expenses: ${monthlyExpenses}`);
+      
       // Calculate remaining budget for the month
       const calculatedRemainingBudget = Math.max(0, totalBudget - monthlyExpenses);
+      console.log(`Remaining budget calculated: ${calculatedRemainingBudget}`);
       
       res.json({
         totalBalance,

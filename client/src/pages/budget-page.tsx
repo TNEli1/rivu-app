@@ -76,6 +76,7 @@ export default function BudgetPage() {
       const res = await apiRequest('POST', '/api/budget-categories', {
         name: data.name,
         budgetAmount: parseFloat(data.budgetAmount),
+        spentAmount: 0  // Explicitly set spent amount to 0 for new categories
       });
       return res.json();
     },
@@ -115,8 +116,12 @@ export default function BudgetPage() {
       queryClient.invalidateQueries({ queryKey: ['/api/budget-categories'] });
       queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] });
+      
+      // Reset all form state after successful update
       setIsEditDialogOpen(false);
       setSelectedCategory(null);
+      setFormData({ name: "", budgetAmount: "", spentAmount: "0" });
+      
       toast({
         title: "Budget category updated",
         description: "Your budget category has been updated successfully.",
@@ -236,19 +241,7 @@ export default function BudgetPage() {
                     onChange={(e) => setFormData({...formData, budgetAmount: e.target.value})}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="spent">Amount Spent</Label>
-                  <Input 
-                    id="spent" 
-                    type="number" 
-                    placeholder="0.00" 
-                    value={formData.spentAmount}
-                    onChange={(e) => setFormData({...formData, spentAmount: e.target.value})}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Enter how much you've already spent in this category
-                  </p>
-                </div>
+{/* Removed Amount Spent field from Add Budget form */}
                 <div className="flex justify-end">
                   <Button 
                     type="submit" 
