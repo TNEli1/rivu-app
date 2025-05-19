@@ -33,6 +33,7 @@ function Router() {
       <ProtectedRoute path="/account" component={AccountPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
       <ProtectedRoute path="/onboarding" component={OnboardingPage} />
+      <ProtectedRoute path="/rivu-score-info" component={RivuScoreInfoPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/login" component={AuthPage} />
       <Route path="/forgot-password" component={ForgotPasswordPage} />

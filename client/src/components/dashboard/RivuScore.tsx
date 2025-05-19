@@ -184,6 +184,15 @@ export default function RivuScore() {
           Last updated: {lastUpdated}
         </div>
       )}
+      
+      <div className="mt-2">
+        <a 
+          href="/rivu-score-info" 
+          className={`text-xs underline ${theme === 'dark' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'}`}
+        >
+          How your Rivu Score works
+        </a>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'wouter';
+import { useLocation } from 'wouter';
 import { ChevronLeft, Info, PieChart, TrendingUp, Calendar, BarChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,8 +7,13 @@ import { useTheme } from '@/hooks/use-theme';
 import Sidebar from '@/components/layout/Sidebar';
 
 export default function RivuScoreInfoPage() {
-  const [_, navigate] = useNavigate();
+  // For navigation
+  const [location, setLocation] = useLocation();
   const { theme } = useTheme();
+  
+  const navigate = (path: string) => {
+    setLocation(path);
+  };
   
   return (
     <div className="flex flex-col md:flex-row min-h-screen">
