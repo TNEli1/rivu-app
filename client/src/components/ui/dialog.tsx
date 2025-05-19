@@ -6,7 +6,10 @@ import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
-const Dialog = DialogPrimitive.Root
+// Set a default configuration that prevents dialog from closing when clicking on popover content
+const Dialog = (props: React.ComponentProps<typeof DialogPrimitive.Root>) => {
+  return <DialogPrimitive.Root {...props} />;
+}
 
 const DialogTrigger = DialogPrimitive.Trigger
 
