@@ -85,9 +85,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       importMappedTransactions
     } = await import('./controllers-ts/csvController');
     
+    // Import batch transaction controller
+    const {
+      createTransactionsBatch
+    } = await import('./controllers-ts/transactionController');
+    
     // CSV upload routes
     app.post(`${apiPath}/transactions/import`, protect, uploadCSV, importTransactionsFromCSV);
     app.post(`${apiPath}/transactions/import-mapped`, protect, importMappedTransactions);
+    
+    // New batch transaction endpoint for CSV data
+    app.post(`${apiPath}/transactions/batch`, protect, createTransactionsBatch);
     app.put(`${apiPath}/transactions/:id/not-duplicate`, protect, markTransactionAsNotDuplicate);
     
     // Delete all transactions route

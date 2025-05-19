@@ -342,11 +342,191 @@ export const deleteTransaction = async (req: any, res: any) => {
   }
 };
 
+/**
+ * @desc    Create multiple transactions in batch (for CSV imports)
+ */
+export const createTransactionsBatch = async (req: any, res: any) => {
+  try {
+    const userId = parseInt(req.user.id, 10);
+    console.log(`Processing batch transaction creation for user ID: ${userId}`);
+    
+    if (!req.body || !req.body.transactions || !Array.isArray(req.body.transactions)) {
+      return res.status(400).json({
+        message: 'Invalid request format. Expected an array of transactions.',
+        code: 'VALIDATION_ERROR'
+      });
+    }
+    
+    const { transactions } = req.body;
+    
+    if (transactions.length === 0) {
+      return res.status(400).json({
+        message: 'No transactions to import',
+        code: 'EMPTY_DATA'
+      });
+    }
+    
+    console.log(`Processing ${transactions.length} transactions in batch for user ${userId}`);
+    
+    let successCount = 0;
+    let errorCount = 0;
+    let duplicateCount = 0;
+    const errors: Array<{ index: number, message: string }> = [];
+    const createdTransactions = [];
+    
+    // Process each transaction
+    for (let i = 0; i < transactions.length; i++) {
+      const tx = transactions[i];
+      
+      try {
+        // Validate required fields
+        if (!tx.amount || !tx.merchant || !tx.date) {
+          errors.push({
+            index: i,
+            message: 'Missing required fields (amount, merchant, date)'
+          });
+          errorCount++;
+          continue;
+        }
+        
+        // Parse amount
+        let amount: string;
+        try {
+          // Handle amount as string or number
+          const parsedAmount = typeof tx.amount === 'string' 
+            ? parseFloat(tx.amount.replace(/[^0-9.-]/g, ''))
+            : parseFloat(tx.amount);
+            
+          if (isNaN(parsedAmount) || parsedAmount <= 0) {
+            errors.push({
+              index: i,
+              message: 'Invalid amount: must be a positive number'
+            });
+            errorCount++;
+            continue;
+          }
+          
+          amount = parsedAmount.toString();
+        } catch (amountError) {
+          errors.push({
+            index: i,
+            message: 'Failed to parse transaction amount'
+          });
+          errorCount++;
+          continue;
+        }
+        
+        // Parse date
+        let transactionDate: Date;
+        try {
+          if (typeof tx.date === 'string') {
+            // If it's a simple date string like "2023-05-17"
+            if (tx.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+              const [year, month, day] = tx.date.split('-').map(Number);
+              transactionDate = new Date(year, month - 1, day, 12, 0, 0, 0);
+            } else {
+              transactionDate = new Date(tx.date);
+            }
+            
+            if (isNaN(transactionDate.getTime())) {
+              transactionDate = new Date(); // Fallback to current date
+              console.log(`Invalid date format at index ${i}, using current date instead`);
+            }
+          } else if (tx.date instanceof Date) {
+            transactionDate = tx.date;
+          } else {
+            transactionDate = new Date(); // Default to today
+          }
+        } catch (dateError) {
+          console.error(`Date parsing error for transaction ${i}:`, dateError);
+          transactionDate = new Date(); // Default to today if parsing fails
+        }
+        
+        console.log(`CSV Date: Original=${tx.date}, Parsed=${transactionDate.toISOString()}`);
+        
+        // Prepare transaction data
+        const transactionData: InsertTransaction = {
+          userId: userId, // Explicitly set to authenticated user
+          amount,
+          date: transactionDate,
+          merchant: tx.merchant || 'Unknown',
+          category: tx.category || 'Uncategorized',
+          account: tx.account || 'Imported',
+          type: tx.type || 'expense',
+          notes: tx.notes || '',
+          source: 'csv', // Mark as CSV import
+        };
+        
+        console.log(`Preparing CSV transaction for user ID: ${userId}`);
+        console.log(`Creating transaction: { userId: ${userId}, amount: '${amount}', merchant: '${tx.merchant}' }`);
+        
+        // Check for duplicates (optional)
+        const isDuplicate = await storage.checkForDuplicateTransactions(transactionData);
+        if (isDuplicate) {
+          duplicateCount++;
+          transactionData.isDuplicate = true;
+          console.log(`Transaction at index ${i} appears to be a duplicate`);
+        }
+        
+        // Create the transaction
+        const newTransaction = await storage.createTransaction(transactionData);
+        console.log(`Successfully created CSV transaction ID: ${newTransaction.id} for user ${userId}`);
+        
+        createdTransactions.push({
+          id: newTransaction.id,
+          amount: parseFloat(String(newTransaction.amount)),
+          merchant: newTransaction.merchant,
+          category: newTransaction.category,
+          date: newTransaction.date,
+          account: newTransaction.account,
+          type: newTransaction.type,
+          isDuplicate: newTransaction.isDuplicate
+        });
+        
+        successCount++;
+      } catch (txError) {
+        console.error(`Error processing transaction at index ${i}:`, txError);
+        errors.push({
+          index: i,
+          message: txError instanceof Error ? txError.message : 'Unknown error'
+        });
+        errorCount++;
+      }
+    }
+    
+    // Update user's lastTransactionDate after batch import
+    if (successCount > 0) {
+      await storage.updateUser(userId, {
+        lastTransactionDate: new Date()
+      });
+      
+      // Recalculate Rivu score to reflect the new transactions
+      await storage.calculateRivuScore(userId);
+    }
+    
+    return res.status(200).json({
+      message: `Successfully imported ${successCount} of ${transactions.length} transactions`,
+      success: successCount,
+      errors: errorCount,
+      duplicates: duplicateCount,
+      errorDetails: errors.length > 0 ? errors : undefined,
+      transactions: createdTransactions
+    });
+  } catch (error: any) {
+    console.error('Error processing batch transactions:', error);
+    return res.status(500).json({
+      message: error.message || 'Failed to process batch transactions',
+      code: 'SERVER_ERROR'
+    });
+  }
+};
+
 // Export a default object with all functions
 export default {
   getTransactions,
   getTransactionById,
   createTransaction,
   updateTransaction,
-  deleteTransaction
+  deleteTransaction,
+  createTransactionsBatch
 };

@@ -342,8 +342,8 @@ export default function CSVUploadDialog({ isOpen, onClose }: CSVUploadDialogProp
         });
       }, 200);
 
-      // Upload the mapped data
-      const response = await fetch('/api/transactions/import-mapped', {
+      // Upload the mapped data using the new batch endpoint for better CSV handling
+      const response = await fetch('/api/transactions/batch', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
