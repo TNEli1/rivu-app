@@ -16,7 +16,7 @@ const PROMPT_TEMPLATES = {
   {{budgetDetails}}
 - Rivu Score: {{rivuScore}} – {{scoreRating}}
 
-Keep your response under 150 words. Be clear, constructive, and encouraging.`,
+Keep your response under 150 words. Write at a 6th-grade reading level using plain language and simple, actionable advice. Be friendly, casual, and non-judgmental.`,
 
   GOAL_FOCUSED: `You're an AI financial mentor. A user has entered the following savings goals and progress. Help them improve their consistency and mindset with 2–3 actionable tips:
 

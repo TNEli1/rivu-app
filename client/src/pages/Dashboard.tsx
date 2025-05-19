@@ -99,7 +99,55 @@ export default function Dashboard() {
   // State for AI Coach response
   const [coachResponse, setCoachResponse] = useState<string>("");
   const [isLoadingCoachResponse, setIsLoadingCoachResponse] = useState(false);
+  const [typingIndicator, setTypingIndicator] = useState<string>("Coach is typing");
   const coachResponseRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Handle Enter key in textarea
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // If Enter is pressed without Shift, submit the form
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmitPrompt();
+    }
+  };
+  
+  // Update typing indicator with animation dots
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+    
+    if (isLoadingCoachResponse) {
+      let count = 0;
+      intervalId = setInterval(() => {
+        const dots = '.'.repeat(count % 4);
+        setTypingIndicator(`Coach is typing${dots}`);
+        count++;
+      }, 500);
+    }
+    
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [isLoadingCoachResponse]);
+  
+  // Handle suggested prompt click
+  const handleSuggestedPromptClick = (prompt: string) => {
+    setCoachPrompt(prompt);
+    textareaRef.current?.focus();
+  };
+
+  // Simplify text to a more accessible reading level
+  const simplifyText = async (text: string): Promise<string> => {
+    try {
+      // The API already provides simplified responses, so we'll
+      // just return the text as-is for now.
+      // In a future implementation, we could add a dedicated simplification endpoint.
+      return text;
+    } catch (error) {
+      console.error('Error simplifying text:', error);
+      return text; // Return original if simplification fails
+    }
+  };
 
   // Handle AI coach prompt submission
   const handleSubmitPrompt = async () => {
@@ -113,7 +161,9 @@ export default function Dashboard() {
       });
       
       const data = await response.json();
-      setCoachResponse(data.message);
+      const simplifiedMessage = await simplifyText(data.message);
+      
+      setCoachResponse(simplifiedMessage);
       setCoachPrompt("");
       
       // Scroll to response
@@ -273,6 +323,7 @@ export default function Dashboard() {
           <h3 className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>AI Coach</h3>
           <p className={`text-sm mb-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-700'}`}>Get personalized financial insights</p>
           <Textarea 
+            ref={textareaRef}
             className={`w-full p-3 rounded mb-3 ${
               theme === 'dark' 
                 ? 'bg-gray-700 border-gray-600 text-gray-100' 
@@ -282,14 +333,53 @@ export default function Dashboard() {
             placeholder="Ask your AI coach anything..."
             value={coachPrompt}
             onChange={(e) => setCoachPrompt(e.target.value)}
-          />
-          <Button 
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-            onClick={handleSubmitPrompt}
+            onKeyDown={handleKeyDown}
             disabled={isLoadingCoachResponse}
-          >
-            {isLoadingCoachResponse ? 'Processing...' : 'Ask Coach'}
-          </Button>
+          />
+          <div className="flex justify-between items-center">
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={handleSubmitPrompt}
+              disabled={isLoadingCoachResponse}
+            >
+              {isLoadingCoachResponse ? 'Processing...' : 'Ask Coach'}
+            </Button>
+            
+            <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+              Press Enter to send, Shift+Enter for new line
+            </p>
+          </div>
+          
+          {/* Suggested Questions */}
+          <div className="mt-4">
+            <p className={`text-sm mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Try asking:</p>
+            <ul className={`list-disc pl-5 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+              <li>
+                <button 
+                  className="hover:underline text-left"
+                  onClick={() => handleSuggestedPromptClick("How much can I safely spend this week?")}
+                >
+                  How much can I safely spend this week?
+                </button>
+              </li>
+              <li>
+                <button 
+                  className="hover:underline text-left"
+                  onClick={() => handleSuggestedPromptClick("What's my biggest spending category?")}
+                >
+                  What's my biggest spending category?
+                </button>
+              </li>
+              <li>
+                <button 
+                  className="hover:underline text-left"
+                  onClick={() => handleSuggestedPromptClick("How should I adjust my budget to save faster?")}
+                >
+                  How should I adjust my budget to save faster?
+                </button>
+              </li>
+            </ul>
+          </div>
           
           {/* Coach Response Display */}
           {(coachResponse || isLoadingCoachResponse) && (
@@ -303,10 +393,8 @@ export default function Dashboard() {
               }`}
             >
               {isLoadingCoachResponse ? (
-                <div className="space-y-2">
-                  <Skeleton className={`h-4 w-full ${theme === 'dark' ? 'bg-gray-600' : ''}`} />
-                  <Skeleton className={`h-4 w-5/6 ${theme === 'dark' ? 'bg-gray-600' : ''}`} />
-                  <Skeleton className={`h-4 w-4/6 ${theme === 'dark' ? 'bg-gray-600' : ''}`} />
+                <div className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} italic`}>
+                  {typingIndicator}
                 </div>
               ) : (
                 <p className={`whitespace-pre-line ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}`}>
