@@ -260,6 +260,17 @@ export default function TransactionsSection() {
               </div>
             ))}
           </div>
+        ) : filteredTransactions.length === 0 ? (
+          <div className="py-8 text-center">
+            <p className="text-muted-foreground">No recent transactions found</p>
+            <Button 
+              variant="outline" 
+              className="mt-4"
+              onClick={() => setIsAddDialogOpen(true)}
+            >
+              Add your first transaction
+            </Button>
+          </div>
         ) : (
           <div className="space-y-4">
             {filteredTransactions.map((transaction: Transaction) => {
