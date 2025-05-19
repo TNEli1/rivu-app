@@ -954,23 +954,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentAmount: z.number().or(z.string()).transform(val => 
           typeof val === 'string' ? parseFloat(val) : val
         ).optional(),
-        targetDate: z.string().optional(),
+        targetDate: z.string().nullable().optional(),
       });
       
-      const validated = schema.parse(req.body);
+      const validation = schema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: validation.error.errors 
+        });
+      }
+      
       const userId = getCurrentUserId();
+      const { name, targetAmount, currentAmount = 0, targetDate } = validation.data;
+      
+      console.log('Creating goal with data:', {
+        name,
+        targetAmount,
+        currentAmount,
+        targetDate,
+        userId
+      });
       
       // Create savings goal using storage API
       const goalData = {
         userId,
-        name: validated.name,
-        targetAmount: validated.targetAmount.toString(),
-        currentAmount: (validated.currentAmount || 0).toString(),
-        targetDate: validated.targetDate ? new Date(validated.targetDate) : undefined
+        name,
+        targetAmount: targetAmount.toString(),
+        currentAmount: currentAmount.toString(),
+        targetDate: targetDate ? new Date(targetDate) : undefined
       };
       
       // Save to PostgreSQL database
       const newGoal = await storage.createSavingsGoal(goalData);
+      
+      if (!newGoal) {
+        console.error('Failed to create goal - no goal returned from storage');
+        return res.status(500).json({ message: "Failed to create goal in database" });
+      }
+      
+      console.log('Goal created successfully:', newGoal);
       
       // Format response for client
       const formattedGoal = {
@@ -992,7 +1015,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(formattedGoal);
     } catch (error) {
       console.error('Error creating goal:', error);
-      res.status(400).json({ message: "Invalid input", error });
+      res.status(500).json({ 
+        message: "Error creating goal", 
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
   
