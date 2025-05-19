@@ -258,29 +258,29 @@ export default function BudgetPage() {
         </div>
 
         {/* Budget Overview Card */}
-        <Card className="p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">Monthly Budget Overview</h2>
+        <Card className="p-6 mb-8 bg-white dark:bg-gray-800 rounded-lg shadow">
+          <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Monthly Budget Overview</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div>
-              <p className="text-sm text-muted-foreground">Total Budget</p>
-              <p className="text-2xl font-bold">{formatCurrency(totalBudget)}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Total Budget</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{formatCurrency(totalBudget)}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Total Spent</p>
-              <p className="text-2xl font-bold">{formatCurrency(totalSpent)}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Total Spent</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{formatCurrency(totalSpent)}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Remaining</p>
-              <p className="text-2xl font-bold">{formatCurrency(Math.max(0, totalBudget - totalSpent))}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Remaining</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{formatCurrency(Math.max(0, totalBudget - totalSpent))}</p>
             </div>
           </div>
           
           <div className="space-y-2">
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-sm text-gray-700 dark:text-gray-300">
               <span>Overall Budget Used</span>
               <span className="font-medium">{overallProgress.toFixed(0)}%</span>
             </div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
               <div 
                 className={`h-full ${getProgressColor(overallProgress)}`} 
                 style={{ width: `${Math.min(100, overallProgress)}%` }}

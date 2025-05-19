@@ -130,14 +130,14 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Theme toggle button - positioned absolutely in the corner */}
       <div className="absolute top-4 right-4 z-10">
-        <div className="flex items-center space-x-2 bg-card p-2 rounded-full shadow-sm">
+        <div className="flex items-center space-x-2 bg-white dark:bg-gray-800 p-2 rounded-full shadow">
           <Button 
             variant="ghost" 
             size="icon"
-            className="rounded-full h-8 w-8 flex items-center justify-center"
+            className="rounded-full h-8 w-8 flex items-center justify-center text-gray-700 dark:text-gray-300"
             onClick={toggleDarkMode}
           >
             {darkMode ? (
@@ -152,18 +152,22 @@ export default function AuthPage() {
       {/* Left side - Auth form */}
       <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
         <div className="mx-auto w-full max-w-md">
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-semibold text-gray-800 dark:text-gray-100 mb-2">Rivu</h1>
+            <p className="text-gray-600 dark:text-gray-400">AI-Powered Personal Finance</p>
+          </div>
           <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100 dark:bg-gray-800">
+              <TabsTrigger value="login" className="text-gray-700 dark:text-gray-300 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700">Login</TabsTrigger>
+              <TabsTrigger value="register" className="text-gray-700 dark:text-gray-300 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700">Register</TabsTrigger>
             </TabsList>
             
             {/* Login Form */}
             <TabsContent value="login">
-              <Card>
+              <Card className="bg-white dark:bg-gray-800 rounded-lg shadow">
                 <CardHeader>
-                  <CardTitle className="text-2xl">Welcome back</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-2xl text-gray-800 dark:text-gray-100">Welcome back</CardTitle>
+                  <CardDescription className="text-gray-600 dark:text-gray-400">
                     Sign in to your account to continue
                   </CardDescription>
                 </CardHeader>
