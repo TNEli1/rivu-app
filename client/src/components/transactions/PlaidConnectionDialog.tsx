@@ -137,7 +137,7 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md overflow-hidden">
+      <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto overflow-x-hidden relative my-auto mx-auto">
         <DialogHeader>
           <DialogTitle>Connect Bank Account</DialogTitle>
           <DialogDescription className="break-words">
@@ -145,7 +145,7 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
           </DialogDescription>
         </DialogHeader>
         
-        <div className="py-6 overflow-y-auto">
+        <div className="py-4 overflow-y-auto">
           {error && (
             <Alert className="mb-6" variant="destructive">
               <AlertCircle className="h-4 w-4" />

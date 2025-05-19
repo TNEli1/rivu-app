@@ -325,7 +325,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Total budget calculated: ${totalBudget}, Monthly expenses: ${monthlyExpenses}`);
       
       // Calculate total spent from budget categories for consistency with budget page
-      const totalBudgetSpent = budgetCategories.reduce((sum: number, category: any) => {
+      let totalBudgetSpent = 0;
+      
+      // Loop through budget categories to determine total spent
+      for (const category of budgetCategories) {
         // Ensure we handle any format of spent amount (string, number, etc.)
         let spentAmount = 0;
         
@@ -341,8 +344,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           spentAmount = 0;
         }
         
-        return sum + spentAmount;
-      }, 0);
+        totalBudgetSpent += spentAmount;
+      }
       
       // Calculate remaining budget based on budget categories for consistency with budget page
       const calculatedRemainingBudget = Math.max(0, totalBudget - totalBudgetSpent);
@@ -358,7 +361,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         remainingBudget: calculatedRemainingBudget,
         monthlyIncome,
         monthlyExpenses,
-        totalBudget // Add this to help with debugging
+        totalBudget,
+        totalSpent: totalBudgetSpent // Add category-based spent amount for consistency with budget page
       });
     } catch (error) {
       console.error('Error generating dashboard summary:', error);
@@ -640,7 +644,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
           { 
             name: "Savings Goal Progress", 
-            percentage: Math.max(newScore?.savingsProgress || 0, 1), // Ensure at least 1% shows if there's any progress
+            percentage: newScore?.savingsProgress || 0, // Show actual percentage without minimum floor
             rating: getRating(newScore?.savingsProgress || 0), 
             color: "bg-[#2F80ED]" 
           },
@@ -715,7 +719,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
           { 
             name: "Savings Goal Progress", 
-            percentage: rivuScore.savingsProgress, // Ensure actual percentage is displayed
+            percentage: rivuScore.savingsProgress || 0, // Show actual percentage without minimum floor
             rating: getRating(rivuScore.savingsProgress || 0), 
             color: "bg-[#2F80ED]" 
           },
