@@ -389,13 +389,26 @@ export default function InsightsPage() {
                           ))}
                         </Pie>
                         <Tooltip 
-                          formatter={(value) => {
+                          formatter={(value, name, props) => {
                             // Convert value to number and format with commas and 2 decimal places
                             const numValue = Number(value);
-                            return [`$${numValue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, ""];
-                          }} 
+                            // The category name comes from the props.payload.name
+                            const categoryName = props.payload.name;
+                            return [`$${numValue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, categoryName];
+                          }}
+                          contentStyle={{ backgroundColor: "var(--background)", border: "1px solid var(--border)", borderRadius: "6px", padding: "10px" }}
+                          itemStyle={{ color: "var(--foreground)" }}
                         />
-                        <Legend />
+                        <Legend 
+                          layout="vertical"
+                          verticalAlign="middle"
+                          align="right"
+                          iconSize={12}
+                          wrapperStyle={{
+                            paddingLeft: '20px',
+                            fontSize: '12px',
+                          }}
+                        />
                       </RePieChart>
                     </ResponsiveContainer>
                   </div>
