@@ -1,13 +1,16 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import MobileNav from "@/components/layout/MobileNav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea"; 
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { formatCurrency } from "@/lib/utils";
+import { useTheme } from "@/hooks/use-theme";
+import { useQuery } from "@tanstack/react-query";
 
 // Sample data for the dashboard UI
 const sampleSummaryData = {
@@ -91,19 +94,35 @@ export default function Dashboard() {
     }
   }, [user, setLocation]);
 
+  // State for AI Coach response
+  const [coachResponse, setCoachResponse] = useState<string>("");
+  const [isLoadingCoachResponse, setIsLoadingCoachResponse] = useState(false);
+  const coachResponseRef = useRef<HTMLDivElement>(null);
+
   // Handle AI coach prompt submission
   const handleSubmitPrompt = async () => {
     if (!coachPrompt.trim()) return;
     
+    setIsLoadingCoachResponse(true);
+    
     try {
-      await apiRequest('POST', '/api/ai-coach/prompt', {
+      const response = await apiRequest('POST', '/api/advice', {
         prompt: coachPrompt
       });
+      
+      const data = await response.json();
+      setCoachResponse(data.message);
       setCoachPrompt("");
-      // Optionally navigate to AI Coach page
-      setLocation('/ai-coach');
+      
+      // Scroll to response
+      setTimeout(() => {
+        coachResponseRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
     } catch (error) {
       console.error('Failed to submit AI coach prompt:', error);
+      setCoachResponse("I apologize, but I'm having trouble connecting to my knowledge base right now. Please try again later.");
+    } finally {
+      setIsLoadingCoachResponse(false);
     }
   };
 
@@ -191,10 +210,47 @@ export default function Dashboard() {
           </div>
         </Card>
 
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Left Column - Budget Management */}
+          <div className="lg:col-span-2">
+            <Card className="bg-white p-6 rounded-lg shadow-sm">
+              <h3 className="text-lg font-semibold mb-4">Budget Management</h3>
+              
+              {/* Budget loading skeleton */}
+              <div id="budget-section">
+                <BudgetSection />
+              </div>
+              
+              <div className="mt-4">
+                <Button 
+                  variant="outline"
+                  onClick={() => setLocation('/budget')}
+                  className="text-sm"
+                >
+                  Manage Budget
+                </Button>
+              </div>
+            </Card>
+          </div>
+          
+          {/* Right Column - Rivu Score Card */}
+          <div className="lg:col-span-1">
+            <Card className="bg-white p-6 rounded-lg shadow-sm mb-6">
+              <h3 className="text-lg font-semibold mb-4">Rivu Score</h3>
+              
+              {/* Rivu Score loading skeleton */}
+              <div id="rivu-score-section">
+                <RivuScore />
+              </div>
+            </Card>
+          </div>
+        </div>
+
         {/* AI Coach Prompt */}
         <Card className="bg-white p-6 rounded-lg shadow-sm">
           <h3 className="text-lg font-semibold mb-2">AI Coach</h3>
-          <p className="text-sm text-gray-600 mb-4">Get personalized financial insights</p>
+          <p className="text-sm text-gray-700 mb-4">Get personalized financial insights</p>
           <Textarea 
             className="w-full p-3 border border-gray-300 rounded mb-3"
             rows={3} 
@@ -205,9 +261,29 @@ export default function Dashboard() {
           <Button 
             className="bg-blue-600 hover:bg-blue-700 text-white"
             onClick={handleSubmitPrompt}
+            disabled={isLoadingCoachResponse}
           >
-            Ask Coach
+            {isLoadingCoachResponse ? 'Processing...' : 'Ask Coach'}
           </Button>
+          
+          {/* Coach Response Display */}
+          {(coachResponse || isLoadingCoachResponse) && (
+            <div 
+              id="coach-response" 
+              ref={coachResponseRef}
+              className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200"
+            >
+              {isLoadingCoachResponse ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-5/6" />
+                  <Skeleton className="h-4 w-4/6" />
+                </div>
+              ) : (
+                <p className="text-gray-800 whitespace-pre-line">{coachResponse}</p>
+              )}
+            </div>
+          )}
         </Card>
       </main>
 
