@@ -14,6 +14,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const [isThemeReady, setIsThemeReady] = useState(false);
   const [theme, setThemeState] = useState<Theme>(() => {
     // First check localStorage
     const savedTheme = localStorage.getItem('theme');
@@ -24,6 +25,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // Default to light mode
     return 'light';
   });
+
+  // Apply the initial theme immediately on load to prevent flash
+  useEffect(() => {
+    // This runs once on first render before any state updates
+    const root = document.documentElement;
+    const savedTheme = localStorage.getItem('theme');
+    
+    if (savedTheme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }, []);
 
   // Update the DOM when theme changes
   useEffect(() => {
@@ -46,6 +60,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       // If user exists but doesn't have a theme preference, default to light mode
       setThemeState('light');
     }
+    setIsThemeReady(true);
   }, [user]);
 
   // Set theme and persist to backend if user is logged in

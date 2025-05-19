@@ -23,6 +23,8 @@ export type Transaction = {
   account: string;
   type: "income" | "expense";
   notes?: string;
+  source?: string; // 'manual', 'csv', or 'plaid'
+  isDuplicate?: boolean;
 };
 
 export default function TransactionsSection() {
@@ -289,7 +291,9 @@ export default function TransactionsSection() {
                       <p className="text-xs text-muted-foreground">
                         {formatDate(new Date(transaction.date))} • {transaction.category} •&nbsp;
                         <span className="text-xs italic">
-                          Entered Manually
+                          {transaction.source === 'csv' ? 'CSV Import' : 
+                           transaction.source === 'plaid' ? 'Bank Connection' : 
+                           'Manual Entry'}
                         </span>
                       </p>
                     </div>
