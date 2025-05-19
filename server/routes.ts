@@ -1031,9 +1031,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const userId = getCurrentUserId();
-      const goalIndex = goals.findIndex(g => g.id === id && g.userId === userId);
       
-      if (goalIndex === -1) {
+      // Get existing goal from database
+      const existingGoal = await storage.getSavingsGoal(id);
+      
+      if (!existingGoal || existingGoal.userId !== userId) {
         return res.status(404).json({ message: "Goal not found" });
       }
       
@@ -1042,47 +1044,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
         targetAmount: z.number().or(z.string()).transform(val => 
           typeof val === 'string' ? parseFloat(val) : val
         ).refine(val => val > 0, "Target amount must be greater than 0").optional(),
-        targetDate: z.string().optional(),
+        targetDate: z.string().nullable().optional(),
         amountToAdd: z.number().or(z.string()).transform(val => 
           typeof val === 'string' ? parseFloat(val) : val
         ).optional(),
       });
       
-      const validated = schema.parse(req.body);
-      const goal = goals[goalIndex];
-      
-      // Update basic properties
-      if (validated.name) goal.name = validated.name;
-      if (validated.targetAmount) goal.targetAmount = validated.targetAmount;
-      if (validated.targetDate) goal.targetDate = validated.targetDate;
-      
-      // If amount to add is included, update the savings amount
-      if (validated.amountToAdd) {
-        goal.currentAmount += validated.amountToAdd;
-        
-        // Update monthly savings tracking
-        const now = new Date();
-        const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-        
-        const existingMonthIndex = goal.monthlySavings.findIndex(m => m.month === monthKey);
-        if (existingMonthIndex >= 0) {
-          goal.monthlySavings[existingMonthIndex].amount += validated.amountToAdd;
-        } else {
-          goal.monthlySavings.push({ month: monthKey, amount: validated.amountToAdd });
-        }
+      const validation = schema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: validation.error.errors 
+        });
       }
       
-      // Recalculate progress percentage
-      goal.progressPercentage = goal.targetAmount > 0 
-        ? (goal.currentAmount / goal.targetAmount) * 100 
-        : 0;
+      // Use validated data
+      const validated = validation.data;
       
-      goal.updatedAt = new Date();
+      // Update basic properties
+      // Prepare update data
+      const updateData: Record<string, any> = {};
       
-      // Update Rivu score after updating a goal
-      await storage.calculateRivuScore(userId);
+      if (validated.name !== undefined) updateData.name = validated.name;
       
-      res.json(goal);
+      if (validated.targetAmount !== undefined) {
+        updateData.targetAmount = validated.targetAmount.toString();
+      }
+      
+      if (validated.targetDate !== undefined) {
+        updateData.targetDate = validated.targetDate ? new Date(validated.targetDate) : null;
+      }
+      
+      // Handle adding to current amount if specified
+      if (validated.amountToAdd !== undefined && validated.amountToAdd > 0) {
+        const currentAmount = parseFloat(String(existingGoal.currentAmount));
+        const amountToAdd = validated.amountToAdd;
+        updateData.currentAmount = (currentAmount + amountToAdd).toString();
+      }
+      
+      // Update goal in the database
+      const updatedGoal = await storage.updateSavingsGoal(id, updateData);
+      
+      if (!updatedGoal) {
+        return res.status(500).json({ message: "Failed to update goal" });
+      }
+      
+      // Format response for client
+      const formattedGoal = {
+        id: updatedGoal.id,
+        userId: updatedGoal.userId,
+        name: updatedGoal.name,
+        targetAmount: parseFloat(String(updatedGoal.targetAmount)),
+        currentAmount: parseFloat(String(updatedGoal.currentAmount)),
+        progressPercentage: parseFloat(String(updatedGoal.progressPercentage)),
+        targetDate: updatedGoal.targetDate,
+        monthlySavings: updatedGoal.monthlySavings ? JSON.parse(updatedGoal.monthlySavings) : [],
+        createdAt: updatedGoal.createdAt,
+        updatedAt: updatedGoal.updatedAt
+      };
+      
+      // Update Rivu score if amount added
+      if (validated.amountToAdd) {
+        await storage.calculateRivuScore(userId);
+      }
+      
+      res.json(formattedGoal);
     } catch (error) {
       console.error('Error updating goal:', error);
       res.status(400).json({ message: "Invalid input", error });
@@ -1098,13 +1124,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const userId = getCurrentUserId();
-      const goalIndex = goals.findIndex(g => g.id === id && g.userId === userId);
       
-      if (goalIndex === -1) {
+      // Get existing goal from database
+      const existingGoal = await storage.getSavingsGoal(id);
+      
+      if (!existingGoal || existingGoal.userId !== userId) {
         return res.status(404).json({ message: "Goal not found" });
       }
       
-      goals.splice(goalIndex, 1);
+      // Delete goal from database
+      const result = await storage.deleteSavingsGoal(id);
+      
+      if (!result) {
+        return res.status(500).json({ message: "Failed to delete goal" });
+      }
       
       // Update Rivu score after deleting a goal
       await storage.calculateRivuScore(userId);
