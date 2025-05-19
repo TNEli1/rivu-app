@@ -100,30 +100,31 @@ export async function sendPasswordResetEmail(
   resetToken: string, 
   resetUrl: string
 ): Promise<boolean> {
-  const subject = 'Reset Your Rivu Finance Password';
+  const subject = 'Reset Your Rivu Password';
   
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #2F80ED;">Reset Your Rivu Finance Password</h2>
+      <h2 style="color: #2F80ED;">Reset Your Rivu Password</h2>
       <p>Hello,</p>
-      <p>We received a request to reset your password for your Rivu Finance account.</p>
-      <p>Please click the button below to set a new password. This link will expire in 30 minutes.</p>
+      <p>We received a request to reset your password for your Rivu account.</p>
+      <p>Please click the button below to set a new password. <strong>This link will expire in 30 minutes.</strong></p>
       <div style="text-align: center; margin: 30px 0;">
         <a href="${resetUrl}" style="background-color: #2F80ED; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Reset Password</a>
       </div>
       <p>If you didn't request a password reset, you can safely ignore this email.</p>
-      <p>Thank you,<br>The Rivu Finance Team</p>
+      <p>Thank you,<br>Rivu Team</p>
       <hr style="border: 1px solid #eee; margin-top: 30px;">
-      <p style="font-size: 12px; color: #666;">This link will expire in 30 minutes. If you need a new link, please visit the <a href="${process.env.APP_URL || 'https://rivufinance.com'}/forgot-password">forgot password page</a>.</p>
+      <p style="font-size: 12px; color: #666;">This email was sent from support@tryrivu.com. This password reset link will expire in 30 minutes.</p>
+      <p style="font-size: 12px; color: #666;"><a href="https://www.tryrivu.com">www.tryrivu.com</a></p>
     </div>
   `;
   
   const textContent = `
-    Reset Your Rivu Finance Password
+    Reset Your Rivu Password
     
     Hello,
     
-    We received a request to reset your password for your Rivu Finance account.
+    We received a request to reset your password for your Rivu account.
     
     Please visit the following link to set a new password:
     ${resetUrl}
@@ -133,7 +134,9 @@ export async function sendPasswordResetEmail(
     If you didn't request a password reset, you can safely ignore this email.
     
     Thank you,
-    The Rivu Finance Team
+    Rivu Team
+    
+    www.tryrivu.com
   `;
   
   return await sendEmail({
