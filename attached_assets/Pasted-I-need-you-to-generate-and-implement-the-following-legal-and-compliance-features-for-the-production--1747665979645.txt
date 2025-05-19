@@ -1,0 +1,55 @@
+I need you to generate and implement the following legal and compliance features for the production launch of our fintech app, Rivu Inc.:
+
+⸻
+
+✅ 1. Privacy Policy Page
+	•	Create a standalone page at /privacy
+	•	Title: Privacy Policy – Rivu Inc.
+	•	Date: May 19, 2025
+	•	Include the following content:
+
+Rivu Inc. (“Rivu”, “we”, “our”) is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and protect your personal information.
+
+We use Plaid Inc. to securely access your financial account information. Rivu does not store your banking credentials. All connections to financial institutions are handled securely through Plaid’s encrypted interface.
+
+Data we may collect includes:
+- Account balances and transactions
+- Budget goals and activity logs
+- Coaching feedback and performance
+
+We store your data using secure, encrypted infrastructure and never share it with third parties without your explicit consent. You may request deletion of your data at any time by emailing support@tryrivu.com.
+
+View our full data rights policy, deletion procedure, and Plaid terms at: https://plaid.com/legal
+
+✅ 2. Terms of Service Page
+	•	Create a standalone page at /terms
+	•	Title: Terms of Service – Rivu Inc.
+	•	Date: May 19, 2025
+	•	Include the following content:
+
+By creating an account with Rivu Inc., you agree to the following:
+
+1. Rivu provides personal finance insights for informational purposes only. Rivu is not a registered financial advisor and does not provide investment, legal, or tax advice.
+2. You are responsible for your own financial decisions. We recommend speaking with a licensed professional before taking financial action.
+3. You must be at least 18 years old to use this service.
+4. All financial data is handled securely using best practices and encrypted storage.
+5. You may request deletion of your account and data by contacting support@tryrivu.com.
+6. We may update these terms periodically. Continued use of Rivu means you accept the revised terms.
+
+3. Add Functional Terms Agreement to Signup Screen
+	•	On the user registration page:
+	•	Add a checkbox labeled:
+"I agree to the Terms of Service and Privacy Policy"
+	•	Link “Terms of Service” to /terms, and “Privacy Policy” to /privacy
+	•	Disable the sign-up/continue button unless the box is checked
+	•	Make this a required field before account creation can proceed
+
+⸻
+
+✅ 4. Legal Compliance Notices
+	•	Add this to the footer of both /terms and /privacy:
+Rivu Inc. is a United States-based company headquartered in California. By using Rivu, you consent to data processing in accordance with U.S. law. All trademarks and logos belong to their respective owners. For questions, email support@tryrivu.com.
+
+⸻
+
+Make sure all content is dated May 19, 2025, is mobile-friendly, and uses the same visual style as the rest of the app.
