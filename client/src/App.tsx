@@ -15,7 +15,6 @@ import SettingsPage from "@/pages/settings-page";
 import GoalsPage from "@/pages/goals-page";
 import ForgotPasswordPage from "@/pages/forgot-password";
 import ResetPasswordPage from "@/pages/reset-password";
-import PlaidTestPage from "@/pages/PlaidTestPage";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 import { ThemeProvider } from "./hooks/use-theme";
@@ -31,7 +30,6 @@ function Router() {
       <ProtectedRoute path="/account" component={AccountPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
       <ProtectedRoute path="/onboarding" component={OnboardingPage} />
-      <ProtectedRoute path="/plaid-test" component={PlaidTestPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/login" component={AuthPage} />
       <Route path="/forgot-password" component={ForgotPasswordPage} />

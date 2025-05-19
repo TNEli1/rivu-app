@@ -70,8 +70,8 @@ async function initializeRoutes() {
     const adviceController = await importController('../controllers/adviceController.js');
     const { getAdvice } = adviceController;
     
-    const existingPlaidController = await importController('../controllers/plaidController.js');
-    const { createLinkToken, exchangePublicToken, getConnectedAccounts, refreshAccountData, disconnectAccount } = existingPlaidController;
+    const plaidController = await importController('../controllers/plaidController.js');
+    const { createLinkToken, exchangePublicToken, getConnectedAccounts, refreshAccountData, disconnectAccount } = plaidController;
     
     // Set up all routes
     
@@ -172,30 +172,12 @@ async function initializeRoutes() {
       }
     });
     
-    // Import our new TypeScript Plaid controllers
-    const plaidTsController = await import('../controllers-ts/plaidController.ts');
-    const { 
-      getPlaidAccounts, 
-      plaidWebhook, 
-      testFireWebhook, 
-      createLinkToken: createPlaidLinkToken, 
-      exchangePublicToken: exchangePlaidPublicToken 
-    } = plaidTsController;
-    
-    // Plaid Integration Routes 
-    // Keep existing routes for compatibility
+    // Plaid Integration Routes
     router.post('/plaid/link-token', protect, createLinkToken);
     router.post('/plaid/exchange-token', protect, exchangePublicToken);
     router.get('/plaid/accounts', protect, getConnectedAccounts);
     router.post('/plaid/refresh/:id', protect, refreshAccountData);
     router.delete('/plaid/disconnect/:id', protect, disconnectAccount);
-    
-    // Add new Plaid Sandbox endpoints with the TypeScript implementation
-    router.post('/plaid/create-link-token', protect, createPlaidLinkToken);
-    router.post('/plaid/exchange-public-token', protect, exchangePlaidPublicToken);
-    router.get('/plaid/accounts/get', protect, getPlaidAccounts);
-    router.post('/plaid/webhook', plaidWebhook); // No auth for webhook endpoint
-    router.post('/plaid/webhook/test', protect, testFireWebhook);
     
     // Simulated Plaid Transactions (temp until full integration)
     router.get('/plaid/transactions', protect, (req, res) => {
