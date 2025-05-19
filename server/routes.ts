@@ -868,26 +868,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     updatedAt: Date;
   }
 
-  // In-memory goals storage
-  const goals: Goal[] = [];
-  let goalId = 1;
-  
-  // Make the goals array available globally so other modules can access it
-  // This avoids circular dependency issues
-  // @ts-ignore: Add global property
-  global.appGoals = goals;
+  // No more in-memory goals storage - use PostgreSQL database now
   
   // Helper function to access goals from other parts of the application
-  function getGoalsForUser(userId: number): Goal[] {
-    return goals.filter(g => g.userId === userId);
+  async function getGoalsForUser(userId: number): Promise<Goal[]> {
+    const dbGoals = await storage.getSavingsGoals(userId);
+    // Convert the database goals to the Goal interface format
+    return dbGoals.map(g => ({
+      id: g.id,
+      userId: g.userId,
+      name: g.name,
+      targetAmount: parseFloat(String(g.targetAmount)),
+      currentAmount: parseFloat(String(g.currentAmount)),
+      progressPercentage: parseFloat(String(g.progressPercentage)),
+      targetDate: g.targetDate,
+      monthlySavings: g.monthlySavings ? JSON.parse(g.monthlySavings) : [],
+      createdAt: g.createdAt,
+      updatedAt: g.updatedAt
+    }));
   };
   
   // Get all goals for a user
   app.get("/api/goals", async (req, res) => {
     try {
       const userId = getCurrentUserId();
-      const userGoals = goals.filter(g => g.userId === userId);
-      res.json(userGoals);
+      
+      // Get goals from PostgreSQL database
+      const dbGoals = await storage.getSavingsGoals(userId);
+      
+      // Format goals for client
+      const formattedGoals = dbGoals.map(goal => ({
+        id: goal.id,
+        userId: goal.userId,
+        name: goal.name,
+        targetAmount: parseFloat(String(goal.targetAmount)),
+        currentAmount: parseFloat(String(goal.currentAmount)),
+        progressPercentage: parseFloat(String(goal.progressPercentage)),
+        targetDate: goal.targetDate,
+        monthlySavings: goal.monthlySavings ? JSON.parse(goal.monthlySavings) : [],
+        createdAt: goal.createdAt,
+        updatedAt: goal.updatedAt
+      }));
+      
+      // Log for debugging
+      console.log(`Found ${dbGoals.length} goals in DB and ${global.appGoals?.length || 0} goals in memory, total: ${dbGoals.length}`);
+      
+      // Return all goals from database
+      res.json(formattedGoals);
     } catch (error) {
       console.error('Error fetching goals:', error);
       res.status(500).json({ message: 'Failed to fetch goals' });
@@ -903,9 +930,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const userId = getCurrentUserId();
-      const goal = goals.find(g => g.id === id && g.userId === userId);
+      const goal = await storage.getSavingsGoal(id);
       
-      if (!goal) {
+      if (!goal || goal.userId !== userId) {
         return res.status(404).json({ message: "Goal not found" });
       }
       
