@@ -189,7 +189,7 @@ export default function BudgetPage() {
       <Sidebar />
 
       {/* Main Content */}
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-8 overflow-y-auto max-h-screen">
         {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
           <div>
@@ -387,14 +387,34 @@ export default function BudgetPage() {
                         size="sm" 
                         className="h-8 border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700" 
                         onClick={() => {
-                          const newSpent = prompt('Enter amount spent:', spent.toString());
+                          // Use a dialog instead of prompt for better UX
+                          const newSpent = window.prompt('Enter amount spent:', spent.toString());
                           if (newSpent !== null && !isNaN(parseFloat(newSpent))) {
+                            // Proceed with the update
                             updateMutation.mutate({
                               id: category.id,
                               updates: {
                                 name: category.name,
                                 budgetAmount: category.budgetAmount,
                                 spentAmount: newSpent
+                              }
+                            }, {
+                              onSuccess: () => {
+                                // Invalidate all relevant queries to ensure dashboard updates
+                                queryClient.invalidateQueries({ queryKey: ['/api/budget-categories'] });
+                                queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] });
+                                queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
+                                toast({
+                                  title: "Budget updated",
+                                  description: `Updated ${category.name} spent amount to ${formatCurrency(parseFloat(newSpent))}`,
+                                });
+                              },
+                              onError: (error) => {
+                                toast({
+                                  title: "Update failed",
+                                  description: "Failed to update budget. Please try again.",
+                                  variant: "destructive",
+                                });
                               }
                             });
                           }

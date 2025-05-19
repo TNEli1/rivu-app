@@ -1,8 +1,11 @@
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/hooks/use-theme';
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 type RivuScoreResponse = {
   score: number;
@@ -27,6 +30,9 @@ type ScoreFactor = {
 export default function RivuScore() {
   // Access theme context
   const { theme } = useTheme();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Fetch Rivu score data
   const { data, isLoading } = useQuery<RivuScoreResponse>({
@@ -50,6 +56,37 @@ export default function RivuScore() {
           lastUpdated: new Date().toISOString()
         };
       }
+    }
+  });
+  
+  // Mutation to recalculate Rivu score
+  const recalculateScoreMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest('POST', '/api/rivu-score/recalculate');
+      return res.json();
+    },
+    onMutate: () => {
+      setIsRefreshing(true);
+    },
+    onSuccess: () => {
+      // Invalidate and refetch all relevant queries
+      queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] });
+      toast({
+        title: "Rivu Score Refreshed",
+        description: "Your financial health score has been recalculated.",
+      });
+    },
+    onError: (error) => {
+      console.error('Failed to recalculate Rivu score:', error);
+      toast({
+        title: "Refresh Failed",
+        description: "Unable to recalculate your score. Please try again.",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setIsRefreshing(false);
     }
   });
 
@@ -89,23 +126,36 @@ export default function RivuScore() {
 
   return (
     <div className="text-center space-y-4">
-      <div className="relative inline-block">
-        <div className={`h-24 w-24 rounded-full border-4 flex items-center justify-center mx-auto ${
-          theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-100 bg-white'
-        }`}>
-          <span className={`text-3xl font-bold ${
-            theme === 'dark' ? 'text-gray-100' : 'text-gray-900'
-          }`}>{score}</span>
+      <div className="flex justify-center items-center mb-2">
+        <div className="relative inline-block">
+          <div className={`h-24 w-24 rounded-full border-4 flex items-center justify-center mx-auto ${
+            theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-100 bg-white'
+          }`}>
+            <span className={`text-3xl font-bold ${
+              theme === 'dark' ? 'text-gray-100' : 'text-gray-900'
+            }`}>{score}</span>
+          </div>
+          <div className={`absolute -top-2 -right-2 px-2 py-1 text-xs rounded-full ${
+            score >= 70 
+              ? (theme === 'dark' ? 'bg-green-900 text-green-100' : 'bg-green-100 text-green-800') 
+              : score >= 50 
+              ? (theme === 'dark' ? 'bg-yellow-900 text-yellow-100' : 'bg-yellow-100 text-yellow-800')
+              : (theme === 'dark' ? 'bg-red-900 text-red-100' : 'bg-red-100 text-red-800')
+          }`}>
+            {rating}
+          </div>
         </div>
-        <div className={`absolute -top-2 -right-2 px-2 py-1 text-xs rounded-full ${
-          score >= 70 
-            ? (theme === 'dark' ? 'bg-green-900 text-green-100' : 'bg-green-100 text-green-800') 
-            : score >= 50 
-            ? (theme === 'dark' ? 'bg-yellow-900 text-yellow-100' : 'bg-yellow-100 text-yellow-800')
-            : (theme === 'dark' ? 'bg-red-900 text-red-100' : 'bg-red-100 text-red-800')
-        }`}>
-          {rating}
-        </div>
+        <Button 
+          variant="ghost" 
+          size="icon"
+          className={`ml-2 h-8 w-8 rounded-full ${
+            theme === 'dark' ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'
+          } ${isRefreshing ? 'opacity-70 cursor-not-allowed' : ''}`}
+          onClick={() => recalculateScoreMutation.mutate()}
+          disabled={isRefreshing}
+        >
+          <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+        </Button>
       </div>
       
       <div className="space-y-2">

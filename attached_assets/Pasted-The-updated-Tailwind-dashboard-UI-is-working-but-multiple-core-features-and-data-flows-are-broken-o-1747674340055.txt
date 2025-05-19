@@ -1,0 +1,101 @@
+The updated Tailwind dashboard UI is working, but multiple core features and data flows are broken or incomplete. Please make the following corrections to fully restore Rivu’s functionality across all pages:
+
+⸻
+
+✅ 1. Fix Layout + Scrolling
+	•	On the Budget and Transactions pages:
+	•	Ensure all content is fully visible, not cut off
+	•	Apply overflow-auto or overflow-y-scroll as needed
+	•	Avoid content that bleeds off-screen on mobile or small displays
+
+⸻
+
+✅ 2. Fix Budget Updating Logic
+	•	Users are unable to update amount spent per category
+	•	Fix form submission or input capture logic
+	•	Data should correctly update in the backend
+	•	Budget changes should reflect live on dashboard summary cards
+	•	“Amount spent” fields should trigger a budget update when changed
+
+⸻
+
+✅ 3. Ensure Page-to-Dashboard Sync
+	•	When data is changed on:
+	•	/budget
+	•	/transactions
+	•	It should update the dashboard in real time or on reload
+	•	Dashboard should pull live data from:
+	•	GET /api/summary
+	•	GET /api/transactions
+	•	GET /api/budget
+	•	GET /api/rivu-score
+
+⸻
+
+✅ 4. Verify Rivu Score Logic
+	•	Ensure the logic for calculating Rivu Score is correct
+	•	Validate calculation based on: spending trends, goal completion, consistency
+	•	Pull data from appropriate sources
+	•	If needed, move scoring logic to a single backend function for consistency
+
+⸻
+
+✅ 5. Re-add & Wire Refresh Button for Rivu Score
+	•	Add a refresh icon or button next to the Rivu Score
+	•	On click, it should:
+	•	Trigger POST /api/rivu-score/recalculate
+	•	Update the score visually after the response
+	•	Optionally show “Refreshing…” indicator during request
+
+⸻
+
+✅ 6. No Feature Regression
+	•	Restore all features from previous version of dashboard:
+	•	Editing budgets
+	•	Categorizing transactions
+	•	Viewing Rivu Score + trends
+	•	AI Coach submission + suggestions
+	•	Light/dark theme toggle from settings
+
+⸻
+
+✅ 7. Final UI Polish
+	•	Ensure visual consistency using dashboard layout rules
+	•	Fix any lingering text cutoffs, misaligned buttons, or missing loading states
+
+In addition to reconnecting all dashboard and budgeting features (as described earlier), please finalize theming behavior across the app with the following rules:
+
+⸻
+
+✅ 1. Set Default to Light Mode
+	•	When a new or unauthenticated user loads the app:
+	•	Default to light mode
+	•	Ensure html tag does not start with class="dark" unless user has chosen it
+
+⸻
+
+✅ 2. Respect Saved Theme Preference
+	•	When a user logs in:
+	•	Check localStorage (or user profile) for stored theme preference
+	•	Re-apply dark or light mode accordingly
+	•	When a user toggles the theme in settings:
+	•	Update preference in real time
+	•	Save to localStorage or backend profile
+	•	Apply mode immediately (toggle class="dark" on <html>)
+
+⸻
+
+✅ 3. Ensure Consistency Across Pages
+	•	Theme should persist across navigation:
+	•	Dashboard
+	•	Transactions
+	•	Budget
+	•	Goals
+	•	Settings
+	•	All components should respond correctly to mode switch (cards, buttons, text, charts)
+
+⸻
+
+✅ 4. No Breaking UI Changes
+	•	Don’t remove Tailwind classes
+	•	All pages must still load responsively and without layout shift when switching themes
