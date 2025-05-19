@@ -1010,30 +1010,48 @@ export class DatabaseStorage implements IStorage {
     // Savings Progress = total saved / total target goal (only for active goals)
     let totalTargetAmount = 0;
     let totalSavedAmount = 0;
+    let validGoalCount = 0;
     
     // Enhanced logging for goal progress calculation
     console.log(`Calculating savings progress for ${goals.length} goals...`);
     
     for (const goal of goals) {
-      const targetAmount = parseFloat(String(goal.targetAmount)) || 0;
-      const currentAmount = parseFloat(String(goal.currentAmount)) || 0;
+      // Ensure we have valid numeric values by explicit conversion and validation
+      const targetAmount = parseFloat(String(goal.targetAmount));
+      const currentAmount = parseFloat(String(goal.currentAmount));
       
-      // Force numeric conversion and calculate individual goal progress
-      const individualProgress = targetAmount > 0 
-        ? (currentAmount / targetAmount * 100).toFixed(2) 
-        : '0.00';
+      // Detailed logging for each goal's values to help with debugging
+      console.log(`Processing goal: ${goal.name}`);
+      console.log(`  - Raw target amount: ${goal.targetAmount} (${typeof goal.targetAmount})`);
+      console.log(`  - Raw current amount: ${goal.currentAmount} (${typeof goal.currentAmount})`);
+      console.log(`  - Parsed target: ${targetAmount}, Parsed current: ${currentAmount}`);
       
-      console.log(`Goal: ${goal.name}, Target: ${targetAmount}, Current: ${currentAmount}, Progress: ${individualProgress}%`);
-      
-      // Only count valid numeric values
-      if (!isNaN(targetAmount) && !isNaN(currentAmount)) {
-        totalTargetAmount += targetAmount;
-        totalSavedAmount += currentAmount;
+      // Skip goals with invalid target amounts - they shouldn't affect the overall calculation
+      if (isNaN(targetAmount) || targetAmount <= 0) {
+        console.log(`  - WARNING: Goal "${goal.name}" has invalid target amount (${goal.targetAmount}), skipping in progress calculation`);
+        continue;
       }
+      
+      // Skip goals with invalid current amounts
+      if (isNaN(currentAmount)) {
+        console.log(`  - WARNING: Goal "${goal.name}" has invalid current amount (${goal.currentAmount}), skipping in progress calculation`);
+        continue;
+      }
+      
+      // Calculate individual progress percentage for this goal
+      const individualProgress = (currentAmount / targetAmount * 100).toFixed(2);
+      console.log(`  - Valid goal: Target: ${targetAmount.toFixed(2)}, Current: ${currentAmount.toFixed(2)}, Progress: ${individualProgress}%`);
+      
+      // Add to totals for valid goals only
+      totalTargetAmount += targetAmount;
+      totalSavedAmount += currentAmount;
+      validGoalCount++;
     }
     
     // If no active goals or target amounts, default to 0% savings progress
     let savingsProgress = 0;
+    
+    console.log(`Summary: Found ${validGoalCount} valid goals with total target: ${totalTargetAmount.toFixed(2)}, total saved: ${totalSavedAmount.toFixed(2)}`);
     
     if (totalTargetAmount > 0) {
       // Perform accurate calculation and round to nearest integer
@@ -1043,16 +1061,12 @@ export class DatabaseStorage implements IStorage {
       // Cap at 100% maximum
       savingsProgress = Math.min(savingsProgress, 100);
       
-      // We no longer force a minimum of 1% - showing actual progress
-      // This ensures the UI displays the true savings progress percentage
-      
       // Log the calculation for debugging
       console.log(`Overall Savings Progress: ${totalSavedAmount.toFixed(2)} / ${totalTargetAmount.toFixed(2)} = ${progressRatio.toFixed(4)} => ${savingsProgress}%`);
     } else if (goals.length > 0) {
-      // If there are goals but no target amount (which shouldn't happen but just in case),
-      // we'll give a minimum progress score to reflect engagement
-      savingsProgress = 0; // Changed to 0 instead of 5 to avoid showing progress when there isn't any
-      console.log(`Goals exist but no target amounts - setting to zero progress: ${savingsProgress}%`);
+      // If there are goals but no valid target amounts
+      savingsProgress = 0;
+      console.log(`Goals exist but no valid target amounts - setting to zero progress: ${savingsProgress}%`);
     } else {
       console.log(`No goals found - savings progress: ${savingsProgress}%`);
     }
