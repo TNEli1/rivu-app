@@ -376,7 +376,7 @@ export default function GoalsPage() {
       const remaining = goal.targetAmount - goal.currentAmount;
       const weeksNeeded = Math.ceil(remaining / avgWeeklyContribution);
       
-      // Calculate completion date
+      // Calculate completion date based on current contribution rate
       const completionDate = new Date();
       completionDate.setDate(completionDate.getDate() + (weeksNeeded * 7));
       const dateString = format(completionDate, 'MMM yyyy');
@@ -399,6 +399,17 @@ export default function GoalsPage() {
           const monthsAhead = Math.ceil((targetDate.getTime() - completionDate.getTime()) / (30 * 24 * 60 * 60 * 1000));
           status = 'ahead';
           statusText = `${monthsAhead} month${monthsAhead > 1 ? 's' : ''} ahead`;
+        } else {
+          // If dates are basically the same (within a few days)
+          status = 'on-track';
+          statusText = 'On track';
+        }
+        
+        // Don't indicate ahead/behind if the completionDate equals targetDate's month/year
+        if (completionDate.getMonth() === targetDate.getMonth() && 
+            completionDate.getFullYear() === targetDate.getFullYear()) {
+          status = 'on-track';
+          statusText = 'On track';
         }
       }
       

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import MobileNav from "@/components/layout/MobileNav";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,15 @@ export default function SettingsPage() {
     const params = new URLSearchParams(window.location.search);
     return params.get('tab') || 'appearance';
   });
+  
+  // Effect to update URL when tab changes
+  useEffect(() => {
+    if (window.history.pushState) {
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('tab', activeTab);
+      window.history.pushState({ path: newUrl.toString() }, '', newUrl.toString());
+    }
+  }, [activeTab]);
   
   // Handle theme toggle
   const handleThemeToggle = () => {
@@ -90,66 +99,96 @@ export default function SettingsPage() {
           <p className="text-muted-foreground">Manage your account and application preferences</p>
         </div>
 
-        {/* Settings Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Theme Settings */}
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-6">Appearance</h2>
-            
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-2">
-                {theme === 'dark' ? (
-                  <Moon className="h-5 w-5" />
-                ) : (
-                  <Sun className="h-5 w-5" />
-                )}
-                <span>Dark Mode</span>
-              </div>
-              <Switch 
-                checked={theme === 'dark'} 
-                onCheckedChange={handleThemeToggle} 
-              />
-            </div>
-            
-            {/* Skip onboarding survey toggle removed as per bug report */}
-          </Card>
+        {/* Settings Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
+          <TabsList className="mb-4">
+            <TabsTrigger value="appearance">Appearance</TabsTrigger>
+            <TabsTrigger value="account">Account</TabsTrigger>
+            <TabsTrigger value="rivu-score">Rivu Score</TabsTrigger>
+          </TabsList>
           
-          {/* Account Actions */}
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-6">Account</h2>
+          <TabsContent value="appearance">
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold mb-6">Appearance</h2>
+              
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  {theme === 'dark' ? (
+                    <Moon className="h-5 w-5" />
+                  ) : (
+                    <Sun className="h-5 w-5" />
+                  )}
+                  <span>Dark Mode</span>
+                </div>
+                <Switch 
+                  checked={theme === 'dark'} 
+                  onCheckedChange={handleThemeToggle} 
+                />
+              </div>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="rivu-score">
+            <Card className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Info className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-semibold">How Your Rivu Score Works</h2>
+              </div>
+              
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold mb-2">How Your Rivu Score Works</h2>
+                <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
+                  Your Rivu Score is a personal finance behavior score based on how consistently you stick to your budget, contribute to goals, and manage spending over time.
+                </p>
+                <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  <li>Staying under budget improves your score</li>
+                  <li>Consistent contributions toward goals help increase your score</li>
+                  <li>Irregular spending or frequent overspending may reduce your score</li>
+                </ul>
+                <p className="text-sm text-gray-500 dark:text-gray-500">
+                  Your score updates automatically and is meant to help you track your financial discipline — it's not a credit score or shared with anyone.
+                </p>
+              </div>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="account">
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold mb-6">Account</h2>
             
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className="w-full mb-4 text-destructive border-destructive hover:bg-destructive/10"
-                >
-                  <LogOut className="mr-2 h-4 w-4" /> Sign Out
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    You will need to sign in again to access your account.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleLogout}>
-                    Sign Out
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-            
-            <div className="mt-4">
-              <p className="text-sm text-muted-foreground">
-                Last login: {user?.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Unknown'}
-              </p>
-            </div>
-          </Card>
-        </div>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className="w-full mb-4 text-destructive border-destructive hover:bg-destructive/10"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" /> Sign Out
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      You will need to sign in again to access your account.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleLogout}>
+                      Sign Out
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              
+              <div className="mt-4">
+                <p className="text-sm text-muted-foreground">
+                  Last login: {user?.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Unknown'}
+                </p>
+              </div>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Mobile Bottom Navigation */}
