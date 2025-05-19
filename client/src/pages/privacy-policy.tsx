@@ -100,7 +100,7 @@ export default function PrivacyPolicyPage() {
           
           <div className="text-sm text-muted-foreground mt-8">
             <p>
-              Rivu Inc. is a United States-based company headquartered in California. 
+              Rivu Inc. is a Delaware corporation. These terms are governed by the laws of the State of Delaware.
               By using Rivu, you consent to data processing in accordance with U.S. law. 
               All trademarks and logos belong to their respective owners. 
               For questions, email <a href="mailto:support@tryrivu.com">support@tryrivu.com</a>.

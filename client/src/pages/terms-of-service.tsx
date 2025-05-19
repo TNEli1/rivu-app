@@ -109,7 +109,7 @@ export default function TermsOfServicePage() {
 
           <h2>Governing Law</h2>
           <p>
-            These Terms shall be governed by the laws of the State of California, without regard to 
+            These Terms shall be governed by the laws of the State of Delaware, without regard to 
             its conflict of law provisions.
           </p>
 
@@ -123,7 +123,7 @@ export default function TermsOfServicePage() {
           
           <div className="text-sm text-muted-foreground mt-8">
             <p>
-              Rivu Inc. is a United States-based company headquartered in California. 
+              Rivu Inc. is a Delaware corporation. These terms are governed by the laws of the State of Delaware.
               By using Rivu, you consent to data processing in accordance with U.S. law. 
               All trademarks and logos belong to their respective owners. 
               For questions, email <a href="mailto:support@tryrivu.com">support@tryrivu.com</a>.
