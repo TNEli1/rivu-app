@@ -75,12 +75,13 @@ export async function getAccounts(accessToken: string) {
 /**
  * Fire a webhook for testing in the Plaid Sandbox
  */
-export async function fireWebhook(accessToken: string, webhookType: 'ITEM' | 'TRANSACTIONS', webhookCode: string) {
+export async function fireWebhook(accessToken: string, webhookType: string, webhookCode: string) {
   try {
+    // Define valid webhook types to match Plaid's expected enum
     const response = await plaidClient.sandboxItemFireWebhook({
       access_token: accessToken,
-      webhook_type: webhookType,
-      webhook_code: webhookCode as any, // Casting to any to handle different webhook codes
+      webhook_type: webhookType as any, // Using type assertion for compatibility
+      webhook_code: webhookCode as any, // Using type assertion for compatibility
     });
     
     return response.data;

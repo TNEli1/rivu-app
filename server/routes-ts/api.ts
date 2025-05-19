@@ -70,8 +70,8 @@ async function initializeRoutes() {
     const adviceController = await importController('../controllers/adviceController.js');
     const { getAdvice } = adviceController;
     
-    const plaidController = await importController('../controllers/plaidController.js');
-    const { createLinkToken, exchangePublicToken, getConnectedAccounts, refreshAccountData, disconnectAccount } = plaidController;
+    const existingPlaidController = await importController('../controllers/plaidController.js');
+    const { createLinkToken, exchangePublicToken, getConnectedAccounts, refreshAccountData, disconnectAccount } = existingPlaidController;
     
     // Set up all routes
     
@@ -172,12 +172,22 @@ async function initializeRoutes() {
       }
     });
     
-    // Plaid Integration Routes
+    // Import our new TypeScript Plaid controllers
+    const plaidTsController = await import('../controllers-ts/plaidController.ts');
+    const { getPlaidAccounts, plaidWebhook, testFireWebhook } = plaidTsController;
+    
+    // Plaid Integration Routes 
+    // Keep existing routes for compatibility
     router.post('/plaid/link-token', protect, createLinkToken);
     router.post('/plaid/exchange-token', protect, exchangePublicToken);
     router.get('/plaid/accounts', protect, getConnectedAccounts);
     router.post('/plaid/refresh/:id', protect, refreshAccountData);
     router.delete('/plaid/disconnect/:id', protect, disconnectAccount);
+    
+    // Add new Plaid Sandbox endpoints
+    router.get('/plaid/accounts/get', protect, getPlaidAccounts);
+    router.post('/plaid/webhook', plaidWebhook); // No auth for webhook endpoint
+    router.post('/plaid/webhook/test', protect, testFireWebhook);
     
     // Simulated Plaid Transactions (temp until full integration)
     router.get('/plaid/transactions', protect, (req, res) => {
