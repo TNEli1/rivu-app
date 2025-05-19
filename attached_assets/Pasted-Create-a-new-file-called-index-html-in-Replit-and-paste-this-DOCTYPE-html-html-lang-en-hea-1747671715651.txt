@@ -1,0 +1,148 @@
+Create a new file called index.html in Replit and paste this:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Rivu Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-gray-100 text-gray-900 font-sans">
+  <div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white shadow-md">
+      <div class="p-6 text-2xl font-bold border-b border-gray-200">Rivu</div>
+      <nav class="mt-6">
+        <a href="#" class="block py-3 px-6 text-gray-700 hover:bg-gray-100">Dashboard</a>
+        <a href="#" class="block py-3 px-6 text-gray-700 hover:bg-gray-100">Transactions</a>
+        <a href="#" class="block py-3 px-6 text-gray-700 hover:bg-gray-100">Goals</a>
+        <a href="#" class="block py-3 px-6 text-gray-700 hover:bg-gray-100">AI Coach</a>
+      </nav>
+    </aside>
+
+    <!-- Main content -->
+    <main class="flex-1 p-8">
+      <header class="mb-6">
+        <h1 class="text-3xl font-semibold">Welcome back</h1>
+        <p class="text-sm text-gray-600">Here’s a summary of your finances this week</p>
+      </header>
+
+      <!-- Summary Cards -->
+      <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-lg p-5 shadow">
+          <h2 class="text-sm text-gray-500">Total Balance</h2>
+          <p class="text-xl font-bold mt-2">$12,480.00</p>
+        </div>
+        <div class="bg-white rounded-lg p-5 shadow">
+          <h2 class="text-sm text-gray-500">Spent This Week</h2>
+          <p class="text-xl font-bold mt-2">$834.20</p>
+        </div>
+        <div class="bg-white rounded-lg p-5 shadow">
+          <h2 class="text-sm text-gray-500">Remaining Budget</h2>
+          <p class="text-xl font-bold mt-2">$1,165.80</p>
+        </div>
+      </section>
+
+      <!-- Transaction Table -->
+      <section class="bg-white p-6 rounded-lg shadow mb-8">
+        <h3 class="text-lg font-semibold mb-4">Recent Transactions</h3>
+        <table class="w-full text-left">
+          <thead>
+            <tr>
+              <th class="pb-2">Date</th>
+              <th class="pb-2">Description</th>
+              <th class="pb-2">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="py-2">May 18</td>
+              <td class="py-2">Groceries</td>
+              <td class="py-2 text-red-600">- $82.45</td>
+            </tr>
+            <tr>
+              <td class="py-2">May 17</td>
+              <td class="py-2">Gas</td>
+              <td class="py-2 text-red-600">- $45.60</td>
+            </tr>
+            <tr>
+              <td class="py-2">May 16</td>
+              <td class="py-2">Paycheck</td>
+              <td class="py-2 text-green-600">+ $1,200.00</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- AI Coach Prompt -->
+      <section class="bg-white p-6 rounded-lg shadow">
+        <h3 class="text-lg font-semibold mb-2">AI Coach</h3>
+        <p class="text-sm text-gray-600 mb-4">Get personalized financial insights</p>
+        <textarea class="w-full p-3 border border-gray-300 rounded mb-3" rows="3" placeholder="Ask your AI coach anything..."></textarea>
+        <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Ask Coach</button>
+      </section>
+    </main>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
+
+Step 2: css/styles.css
+
+Create a folder called css and a file inside it called styles.css. You can leave it empty for now or add this placeholder:
+
+/* Custom Rivu styles can go here */
+
+Step 3: js/app.js
+
+Create a folder called js and a file inside it called app.js. Add this:
+
+console.log("Rivu Dashboard Loaded");
+
+{
+  "totalBalance": 12480,
+  "spentThisWeek": 834.2,
+  "remaining": 1165.8
+}
+
+•	Inject values into elements with the following IDs:
+	•	#total-balance
+	•	#spent-week
+	•	#remaining-budget
+
+2. Recent Transactions
+	•	Replace hardcoded rows with data from:
+	•	GET /api/transactions
+	•	Expected response:
+
+[
+  { "date": "2025-05-18", "description": "Groceries", "amount": -82.45 },
+  { "date": "2025-05-17", "description": "Gas", "amount": -45.60 },
+  { "date": "2025-05-16", "description": "Paycheck", "amount": 1200.00 }
+]
+
+•	Dynamically populate the <tbody id="transaction-body"> element
+	•	Format amounts with color:
+	•	Red for negative
+	•	Green for positive
+
+⸻
+
+✅ JavaScript (Put in js/app.js)
+	•	Add code that:
+	•	Waits for DOMContentLoaded
+	•	Fetches /api/summary and /api/transactions
+	•	Populates the page using document.querySelector(...)
+	•	Logs errors if requests fail
+
+⸻
+
+✅ Preserve Current Structure
+	•	Do not break existing backend logic
+	•	Keep all Tailwind UI layout and classes intact
+	•	Ensure it’s responsive and loads cleanly
+
+This is part of the final production upgrade for Rivu Inc. We’ll connect coach, goals, and other views after the dashboard is working live.

@@ -229,6 +229,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Return the authenticated user ID from the database
     return DEMO_USER_ID;
   };
+  
+  // Dashboard summary API
+  app.get("/api/dashboard/summary", async (req, res) => {
+    try {
+      // Get current user ID
+      const userId = getCurrentUserId();
+      
+      // Get all transactions for this user
+      const transactions = await storage.getTransactions(userId);
+      
+      // Calculate total balance (sum of all transaction amounts)
+      const totalBalance = transactions.reduce((sum, transaction) => {
+        const amountAsNumber = typeof transaction.amount === 'string' 
+          ? parseFloat(transaction.amount) 
+          : transaction.amount;
+        return sum + (transaction.type === 'income' ? amountAsNumber : -amountAsNumber);
+      }, 0);
+      
+      // Calculate weekly spending
+      const today = new Date();
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - today.getDay()); // Go back to Sunday
+      startOfWeek.setHours(0, 0, 0, 0); // Start of day
+      
+      // Filter transactions for current week
+      const weeklyTransactions = transactions.filter(t => {
+        const transactionDate = new Date(t.date);
+        return transactionDate >= startOfWeek && t.type === 'expense';
+      });
+      
+      // Sum up weekly expenses
+      const weeklySpending = weeklyTransactions.reduce((sum, t) => {
+        const amountAsNumber = typeof t.amount === 'string' 
+          ? parseFloat(t.amount) 
+          : t.amount;
+        return sum + amountAsNumber;
+      }, 0);
+      
+      // Weekly budget (hardcoded for demo purposes)
+      const weeklyBudget = 2000;
+      const remainingBudget = Math.max(0, weeklyBudget - weeklySpending);
+      
+      res.json({
+        totalBalance,
+        weeklySpending,
+        remainingBudget
+      });
+    } catch (error) {
+      console.error('Error generating dashboard summary:', error);
+      res.status(500).json({ message: 'Failed to generate dashboard summary' });
+    }
+  });
+  
+  // Recent transactions API
+  app.get("/api/transactions/recent", async (req, res) => {
+    try {
+      // Get current user ID
+      const userId = getCurrentUserId();
+      
+      // Get limit parameter (default to 3)
+      const limit = parseInt(req.query.limit as string) || 3;
+      
+      // Get transactions for this user
+      const allTransactions = await storage.getTransactions(userId);
+      
+      // Sort by date (newest first) and limit
+      const recentTransactions = allTransactions
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, limit);
+      
+      // Format the response
+      res.json(recentTransactions.map(t => ({
+        id: t.id,
+        date: t.date.toISOString().split('T')[0], // Format as YYYY-MM-DD
+        description: t.merchant || t.category, // Use merchant or category as description
+        amount: typeof t.amount === 'string' ? parseFloat(t.amount) : t.amount,
+        type: t.type
+      })));
+    } catch (error) {
+      console.error('Error fetching recent transactions:', error);
+      res.status(500).json({ message: 'Failed to fetch recent transactions' });
+    }
+  });
 
   // Budget Categories API
   app.get("/api/budget-categories", async (req, res) => {
