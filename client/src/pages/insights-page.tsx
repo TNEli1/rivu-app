@@ -51,20 +51,28 @@ type BudgetCategory = {
   spentAmount: string;
 };
 
-// Use distinct, high-contrast colors for better visibility
+// Use highly distinctive colors with maximum contrast between adjacent slices
 const COLORS = [
-  '#FF4D4F', // Red
-  '#2F80ED', // Blue
-  '#00C2A8', // Teal
-  '#D0F500', // Lime
-  '#FF9046', // Orange
-  '#9747FF', // Purple
-  '#4CAF50', // Green
-  '#FFC107', // Amber
-  '#E91E63', // Pink
-  '#607D8B', // Blue Grey
-  '#795548', // Brown
-  '#9C27B0'  // Deep Purple
+  '#e41a1c', // Bright red
+  '#377eb8', // Blue
+  '#4daf4a', // Green
+  '#984ea3', // Purple
+  '#ff7f00', // Orange
+  '#ffff33', // Yellow
+  '#a65628', // Brown
+  '#f781bf', // Pink
+  '#1e90ff', // Dodger blue
+  '#00ced1', // Dark turquoise
+  '#228b22', // Forest green
+  '#b22222', // Firebrick red
+  '#ff00ff', // Magenta
+  '#00ff00', // Lime
+  '#00008b', // Dark blue
+  '#8b008b', // Dark magenta
+  '#2e8b57', // Sea green
+  '#daa520', // Goldenrod
+  '#ff69b4', // Hot pink
+  '#00bfff', // Deep sky blue
 ];
 
 export default function InsightsPage() {
@@ -171,15 +179,26 @@ export default function InsightsPage() {
     
     transactions.forEach(transaction => {
       if (transaction.type === 'expense') {
-        const category = transaction.category;
+        // Clean the category name - trim whitespace and normalize to lowercase
+        let category = (transaction.category || '').trim();
+        
+        // Skip transactions with empty categories
+        if (!category) return;
+        
+        // Normalize category name to title case for display
+        category = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+        
         if (!catTotals[category]) {
           catTotals[category] = 0;
         }
-        catTotals[category] += parseFloat(transaction.amount);
+        catTotals[category] += Math.abs(parseFloat(transaction.amount));
       }
     });
     
-    return Object.entries(catTotals).map(([name, value]) => ({ name, value }));
+    // Filter out any categories with zero or invalid values
+    return Object.entries(catTotals)
+      .filter(([name, value]) => name && !isNaN(value) && value > 0)
+      .map(([name, value]) => ({ name, value }));
   })();
 
   return (
@@ -374,40 +393,63 @@ export default function InsightsPage() {
                       <RePieChart>
                         <Pie
                           data={spendingByCategory}
+                          nameKey="name"
                           cx="50%"
                           cy="50%"
                           labelLine={false}
                           label={false}
-                          outerRadius={70}
-                          innerRadius={30}
-                          paddingAngle={4}
+                          outerRadius={80}
+                          innerRadius={40}
+                          paddingAngle={3}
                           fill="#8884d8"
                           dataKey="value"
+                          isAnimationActive={true}
+                          animationDuration={800}
                         >
                           {spendingByCategory.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={COLORS[index % COLORS.length]} 
+                              stroke="var(--background)"
+                              strokeWidth={1}
+                            />
                           ))}
                         </Pie>
                         <Tooltip 
                           formatter={(value, name, props) => {
                             // Convert value to number and format with commas and 2 decimal places
                             const numValue = Number(value);
-                            // The category name comes from the props.payload.name
+                            // Get the category name from payload
                             const categoryName = props.payload.name;
-                            return [`$${numValue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, categoryName];
+                            return [
+                              `$${numValue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, 
+                              `${categoryName}`
+                            ];
                           }}
-                          contentStyle={{ backgroundColor: "var(--background)", border: "1px solid var(--border)", borderRadius: "6px", padding: "10px" }}
+                          contentStyle={{ 
+                            backgroundColor: "var(--background)", 
+                            border: "1px solid var(--border)", 
+                            borderRadius: "8px", 
+                            padding: "10px",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+                          }}
                           itemStyle={{ color: "var(--foreground)" }}
+                          labelStyle={{ fontWeight: "bold" }}
                         />
                         <Legend 
                           layout="vertical"
                           verticalAlign="middle"
                           align="right"
-                          iconSize={12}
+                          iconSize={14}
+                          iconType="circle"
                           wrapperStyle={{
                             paddingLeft: '20px',
-                            fontSize: '12px',
+                            fontSize: '13px',
+                            fontWeight: '500'
                           }}
+                          formatter={(value, entry) => (
+                            <span style={{ color: "var(--foreground)" }}>{value}</span>
+                          )}
                         />
                       </RePieChart>
                     </ResponsiveContainer>
