@@ -551,9 +551,10 @@ export default function TransactionsPage() {
             <Button 
               variant="outline"
               onClick={() => setIsPlaidConnectionOpen(true)}
-              className="gap-2 border-gray-300 text-gray-700 hover:text-gray-900 dark:border-gray-600 dark:text-gray-300 dark:hover:text-gray-100"
+              className="flex items-center justify-center whitespace-nowrap gap-2 border-gray-300 text-gray-700 hover:text-gray-900 dark:border-gray-600 dark:text-gray-300 dark:hover:text-gray-100 max-w-[180px] overflow-hidden"
             >
-              <Building className="h-4 w-4" /> Connect Bank
+              <Building className="h-4 w-4 flex-shrink-0" /> 
+              <span className="truncate">Connect Bank</span>
             </Button>
             <Button 
               variant="outline"
