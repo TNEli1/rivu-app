@@ -120,7 +120,9 @@ export default function RivuScore() {
     ? new Date(data.lastUpdated).toLocaleDateString('en-US', { 
         year: 'numeric', 
         month: 'short', 
-        day: 'numeric' 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
       })
     : 'Not available';
 
@@ -187,7 +189,7 @@ export default function RivuScore() {
       
       <div className="mt-2">
         <a 
-          href="/rivu-score-info" 
+          href="/settings?tab=rivu-score" 
           className={`text-xs underline ${theme === 'dark' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'}`}
         >
           How your Rivu Score works

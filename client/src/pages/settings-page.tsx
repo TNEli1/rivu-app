@@ -4,10 +4,11 @@ import MobileNav from "@/components/layout/MobileNav";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Moon, Sun, ClipboardCheck } from "lucide-react";
+import { LogOut, Moon, Sun, ClipboardCheck, Info } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +26,11 @@ export default function SettingsPage() {
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   const [skipSurvey, setSkipSurvey] = useState(user?.demographics?.skipPermanently || false);
+  const [activeTab, setActiveTab] = useState(() => {
+    // Check if URL has tab parameter
+    const params = new URLSearchParams(window.location.search);
+    return params.get('tab') || 'appearance';
+  });
   
   // Handle theme toggle
   const handleThemeToggle = () => {
