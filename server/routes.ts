@@ -556,7 +556,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
           { 
             name: "Savings Goal Progress", 
-            percentage: newScore?.savingsProgress || 0, 
+            percentage: Math.max(newScore?.savingsProgress || 0, 1), // Ensure at least 1% shows if there's any progress
             rating: getRating(newScore?.savingsProgress || 0), 
             color: "bg-[#2F80ED]" 
           },
@@ -582,7 +582,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         { 
           name: "Savings Goal Progress", 
-          percentage: rivuScore.savingsProgress || 0, 
+          percentage: Math.max(rivuScore.savingsProgress || 0, 1), // Ensure at least 1% shows if there's any progress
           rating: getRating(rivuScore.savingsProgress || 0), 
           color: "bg-[#2F80ED]" 
         },
@@ -631,7 +631,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
           { 
             name: "Savings Goal Progress", 
-            percentage: rivuScore.savingsProgress || 0, 
+            percentage: Math.max(rivuScore.savingsProgress || 0, 1), // Ensure at least 1% shows if there's any progress
             rating: getRating(rivuScore.savingsProgress || 0), 
             color: "bg-[#2F80ED]" 
           },
