@@ -324,7 +324,11 @@ export default function InsightsPage() {
                           tickFormatter={(value) => `$${value}`}
                         />
                         <Tooltip 
-                          formatter={(value) => [`$${value}`, ""]}
+                          formatter={(value) => {
+                            // Convert value to number and format with commas and 2 decimal places
+                            const numValue = Number(value);
+                            return [`$${numValue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, ""];
+                          }}
                           labelFormatter={(value) => `Category: ${value}`}
                         />
                         <Legend />
@@ -368,7 +372,13 @@ export default function InsightsPage() {
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
-                        <Tooltip formatter={(value) => [`$${value}`, ""]} />
+                        <Tooltip 
+                          formatter={(value) => {
+                            // Convert value to number and format with commas and 2 decimal places
+                            const numValue = Number(value);
+                            return [`$${numValue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, ""];
+                          }} 
+                        />
                         <Legend />
                       </RePieChart>
                     </ResponsiveContainer>
