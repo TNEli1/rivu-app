@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import MobileNav from "@/components/layout/MobileNav";
+import BudgetSection from "@/components/dashboard/BudgetSection";
+import RivuScore from "@/components/dashboard/RivuScore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea"; 
@@ -126,8 +128,11 @@ export default function Dashboard() {
     }
   };
 
+  // Access theme context
+  const { theme } = useTheme();
+
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className={`flex min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
       {/* Sidebar - Desktop only */}
       <Sidebar />
 
@@ -135,55 +140,71 @@ export default function Dashboard() {
       <main className="flex-1 p-8 md:ml-64">
         {/* Welcome Header */}
         <header className="mb-6">
-          <h1 className="text-3xl font-semibold text-gray-900">Welcome back{user?.firstName ? `, ${user.firstName}` : ''}</h1>
-          <p className="text-sm text-gray-600">Here's a summary of your finances this week</p>
+          <h1 className={`text-3xl font-semibold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
+            Welcome back{user?.firstName ? `, ${user.firstName}` : ''}
+          </h1>
+          <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-700'}`}>
+            Here's a summary of your finances this week
+          </p>
         </header>
 
         {/* Summary Cards */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-white rounded-lg p-5 shadow-sm">
+          <Card className={`rounded-lg p-5 shadow-sm ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
             <CardContent className="p-0">
-              <h2 className="text-sm text-gray-500">Total Balance</h2>
-              <p className="text-xl font-bold mt-2">{formatCurrency(summaryData?.totalBalance || 0)}</p>
+              <h2 className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-700'}`}>Total Balance</h2>
+              <p className={`text-xl font-bold mt-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
+                {formatCurrency(summaryData?.totalBalance || 0)}
+              </p>
             </CardContent>
           </Card>
           
-          <Card className="bg-white rounded-lg p-5 shadow-sm">
+          <Card className={`rounded-lg p-5 shadow-sm ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
             <CardContent className="p-0">
-              <h2 className="text-sm text-gray-500">Spent This Week</h2>
-              <p className="text-xl font-bold mt-2">{formatCurrency(summaryData?.weeklySpending || 0)}</p>
+              <h2 className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-700'}`}>Spent This Week</h2>
+              <p className={`text-xl font-bold mt-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
+                {formatCurrency(summaryData?.weeklySpending || 0)}
+              </p>
             </CardContent>
           </Card>
           
-          <Card className="bg-white rounded-lg p-5 shadow-sm">
+          <Card className={`rounded-lg p-5 shadow-sm ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
             <CardContent className="p-0">
-              <h2 className="text-sm text-gray-500">Remaining Budget</h2>
-              <p className="text-xl font-bold mt-2">{formatCurrency(summaryData?.remainingBudget || 0)}</p>
+              <h2 className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-700'}`}>Remaining Budget</h2>
+              <p className={`text-xl font-bold mt-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
+                {formatCurrency(summaryData?.remainingBudget || 0)}
+              </p>
             </CardContent>
           </Card>
         </section>
 
         {/* Transaction Table */}
-        <Card className="bg-white p-6 rounded-lg shadow-sm mb-8">
-          <h3 className="text-lg font-semibold mb-4">Recent Transactions</h3>
+        <Card className={`p-6 rounded-lg shadow-sm mb-8 ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+          <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>Recent Transactions</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr>
-                  <th className="pb-2 font-medium">Date</th>
-                  <th className="pb-2 font-medium">Description</th>
-                  <th className="pb-2 font-medium">Amount</th>
+                  <th className={`pb-2 font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-800'}`}>Date</th>
+                  <th className={`pb-2 font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-800'}`}>Description</th>
+                  <th className={`pb-2 font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-800'}`}>Amount</th>
                 </tr>
               </thead>
               <tbody>
                 {transactions && transactions.length > 0 ? (
                   transactions.map((transaction: Transaction) => (
-                    <tr key={transaction.id}>
-                      <td className="py-2">
+                    <tr key={transaction.id} className={theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}>
+                      <td className={`py-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-800'}`}>
                         {new Date(transaction.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </td>
-                      <td className="py-2">{transaction.description}</td>
-                      <td className={`py-2 ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                      <td className={`py-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-800'}`}>
+                        {transaction.description}
+                      </td>
+                      <td className={`py-2 ${
+                        transaction.type === 'income' 
+                          ? 'text-green-500'
+                          : 'text-red-500'
+                      }`}>
                         {transaction.type === 'income' ? '+ ' : '- '}
                         {formatCurrency(Math.abs(transaction.amount))}
                       </td>
@@ -191,7 +212,7 @@ export default function Dashboard() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={3} className="py-4 text-center text-gray-500">
+                    <td colSpan={3} className={`py-4 text-center ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                       No recent transactions
                     </td>
                   </tr>
@@ -201,7 +222,7 @@ export default function Dashboard() {
           </div>
           <div className="mt-4">
             <Button 
-              variant="outline"
+              variant={theme === 'dark' ? 'secondary' : 'outline'}
               onClick={() => setLocation('/transactions')}
               className="text-sm"
             >
@@ -214,8 +235,8 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Left Column - Budget Management */}
           <div className="lg:col-span-2">
-            <Card className="bg-white p-6 rounded-lg shadow-sm">
-              <h3 className="text-lg font-semibold mb-4">Budget Management</h3>
+            <Card className={`p-6 rounded-lg shadow-sm ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+              <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>Budget Management</h3>
               
               {/* Budget loading skeleton */}
               <div id="budget-section">
@@ -224,7 +245,7 @@ export default function Dashboard() {
               
               <div className="mt-4">
                 <Button 
-                  variant="outline"
+                  variant={theme === 'dark' ? 'secondary' : 'outline'}
                   onClick={() => setLocation('/budget')}
                   className="text-sm"
                 >
@@ -236,8 +257,8 @@ export default function Dashboard() {
           
           {/* Right Column - Rivu Score Card */}
           <div className="lg:col-span-1">
-            <Card className="bg-white p-6 rounded-lg shadow-sm mb-6">
-              <h3 className="text-lg font-semibold mb-4">Rivu Score</h3>
+            <Card className={`p-6 rounded-lg shadow-sm mb-6 ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+              <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>Rivu Score</h3>
               
               {/* Rivu Score loading skeleton */}
               <div id="rivu-score-section">
@@ -248,11 +269,15 @@ export default function Dashboard() {
         </div>
 
         {/* AI Coach Prompt */}
-        <Card className="bg-white p-6 rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold mb-2">AI Coach</h3>
-          <p className="text-sm text-gray-700 mb-4">Get personalized financial insights</p>
+        <Card className={`p-6 rounded-lg shadow-sm ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+          <h3 className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>AI Coach</h3>
+          <p className={`text-sm mb-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-700'}`}>Get personalized financial insights</p>
           <Textarea 
-            className="w-full p-3 border border-gray-300 rounded mb-3"
+            className={`w-full p-3 rounded mb-3 ${
+              theme === 'dark' 
+                ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                : 'border-gray-300 text-gray-900'
+            }`}
             rows={3} 
             placeholder="Ask your AI coach anything..."
             value={coachPrompt}
@@ -271,16 +296,22 @@ export default function Dashboard() {
             <div 
               id="coach-response" 
               ref={coachResponseRef}
-              className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200"
+              className={`mt-4 p-4 rounded-lg border ${
+                theme === 'dark'
+                  ? 'bg-gray-700 border-gray-600'
+                  : 'bg-gray-50 border-gray-200'
+              }`}
             >
               {isLoadingCoachResponse ? (
                 <div className="space-y-2">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-5/6" />
-                  <Skeleton className="h-4 w-4/6" />
+                  <Skeleton className={`h-4 w-full ${theme === 'dark' ? 'bg-gray-600' : ''}`} />
+                  <Skeleton className={`h-4 w-5/6 ${theme === 'dark' ? 'bg-gray-600' : ''}`} />
+                  <Skeleton className={`h-4 w-4/6 ${theme === 'dark' ? 'bg-gray-600' : ''}`} />
                 </div>
               ) : (
-                <p className="text-gray-800 whitespace-pre-line">{coachResponse}</p>
+                <p className={`whitespace-pre-line ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}`}>
+                  {coachResponse}
+                </p>
               )}
             </div>
           )}
