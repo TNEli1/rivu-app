@@ -267,10 +267,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return sum + amountAsNumber;
       }, 0);
       
-      // Weekly budget (hardcoded for demo purposes)
-      const weeklyBudget = 2000;
-      const remainingBudget = Math.max(0, weeklyBudget - weeklySpending);
-      
       // Calculate monthly income and expenses
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
