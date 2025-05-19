@@ -1043,10 +1043,8 @@ export class DatabaseStorage implements IStorage {
       // Cap at 100% maximum
       savingsProgress = Math.min(savingsProgress, 100);
       
-      // Ensure that any amount saved shows at least 1% progress
-      if (totalSavedAmount > 0 && savingsProgress === 0) {
-        savingsProgress = 1;
-      }
+      // We no longer force a minimum of 1% - showing actual progress
+      // This ensures the UI displays the true savings progress percentage
       
       // Log the calculation for debugging
       console.log(`Overall Savings Progress: ${totalSavedAmount.toFixed(2)} / ${totalTargetAmount.toFixed(2)} = ${progressRatio.toFixed(4)} => ${savingsProgress}%`);
