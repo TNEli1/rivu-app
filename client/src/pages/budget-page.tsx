@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, calculatePercentage, getProgressColor } from "@/lib/utils";
-import { Loader2, PlusCircle, Pencil, Trash2, PieChart } from "lucide-react";
+import { Loader2, PlusCircle, Pencil, Trash2, PieChart, DollarSign } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   AlertDialog,
@@ -103,6 +103,7 @@ export default function BudgetPage() {
       const res = await apiRequest('PUT', `/api/budget-categories/${data.id}`, {
         name: data.updates.name,
         budgetAmount: data.updates.budgetAmount ? parseFloat(data.updates.budgetAmount) : undefined,
+        spentAmount: data.updates.spentAmount ? parseFloat(data.updates.spentAmount) : undefined,
       });
       return res.json();
     },
@@ -333,8 +334,8 @@ export default function BudgetPage() {
               return (
                 <Card key={category.id} className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-semibold text-gray-800 dark:text-gray-100">{category.name}</h3>
-                    <div className="flex space-x-1">
+                    <h3 className="font-semibold text-gray-800 dark:text-gray-100 truncate mr-2">{category.name}</h3>
+                    <div className="flex space-x-1 flex-shrink-0">
                       <Button 
                         variant="ghost" 
                         size="icon" 
@@ -382,46 +383,66 @@ export default function BudgetPage() {
                       <p className="text-lg font-bold text-gray-800 dark:text-gray-100">
                         {formatCurrency(spent)} <span className="text-sm font-normal text-gray-500 dark:text-gray-400">of {formatCurrency(budget)}</span>
                       </p>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-8 border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700" 
-                        onClick={() => {
-                          // Use a dialog instead of prompt for better UX
-                          const newSpent = window.prompt('Enter amount spent:', spent.toString());
-                          if (newSpent !== null && !isNaN(parseFloat(newSpent))) {
-                            // Proceed with the update
-                            updateMutation.mutate({
-                              id: category.id,
-                              updates: {
-                                name: category.name,
-                                budgetAmount: category.budgetAmount,
-                                spentAmount: newSpent
-                              }
-                            }, {
-                              onSuccess: () => {
-                                // Invalidate all relevant queries to ensure dashboard updates
-                                queryClient.invalidateQueries({ queryKey: ['/api/budget-categories'] });
-                                queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] });
-                                queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
-                                toast({
-                                  title: "Budget updated",
-                                  description: `Updated ${category.name} spent amount to ${formatCurrency(parseFloat(newSpent))}`,
-                                });
-                              },
-                              onError: (error) => {
-                                toast({
-                                  title: "Update failed",
-                                  description: "Failed to update budget. Please try again.",
-                                  variant: "destructive",
-                                });
-                              }
-                            });
-                          }
-                        }}
-                      >
-                        Update Spent
-                      </Button>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-8 border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                          >
+                            Update Spent
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Update Amount Spent</DialogTitle>
+                          </DialogHeader>
+                          <form onSubmit={(e) => {
+                            e.preventDefault();
+                            const formData = new FormData(e.currentTarget);
+                            const newSpent = formData.get('spentAmount') as string;
+                            
+                            if (newSpent && !isNaN(parseFloat(newSpent))) {
+                              updateMutation.mutate({
+                                id: category.id,
+                                updates: {
+                                  name: category.name,
+                                  budgetAmount: category.budgetAmount,
+                                  spentAmount: newSpent
+                                }
+                              });
+                            }
+                          }} className="space-y-4 mt-4">
+                            <div className="space-y-2">
+                              <Label htmlFor={`spent-amount-${category.id}`}>Amount Spent</Label>
+                              <Input 
+                                id={`spent-amount-${category.id}`}
+                                name="spentAmount"
+                                type="number" 
+                                step="0.01"
+                                placeholder="0.00" 
+                                defaultValue={spent.toString()}
+                              />
+                            </div>
+                            <div className="flex justify-end gap-2">
+                              <DialogTrigger asChild>
+                                <Button type="button" variant="outline">Cancel</Button>
+                              </DialogTrigger>
+                              <Button 
+                                type="submit"
+                                disabled={updateMutation.isPending}
+                              >
+                                {updateMutation.isPending ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Updating...
+                                  </>
+                                ) : 'Update'}
+                              </Button>
+                            </div>
+                          </form>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                   </div>
                   
