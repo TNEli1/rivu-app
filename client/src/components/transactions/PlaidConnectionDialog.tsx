@@ -137,34 +137,35 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto overflow-x-hidden mx-auto w-[90vw] max-w-screen-sm">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-md mx-auto w-[92%] md:w-[480px] max-h-[85vh] flex flex-col">
+        <DialogHeader className="px-2">
           <DialogTitle>Connect Bank Account</DialogTitle>
           <DialogDescription className="break-words">
             Securely connect your bank accounts to automatically import transactions.
           </DialogDescription>
         </DialogHeader>
         
-        <div className="py-4 overflow-y-auto">
+        {/* Main content - scrollable */}
+        <div className="py-4 overflow-y-auto flex-1 px-2">
           {error && (
-            <Alert className="mb-6" variant="destructive">
-              <AlertCircle className="h-4 w-4" />
+            <Alert className="mb-4" variant="destructive">
+              <AlertCircle className="h-4 w-4 flex-shrink-0" />
               <AlertTitle>Connection Error</AlertTitle>
-              <AlertDescription className="break-words">{error}</AlertDescription>
+              <AlertDescription className="break-words whitespace-normal">{error}</AlertDescription>
             </Alert>
           )}
           
           {success ? (
-            <div className="flex flex-col items-center justify-center py-6">
+            <div className="flex flex-col items-center justify-center py-4 text-center">
               <CheckCircle2 className="h-16 w-16 text-green-500 mb-4" />
               <h3 className="text-xl font-semibold mb-2">Connected Successfully!</h3>
-              <p className="text-center text-muted-foreground break-words">
+              <p className="text-muted-foreground break-words">
                 Your accounts have been connected. Transactions will begin syncing shortly.
               </p>
             </div>
           ) : (
             <>
-              <div className="space-y-4 mb-6">
+              <div className="space-y-4 mb-5">
                 <p className="text-sm">
                   Connect your bank accounts to Rivu to:
                 </p>
@@ -178,7 +179,7 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
               
               <div className="bg-muted p-4 rounded-md mb-4">
                 <h4 className="font-medium mb-2">Security & Privacy</h4>
-                <p className="text-sm text-muted-foreground break-words">
+                <p className="text-sm text-muted-foreground break-words whitespace-normal">
                   Your credentials are never stored on our servers. We use Plaid's secure services
                   to connect to your financial institutions.
                 </p>
@@ -187,40 +188,45 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
           )}
         </div>
         
-        <DialogFooter className="flex flex-col sm:flex-row gap-3 justify-between sm:justify-end">
-          <Button onClick={onClose} variant="outline">
-            {success ? 'Close' : 'Cancel'}
-          </Button>
-          
-          {!success && (
+        {/* Footer - fixed at bottom of dialog */}
+        <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-auto border-t pt-4">
+          <div className="flex flex-col-reverse sm:flex-row w-full justify-between gap-2">
             <Button 
-              className="gap-2"
-              disabled={!ready || loading || !linkToken}
-              onClick={handlePlaidLinkClick}
+              variant="link"
+              className="text-xs sm:text-sm"
+              onClick={() => {
+                window.open('https://plaid.com/how-we-handle-data/', '_blank');
+              }}
             >
-              {loading ? (
-                <>
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                  Connecting...
-                </>
-              ) : (
-                <>
-                  <Building className="h-4 w-4" /> 
-                  Connect Bank
-                </>
-              )}
+              How is my data protected? <ExternalLink className="h-3 w-3 ml-1" />
             </Button>
-          )}
-          
-          <Button 
-            variant="link"
-            className="text-xs sm:text-sm"
-            onClick={() => {
-              window.open('https://plaid.com/how-we-handle-data/', '_blank');
-            }}
-          >
-            How is my data protected? <ExternalLink className="h-3 w-3 ml-1" />
-          </Button>
+            
+            <div className="flex gap-2 sm:ml-auto">
+              <Button onClick={onClose} variant="outline" className="flex-1 sm:flex-none">
+                {success ? 'Close' : 'Cancel'}
+              </Button>
+              
+              {!success && (
+                <Button 
+                  className="gap-2 flex-1 sm:flex-none"
+                  disabled={!ready || loading || !linkToken}
+                  onClick={handlePlaidLinkClick}
+                >
+                  {loading ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 animate-spin flex-shrink-0" />
+                      <span className="whitespace-nowrap">Connecting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Building className="h-4 w-4 flex-shrink-0" /> 
+                      <span className="whitespace-nowrap">Connect Bank</span>
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
