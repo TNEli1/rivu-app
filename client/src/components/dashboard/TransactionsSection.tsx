@@ -188,8 +188,12 @@ export default function TransactionsSection() {
     });
   };
 
-  // Filter transactions based on active tab
+  // Filter transactions based on active tab and exclude duplicates
   const filteredTransactions = transactions.filter((transaction) => {
+    // First filter out duplicates (don't show transactions marked as duplicates)
+    if (transaction.isDuplicate === true) return false;
+    
+    // Then apply tab filters
     if (activeTab === "all") return true;
     if (activeTab === "income") return transaction.type === "income";
     if (activeTab === "expenses") return transaction.type === "expense";
