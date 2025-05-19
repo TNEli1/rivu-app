@@ -948,30 +948,34 @@ export default function TransactionsPage() {
           
           {isTransactionsLoading ? (
             <div className="p-8 space-y-4">
-              <Skeleton className="h-8 w-full max-w-sm" />
-              <Skeleton className="h-20 w-full" />
-              <Skeleton className="h-20 w-full" />
-              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-8 w-full max-w-sm bg-gray-100 dark:bg-gray-700" />
+              <Skeleton className="h-20 w-full bg-gray-100 dark:bg-gray-700" />
+              <Skeleton className="h-20 w-full bg-gray-100 dark:bg-gray-700" />
+              <Skeleton className="h-20 w-full bg-gray-100 dark:bg-gray-700" />
             </div>
           ) : sortedTransactions.length === 0 ? (
             <div className="p-8 py-16">
               {hasActiveFilters ? (
                 <div className="text-center">
-                  <h3 className="text-lg font-medium mb-2">No matching transactions</h3>
-                  <p className="text-muted-foreground mb-4">
+                  <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-100">No matching transactions</h3>
+                  <p className="text-gray-700 dark:text-gray-400 mb-4">
                     Try adjusting your filters to see more transactions.
                   </p>
-                  <Button variant="outline" onClick={clearAllFilters}>
+                  <Button 
+                    variant="outline" 
+                    onClick={clearAllFilters}
+                    className="border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                  >
                     <FilterX className="mr-2 h-4 w-4" /> Clear Filters
                   </Button>
                 </div>
               ) : (
                 <div className="px-6 max-w-md mx-auto">
-                  <div className="text-6xl mb-4 opacity-50 flex justify-center">
+                  <div className="text-6xl mb-4 text-gray-400 dark:text-gray-600 flex justify-center">
                     <CreditCard />
                   </div>
-                  <h3 className="text-lg font-medium mb-2">No transactions available</h3>
-                  <p className="text-muted-foreground mb-6">
+                  <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-100">No transactions available</h3>
+                  <p className="text-gray-700 dark:text-gray-400 mb-6">
                     Start tracking your finances by adding your transactions manually.
                   </p>
                 </div>
@@ -981,13 +985,13 @@ export default function TransactionsPage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="text-left p-4 font-medium">Date</th>
-                    <th className="text-left p-4 font-medium">Description</th>
-                    <th className="text-left p-4 font-medium">Category</th>
-                    <th className="text-left p-4 font-medium">Account</th>
-                    <th className="text-left p-4 font-medium">Source</th>
-                    <th className="text-right p-4 font-medium">Amount</th>
+                  <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                    <th className="text-left p-4 font-medium text-gray-700 dark:text-gray-300">Date</th>
+                    <th className="text-left p-4 font-medium text-gray-700 dark:text-gray-300">Description</th>
+                    <th className="text-left p-4 font-medium text-gray-700 dark:text-gray-300">Category</th>
+                    <th className="text-left p-4 font-medium text-gray-700 dark:text-gray-300">Account</th>
+                    <th className="text-left p-4 font-medium text-gray-700 dark:text-gray-300">Source</th>
+                    <th className="text-right p-4 font-medium text-gray-700 dark:text-gray-300">Amount</th>
                     <th className="text-right p-4 font-medium">Actions</th>
                   </tr>
                 </thead>
@@ -997,16 +1001,16 @@ export default function TransactionsPage() {
                     const isIncome = transaction.type === 'income';
                     
                     return (
-                      <tr key={transaction.id} className="border-b hover:bg-muted/50">
+                      <tr key={transaction.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50">
                         <td className="p-4 align-middle">
                           <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span>{formatDate(new Date(transaction.date))}</span>
+                            <Calendar className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                            <span className="text-gray-800 dark:text-gray-200">{formatDate(new Date(transaction.date))}</span>
                           </div>
                         </td>
                         <td className="p-4 align-middle">
                           <div className="flex flex-col">
-                            <span>{transaction.merchant}</span>
+                            <span className="text-gray-800 dark:text-gray-200 font-medium">{transaction.merchant}</span>
                             {transaction.isDuplicate && (
                               <div className="flex flex-col mt-1">
                                 <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-800">

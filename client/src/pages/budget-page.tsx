@@ -189,16 +189,16 @@ export default function BudgetPage() {
       <Sidebar />
 
       {/* Main Content */}
-      <main className="flex-grow md:ml-64 p-4 md:p-8">
+      <main className="flex-1 p-8">
         {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Budget Categories</h1>
-            <p className="text-muted-foreground">Manage and track your spending across categories</p>
+            <h1 className="text-3xl font-semibold mb-2 text-gray-800 dark:text-gray-100">Budget Categories</h1>
+            <p className="text-gray-700 dark:text-gray-400">Manage and track your spending across categories</p>
           </div>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="mt-4 md:mt-0 bg-primary hover:bg-primary/90 text-white">
+              <Button className="mt-4 md:mt-0 bg-blue-600 hover:bg-blue-700 text-white">
                 <PlusCircle className="mr-2 h-4 w-4" /> Add Category
               </Button>
             </DialogTrigger>
@@ -290,34 +290,34 @@ export default function BudgetPage() {
         </Card>
 
         {/* Budget Categories */}
-        <h2 className="text-xl font-semibold mb-4">Your Budget Categories</h2>
+        <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Your Budget Categories</h2>
         
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[...Array(3)].map((_, i) => (
-              <Card key={i} className="p-6">
-                <Skeleton className="h-6 w-24 mb-2" />
-                <Skeleton className="h-8 w-32 mb-4" />
-                <Skeleton className="h-4 w-full mb-2" />
-                <Skeleton className="h-2 w-full mb-4" />
+              <Card key={i} className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
+                <Skeleton className="h-6 w-24 mb-2 bg-gray-100 dark:bg-gray-700" />
+                <Skeleton className="h-8 w-32 mb-4 bg-gray-100 dark:bg-gray-700" />
+                <Skeleton className="h-4 w-full mb-2 bg-gray-100 dark:bg-gray-700" />
+                <Skeleton className="h-2 w-full mb-4 bg-gray-100 dark:bg-gray-700" />
                 <div className="flex justify-between">
-                  <Skeleton className="h-8 w-20" />
-                  <Skeleton className="h-8 w-20" />
+                  <Skeleton className="h-8 w-20 bg-gray-100 dark:bg-gray-700" />
+                  <Skeleton className="h-8 w-20 bg-gray-100 dark:bg-gray-700" />
                 </div>
               </Card>
             ))}
           </div>
         ) : categories.length === 0 ? (
           <div className="text-center py-8 px-6 max-w-md mx-auto">
-            <div className="text-6xl mb-4 opacity-50 flex justify-center">
+            <div className="text-6xl mb-4 text-gray-400 dark:text-gray-600 flex justify-center">
               <PieChart />
             </div>
-            <h3 className="text-lg font-medium mb-2">No budgets created</h3>
-            <p className="text-muted-foreground mb-6">
+            <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-100">No budgets created</h3>
+            <p className="text-gray-700 dark:text-gray-400 mb-6">
               No budgets created. Start by adding a category to track your spending.
             </p>
             <Button 
-              className="bg-primary hover:bg-primary/90 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
               onClick={() => setIsAddDialogOpen(true)}
             >
               <PlusCircle className="mr-2 h-4 w-4" /> Create your first category
