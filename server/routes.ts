@@ -868,6 +868,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const goals: Goal[] = [];
   let goalId = 1;
   
+  // Make the goals array available globally so other modules can access it
+  // This avoids circular dependency issues
+  // @ts-ignore: Add global property
+  global.appGoals = goals;
+  
+  // Helper function to access goals from other parts of the application
+  function getGoalsForUser(userId: number): Goal[] {
+    return goals.filter(g => g.userId === userId);
+  };
+  
   // Get all goals for a user
   app.get("/api/goals", async (req, res) => {
     try {

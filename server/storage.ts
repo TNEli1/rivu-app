@@ -28,6 +28,8 @@ import {
   plaidAccounts,
   plaidWebhookEvents
 } from "@shared/schema";
+// Import direct database access
+// We'll modify the getSavingsGoals function to handle in-memory goals
 
 // Storage interface
 export interface IStorage {
@@ -1003,8 +1005,19 @@ export class DatabaseStorage implements IStorage {
     const user = await this.getUser(userId);
     const loginCount = user?.loginCount || 0;
     
-    // Get active savings goals
-    const goals = await this.getSavingsGoals(userId);
+    // Get active savings goals from database first
+    const dbGoals = await this.getSavingsGoals(userId);
+    
+    // IMPORTANT: We need to also check the in-memory goals from routes.ts
+    // Since we can't import directly from routes.ts (circular dependency),
+    // we need to find the goals in the global context (which we know exists in routes.ts)
+    // @ts-ignore: Use dynamic access to in-memory goals
+    const inMemoryGoals = global.appGoals?.filter(g => g.userId === userId) || [];
+    
+    // Combine both sources of goals, giving priority to in-memory goals
+    // as they're more likely to be updated recently
+    const goals = [...dbGoals, ...inMemoryGoals];
+    console.log(`Found ${dbGoals.length} goals in DB and ${inMemoryGoals.length} goals in memory, total: ${goals.length}`);
     
     // Calculate savings progress based on active goals
     // Savings Progress = total saved / total target goal (only for active goals)
