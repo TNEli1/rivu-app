@@ -14,18 +14,12 @@ import { formatCurrency } from "@/lib/utils";
 import { useTheme } from "@/hooks/use-theme";
 import { useQuery } from "@tanstack/react-query";
 
-// Sample data for the dashboard UI
-const sampleSummaryData = {
-  totalBalance: 12480,
-  weeklySpending: 834.2,
-  remainingBudget: 1165.8
+// Initial empty state for dashboard UI
+const initialSummaryData = {
+  totalBalance: 0,
+  weeklySpending: 0,
+  remainingBudget: 0
 };
-
-const sampleTransactions = [
-  { id: "1", date: "2025-05-18", description: "Groceries", amount: 82.45, type: 'expense' as const },
-  { id: "2", date: "2025-05-17", description: "Gas", amount: 45.60, type: 'expense' as const },
-  { id: "3", date: "2025-05-16", description: "Paycheck", amount: 1200.00, type: 'income' as const }
-];
 
 // Types for transaction data
 type Transaction = {
@@ -59,8 +53,8 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [coachPrompt, setCoachPrompt] = useState("");
-  const [summaryData, setSummaryData] = useState<DashboardSummary>(sampleSummaryData);
-  const [transactions, setTransactions] = useState<Transaction[]>(sampleTransactions);
+  const [summaryData, setSummaryData] = useState<DashboardSummary>(initialSummaryData);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   
   // Fetch goals data for metrics
   const { data: goalsData = [], isLoading: isGoalsLoading } = useQuery<GoalData[]>({
