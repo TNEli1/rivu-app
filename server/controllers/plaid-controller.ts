@@ -194,8 +194,12 @@ export const getAccounts = async (req: Request, res: Response) => {
             officialName: account.official_name || null,
             type: account.type,
             subtype: account.subtype || null,
-            availableBalance: account.balances.available ? parseFloat(account.balances.available.toString()) : null,
-            currentBalance: account.balances.current ? parseFloat(account.balances.current.toString()) : null,
+            availableBalance: account.balances.available !== null && account.balances.available !== undefined 
+              ? String(account.balances.available) 
+              : null,
+            currentBalance: account.balances.current !== null && account.balances.current !== undefined 
+              ? String(account.balances.current) 
+              : null,
             mask: account.mask || null,
             isoCurrencyCode: account.balances.iso_currency_code || null,
           });
@@ -209,8 +213,12 @@ export const getAccounts = async (req: Request, res: Response) => {
             officialName: account.official_name || null,
             type: account.type,
             subtype: account.subtype || null,
-            availableBalance: account.balances.available ? parseFloat(account.balances.available.toString()) : null,
-            currentBalance: account.balances.current ? parseFloat(account.balances.current.toString()) : null,
+            availableBalance: account.balances.available !== null && account.balances.available !== undefined 
+              ? String(account.balances.available) 
+              : null,
+            currentBalance: account.balances.current !== null && account.balances.current !== undefined 
+              ? String(account.balances.current) 
+              : null,
             mask: account.mask || null,
             isoCurrencyCode: account.balances.iso_currency_code || null,
             status: 'active',
