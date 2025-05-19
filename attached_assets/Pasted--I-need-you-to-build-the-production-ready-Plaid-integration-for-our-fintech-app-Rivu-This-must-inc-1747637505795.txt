@@ -1,0 +1,75 @@
+
+I need you to build the production-ready Plaid integration for our fintech app, Rivu. This must include both the frontend and backend, and follow all best practices for security, user consent, webhook handling, and multi-product optimization. We are using our Plaid production API keys, so data security and compliance are critical.
+
+⸻
+
+✅ Frontend Requirements
+	1.	Use the existing “Connect Bank Account” button already located on our Transactions page
+	2.	Attach a Plaid Link handler that:
+	•	Calls /create_link_token
+	•	Launches Plaid.create({ token })
+	•	On success, sends the public_token to /exchange_token
+	•	Optionally fetches accounts via /accounts
+	•	Logs link_session_id, institution_id, and request_id
+	3.	Ensure frontend Link behavior aligns with Plaid UI best practices and conversion optimization guidelines:
+	•	Explain the benefit of linking an account
+	•	Set Plaid Link as the default option
+	•	Log and display errors for debugging
+
+⸻
+
+✅ Backend Requirements (Node.js + Express)
+	1.	Install express, plaid, cors, dotenv
+	2.	Use production Plaid keys from environment variables:
+	•	PLAID_CLIENT_ID, PLAID_SECRET, PLAID_ENV=production
+	3.	Create these secure routes:
+POST /create_link_token
+	•	Generates a token with:
+	•	client_user_id tied to our app’s user ID
+	•	products: ["auth", "transactions"]
+	•	webhook: our production webhook endpoint
+	•	account_selection_enabled: true
+	•	Returns the token to the frontend
+POST /exchange_token
+	•	Accepts public_token
+	•	Exchanges it for an access_token
+	•	Stores the access token securely (in PostgreSQL or encrypted in-memory if temporary)
+	•	Logs and returns item_id, institution_id, and request_id
+POST /accounts
+	•	Accepts access_token
+	•	Calls accountsGet() and returns parsed account data
+POST /webhook
+	•	Receives all Plaid webhook types
+	•	Logs webhook_type, webhook_code, item_id, and request_id
+	•	Handles at minimum:
+	•	NEW_ACCOUNTS_AVAILABLE
+	•	TRANSACTIONS_REMOVED
+	•	ITEM_LOGIN_REQUIRED
+	•	LOGIN_REPAIRED
+	•	Must return HTTP 200 OK
+POST /item/remove
+	•	Accepts access_token
+	•	Calls itemRemove() for offboarding
+
+⸻
+
+✅ Compliance & Checklist Requirements
+	•	Use only production Plaid keys and connect to the production API
+	•	Do not use /sandbox endpoints
+	•	Securely store access tokens and delete any consumer data that’s no longer required
+	•	Use RA000331 (California Secretary of State) if logging registration authority for LEI mapping
+	•	Support webhook-driven update mode flows with proper frontend messaging
+	•	Prevent duplicate Item creation by checking for previously linked institutions per user
+	•	Log all critical fields for diagnostics: item_id, account_id, request_id, link_session_id
+
+⸻
+
+Environment
+	•	Backend: Node.js + Express (deployed to Render)
+	•	Database: PostgreSQL
+	•	Frontend: Existing web app with embedded Link button in Transactions page
+	•	LEI and compliance: Already registered, production keys active
+
+⸻
+
+This must meet the final requirements for Plaid production approval. Follow all of Plaid’s production integration guidelines and security best practices.
