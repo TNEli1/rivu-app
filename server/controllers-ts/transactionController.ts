@@ -8,19 +8,27 @@ export const getTransactions = async (req: any, res: any) => {
   try {
     const userId = parseInt(req.user.id, 10);
     
+    console.log(`Fetching transactions for user ID: ${userId}`);
+    
     // Get transactions from PostgreSQL storage
     const transactions = await storage.getTransactions(userId);
     
-    // Format transactions for client consistency
+    console.log(`Found ${transactions.length} transactions in database for user ${userId}`);
+    
+    // Format transactions for client consistency - include more fields to support CSV imports
     const formattedTransactions = transactions.map(transaction => ({
       id: transaction.id,
       amount: parseFloat(String(transaction.amount)),
-      merchant: transaction.merchant,
-      category: transaction.category,
-      account: transaction.account,
-      type: transaction.type,
+      merchant: transaction.merchant || transaction.description || "",
+      description: transaction.description || transaction.merchant || "",
+      category: transaction.category || "Uncategorized",
+      subcategory: transaction.subcategory || "",
+      account: transaction.account || "Personal Account",
+      type: transaction.type || "expense",
       date: transaction.date,
-      createdAt: transaction.createdAt
+      createdAt: transaction.createdAt,
+      source: transaction.source || "manual",
+      isDuplicate: transaction.isDuplicate || false
     }));
     
     res.json(formattedTransactions);

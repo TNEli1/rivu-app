@@ -151,7 +151,14 @@ export default function GoalsPage() {
   // Contribute to goal mutation
   const contributeToGoalMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string | number, data: GoalContributionData }) => {
-      const res = await apiRequest('PUT', `/api/goals/${id}`, data);
+      // Convert string amount to number for API
+      const amountToAdd = parseFloat(data.amountToAdd);
+      
+      console.log('Contributing to goal:', { id, amountToAdd });
+      
+      const res = await apiRequest('PUT', `/api/goals/${id}`, { 
+        amountToAdd: amountToAdd
+      });
       return res.json();
     },
     onSuccess: () => {
