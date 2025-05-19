@@ -17,11 +17,11 @@ export default function AICoachingCard() {
 
   // Suggested prompts that users can quickly click
   const suggestedPrompts = [
-    "Give me advice based on my top spending categories this month.",
-    "Am I saving enough based on my income and spending habits?",
-    "Which goal should I focus on next?",
-    "How does my spending compare to last month?",
-    "What are 3 quick ways I can improve my financial health?"
+    "What are my top spending categories?",
+    "How can I save more money?",
+    "Which bill should I pay off first?",
+    "How much should I budget for groceries?",
+    "Give me 3 quick ways to cut expenses"
   ];
 
   // Scroll to bottom of messages
@@ -70,10 +70,33 @@ export default function AICoachingCard() {
 
   // Send user question
   const sendQuestion = useMutation({
-    mutationFn: (question: string) => getFinanceAdvice(question),
+    mutationFn: async (question: string) => {
+      // Show typing indicator for at least 1 second to give a more human-like experience
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return getFinanceAdvice(question);
+    },
     onSuccess: (newAdvice) => {
-      setMessages([...messages, newAdvice]);
+      // Remove the loading message and add the real response
+      setMessages(prev => {
+        // Filter out loading messages
+        const withoutLoading = prev.filter(message => !message.isLoading);
+        // Add the new advice
+        return [...withoutLoading, newAdvice];
+      });
       setInputValue("");
+    },
+    onError: (error) => {
+      // Remove loading message and add an error message
+      setMessages(prev => {
+        // Filter out loading messages
+        const withoutLoading = prev.filter(message => !message.isLoading);
+        // Add error message
+        return [...withoutLoading, {
+          message: "Sorry, I couldn't get an answer right now. Please try again.",
+          timestamp: new Date(),
+          isUser: false
+        }];
+      });
     }
   });
 
@@ -95,8 +118,25 @@ export default function AICoachingCard() {
       // Clear input right away for better UX
       setInputValue("");
       
+      // Show loading message
+      const loadingMessage: FinanceAdvice = {
+        message: "...",
+        timestamp: new Date(),
+        isLoading: true
+      };
+      
+      setMessages(prev => [...prev, loadingMessage]);
+      
       // Send question to get AI response
       sendQuestion.mutate(question);
+    }
+  };
+  
+  // Handle key presses - Enter to submit, Shift+Enter for new line
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendQuestion(e as unknown as React.FormEvent);
     }
   };
 
@@ -181,30 +221,41 @@ export default function AICoachingCard() {
           )}
         </div>
         
-        {/* Suggested Prompts - Fix display issue where prompts are cut off */}
-        <div className="mb-4 flex flex-wrap gap-2">
-          {suggestedPrompts.map((prompt, index) => (
-            <Badge 
-              key={index}
-              variant="outline"
-              title={prompt} /* Add title attribute to show full text on hover */
-              className="cursor-pointer px-3 py-1 bg-background/80 hover:bg-primary/10 transition-colors text-xs border-primary/20 max-w-full whitespace-normal"
-              onClick={() => handleSuggestedPrompt(prompt)}
-            >
-              {prompt}
-            </Badge>
-          ))}
+        {/* Suggested Prompts with improved display */}
+        <div className="mb-4">
+          <p className="text-sm text-muted-foreground mb-2">Try asking:</p>
+          <div className="flex flex-wrap gap-2">
+            {suggestedPrompts.map((prompt, index) => (
+              <Badge 
+                key={index}
+                variant="outline"
+                title={prompt} /* Add title attribute to show full text on hover */
+                className="cursor-pointer px-3 py-1.5 bg-background/80 hover:bg-primary/10 transition-colors text-xs border-primary/20 max-w-full whitespace-normal"
+                onClick={() => {
+                  handleSuggestedPrompt(prompt);
+                  // Auto-submit after a short delay to give user time to see what was selected
+                  setTimeout(() => {
+                    const event = new Event('submit', { bubbles: true });
+                    document.querySelector('form')?.dispatchEvent(event);
+                  }, 300);
+                }}
+              >
+                <span className="mr-1">💬</span> {prompt}
+              </Badge>
+            ))}
+          </div>
         </div>
         
         {/* Ask AI Input */}
         <form onSubmit={handleSendQuestion} className="mt-4 relative">
           <Input
             type="text"
-            placeholder="Ask your AI coach a question..."
+            placeholder="Ask your AI coach a question... (Enter to send)"
             className="w-full bg-background/80 border border-border/50 rounded-lg px-4 py-3 pr-10 text-sm focus:outline-none focus:border-primary shadow-sm transition-all focus:ring-1 focus:ring-primary/20"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             disabled={sendQuestion.isPending}
+            onKeyDown={handleKeyDown}
           />
           <Button 
             type="submit" 
