@@ -108,7 +108,10 @@ export default function BudgetPage() {
       return res.json();
     },
     onSuccess: () => {
+      // Invalidate budget categories and Rivu score
       queryClient.invalidateQueries({ queryKey: ['/api/budget-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] });
       setIsEditDialogOpen(false);
       setSelectedCategory(null);
       toast({
@@ -190,7 +193,7 @@ export default function BudgetPage() {
       <Sidebar />
 
       {/* Main Content */}
-      <main className="flex-1 p-8 overflow-y-auto max-h-screen">
+      <main className="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto max-h-screen">
         {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
           <div>
