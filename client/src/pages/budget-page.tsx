@@ -220,12 +220,10 @@ export default function BudgetPage() {
     return isNaN(spentAmount) ? sum : sum + spentAmount;
   }, 0);
   
-  // Use dashboard's monthly expenses for calculation if available
-  const monthlyExpenses = dashboardData?.monthlyExpenses || totalSpent;
-  
-  // Calculate the remaining budget the same way as the dashboard for consistency
-  const totalRemaining = Math.max(0, totalBudget - monthlyExpenses);
-  const overallProgress = totalBudget > 0 ? (monthlyExpenses / totalBudget) * 100 : 0;
+  // We should use the budget categories' own spent amounts - that's the most accurate source
+  // Dashboard will now also use this same calculation for consistency
+  const totalRemaining = Math.max(0, totalBudget - totalSpent);
+  const overallProgress = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen">

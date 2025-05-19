@@ -38,11 +38,12 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
       const fetchLinkToken = async () => {
         try {
           const response = await apiRequest('POST', '/api/plaid/create_link_token', {});
-          if (response.link_token) {
-            setLinkToken(response.link_token);
+          const data = await response.json();
+          if (data && data.link_token) {
+            setLinkToken(data.link_token);
           } else {
             setError('Failed to get link token');
-            console.error('No link token in response:', response);
+            console.error('No link token in response:', data);
           }
         } catch (err) {
           console.error('Error getting link token:', err);
@@ -69,14 +70,14 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
         metadata
       });
       
-      if (response.success) {
+      const data = await response.json();
+      
+      if (data && data.success) {
         // Log session ID and institution info for diagnostic purposes
         console.log(`Plaid Link successful - Institution: ${metadata.institution.name}`);
         
         // Get accounts for the connected bank
-        const accountsResponse = await apiRequest('POST', '/api/plaid/accounts', {
-          access_token: response.access_token // Note: This isn't actually sent by our API for security
-        });
+        const accountsResponse = await apiRequest('POST', '/api/plaid/accounts', {});
         
         // Invalidate any cached account data
         queryClient.invalidateQueries({ queryKey: ['/api/accounts'] });
@@ -85,8 +86,7 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
         setSuccess(true);
         toast({
           title: "Success!",
-          description: `Connected to ${metadata.institution.name}`,
-          variant: "success",
+          description: `Connected to ${metadata.institution.name}`
         });
         
         // Close the dialog after a short delay
@@ -94,7 +94,7 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
           onClose();
         }, 2000);
       } else {
-        throw new Error(response.error || 'Failed to exchange token');
+        throw new Error((data && data.error) || 'Failed to exchange token');
       }
     } catch (err: any) {
       console.error('Error exchanging token:', err);
@@ -137,20 +137,20 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md overflow-hidden">
         <DialogHeader>
           <DialogTitle>Connect Bank Account</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="break-words">
             Securely connect your bank accounts to automatically import transactions.
           </DialogDescription>
         </DialogHeader>
         
-        <div className="py-6">
+        <div className="py-6 overflow-y-auto">
           {error && (
             <Alert className="mb-6" variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Connection Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription className="break-words">{error}</AlertDescription>
             </Alert>
           )}
           
@@ -158,7 +158,7 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
             <div className="flex flex-col items-center justify-center py-6">
               <CheckCircle2 className="h-16 w-16 text-green-500 mb-4" />
               <h3 className="text-xl font-semibold mb-2">Connected Successfully!</h3>
-              <p className="text-center text-muted-foreground">
+              <p className="text-center text-muted-foreground break-words">
                 Your accounts have been connected. Transactions will begin syncing shortly.
               </p>
             </div>
@@ -178,7 +178,7 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
               
               <div className="bg-muted p-4 rounded-md mb-4">
                 <h4 className="font-medium mb-2">Security & Privacy</h4>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground break-words">
                   Your credentials are never stored on our servers. We use Plaid's secure services
                   to connect to your financial institutions.
                 </p>

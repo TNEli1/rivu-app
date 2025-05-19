@@ -325,7 +325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Total budget calculated: ${totalBudget}, Monthly expenses: ${monthlyExpenses}`);
       
       // Calculate total spent from budget categories for consistency with budget page
-      const totalBudgetSpent = categories.reduce((sum, category) => {
+      const totalBudgetSpent = budgetCategories.reduce((sum: number, category: any) => {
         // Ensure we handle any format of spent amount (string, number, etc.)
         let spentAmount = 0;
         
@@ -336,7 +336,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
           // Ensure it's a valid number
           if (isNaN(spentAmount)) spentAmount = 0;
-        } catch (err) {
+        } catch (err: any) {
           console.error(`Error parsing spent amount for ${category.name}:`, err);
           spentAmount = 0;
         }
