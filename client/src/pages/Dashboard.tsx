@@ -157,8 +157,8 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {transactionsData && transactionsData.length > 0 ? (
-                  transactionsData.map((transaction) => (
+                {transactions && transactions.length > 0 ? (
+                  transactions.map((transaction: Transaction) => (
                     <tr key={transaction.id}>
                       <td className="py-2">
                         {new Date(transaction.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
