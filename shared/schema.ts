@@ -241,3 +241,101 @@ export type InsertCategory = z.infer<typeof insertCategorySchema>;
 
 export type Subcategory = typeof subcategories.$inferSelect;
 export type InsertSubcategory = z.infer<typeof insertSubcategorySchema>;
+
+// Plaid Items (Institution connections)
+export const plaidItems = pgTable("plaid_items", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  itemId: text("item_id").notNull().unique(),
+  accessToken: text("access_token").notNull(),
+  institutionId: text("institution_id"),
+  institutionName: text("institution_name"),
+  status: text("status").default("active").notNull(), // 'active', 'login_required', 'disconnected'
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+  error: text("error"), // Serialized JSON of any error that occurred
+  consentExpirationTime: timestamp("consent_expiration_time"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertPlaidItemSchema = createInsertSchema(plaidItems).pick({
+  userId: true,
+  itemId: true,
+  accessToken: true,
+  institutionId: true,
+  institutionName: true,
+  status: true,
+  error: true,
+  consentExpirationTime: true,
+});
+
+// Plaid Accounts linked to Items
+export const plaidAccounts = pgTable("plaid_accounts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  plaidItemId: integer("plaid_item_id").notNull(),
+  accountId: text("account_id").notNull().unique(),
+  name: text("name").notNull(),
+  officialName: text("official_name"),
+  type: text("type").notNull(), // 'depository', 'credit', 'loan', 'investment', etc.
+  subtype: text("subtype"), // 'checking', 'savings', 'credit card', etc.
+  mask: text("mask"), // Last 4 digits of account number
+  availableBalance: decimal("available_balance", { precision: 18, scale: 2 }),
+  currentBalance: decimal("current_balance", { precision: 18, scale: 2 }),
+  isoCurrencyCode: text("iso_currency_code"),
+  status: text("status").default("active").notNull(), // 'active', 'inactive'
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertPlaidAccountSchema = createInsertSchema(plaidAccounts).pick({
+  userId: true,
+  plaidItemId: true,
+  accountId: true,
+  name: true,
+  officialName: true,
+  type: true,
+  subtype: true,
+  mask: true,
+  availableBalance: true,
+  currentBalance: true,
+  isoCurrencyCode: true,
+  status: true,
+});
+
+// Plaid Webhook Events
+export const plaidWebhookEvents = pgTable("plaid_webhook_events", {
+  id: serial("id").primaryKey(),
+  webhookType: text("webhook_type").notNull(),
+  webhookCode: text("webhook_code").notNull(),
+  itemId: text("item_id").notNull(),
+  accountId: text("account_id"),
+  error: text("error"),
+  newTransactionsCount: integer("new_transactions_count"),
+  removedTransactionsCount: integer("removed_transactions_count"),
+  requestId: text("request_id"),
+  rawData: text("raw_data"), // JSON string of the raw webhook data
+  processedAt: timestamp("processed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertPlaidWebhookEventSchema = createInsertSchema(plaidWebhookEvents).pick({
+  webhookType: true,
+  webhookCode: true,
+  itemId: true,
+  accountId: true,
+  error: true,
+  newTransactionsCount: true,
+  removedTransactionsCount: true,
+  requestId: true,
+  rawData: true,
+  processedAt: true,
+});
+
+export type PlaidItem = typeof plaidItems.$inferSelect;
+export type InsertPlaidItem = z.infer<typeof insertPlaidItemSchema>;
+
+export type PlaidAccount = typeof plaidAccounts.$inferSelect;
+export type InsertPlaidAccount = z.infer<typeof insertPlaidAccountSchema>;
+
+export type PlaidWebhookEvent = typeof plaidWebhookEvents.$inferSelect;
+export type InsertPlaidWebhookEvent = z.infer<typeof insertPlaidWebhookEventSchema>;

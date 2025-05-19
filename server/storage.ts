@@ -7,7 +7,10 @@ import {
   Nudge, InsertNudge,
   TransactionAccount, InsertTransactionAccount,
   Category, InsertCategory,
-  Subcategory, InsertSubcategory
+  Subcategory, InsertSubcategory,
+  PlaidItem, InsertPlaidItem,
+  PlaidAccount, InsertPlaidAccount,
+  PlaidWebhookEvent, InsertPlaidWebhookEvent
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lt, isNull, sql, or, between } from "drizzle-orm";
@@ -20,7 +23,10 @@ import {
   nudges,
   transactionAccounts,
   categories,
-  subcategories
+  subcategories,
+  plaidItems,
+  plaidAccounts,
+  plaidWebhookEvents
 } from "@shared/schema";
 
 // Storage interface
@@ -93,11 +99,38 @@ export interface IStorage {
   updateSubcategory(id: number, data: Partial<Subcategory>): Promise<Subcategory | undefined>;
   deleteSubcategory(id: number): Promise<boolean>;
 
+  // Plaid Item operations
+  getPlaidItems(userId: number): Promise<PlaidItem[]>;
+  getPlaidItemByItemId(itemId: string): Promise<PlaidItem | undefined>;
+  getPlaidItemById(id: number): Promise<PlaidItem | undefined>;
+  createPlaidItem(item: InsertPlaidItem): Promise<PlaidItem>;
+  updatePlaidItem(id: number, data: Partial<PlaidItem>): Promise<PlaidItem | undefined>;
+  updatePlaidItemByItemId(itemId: string, data: Partial<PlaidItem>): Promise<PlaidItem | undefined>;
+  deletePlaidItem(id: number): Promise<boolean>;
+  disconnectPlaidItem(id: number): Promise<boolean>; // Sets status to 'disconnected' but keeps the record
+  
+  // Plaid Account operations
+  getPlaidAccounts(userId: number): Promise<PlaidAccount[]>;
+  getPlaidAccountsByItemId(plaidItemId: number): Promise<PlaidAccount[]>;
+  getPlaidAccountByAccountId(accountId: string): Promise<PlaidAccount | undefined>;
+  getPlaidAccount(id: number): Promise<PlaidAccount | undefined>;
+  createPlaidAccount(account: InsertPlaidAccount): Promise<PlaidAccount>;
+  updatePlaidAccount(id: number, data: Partial<PlaidAccount>): Promise<PlaidAccount | undefined>;
+  deletePlaidAccount(id: number): Promise<boolean>;
+  
+  // Plaid Webhook operations
+  getPlaidWebhookEvents(itemId: string): Promise<PlaidWebhookEvent[]>;
+  createPlaidWebhookEvent(event: InsertPlaidWebhookEvent): Promise<PlaidWebhookEvent>;
+  markPlaidWebhookEventAsProcessed(id: number): Promise<PlaidWebhookEvent | undefined>;
+  
   // Helper methods
   calculateRivuScore(userId: number): Promise<number>;
   updateOnboardingStage(userId: number, stage: string): Promise<User | undefined>;
   isNewUser(userId: number): Promise<boolean>; // Check if user is within first 7 days
   createDefaultCategoriesForUser(userId: number): Promise<void>; // Create default categories for new users
+  
+  // Plaid Helpers
+  hasLinkedPlaidItemForInstitution(userId: number, institutionId: string): Promise<boolean>; // Check for duplicate institution connections
 }
 
 export class DatabaseStorage implements IStorage {
