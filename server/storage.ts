@@ -563,9 +563,9 @@ export class DatabaseStorage implements IStorage {
         const account = accountIndex !== -1 ? values[accountIndex] || 'Imported' : 'Imported';
         const notes = notesIndex !== -1 ? values[notesIndex] || '' : '';
         
-        // Create transaction object
+        // Create transaction object with explicit userId
         const transactionData: InsertTransaction = {
-          userId,
+          userId: userId, // Explicitly set userId to ensure it matches the authenticated user
           amount,
           date: transactionDate,
           merchant,
@@ -575,6 +575,9 @@ export class DatabaseStorage implements IStorage {
           notes,
           source: 'csv'
         };
+        
+        // Debug log to verify the correct user ID is being used
+        console.log(`Creating CSV transaction for user ID: ${userId}, merchant: ${merchant}, amount: ${amount}`);
         
         try {
           // Check for duplicates

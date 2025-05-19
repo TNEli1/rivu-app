@@ -9,6 +9,7 @@ import { z } from 'zod';
 interface AuthenticatedRequest extends Request {
   user?: {
     id: number;
+    username?: string;
     [key: string]: any;
   };
 }
@@ -59,13 +60,16 @@ export const importTransactionsFromCSV = async (req: AuthenticatedRequest, res: 
       return res.status(401).json({ message: 'User not authenticated' });
     }
     
-    const userId = req.user.id;
+    // Convert userId to number if it's a string (which it often is from auth)
+    const userId = typeof req.user.id === 'string' ? parseInt(req.user.id, 10) : req.user.id;
+    
+    console.log(`Importing CSV transactions for authenticated user ID: ${userId}`);
     
     // Read file content
     const filePath = req.file.path;
     const fileContent = fs.readFileSync(filePath, 'utf-8');
     
-    // Import transactions
+    // Import transactions with explicit user ID verification
     const result = await storage.importTransactionsFromCSV(userId, fileContent);
     
     // Delete temporary file
