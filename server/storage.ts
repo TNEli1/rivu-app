@@ -1023,9 +1023,14 @@ export class DatabaseStorage implements IStorage {
     let savingsProgress = 0;
     if (totalTargetAmount > 0) {
       const progressRatio = totalSavedAmount / totalTargetAmount;
-      // Always use the actual percentage value (don't round small values to 0)
-      // This ensures we properly show progress for small contributions
+      // Always calculate the real percentage value to properly reflect progress
+      // Ensure that even small contributions show up in the Rivu Score
       savingsProgress = Math.min(Math.round(progressRatio * 100), 100);
+      
+      // Make sure a goal with any contribution shows at least 1% progress
+      if (totalSavedAmount > 0 && savingsProgress === 0) {
+        savingsProgress = 1;
+      }
       
       // Log the calculation for debugging
       console.log(`Savings Progress Calculation: ${totalSavedAmount} / ${totalTargetAmount} = ${progressRatio} => ${savingsProgress}%`);
