@@ -17,12 +17,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
     // First check localStorage
     const savedTheme = localStorage.getItem('theme');
-    if (savedTheme && savedTheme === 'light') {
-      return 'light';
+    if (savedTheme === 'dark') {
+      return 'dark';
     }
     
-    // Always default to dark mode
-    return 'dark';
+    // Default to light mode
+    return 'light';
   });
 
   // Update the DOM when theme changes
@@ -43,8 +43,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (user?.themePreference && (user.themePreference === 'light' || user.themePreference === 'dark')) {
       setThemeState(user.themePreference);
     } else if (user) {
-      // If user exists but doesn't have a theme preference, default to dark mode
-      setThemeState('dark');
+      // If user exists but doesn't have a theme preference, default to light mode
+      setThemeState('light');
     }
   }, [user]);
 
