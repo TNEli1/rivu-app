@@ -1297,6 +1297,270 @@ export class DatabaseStorage implements IStorage {
       return false; // Default to false on error
     }
   }
+  
+  // Plaid Item operations
+  async getPlaidItems(userId: number): Promise<PlaidItem[]> {
+    try {
+      return await db.select().from(plaidItems)
+        .where(eq(plaidItems.userId, userId))
+        .orderBy(desc(plaidItems.createdAt));
+    } catch (error) {
+      console.error('Error getting Plaid items:', error);
+      return [];
+    }
+  }
+  
+  async getPlaidItemByItemId(itemId: string): Promise<PlaidItem | undefined> {
+    try {
+      const results = await db.select().from(plaidItems)
+        .where(eq(plaidItems.itemId, itemId))
+        .limit(1);
+      return results[0];
+    } catch (error) {
+      console.error('Error getting Plaid item by itemId:', error);
+      return undefined;
+    }
+  }
+  
+  async getPlaidItemById(id: number): Promise<PlaidItem | undefined> {
+    try {
+      const results = await db.select().from(plaidItems)
+        .where(eq(plaidItems.id, id))
+        .limit(1);
+      return results[0];
+    } catch (error) {
+      console.error('Error getting Plaid item by id:', error);
+      return undefined;
+    }
+  }
+  
+  async createPlaidItem(item: InsertPlaidItem): Promise<PlaidItem> {
+    try {
+      const results = await db.insert(plaidItems)
+        .values({
+          ...item,
+          lastUpdated: new Date(),
+          createdAt: new Date()
+        })
+        .returning();
+      return results[0];
+    } catch (error) {
+      console.error('Error creating Plaid item:', error);
+      throw error;
+    }
+  }
+  
+  async updatePlaidItem(id: number, data: Partial<PlaidItem>): Promise<PlaidItem | undefined> {
+    try {
+      const results = await db.update(plaidItems)
+        .set({
+          ...data,
+          lastUpdated: new Date()
+        })
+        .where(eq(plaidItems.id, id))
+        .returning();
+      return results[0];
+    } catch (error) {
+      console.error('Error updating Plaid item:', error);
+      return undefined;
+    }
+  }
+  
+  async updatePlaidItemByItemId(itemId: string, data: Partial<PlaidItem>): Promise<PlaidItem | undefined> {
+    try {
+      const results = await db.update(plaidItems)
+        .set({
+          ...data,
+          lastUpdated: new Date()
+        })
+        .where(eq(plaidItems.itemId, itemId))
+        .returning();
+      return results[0];
+    } catch (error) {
+      console.error('Error updating Plaid item by itemId:', error);
+      return undefined;
+    }
+  }
+  
+  async deletePlaidItem(id: number): Promise<boolean> {
+    try {
+      const results = await db.delete(plaidItems)
+        .where(eq(plaidItems.id, id))
+        .returning();
+      return results.length > 0;
+    } catch (error) {
+      console.error('Error deleting Plaid item:', error);
+      return false;
+    }
+  }
+  
+  async disconnectPlaidItem(id: number): Promise<boolean> {
+    try {
+      const results = await db.update(plaidItems)
+        .set({ 
+          status: 'disconnected',
+          lastUpdated: new Date()
+        })
+        .where(eq(plaidItems.id, id))
+        .returning();
+      return results.length > 0;
+    } catch (error) {
+      console.error('Error disconnecting Plaid item:', error);
+      return false;
+    }
+  }
+  
+  // Plaid Account operations
+  async getPlaidAccounts(userId: number): Promise<PlaidAccount[]> {
+    try {
+      return await db.select().from(plaidAccounts)
+        .where(eq(plaidAccounts.userId, userId))
+        .orderBy(desc(plaidAccounts.createdAt));
+    } catch (error) {
+      console.error('Error getting Plaid accounts:', error);
+      return [];
+    }
+  }
+  
+  async getPlaidAccountsByItemId(plaidItemId: number): Promise<PlaidAccount[]> {
+    try {
+      return await db.select().from(plaidAccounts)
+        .where(eq(plaidAccounts.plaidItemId, plaidItemId))
+        .orderBy(desc(plaidAccounts.createdAt));
+    } catch (error) {
+      console.error('Error getting Plaid accounts by itemId:', error);
+      return [];
+    }
+  }
+  
+  async getPlaidAccountByAccountId(accountId: string): Promise<PlaidAccount | undefined> {
+    try {
+      const results = await db.select().from(plaidAccounts)
+        .where(eq(plaidAccounts.accountId, accountId))
+        .limit(1);
+      return results[0];
+    } catch (error) {
+      console.error('Error getting Plaid account by accountId:', error);
+      return undefined;
+    }
+  }
+  
+  async getPlaidAccount(id: number): Promise<PlaidAccount | undefined> {
+    try {
+      const results = await db.select().from(plaidAccounts)
+        .where(eq(plaidAccounts.id, id))
+        .limit(1);
+      return results[0];
+    } catch (error) {
+      console.error('Error getting Plaid account by id:', error);
+      return undefined;
+    }
+  }
+  
+  async createPlaidAccount(account: InsertPlaidAccount): Promise<PlaidAccount> {
+    try {
+      const results = await db.insert(plaidAccounts)
+        .values({
+          ...account,
+          lastUpdated: new Date(),
+          createdAt: new Date()
+        })
+        .returning();
+      return results[0];
+    } catch (error) {
+      console.error('Error creating Plaid account:', error);
+      throw error;
+    }
+  }
+  
+  async updatePlaidAccount(id: number, data: Partial<PlaidAccount>): Promise<PlaidAccount | undefined> {
+    try {
+      const results = await db.update(plaidAccounts)
+        .set({
+          ...data,
+          lastUpdated: new Date()
+        })
+        .where(eq(plaidAccounts.id, id))
+        .returning();
+      return results[0];
+    } catch (error) {
+      console.error('Error updating Plaid account:', error);
+      return undefined;
+    }
+  }
+  
+  async deletePlaidAccount(id: number): Promise<boolean> {
+    try {
+      const results = await db.delete(plaidAccounts)
+        .where(eq(plaidAccounts.id, id))
+        .returning();
+      return results.length > 0;
+    } catch (error) {
+      console.error('Error deleting Plaid account:', error);
+      return false;
+    }
+  }
+  
+  // Plaid Webhook operations
+  async getPlaidWebhookEvents(itemId: string): Promise<PlaidWebhookEvent[]> {
+    try {
+      return await db.select().from(plaidWebhookEvents)
+        .where(eq(plaidWebhookEvents.itemId, itemId))
+        .orderBy(desc(plaidWebhookEvents.createdAt));
+    } catch (error) {
+      console.error('Error getting Plaid webhook events:', error);
+      return [];
+    }
+  }
+  
+  async createPlaidWebhookEvent(event: InsertPlaidWebhookEvent): Promise<PlaidWebhookEvent> {
+    try {
+      const results = await db.insert(plaidWebhookEvents)
+        .values({
+          ...event,
+          createdAt: new Date()
+        })
+        .returning();
+      return results[0];
+    } catch (error) {
+      console.error('Error creating Plaid webhook event:', error);
+      throw error;
+    }
+  }
+  
+  async markPlaidWebhookEventAsProcessed(id: number): Promise<PlaidWebhookEvent | undefined> {
+    try {
+      const results = await db.update(plaidWebhookEvents)
+        .set({ 
+          processedAt: new Date() 
+        })
+        .where(eq(plaidWebhookEvents.id, id))
+        .returning();
+      return results[0];
+    } catch (error) {
+      console.error('Error marking Plaid webhook event as processed:', error);
+      return undefined;
+    }
+  }
+  
+  // Plaid Helpers
+  async hasLinkedPlaidItemForInstitution(userId: number, institutionId: string): Promise<boolean> {
+    try {
+      const results = await db.select().from(plaidItems)
+        .where(
+          and(
+            eq(plaidItems.userId, userId),
+            eq(plaidItems.institutionId, institutionId),
+            eq(plaidItems.status, 'active')
+          )
+        )
+        .limit(1);
+      return results.length > 0;
+    } catch (error) {
+      console.error('Error checking for linked Plaid institution:', error);
+      return false;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();
