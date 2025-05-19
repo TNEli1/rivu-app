@@ -19,8 +19,8 @@ export const getTransactions = async (req: any, res: any) => {
     const formattedTransactions = transactions.map(transaction => ({
       id: transaction.id,
       amount: parseFloat(String(transaction.amount)),
-      merchant: transaction.merchant || transaction.description || "",
-      description: transaction.description || transaction.merchant || "",
+      merchant: transaction.merchant || transaction.notes || "",
+      description: transaction.notes || transaction.merchant || "",
       category: transaction.category || "Uncategorized",
       subcategory: transaction.subcategory || "",
       account: transaction.account || "Personal Account",
