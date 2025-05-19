@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect } from "react";
 import { Redirect, Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
@@ -17,6 +18,7 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
+  const [termsAgreed, setTermsAgreed] = useState(false);
   const [passwordFeedback, setPasswordFeedback] = useState<{
     message: string;
     isValid: boolean;
@@ -374,10 +376,34 @@ export default function AuthPage() {
                         </div>
                       )}
                     </div>
+
+                    {/* Terms Agreement Checkbox */}
+                    <div className="flex items-center space-x-2 py-2">
+                      <Checkbox 
+                        id="terms" 
+                        checked={termsAgreed}
+                        onCheckedChange={(checked) => setTermsAgreed(checked === true)}
+                        required
+                      />
+                      <Label
+                        htmlFor="terms"
+                        className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        I agree to the{" "}
+                        <Link href="/terms" className="text-primary hover:underline" target="_blank">
+                          Terms of Service
+                        </Link>{" "}
+                        and{" "}
+                        <Link href="/privacy" className="text-primary hover:underline" target="_blank">
+                          Privacy Policy
+                        </Link>
+                      </Label>
+                    </div>
+                    
                     <Button 
                       type="submit" 
                       className="w-full" 
-                      disabled={registerMutation.isPending || (password.length > 0 && !passwordFeedback.isValid)}
+                      disabled={registerMutation.isPending || (password.length > 0 && !passwordFeedback.isValid) || !termsAgreed}
                     >
                       {registerMutation.isPending ? (
                         <>
