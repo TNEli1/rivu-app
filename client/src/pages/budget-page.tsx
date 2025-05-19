@@ -291,7 +291,7 @@ export default function BudgetPage() {
             </div>
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Remaining</p>
-              <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{formatCurrency(Math.max(0, totalBudget - totalSpent))}</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{formatCurrency(totalRemaining)}</p>
             </div>
           </div>
           
