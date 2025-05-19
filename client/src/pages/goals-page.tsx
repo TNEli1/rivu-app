@@ -22,6 +22,8 @@ import { CalendarIcon, Plus, Target, Trash2, PiggyBank, Pencil, ArrowLeft } from
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
 import { format } from "date-fns";
+import Sidebar from "@/components/layout/Sidebar";
+import { useTheme } from "@/hooks/use-theme";
 
 import {
   AlertDialog,
@@ -59,6 +61,7 @@ export default function GoalsPage() {
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { theme } = useTheme();
 
   // Get goals
   const { data: goals = [], isLoading } = useQuery<Goal[]>({
@@ -350,478 +353,453 @@ export default function GoalsPage() {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      {/* Back to Dashboard Button */}
-      <div className="mb-2">
-        <Link to="/">
-          <Button variant="ghost" className="p-0 hover:bg-transparent">
-            <ArrowLeft className="h-5 w-5 mr-1" />
-            <span>Back to Dashboard</span>
+    <div className="flex flex-col md:flex-row min-h-screen">
+      {/* Sidebar - Desktop only */}
+      <Sidebar />
+      
+      {/* Main Content */}
+      <main className="flex-1 p-8 overflow-y-auto max-h-screen">
+        {/* Page Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-semibold mb-2 text-gray-800 dark:text-gray-100">Savings Goals</h1>
+            <p className="text-gray-600 dark:text-gray-400">Set and track your progress toward financial milestones</p>
+          </div>
+          
+          <Button 
+            onClick={() => {
+              resetForm();
+              setIsAddDialogOpen(true);
+            }}
+            className="bg-primary hover:bg-primary/90 text-white"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add New Goal
           </Button>
-        </Link>
-      </div>
-    
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Savings Goals</h1>
-          <p className="text-muted-foreground">
-            Create and track your savings goals towards financial freedom
-          </p>
+        </div>
+      
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-blue-500" />
+                <p className="text-sm text-muted-foreground">Active Goals</p>
+              </div>
+              <p className="text-2xl font-bold">{summary.activeGoals}</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2">
+                <PiggyBank className="h-5 w-5 text-green-500" />
+                <p className="text-sm text-muted-foreground">Total Saved</p>
+              </div>
+              <p className="text-2xl font-bold">{formatCurrency(summary.totalSaved)}</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-purple-500" />
+                <p className="text-sm text-muted-foreground">Total Target</p>
+              </div>
+              <p className="text-2xl font-bold">{formatCurrency(summary.totalTarget)}</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2">
+                <div className={`h-5 w-5 rounded-full flex items-center justify-center ${getProgressColor(summary.totalProgress)}`}>
+                  <span className="text-xs text-white font-medium">{summary.totalProgress}%</span>
+                </div>
+                <p className="text-sm text-muted-foreground">Overall Progress</p>
+              </div>
+              <Progress value={summary.totalProgress} className="h-2 mt-2" />
+            </CardContent>
+          </Card>
         </div>
         
-        <Button onClick={() => {
-          resetForm();
-          setIsAddDialogOpen(true);
-        }}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add New Goal
-        </Button>
-      </div>
-      
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-blue-500" />
-              <p className="text-sm text-muted-foreground">Active Goals</p>
-            </div>
-            <p className="text-2xl font-bold">{summary.activeGoals}</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <PiggyBank className="h-5 w-5 text-green-500" />
-              <p className="text-sm text-muted-foreground">Total Saved</p>
-            </div>
-            <p className="text-2xl font-bold">{formatCurrency(summary.totalSaved)}</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-purple-500" />
-              <p className="text-sm text-muted-foreground">Total Target</p>
-            </div>
-            <p className="text-2xl font-bold">{formatCurrency(summary.totalTarget)}</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <div className={`h-5 w-5 rounded-full flex items-center justify-center ${getProgressColor(summary.totalProgress)}`}>
-                <span className="text-xs text-white font-medium">{summary.totalProgress}%</span>
-              </div>
-              <p className="text-sm text-muted-foreground">Overall Progress</p>
-            </div>
-            <Progress value={summary.totalProgress} className="h-2 mt-2" />
-          </CardContent>
-        </Card>
-      </div>
-      
-      {/* Empty State */}
-      {!isLoading && goals.length === 0 ? (
-        <Card className="border-dashed border-2">
-          <CardContent className="pt-6 pb-8 flex flex-col items-center justify-center text-center space-y-4">
-            <PiggyBank className="h-12 w-12 text-muted-foreground/60" />
-            <CardTitle className="text-xl">No Savings Goals Yet</CardTitle>
-            <p className="text-muted-foreground max-w-md">
-              Start saving by creating your first goal. Whether it's for a vacation, 
-              emergency fund, or retirement, setting specific goals helps you stay on track.
-            </p>
-            <Button onClick={() => setIsAddDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Your First Goal
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        // Goals List
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {isLoading ? (
-            // Loading skeletons
-            Array(3).fill(0).map((_, i) => (
-              <Card key={i} className="animate-pulse">
-                <CardContent className="pt-6 h-[220px]">
-                  <div className="bg-muted h-4 w-1/2 rounded mb-4"></div>
-                  <div className="bg-muted h-8 w-1/3 rounded mb-2"></div>
-                  <div className="bg-muted h-2 w-full rounded mt-6 mb-2"></div>
-                  <div className="flex justify-between">
-                    <div className="bg-muted h-4 w-1/4 rounded"></div>
-                    <div className="bg-muted h-4 w-1/4 rounded"></div>
-                  </div>
-                  <div className="mt-6 flex gap-2">
-                    <div className="bg-muted h-8 w-10 rounded"></div>
-                    <div className="bg-muted h-8 w-10 rounded"></div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          ) : (
-            goals.map(goal => (
-              <Card key={getGoalId(goal).toString()} className="overflow-hidden">
-                <CardHeader className="pb-3">
-                  <CardTitle className="truncate font-bold">{goal.name}</CardTitle>
-                  <div className="flex justify-between items-center">
-                    <span className="text-2xl font-bold">{formatCurrency(goal.currentAmount)}</span>
-                    <span className="text-sm text-muted-foreground">
-                      of {formatCurrency(goal.targetAmount)}
-                    </span>
-                  </div>
-                </CardHeader>
-                <CardContent className="pb-6 pt-0 space-y-4">
-                  <div>
-                    <Progress 
-                      value={goal.progressPercentage > 100 ? 100 : goal.progressPercentage} 
-                      className="h-2" 
-                    />
-                    <div className="flex justify-between mt-1">
-                      <span className={`text-xs font-medium ${getProgressColor(goal.progressPercentage)}`}>
-                        {Math.round(goal.progressPercentage)}%
-                      </span>
-                      {goal.targetDate && (
-                        <span className="text-xs text-muted-foreground">
-                          Target: {new Date(goal.targetDate).toLocaleDateString()}
-                        </span>
-                      )}
+        {/* Empty State */}
+        {!isLoading && goals.length === 0 ? (
+          <Card className="border-dashed border-2 mb-6">
+            <CardContent className="pt-6 pb-8 flex flex-col items-center justify-center text-center space-y-4">
+              <PiggyBank className="h-12 w-12 text-muted-foreground/60" />
+              <CardTitle className="text-xl">No Savings Goals Yet</CardTitle>
+              <p className="text-muted-foreground max-w-md">
+                Start saving by creating your first goal. Whether it's for a vacation, 
+                emergency fund, or retirement, setting specific goals helps you stay on track.
+              </p>
+              <Button onClick={() => setIsAddDialogOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Your First Goal
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          // Goals List
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+            {isLoading ? (
+              // Loading skeletons
+              Array(3).fill(0).map((_, i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardContent className="pt-6 h-[220px]">
+                    <div className="bg-muted h-4 w-1/2 rounded mb-4"></div>
+                    <div className="bg-muted h-8 w-1/3 rounded mb-2"></div>
+                    <div className="bg-muted h-2 w-full rounded mt-6 mb-2"></div>
+                    <div className="flex justify-between">
+                      <div className="bg-muted h-4 w-1/4 rounded"></div>
+                      <div className="bg-muted h-4 w-1/4 rounded"></div>
                     </div>
-                  </div>
-                  
-                  <div className="text-sm flex justify-between">
-                    <span className="text-muted-foreground">Est. completion:</span>
-                    <span className="font-medium">{getEstimatedCompletionDate(goal)}</span>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    <Button 
-                      size="sm" 
-                      onClick={() => {
-                        setSelectedGoal(goal);
-                        setIsContributeDialogOpen(true);
-                        setContributionData({ amountToAdd: "" });
-                      }}
-                    >
-                      <PiggyBank className="h-4 w-4 mr-1" />
-                      Contribute
-                    </Button>
-                    
-                    <Button 
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setSelectedGoal(goal);
-                        setIsEditDialogOpen(true);
-                      }}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button size="sm" variant="outline" className="text-red-500">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Goal</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete this goal? This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction 
-                            onClick={() => goal && deleteGoalMutation.mutate(getGoalId(goal))}
-                            className="bg-red-500 hover:bg-red-600"
+                    <div className="mt-6 flex gap-2">
+                      <div className="bg-muted h-8 w-10 rounded"></div>
+                      <div className="bg-muted h-8 w-10 rounded"></div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              goals.map(goal => {
+                const progress = goal.progressPercentage || 0;
+                return (
+                  <Card key={getGoalId(goal)} className="overflow-hidden">
+                    <div className={`h-1.5 ${getProgressColor(progress)}`} style={{ width: `${progress}%` }}></div>
+                    <CardContent className="pt-6">
+                      <div className="flex flex-col h-full">
+                        <h3 className="text-lg font-semibold mb-2">{goal.name}</h3>
+                        <div className="flex justify-between items-baseline mb-1">
+                          <span className="text-2xl font-bold">{formatCurrency(goal.currentAmount)}</span>
+                          <span className="text-sm text-muted-foreground">of {formatCurrency(goal.targetAmount)}</span>
+                        </div>
+                        
+                        <Progress value={progress} className="h-2 mb-4" />
+                        
+                        <div className="grid grid-cols-2 gap-4 mb-4 mt-auto">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Progress</p>
+                            <p className="font-medium">{progress.toFixed(0)}%</p>
+                          </div>
+                          
+                          <div>
+                            <p className="text-xs text-muted-foreground">Target Date</p>
+                            <p className="font-medium">
+                              {goal.targetDate 
+                                ? format(new Date(goal.targetDate), 'MMM d, yyyy')
+                                : 'No date set'}
+                            </p>
+                          </div>
+                          
+                          <div>
+                            <p className="text-xs text-muted-foreground">Suggested Contribution</p>
+                            <p className="font-medium">{getRecommendedContribution(goal)}</p>
+                          </div>
+                          
+                          <div>
+                            <p className="text-xs text-muted-foreground">Est. Completion</p>
+                            <p className="font-medium">{getEstimatedCompletionDate(goal)}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex space-x-2 pt-2 mt-auto border-t">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => {
+                              setSelectedGoal(goal);
+                              setIsContributeDialogOpen(true);
+                            }}
                           >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
-      )}
-      
-      {/* Add Goal Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Savings Goal</DialogTitle>
-            <DialogDescription>
-              Set a specific target to save towards. Add a target date to help you stay on track.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Goal Name</Label>
-              <Input
-                id="name"
-                name="name"
-                placeholder="Vacation, Emergency Fund, New Car, etc."
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="targetAmount">Target Amount</Label>
-              <Input
-                id="targetAmount"
-                name="targetAmount"
-                type="number"
-                min="1"
-                step="0.01"
-                placeholder="5000"
-                value={formData.targetAmount}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="targetDate">Target Date (Optional)</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start text-left font-normal"
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={(newDate) => {
-                      setDate(newDate);
-                      if (newDate) {
-                        setFormData(prev => ({
-                          ...prev,
-                          targetDate: format(newDate, 'yyyy-MM-dd')
-                        }));
-                      } else {
-                        setFormData(prev => ({...prev, targetDate: undefined}));
-                      }
-                    }}
-                    initialFocus
-                    disabled={(date) => date < new Date()}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            
-            <DialogFooter>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => {
-                  setIsAddDialogOpen(false);
-                  resetForm();
-                }}
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={createGoalMutation.isPending}
-              >
-                {createGoalMutation.isPending && (
-                  <span className="mr-2 h-4 w-4 animate-spin">◌</span>
-                )}
-                Create Goal
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Edit Goal Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Goal</DialogTitle>
-            <DialogDescription>
-              Update your savings goal details.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-name">Goal Name</Label>
-              <Input
-                id="edit-name"
-                name="name"
-                placeholder="Vacation, Emergency Fund, New Car, etc."
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="edit-targetAmount">Target Amount</Label>
-              <Input
-                id="edit-targetAmount"
-                name="targetAmount"
-                type="number"
-                min="1"
-                step="0.01"
-                placeholder="5000"
-                value={formData.targetAmount}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="edit-targetDate">Target Date (Optional)</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    id="edit-targetDate"
-                    variant="outline"
-                    className="w-full justify-start text-left font-normal"
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={(newDate) => {
-                      setDate(newDate);
-                      if (newDate) {
-                        setFormData(prev => ({
-                          ...prev,
-                          targetDate: format(newDate, 'yyyy-MM-dd')
-                        }));
-                      } else {
-                        setFormData(prev => ({...prev, targetDate: undefined}));
-                      }
-                    }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            
-            <DialogFooter>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => {
-                  setIsEditDialogOpen(false);
-                  setSelectedGoal(null);
-                  resetForm();
-                }}
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={updateGoalMutation.isPending}
-              >
-                {updateGoalMutation.isPending && (
-                  <span className="mr-2 h-4 w-4 animate-spin">◌</span>
-                )}
-                Update Goal
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Contribute to Goal Dialog */}
-      <Dialog open={isContributeDialogOpen} onOpenChange={setIsContributeDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Contribute to Goal</DialogTitle>
-            <DialogDescription>
-              Add money towards your savings goal: {selectedGoal?.name}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <form onSubmit={handleContributeSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="amountToAdd">Contribution Amount</Label>
-              <Input
-                id="amountToAdd"
-                name="amountToAdd"
-                type="number"
-                min="1"
-                step="0.01"
-                placeholder={selectedGoal ? getRecommendedContribution(selectedGoal) : "100"}
-                value={contributionData.amountToAdd}
-                onChange={handleContributionChange}
-                required
-              />
-              {selectedGoal && (
-                <p className="text-xs text-muted-foreground">
-                  Suggested contribution: {getRecommendedContribution(selectedGoal)}
-                </p>
-              )}
-            </div>
-            
-            {selectedGoal && (
-              <div className="border rounded-md p-3 bg-muted/50">
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm">Current balance:</span>
-                  <span className="text-sm font-medium">{formatCurrency(selectedGoal.currentAmount)}</span>
-                </div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm">Remaining target:</span>
-                  <span className="text-sm font-medium">{formatCurrency(selectedGoal.targetAmount - selectedGoal.currentAmount)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Progress:</span>
-                  <span className={`text-sm font-medium ${getProgressColor(selectedGoal.progressPercentage)}`}>
-                    {Math.round(selectedGoal.progressPercentage)}%
-                  </span>
-                </div>
-              </div>
+                            <PiggyBank className="mr-1 h-4 w-4" />
+                            Add Funds
+                          </Button>
+                          
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedGoal(goal);
+                              setIsEditDialogOpen(true);
+                            }}
+                          >
+                            <Pencil className="mr-1 h-4 w-4" />
+                            Edit
+                          </Button>
+                          
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="outline" size="sm" className="text-red-500 hover:text-red-700">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Goal</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete this goal? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => deleteGoalMutation.mutate(getGoalId(goal))}
+                                  className="bg-red-500 hover:bg-red-600 text-white"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
             )}
+          </div>
+        )}
+        
+        {/* Add Goal Dialog */}
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Savings Goal</DialogTitle>
+              <DialogDescription>
+                Set a specific target to help you save more effectively.
+              </DialogDescription>
+            </DialogHeader>
             
-            <DialogFooter>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => {
-                  setIsContributeDialogOpen(false);
-                  setSelectedGoal(null);
-                  setContributionData({ amountToAdd: "" });
-                }}
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={contributeToGoalMutation.isPending}
-              >
-                {contributeToGoalMutation.isPending && (
-                  <span className="mr-2 h-4 w-4 animate-spin">◌</span>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Goal Name</Label>
+                <Input 
+                  id="name" 
+                  name="name" 
+                  placeholder="e.g., Emergency Fund, Vacation, New Car" 
+                  value={formData.name}
+                  onChange={handleInputChange}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="targetAmount">Target Amount</Label>
+                <Input 
+                  id="targetAmount" 
+                  name="targetAmount" 
+                  placeholder="0.00" 
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData.targetAmount}
+                  onChange={handleInputChange}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="targetDate">Target Date (Optional)</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {date ? format(date, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={date}
+                      onSelect={(date) => {
+                        setDate(date);
+                        setFormData(prev => ({
+                          ...prev,
+                          targetDate: date ? format(date, 'yyyy-MM-dd') : undefined
+                        }));
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <DialogFooter>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsAddDialogOpen(false);
+                    resetForm();
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={createGoalMutation.isPending}>
+                  {createGoalMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    'Create Goal'
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+        
+        {/* Edit Goal Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Goal</DialogTitle>
+              <DialogDescription>
+                Update your savings goal details.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Goal Name</Label>
+                <Input 
+                  id="edit-name" 
+                  name="name" 
+                  value={formData.name}
+                  onChange={handleInputChange}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-targetAmount">Target Amount</Label>
+                <Input 
+                  id="edit-targetAmount" 
+                  name="targetAmount" 
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData.targetAmount}
+                  onChange={handleInputChange}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-targetDate">Target Date (Optional)</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {date ? format(date, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={date}
+                      onSelect={(date) => {
+                        setDate(date);
+                        setFormData(prev => ({
+                          ...prev,
+                          targetDate: date ? format(date, 'yyyy-MM-dd') : undefined
+                        }));
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <DialogFooter>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsEditDialogOpen(false);
+                    setSelectedGoal(null);
+                    resetForm();
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateGoalMutation.isPending}>
+                  {updateGoalMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+        
+        {/* Contribute Dialog */}
+        <Dialog open={isContributeDialogOpen} onOpenChange={setIsContributeDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Funds to Goal</DialogTitle>
+              <DialogDescription>
+                Add a contribution to your "{selectedGoal?.name}" goal.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <form onSubmit={handleContributeSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="amountToAdd">Contribution Amount</Label>
+                <Input 
+                  id="amountToAdd" 
+                  name="amountToAdd" 
+                  placeholder="0.00" 
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={contributionData.amountToAdd}
+                  onChange={handleContributionChange}
+                />
+                {selectedGoal && (
+                  <p className="text-sm text-muted-foreground">
+                    Recommended: {getRecommendedContribution(selectedGoal)}
+                  </p>
                 )}
-                Add Contribution
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+              </div>
+              
+              <DialogFooter>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsContributeDialogOpen(false);
+                    setSelectedGoal(null);
+                    setContributionData({ amountToAdd: "" });
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={contributeToGoalMutation.isPending}>
+                  {contributeToGoalMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Adding...
+                    </>
+                  ) : (
+                    'Add Funds'
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </main>
     </div>
   );
 }
