@@ -189,43 +189,49 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
         </div>
         
         {/* Footer - fixed at bottom of dialog */}
-        <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-auto border-t pt-4">
-          <div className="flex flex-col-reverse sm:flex-row w-full justify-between gap-2">
+        <DialogFooter className="flex flex-col mt-auto border-t pt-4">
+          {/* Privacy link */}
+          <Button 
+            variant="link"
+            className="text-xs mb-3 w-full justify-start px-0 h-auto"
+            onClick={() => {
+              window.open('https://plaid.com/how-we-handle-data/', '_blank');
+            }}
+          >
+            How is my data protected? <ExternalLink className="h-3 w-3 ml-1" />
+          </Button>
+          
+          {/* Action buttons */}
+          <div className="flex justify-end gap-2 w-full flex-wrap">
             <Button 
-              variant="link"
-              className="text-xs sm:text-sm"
-              onClick={() => {
-                window.open('https://plaid.com/how-we-handle-data/', '_blank');
-              }}
+              onClick={onClose} 
+              variant="outline" 
+              size="sm"
+              className="min-w-[80px]"
             >
-              How is my data protected? <ExternalLink className="h-3 w-3 ml-1" />
+              {success ? 'Close' : 'Cancel'}
             </Button>
             
-            <div className="flex gap-2 sm:ml-auto">
-              <Button onClick={onClose} variant="outline" className="flex-1 sm:flex-none">
-                {success ? 'Close' : 'Cancel'}
+            {!success && (
+              <Button 
+                size="sm"
+                className="gap-1 min-w-[120px]"
+                disabled={!ready || loading || !linkToken}
+                onClick={handlePlaidLinkClick}
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 animate-spin flex-shrink-0" />
+                    <span>Connecting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Building className="h-4 w-4 flex-shrink-0" /> 
+                    <span>Connect Bank</span>
+                  </>
+                )}
               </Button>
-              
-              {!success && (
-                <Button 
-                  className="gap-2 flex-1 sm:flex-none"
-                  disabled={!ready || loading || !linkToken}
-                  onClick={handlePlaidLinkClick}
-                >
-                  {loading ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 animate-spin flex-shrink-0" />
-                      <span className="whitespace-nowrap">Connecting...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Building className="h-4 w-4 flex-shrink-0" /> 
-                      <span className="whitespace-nowrap">Connect Bank</span>
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
+            )}
           </div>
         </DialogFooter>
       </DialogContent>
