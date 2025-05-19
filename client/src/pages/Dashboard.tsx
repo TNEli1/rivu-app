@@ -1,21 +1,64 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import MobileNav from "@/components/layout/MobileNav";
-import StatCards from "@/components/dashboard/StatCards";
-import BudgetSection from "@/components/dashboard/BudgetSection";
-import TransactionsSection from "@/components/dashboard/TransactionsSection";
-import GoalsSection from "@/components/dashboard/GoalsSection";
-import RivuScoreCard from "@/components/dashboard/RivuScoreCard";
-import AICoachingCard from "@/components/dashboard/AICoachingCard";
-import QuickActionsCard from "@/components/dashboard/QuickActionsCard";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea"; 
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
+import { formatCurrency } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+
+// Types for transaction data
+type Transaction = {
+  id: string;
+  date: string;
+  description: string;
+  amount: number;
+  type: 'income' | 'expense';
+};
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
+  const [coachPrompt, setCoachPrompt] = useState("");
+  
+  // Fetch transaction data
+  const { data: transactionsData } = useQuery<Transaction[]>({
+    queryKey: ['/api/transactions/recent'],
+    queryFn: async () => {
+      try {
+        const res = await apiRequest('GET', '/api/transactions/recent?limit=3');
+        return await res.json();
+      } catch (error) {
+        console.error('Error fetching recent transactions:', error);
+        return [];
+      }
+    }
+  });
+
+  // Fetch summary data
+  const { data: summaryData } = useQuery<{
+    totalBalance: number;
+    weeklySpending: number;
+    remainingBudget: number;
+  }>({
+    queryKey: ['/api/dashboard/summary'],
+    queryFn: async () => {
+      try {
+        const res = await apiRequest('GET', '/api/dashboard/summary');
+        return await res.json();
+      } catch (error) {
+        console.error('Error fetching dashboard summary:', error);
+        return {
+          totalBalance: 0,
+          weeklySpending: 0,
+          remainingBudget: 0
+        };
+      }
+    }
+  });
   
   // Track user login for engagement metrics
   useEffect(() => {
@@ -40,67 +83,124 @@ export default function Dashboard() {
     }
   }, [user, setLocation]);
 
+  // Handle AI coach prompt submission
+  const handleSubmitPrompt = async () => {
+    if (!coachPrompt.trim()) return;
+    
+    try {
+      await apiRequest('POST', '/api/ai-coach/prompt', {
+        prompt: coachPrompt
+      });
+      setCoachPrompt("");
+      // Optionally navigate to AI Coach page
+      setLocation('/ai-coach');
+    } catch (error) {
+      console.error('Failed to submit AI coach prompt:', error);
+    }
+  };
+
   return (
-    <div className="flex flex-col md:flex-row min-h-screen">
+    <div className="flex min-h-screen bg-gray-50">
       {/* Sidebar - Desktop only */}
       <Sidebar />
 
       {/* Main Content */}
-      <main className="flex-grow md:ml-64 p-4 md:p-8">
-        {/* Mobile Header */}
-        <header className="md:hidden flex items-center justify-between mb-6">
-          <div className="flex items-center">
-            <i className="ri-line-chart-fill text-primary text-2xl mr-2"></i>
-            <h1 className="text-xl font-bold text-foreground">Rivu</h1>
-          </div>
-          <Button variant="outline" size="icon" className="p-2 rounded-lg bg-card">
-            <i className="ri-menu-line text-xl"></i>
-          </Button>
+      <main className="flex-1 p-8 md:ml-64">
+        {/* Welcome Header */}
+        <header className="mb-6">
+          <h1 className="text-3xl font-semibold text-gray-900">Welcome back{user?.firstName ? `, ${user.firstName}` : ''}</h1>
+          <p className="text-sm text-gray-600">Here's a summary of your finances this week</p>
         </header>
-        
-        {/* Welcome Section */}
-        <section className="mb-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-                Welcome back, {user?.firstName || user?.username || 'there'}
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                Here's your financial overview for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-              </p>
-            </div>
-            <div className="mt-4 md:mt-0">
-              <Button 
-                className="bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-lg font-medium flex items-center"
-                onClick={() => setLocation('/transactions')}
-              >
-                <i className="ri-add-line mr-1.5"></i> Add Transaction
-              </Button>
-            </div>
-          </div>
+
+        {/* Summary Cards */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="bg-white rounded-lg p-5 shadow-sm">
+            <CardContent className="p-0">
+              <h2 className="text-sm text-gray-500">Total Balance</h2>
+              <p className="text-xl font-bold mt-2">{formatCurrency(summaryData?.totalBalance || 0)}</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-white rounded-lg p-5 shadow-sm">
+            <CardContent className="p-0">
+              <h2 className="text-sm text-gray-500">Spent This Week</h2>
+              <p className="text-xl font-bold mt-2">{formatCurrency(summaryData?.weeklySpending || 0)}</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-white rounded-lg p-5 shadow-sm">
+            <CardContent className="p-0">
+              <h2 className="text-sm text-gray-500">Remaining Budget</h2>
+              <p className="text-xl font-bold mt-2">{formatCurrency(summaryData?.remainingBudget || 0)}</p>
+            </CardContent>
+          </Card>
         </section>
 
-        {/* Top Stats Cards */}
-        <StatCards />
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Budget, Goals and Transactions */}
-          <div className="lg:col-span-2 space-y-6">
-            <BudgetSection />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <GoalsSection />
-              <TransactionsSection />
-            </div>
+        {/* Transaction Table */}
+        <Card className="bg-white p-6 rounded-lg shadow-sm mb-8">
+          <h3 className="text-lg font-semibold mb-4">Recent Transactions</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr>
+                  <th className="pb-2 font-medium">Date</th>
+                  <th className="pb-2 font-medium">Description</th>
+                  <th className="pb-2 font-medium">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactionsData && transactionsData.length > 0 ? (
+                  transactionsData.map((transaction) => (
+                    <tr key={transaction.id}>
+                      <td className="py-2">
+                        {new Date(transaction.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </td>
+                      <td className="py-2">{transaction.description}</td>
+                      <td className={`py-2 ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                        {transaction.type === 'income' ? '+ ' : '- '}
+                        {formatCurrency(Math.abs(transaction.amount))}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={3} className="py-4 text-center text-gray-500">
+                      No recent transactions
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-
-          {/* Right Column - Rivu Score and AI Coaching */}
-          <div className="lg:col-span-1 space-y-6">
-            <RivuScoreCard />
-            <AICoachingCard />
-            <QuickActionsCard />
+          <div className="mt-4">
+            <Button 
+              variant="outline"
+              onClick={() => setLocation('/transactions')}
+              className="text-sm"
+            >
+              View All Transactions
+            </Button>
           </div>
-        </div>
+        </Card>
+
+        {/* AI Coach Prompt */}
+        <Card className="bg-white p-6 rounded-lg shadow-sm">
+          <h3 className="text-lg font-semibold mb-2">AI Coach</h3>
+          <p className="text-sm text-gray-600 mb-4">Get personalized financial insights</p>
+          <Textarea 
+            className="w-full p-3 border border-gray-300 rounded mb-3"
+            rows={3} 
+            placeholder="Ask your AI coach anything..."
+            value={coachPrompt}
+            onChange={(e) => setCoachPrompt(e.target.value)}
+          />
+          <Button 
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={handleSubmitPrompt}
+          >
+            Ask Coach
+          </Button>
+        </Card>
       </main>
 
       {/* Mobile Bottom Navigation */}
