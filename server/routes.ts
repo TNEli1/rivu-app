@@ -572,23 +572,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     res.json({
       score: rivuScore.score,
+      lastUpdated: rivuScore.updatedAt, // Include the last updated timestamp
       factors: [
         { 
           name: "Budget Adherence", 
-          percentage: rivuScore.budgetAdherence, 
-          rating: getRating(rivuScore.budgetAdherence), 
+          percentage: rivuScore.budgetAdherence || 0, 
+          rating: getRating(rivuScore.budgetAdherence || 0), 
           color: "bg-[#00C2A8]" 
         },
         { 
           name: "Savings Goal Progress", 
-          percentage: rivuScore.savingsProgress, 
-          rating: getRating(rivuScore.savingsProgress), 
+          percentage: rivuScore.savingsProgress || 0, 
+          rating: getRating(rivuScore.savingsProgress || 0), 
           color: "bg-[#2F80ED]" 
         },
         { 
           name: "Weekly Activity", 
-          percentage: rivuScore.weeklyActivity, 
-          rating: getRating(rivuScore.weeklyActivity), 
+          percentage: rivuScore.weeklyActivity || 0, 
+          rating: getRating(rivuScore.weeklyActivity || 0), 
           color: "bg-[#D0F500]" 
         },
       ]
@@ -620,23 +621,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Format the response
       res.json({
         score: rivuScore.score,
+        lastUpdated: rivuScore.updatedAt, // Include the last updated timestamp
         factors: [
           { 
             name: "Budget Adherence", 
-            percentage: rivuScore.budgetAdherence, 
-            rating: getRating(rivuScore.budgetAdherence), 
+            percentage: rivuScore.budgetAdherence || 0, 
+            rating: getRating(rivuScore.budgetAdherence || 0), 
             color: "bg-[#00C2A8]" 
           },
           { 
             name: "Savings Goal Progress", 
-            percentage: rivuScore.savingsProgress, 
-            rating: getRating(rivuScore.savingsProgress), 
+            percentage: rivuScore.savingsProgress || 0, 
+            rating: getRating(rivuScore.savingsProgress || 0), 
             color: "bg-[#2F80ED]" 
           },
           { 
             name: "Weekly Activity", 
-            percentage: isNewUser ? Math.max(rivuScore.weeklyActivity, 50) : rivuScore.weeklyActivity, // Give new users a boost
-            rating: getRating(isNewUser ? Math.max(rivuScore.weeklyActivity, 50) : rivuScore.weeklyActivity), 
+            percentage: isNewUser ? Math.max(rivuScore.weeklyActivity || 0, 50) : (rivuScore.weeklyActivity || 0), // Give new users a boost
+            rating: getRating(isNewUser ? Math.max(rivuScore.weeklyActivity || 0, 50) : (rivuScore.weeklyActivity || 0)), 
             color: "bg-[#D0F500]" 
           },
         ]

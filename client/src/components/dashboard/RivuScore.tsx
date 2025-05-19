@@ -172,16 +172,18 @@ export default function RivuScore() {
             }`}>
               <div 
                 className={`h-2 rounded-full ${factor.color || 'bg-blue-600'}`} 
-                style={{ width: `${factor.percentage}%` }}
+                style={{ width: `${Math.max(factor.percentage, 0)}%` }}
               ></div>
             </div>
           </div>
         ))}
       </div>
       
-      <div className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-        Last updated: {lastUpdated}
-      </div>
+      {data?.lastUpdated && lastUpdated !== 'Not available' && (
+        <div className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+          Last updated: {lastUpdated}
+        </div>
+      )}
     </div>
   );
 }
