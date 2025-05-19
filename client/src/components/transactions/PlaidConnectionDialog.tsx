@@ -137,7 +137,7 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto overflow-x-hidden relative my-auto mx-auto">
+      <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto overflow-x-hidden mx-auto w-[90vw] max-w-screen-sm">
         <DialogHeader>
           <DialogTitle>Connect Bank Account</DialogTitle>
           <DialogDescription className="break-words">
