@@ -271,6 +271,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       
+      // Get all budget categories to calculate total budget
+      const budgetCategories = await storage.getBudgetCategories(userId);
+      
       // Filter transactions for current month
       const monthlyTransactions = transactions.filter(t => {
         const transactionDate = new Date(t.date);
@@ -296,12 +299,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return sum + amountAsNumber;
         }, 0);
       
+      // Calculate total budget from budget categories
+      const totalBudget = budgetCategories.reduce((sum, category) => {
+        const budgetAmount = typeof category.budgetAmount === 'string' 
+          ? parseFloat(category.budgetAmount) 
+          : category.budgetAmount;
+        return sum + budgetAmount;
+      }, 0);
+      
+      // Calculate remaining budget for the month
+      const calculatedRemainingBudget = Math.max(0, totalBudget - monthlyExpenses);
+      
       res.json({
         totalBalance,
         weeklySpending,
-        remainingBudget,
+        remainingBudget: calculatedRemainingBudget,
         monthlyIncome,
-        monthlyExpenses
+        monthlyExpenses,
+        totalBudget // Add this to help with debugging
       });
     } catch (error) {
       console.error('Error generating dashboard summary:', error);

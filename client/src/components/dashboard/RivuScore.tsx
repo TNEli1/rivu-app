@@ -6,6 +6,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Link } from 'wouter';
 
 type RivuScoreResponse = {
   score: number;
@@ -188,12 +189,12 @@ export default function RivuScore() {
       )}
       
       <div className="mt-2">
-        <a 
-          href="/settings?tab=rivu-score" 
+        <Link 
+          to="/settings?tab=rivu-score" 
           className={`text-xs underline ${theme === 'dark' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'}`}
         >
           How your Rivu Score works
-        </a>
+        </Link>
       </div>
     </div>
   );
