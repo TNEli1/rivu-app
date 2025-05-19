@@ -2,6 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTheme } from '@/hooks/use-theme';
 
 type RivuScoreResponse = {
   score: number;
@@ -24,6 +25,9 @@ type ScoreFactor = {
 };
 
 export default function RivuScore() {
+  // Access theme context
+  const { theme } = useTheme();
+  
   // Fetch Rivu score data
   const { data, isLoading } = useQuery<RivuScoreResponse>({
     queryKey: ['/api/rivu-score'],
@@ -64,11 +68,11 @@ export default function RivuScore() {
     return (
       <div className="space-y-4">
         <div className="flex justify-center mb-4">
-          <Skeleton className="h-24 w-24 rounded-full" />
+          <Skeleton className={`h-24 w-24 rounded-full ${theme === 'dark' ? 'bg-gray-700' : ''}`} />
         </div>
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-5/6" />
-        <Skeleton className="h-4 w-4/6" />
+        <Skeleton className={`h-4 w-full ${theme === 'dark' ? 'bg-gray-700' : ''}`} />
+        <Skeleton className={`h-4 w-5/6 ${theme === 'dark' ? 'bg-gray-700' : ''}`} />
+        <Skeleton className={`h-4 w-4/6 ${theme === 'dark' ? 'bg-gray-700' : ''}`} />
       </div>
     );
   }
@@ -86,13 +90,19 @@ export default function RivuScore() {
   return (
     <div className="text-center space-y-4">
       <div className="relative inline-block">
-        <div className="h-24 w-24 rounded-full border-4 border-gray-100 flex items-center justify-center mx-auto">
-          <span className="text-3xl font-bold">{score}</span>
+        <div className={`h-24 w-24 rounded-full border-4 flex items-center justify-center mx-auto ${
+          theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-100 bg-white'
+        }`}>
+          <span className={`text-3xl font-bold ${
+            theme === 'dark' ? 'text-gray-100' : 'text-gray-900'
+          }`}>{score}</span>
         </div>
         <div className={`absolute -top-2 -right-2 px-2 py-1 text-xs rounded-full ${
-          score >= 70 ? 'bg-green-100 text-green-800' : 
-          score >= 50 ? 'bg-yellow-100 text-yellow-800' : 
-          'bg-red-100 text-red-800'
+          score >= 70 
+            ? (theme === 'dark' ? 'bg-green-900 text-green-100' : 'bg-green-100 text-green-800') 
+            : score >= 50 
+            ? (theme === 'dark' ? 'bg-yellow-900 text-yellow-100' : 'bg-yellow-100 text-yellow-800')
+            : (theme === 'dark' ? 'bg-red-900 text-red-100' : 'bg-red-100 text-red-800')
         }`}>
           {rating}
         </div>
@@ -101,11 +111,15 @@ export default function RivuScore() {
       <div className="space-y-2">
         {data?.factors && data.factors.map((factor, index) => (
           <div key={index}>
-            <div className="flex justify-between text-sm text-gray-700">
+            <div className={`flex justify-between text-sm ${
+              theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+            }`}>
               <span>{factor.name}</span>
               <span>{factor.percentage}%</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+            <div className={`w-full rounded-full h-2 mt-1 ${
+              theme === 'dark' ? 'bg-gray-600' : 'bg-gray-200'
+            }`}>
               <div 
                 className={`h-2 rounded-full ${factor.color || 'bg-blue-600'}`} 
                 style={{ width: `${factor.percentage}%` }}
@@ -115,7 +129,7 @@ export default function RivuScore() {
         ))}
       </div>
       
-      <div className="text-gray-500 text-xs">
+      <div className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
         Last updated: {lastUpdated}
       </div>
     </div>
