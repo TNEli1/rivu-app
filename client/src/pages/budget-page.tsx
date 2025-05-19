@@ -194,8 +194,25 @@ export default function BudgetPage() {
     setIsEditDialogOpen(true);
   };
 
-  const totalBudget = categories.reduce((sum, cat) => sum + parseFloat(cat.budgetAmount), 0);
-  const totalSpent = categories.reduce((sum, cat) => sum + parseFloat(cat.spentAmount), 0);
+  // Calculate budget totals exactly like the dashboard page does for consistency
+  const totalBudget = categories.reduce((sum, cat) => {
+    const budgetAmount = typeof cat.budgetAmount === 'string' 
+      ? parseFloat(cat.budgetAmount) 
+      : (cat.budgetAmount || 0);
+    
+    return isNaN(budgetAmount) ? sum : sum + budgetAmount;
+  }, 0);
+  
+  const totalSpent = categories.reduce((sum, cat) => {
+    const spentAmount = typeof cat.spentAmount === 'string' 
+      ? parseFloat(cat.spentAmount) 
+      : (cat.spentAmount || 0);
+    
+    return isNaN(spentAmount) ? sum : sum + spentAmount;
+  }, 0);
+  
+  // Calculate the remaining budget the same way as the dashboard for consistency
+  const totalRemaining = Math.max(0, totalBudget - totalSpent);
   const overallProgress = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
 
   return (

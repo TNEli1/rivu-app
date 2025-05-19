@@ -691,7 +691,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
           { 
             name: "Savings Goal Progress", 
-            percentage: rivuScore.savingsProgress || 0, // Use actual calculated percentage
+            percentage: rivuScore.savingsProgress, // Ensure actual percentage is displayed
             rating: getRating(rivuScore.savingsProgress || 0), 
             color: "bg-[#2F80ED]" 
           },
