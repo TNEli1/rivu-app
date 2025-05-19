@@ -294,11 +294,19 @@ export class DatabaseStorage implements IStorage {
 
   // Transaction operations
   async getTransactions(userId: number): Promise<Transaction[]> {
-    return db
+    // Ensure userId is properly typed as a number
+    const userIdNum = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+    
+    // Query transactions for this user
+    const results = await db
       .select()
       .from(transactions)
-      .where(eq(transactions.userId, userId))
+      .where(eq(transactions.userId, userIdNum))
       .orderBy(desc(transactions.date));
+    
+    console.log(`Found ${results.length} transactions for user ID ${userIdNum}`);
+    
+    return results;
   }
 
   async getTransaction(id: number): Promise<Transaction | undefined> {
