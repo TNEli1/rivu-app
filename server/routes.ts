@@ -198,7 +198,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.put(`${apiPath}/subcategories/:id`, protect, updateSubcategory);
     app.delete(`${apiPath}/subcategories/:id`, protect, deleteSubcategory);
     
+    // Import Plaid controllers
+    const {
+      createLinkToken,
+      exchangeToken,
+      getAccounts: getPlaidAccounts,
+      handleWebhook,
+      removeItem
+    } = await import('./controllers/plaid-controller');
+    
+    // Register Plaid routes
+    app.post(`${apiPath}/plaid/create_link_token`, protect, createLinkToken);
+    app.post(`${apiPath}/plaid/exchange_token`, protect, exchangeToken);
+    app.post(`${apiPath}/plaid/accounts`, protect, getPlaidAccounts);
+    app.post(`${apiPath}/plaid/item/remove`, protect, removeItem);
+    app.post(`${apiPath}/plaid/webhook`, handleWebhook); // Public webhook route
+    
     console.log('✅ Auth routes successfully mounted at /api');
+    console.log('✅ Plaid routes successfully mounted at /api/plaid');
   } catch (error) {
     console.error('⚠️ Error setting up API routes:', error);
   }

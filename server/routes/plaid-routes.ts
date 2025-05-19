@@ -1,6 +1,7 @@
 import express from 'express';
 import { createLinkToken, exchangeToken, getAccounts, handleWebhook, removeItem } from '../controllers/plaid-controller';
-import { protect } from '../middleware/auth';
+
+// We'll pass the protect middleware from the main routes.ts file instead of importing it here
 
 const router = express.Router();
 
