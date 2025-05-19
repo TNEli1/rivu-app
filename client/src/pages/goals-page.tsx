@@ -18,7 +18,7 @@ import { apiRequest, invalidateRelatedQueries } from "@/lib/queryClient";
 import { formatCurrency, getProgressColor } from "@/lib/utils";
 import { Goal, GoalFormData, GoalContributionData } from "@/types/goal";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Plus, Target, Trash2, PiggyBank, Pencil, ArrowLeft } from "lucide-react";
+import { CalendarIcon, Plus, Target, Trash2, PiggyBank, Pencil, ArrowLeft, Loader2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
 import { format } from "date-fns";
@@ -469,7 +469,7 @@ export default function GoalsPage() {
                     <div className={`h-1.5 ${getProgressColor(progress)}`} style={{ width: `${progress}%` }}></div>
                     <CardContent className="pt-6">
                       <div className="flex flex-col h-full">
-                        <h3 className="text-lg font-semibold mb-2">{goal.name}</h3>
+                        <h3 className="text-lg font-semibold mb-2 truncate">{goal.name}</h3>
                         <div className="flex justify-between items-baseline mb-1">
                           <span className="text-2xl font-bold">{formatCurrency(goal.currentAmount)}</span>
                           <span className="text-sm text-muted-foreground">of {formatCurrency(goal.targetAmount)}</span>

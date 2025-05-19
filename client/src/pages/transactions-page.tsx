@@ -1010,7 +1010,7 @@ export default function TransactionsPage() {
                         </td>
                         <td className="p-4 align-middle">
                           <div className="flex flex-col">
-                            <span className="text-gray-800 dark:text-gray-200 font-medium">{transaction.merchant}</span>
+                            <span className="text-gray-800 dark:text-gray-200 font-medium truncate">{transaction.merchant}</span>
                             {transaction.isDuplicate && (
                               <div className="flex flex-col mt-1">
                                 <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-800">
