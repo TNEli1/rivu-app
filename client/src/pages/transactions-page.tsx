@@ -522,31 +522,31 @@ export default function TransactionsPage() {
       <Sidebar />
 
       {/* Main Content */}
-      <main className="flex-grow md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
+      <main className="flex-1 p-8 pb-20 md:pb-8">
         {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Transactions</h1>
-            <p className="text-muted-foreground">View and manage your financial transactions</p>
+            <h1 className="text-3xl font-semibold mb-2 text-gray-800 dark:text-gray-100">Transactions</h1>
+            <p className="text-gray-700 dark:text-gray-400">View and manage your financial transactions</p>
           </div>
           <div className="flex flex-wrap gap-2 mt-4 md:mt-0">
             <Button 
               variant="outline"
               onClick={() => setIsPlaidConnectionOpen(true)}
-              className="gap-2"
+              className="gap-2 border-gray-300 text-gray-700 hover:text-gray-900 dark:border-gray-600 dark:text-gray-300 dark:hover:text-gray-100"
             >
               <Building className="h-4 w-4" /> Connect Bank
             </Button>
             <Button 
               variant="outline"
               onClick={() => setIsCSVUploadOpen(true)}
-              className="gap-2"
+              className="gap-2 border-gray-300 text-gray-700 hover:text-gray-900 dark:border-gray-600 dark:text-gray-300 dark:hover:text-gray-100"
             >
               <Upload className="h-4 w-4" /> Import CSV
             </Button>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-primary hover:bg-primary/90 text-white gap-2">
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
                   <PlusCircle className="h-4 w-4" /> Add Transaction
                 </Button>
               </DialogTrigger>
@@ -821,18 +821,20 @@ export default function TransactionsPage() {
         </Card>
 
         {/* Transactions List */}
-        <Card className="overflow-hidden">
+        <Card className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
           {/* Common action buttons - Always visible at the top */}
-          <div className="p-4 flex flex-wrap justify-end gap-2 border-b">
+          <div className="p-6 flex flex-wrap justify-end gap-2 border-b dark:border-gray-700">
             <Button 
               variant="outline"
               onClick={() => setIsAddDialogOpen(true)}
+              className="border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
             >
               <PlusCircle className="mr-2 h-4 w-4" /> Add Transaction
             </Button>
             <Button 
               variant="outline"
               onClick={() => setIsCSVUploadOpen(true)}
+              className="border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
             >
               <Upload className="mr-2 h-4 w-4" /> Import CSV
             </Button>
@@ -841,7 +843,7 @@ export default function TransactionsPage() {
                 <AlertDialogTrigger asChild>
                   <Button 
                     variant="outline"
-                    className="border-destructive text-destructive hover:bg-destructive/10"
+                    className="border-red-300 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
                   >
                     <Trash2 className="mr-2 h-4 w-4" /> Clear All
                   </Button>
