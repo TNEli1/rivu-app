@@ -60,7 +60,7 @@ export default function TransactionsSection() {
 
   // Fetch transactions
   const { data: transactions = [], isLoading, refetch } = useQuery<Transaction[]>({
-    queryKey: ["/api/transactions"],
+    queryKey: ["/api/transactions"]
   });
 
   // Fetch categories for the select dropdown
