@@ -271,10 +271,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const weeklyBudget = 2000;
       const remainingBudget = Math.max(0, weeklyBudget - weeklySpending);
       
+      // Calculate monthly income and expenses
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      
+      // Filter transactions for current month
+      const monthlyTransactions = transactions.filter(t => {
+        const transactionDate = new Date(t.date);
+        return transactionDate >= startOfMonth;
+      });
+      
+      // Calculate monthly income and expenses
+      const monthlyIncome = monthlyTransactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => {
+          const amountAsNumber = typeof t.amount === 'string' 
+            ? parseFloat(t.amount) 
+            : t.amount;
+          return sum + amountAsNumber;
+        }, 0);
+        
+      const monthlyExpenses = monthlyTransactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => {
+          const amountAsNumber = typeof t.amount === 'string' 
+            ? parseFloat(t.amount) 
+            : t.amount;
+          return sum + amountAsNumber;
+        }, 0);
+      
       res.json({
         totalBalance,
         weeklySpending,
-        remainingBudget
+        remainingBudget,
+        monthlyIncome,
+        monthlyExpenses
       });
     } catch (error) {
       console.error('Error generating dashboard summary:', error);
