@@ -367,8 +367,14 @@ export default function TransactionsPage() {
       return { success: true };
     },
     onSuccess: () => {
+      // Invalidate transactions and related data
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions/summary'] });
+      
+      // Also invalidate Rivu score to ensure it updates
+      queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] });
+      
       toast({
         title: "Transaction deleted",
         description: "Your transaction has been deleted successfully.",
