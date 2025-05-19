@@ -348,29 +348,69 @@ export default function GoalsPage() {
     return formatCurrency(Math.max(remaining * 0.1, 10));
   }
 
+  function getGoalStatus(goal: Goal): { date: string; status: 'on-track' | 'behind' | 'ahead'; statusText: string } {
+    if (parseFloat(String(goal.progressPercentage)) >= 100) 
+      return { date: "Completed!", status: 'ahead', statusText: 'Completed!' };
+    
+    if (parseFloat(String(goal.progressPercentage)) <= 0) 
+      return { date: "Not started", status: 'behind', statusText: 'Not started' };
+    
+    // Calculate average weekly contribution
+    const monthlyContributions = Array.isArray(goal.monthlySavings) ? goal.monthlySavings : [];
+    
+    if (monthlyContributions.length === 0) 
+      return { date: "Calculating...", status: 'on-track', statusText: 'Calculating...' };
+    
+    try {
+      // Calculate average monthly contribution over the last 3 months or all available data
+      const relevantMonths = monthlyContributions.slice(-3);
+      const averageMonthlyContribution = relevantMonths.reduce((sum, month) => sum + month.amount, 0) / relevantMonths.length;
+      
+      if (averageMonthlyContribution <= 0) 
+        return { date: "Insufficient data", status: 'behind', statusText: 'Need more contributions' };
+      
+      // Calculate weekly contribution (monthly / 4.3)
+      const avgWeeklyContribution = averageMonthlyContribution / 4.3;
+      
+      // Calculate weeks needed
+      const remaining = goal.targetAmount - goal.currentAmount;
+      const weeksNeeded = Math.ceil(remaining / avgWeeklyContribution);
+      
+      // Calculate completion date
+      const completionDate = new Date();
+      completionDate.setDate(completionDate.getDate() + (weeksNeeded * 7));
+      const dateString = format(completionDate, 'MMM yyyy');
+      
+      // Determine if on track based on target date
+      let status: 'on-track' | 'behind' | 'ahead' = 'on-track';
+      let statusText = 'On track';
+      
+      if (goal.targetDate) {
+        const targetDate = new Date(goal.targetDate);
+        
+        // Compare estimated completion with target date
+        if (completionDate > targetDate) {
+          // Behind schedule
+          const monthsBehind = Math.ceil((completionDate.getTime() - targetDate.getTime()) / (30 * 24 * 60 * 60 * 1000));
+          status = 'behind';
+          statusText = `${monthsBehind} month${monthsBehind > 1 ? 's' : ''} behind`;
+        } else if (completionDate < targetDate) {
+          // Ahead of schedule
+          const monthsAhead = Math.ceil((targetDate.getTime() - completionDate.getTime()) / (30 * 24 * 60 * 60 * 1000));
+          status = 'ahead';
+          statusText = `${monthsAhead} month${monthsAhead > 1 ? 's' : ''} ahead`;
+        }
+      }
+      
+      return { date: dateString, status, statusText };
+    } catch (error) {
+      console.error("Error calculating goal status:", error);
+      return { date: "Calculation error", status: 'on-track', statusText: 'Error' };
+    }
+  }
+  
   function getEstimatedCompletionDate(goal: Goal): string {
-    if (goal.progressPercentage >= 100) return "Completed!";
-    if (goal.progressPercentage <= 0) return "Not started";
-    
-    // Calculate monthly average contribution
-    const monthlyContributions = goal.monthlySavings || [];
-    if (monthlyContributions.length === 0) return "Calculating...";
-    
-    // Calculate average monthly contribution over the last 3 months or all available data
-    const relevantMonths = monthlyContributions.slice(-3);
-    const averageMonthlyContribution = relevantMonths.reduce((sum, month) => sum + month.amount, 0) / relevantMonths.length;
-    
-    if (averageMonthlyContribution <= 0) return "Insufficient data";
-    
-    // Calculate months needed
-    const remaining = goal.targetAmount - goal.currentAmount;
-    const monthsNeeded = Math.ceil(remaining / averageMonthlyContribution);
-    
-    // Calculate completion date
-    const completionDate = new Date();
-    completionDate.setMonth(completionDate.getMonth() + monthsNeeded);
-    
-    return format(completionDate, 'MMM yyyy');
+    return getGoalStatus(goal).date;
   }
 
   return (
@@ -520,7 +560,20 @@ export default function GoalsPage() {
                           
                           <div>
                             <p className="text-xs text-muted-foreground">Est. Completion</p>
-                            <p className="font-medium">{getEstimatedCompletionDate(goal)}</p>
+                            <div className="flex items-center gap-1">
+                              <p className="font-medium">{getEstimatedCompletionDate(goal)}</p>
+                              {goal.targetDate && goal.progressPercentage > 0 && goal.progressPercentage < 100 && (
+                                <span className={`text-xs px-1.5 py-0.5 rounded ${
+                                  getGoalStatus(goal).status === 'ahead' 
+                                    ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' 
+                                    : getGoalStatus(goal).status === 'behind'
+                                      ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                                      : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                                }`}>
+                                  {getGoalStatus(goal).statusText}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                         

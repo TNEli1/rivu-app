@@ -17,6 +17,7 @@ import ForgotPasswordPage from "@/pages/forgot-password";
 import ResetPasswordPage from "@/pages/reset-password";
 import PrivacyPolicyPage from "@/pages/privacy-policy";
 import TermsOfServicePage from "@/pages/terms-of-service";
+import RivuScoreInfoPage from "@/pages/rivu-score-info-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 import { ThemeProvider } from "./hooks/use-theme";

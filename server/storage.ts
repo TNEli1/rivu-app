@@ -1023,7 +1023,12 @@ export class DatabaseStorage implements IStorage {
     let savingsProgress = 0;
     if (totalTargetAmount > 0) {
       const progressRatio = totalSavedAmount / totalTargetAmount;
-      savingsProgress = Math.min(Math.round(progressRatio * 100), 100);
+      // Use Math.floor only if the value is very close to zero to avoid rounding values like 0.1 to 0
+      // Otherwise preserve the proper percentage value without rounding down
+      savingsProgress = Math.min(progressRatio < 0.01 ? 0 : Math.round(progressRatio * 100), 100);
+      
+      // Log the calculation for debugging
+      console.log(`Savings Progress Calculation: ${totalSavedAmount} / ${totalTargetAmount} = ${progressRatio} => ${savingsProgress}%`);
     }
     
     // Determine if we have enough data to calculate a meaningful score
