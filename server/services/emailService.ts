@@ -105,38 +105,37 @@ export async function sendPasswordResetEmail(
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #2F80ED;">Reset Your Rivu Password</h2>
-      <p>Hello,</p>
-      <p>We received a request to reset your password for your Rivu account.</p>
-      <p>Please click the button below to set a new password. <strong>This link will expire in 30 minutes.</strong></p>
+      <p>Hi ${email.split('@')[0]},</p>
+      <p>We received a request to reset your Rivu password.</p>
+      <p>Click the button below to choose a new one:</p>
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${resetUrl}" style="background-color: #2F80ED; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Reset Password</a>
+        <a href="${resetUrl}" style="background-color: #2F80ED; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Reset My Password</a>
       </div>
-      <p>If you didn't request a password reset, you can safely ignore this email.</p>
-      <p>Thank you,<br>Rivu Team</p>
+      <p>If you didn't make this request, you can ignore this email.</p>
+      <p>Questions? Contact us anytime at support@tryrivu.com.</p>
       <hr style="border: 1px solid #eee; margin-top: 30px;">
-      <p style="font-size: 12px; color: #666;">This email was sent from support@tryrivu.com. This password reset link will expire in 30 minutes.</p>
-      <p style="font-size: 12px; color: #666;"><a href="https://www.tryrivu.com">www.tryrivu.com</a></p>
+      <p style="font-size: 12px; color: #666;">The Rivu Team</p>
+      <p style="font-size: 12px; color: #666;">Small moves. Big change.</p>
     </div>
   `;
   
   const textContent = `
     Reset Your Rivu Password
     
-    Hello,
+    Hi ${email.split('@')[0]},
     
-    We received a request to reset your password for your Rivu account.
+    We received a request to reset your Rivu password.
+    Click the link below to choose a new one:
     
-    Please visit the following link to set a new password:
     ${resetUrl}
     
-    This link will expire in 30 minutes.
+    If you didn't make this request, you can ignore this email.
     
-    If you didn't request a password reset, you can safely ignore this email.
+    Questions? Contact us anytime at support@tryrivu.com.
     
-    Thank you,
-    Rivu Team
-    
-    www.tryrivu.com
+    —
+    The Rivu Team
+    Small moves. Big change.
   `;
   
   return await sendEmail({
