@@ -951,31 +951,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         targetAmount: z.number().or(z.string()).transform(val => 
           typeof val === 'string' ? parseFloat(val) : val
         ).refine(val => val > 0, "Target amount must be greater than 0"),
+        currentAmount: z.number().or(z.string()).transform(val => 
+          typeof val === 'string' ? parseFloat(val) : val
+        ).optional(),
         targetDate: z.string().optional(),
       });
       
       const validated = schema.parse(req.body);
       const userId = getCurrentUserId();
       
-      const newGoal: Goal = {
-        id: goalId++,
+      // Create savings goal using storage API
+      const goalData = {
         userId,
         name: validated.name,
-        targetAmount: validated.targetAmount,
-        currentAmount: 0,
-        targetDate: validated.targetDate,
-        progressPercentage: 0,
-        monthlySavings: [],
-        createdAt: new Date(),
-        updatedAt: new Date()
+        targetAmount: validated.targetAmount.toString(),
+        currentAmount: (validated.currentAmount || 0).toString(),
+        targetDate: validated.targetDate ? new Date(validated.targetDate) : undefined
       };
       
-      goals.push(newGoal);
+      // Save to PostgreSQL database
+      const newGoal = await storage.createSavingsGoal(goalData);
+      
+      // Format response for client
+      const formattedGoal = {
+        id: newGoal.id,
+        userId: newGoal.userId,
+        name: newGoal.name,
+        targetAmount: parseFloat(String(newGoal.targetAmount)),
+        currentAmount: parseFloat(String(newGoal.currentAmount)),
+        progressPercentage: parseFloat(String(newGoal.progressPercentage)),
+        targetDate: newGoal.targetDate,
+        monthlySavings: newGoal.monthlySavings ? JSON.parse(newGoal.monthlySavings) : [],
+        createdAt: newGoal.createdAt,
+        updatedAt: newGoal.updatedAt
+      };
       
       // Update Rivu score after adding a new goal
       await storage.calculateRivuScore(userId);
       
-      res.status(201).json(newGoal);
+      res.status(201).json(formattedGoal);
     } catch (error) {
       console.error('Error creating goal:', error);
       res.status(400).json({ message: "Invalid input", error });
