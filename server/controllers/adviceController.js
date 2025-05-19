@@ -22,7 +22,7 @@ Keep your response under 150 words. Write at a 6th-grade reading level using pla
 
 {{goalDetails}}
 
-They currently have a Rivu Score of {{rivuScore}}. Offer insight and encouragement to improve their savings behavior and hit more goals.`,
+They currently have a Rivu Score of {{rivuScore}}. Write at a 6th-grade reading level using plain language and simple, actionable advice. Be friendly, casual, and non-judgmental.`,
 
   MONTHLY_REFLECTION: `You're an AI personal finance coach offering a monthly recap. Based on the user's activity, spending habits, and savings progress, give them a short summary and 2 clear recommendations for next month.
 
@@ -31,7 +31,7 @@ They currently have a Rivu Score of {{rivuScore}}. Offer insight and encourageme
 - Total Saved: ${{savedTotal}}
 - Rivu Score: {{rivuScore}} – {{scoreRating}}
 
-Focus on one area of improvement and one area to maintain. Keep the tone practical and supportive.`
+Focus on one area of improvement and one area to maintain. Write at a 6th-grade reading level using plain language and simple, actionable advice. Be friendly, casual, and non-judgmental.`
 };
 
 // @desc    Get AI-powered financial advice
@@ -206,7 +206,16 @@ Goals Completed: ${completedGoals} out of ${goals.length}
       // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
-        messages: [{ role: "user", content: aiPrompt }],
+        messages: [
+          { 
+            role: "system", 
+            content: "You are a helpful financial advisor. Always write at a 6th-grade reading level using plain language, short sentences, and simple words. Avoid jargon. Be friendly, casual, and encouraging. Break complex ideas into simple steps." 
+          },
+          { 
+            role: "user", 
+            content: aiPrompt 
+          }
+        ],
         max_tokens: 300
       });
 
