@@ -407,7 +407,11 @@ export default function InsightsPage() {
                         tickFormatter={(value) => `$${value}`}
                       />
                       <Tooltip 
-                        formatter={(value) => [`$${parseFloat(value).toFixed(2)}`, ""]}
+                        formatter={(value) => {
+                          // Convert value to number and format with commas and 2 decimal places
+                          const numValue = Number(value);
+                          return [`$${numValue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, ""];
+                        }}
                         labelFormatter={(value) => `Month: ${value}`}
                       />
                       <Legend />
