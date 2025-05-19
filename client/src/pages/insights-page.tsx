@@ -407,7 +407,7 @@ export default function InsightsPage() {
                         tickFormatter={(value) => `$${value}`}
                       />
                       <Tooltip 
-                        formatter={(value) => [`$${value}`, ""]}
+                        formatter={(value) => [`$${parseFloat(value).toFixed(2)}`, ""]}
                         labelFormatter={(value) => `Month: ${value}`}
                       />
                       <Legend />
