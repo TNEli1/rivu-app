@@ -194,7 +194,16 @@ export default function BudgetPage() {
     setIsEditDialogOpen(true);
   };
 
-  // Calculate budget totals exactly like the dashboard page does for consistency
+  // Fetch monthly expense data to match dashboard calculation
+  const { data: dashboardData } = useQuery({
+    queryKey: ['/api/dashboard/summary'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/dashboard/summary');
+      return res.json();
+    }
+  });
+  
+  // Calculate budget totals
   const totalBudget = categories.reduce((sum, cat) => {
     const budgetAmount = typeof cat.budgetAmount === 'string' 
       ? parseFloat(cat.budgetAmount) 
@@ -211,9 +220,12 @@ export default function BudgetPage() {
     return isNaN(spentAmount) ? sum : sum + spentAmount;
   }, 0);
   
+  // Use dashboard's monthly expenses for calculation if available
+  const monthlyExpenses = dashboardData?.monthlyExpenses || totalSpent;
+  
   // Calculate the remaining budget the same way as the dashboard for consistency
-  const totalRemaining = Math.max(0, totalBudget - totalSpent);
-  const overallProgress = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+  const totalRemaining = Math.max(0, totalBudget - monthlyExpenses);
+  const overallProgress = totalBudget > 0 ? (monthlyExpenses / totalBudget) * 100 : 0;
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen">
