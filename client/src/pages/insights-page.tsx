@@ -51,7 +51,21 @@ type BudgetCategory = {
   spentAmount: string;
 };
 
-const COLORS = ['#00C2A8', '#2F80ED', '#D0F500', '#FF4D4F', '#8884d8', '#82ca9d', '#ffc658'];
+// Use distinct, high-contrast colors for better visibility
+const COLORS = [
+  '#FF4D4F', // Red
+  '#2F80ED', // Blue
+  '#00C2A8', // Teal
+  '#D0F500', // Lime
+  '#FF9046', // Orange
+  '#9747FF', // Purple
+  '#4CAF50', // Green
+  '#FFC107', // Amber
+  '#E91E63', // Pink
+  '#607D8B', // Blue Grey
+  '#795548', // Brown
+  '#9C27B0'  // Deep Purple
+];
 
 export default function InsightsPage() {
   const { user } = useAuth();
@@ -362,9 +376,11 @@ export default function InsightsPage() {
                           data={spendingByCategory}
                           cx="50%"
                           cy="50%"
-                          labelLine={true}
+                          labelLine={false}
                           label={false}
                           outerRadius={70}
+                          innerRadius={30}
+                          paddingAngle={4}
                           fill="#8884d8"
                           dataKey="value"
                         >
