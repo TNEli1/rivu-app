@@ -279,8 +279,8 @@ export const plaidAccounts = pgTable("plaid_accounts", {
   type: text("type").notNull(), // 'depository', 'credit', 'loan', 'investment', etc.
   subtype: text("subtype"), // 'checking', 'savings', 'credit card', etc.
   mask: text("mask"), // Last 4 digits of account number
-  availableBalance: decimal("available_balance", { precision: 18, scale: 2 }),
-  currentBalance: decimal("current_balance", { precision: 18, scale: 2 }),
+  availableBalance: text("available_balance"),
+  currentBalance: text("current_balance"),
   isoCurrencyCode: text("iso_currency_code"),
   status: text("status").default("active").notNull(), // 'active', 'inactive'
   lastUpdated: timestamp("last_updated").defaultNow().notNull(),
@@ -310,8 +310,8 @@ export const plaidWebhookEvents = pgTable("plaid_webhook_events", {
   itemId: text("item_id").notNull(),
   accountId: text("account_id"),
   error: text("error"),
-  newTransactionsCount: integer("new_transactions_count"),
-  removedTransactionsCount: integer("removed_transactions_count"),
+  newTransactionsCount: text("new_transactions_count"),
+  removedTransactionsCount: text("removed_transactions_count"),
   requestId: text("request_id"),
   rawData: text("raw_data"), // JSON string of the raw webhook data
   processedAt: timestamp("processed_at"),
