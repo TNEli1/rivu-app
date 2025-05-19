@@ -80,7 +80,10 @@ export default function BudgetPage() {
       return res.json();
     },
     onSuccess: () => {
+      // Invalidate budget categories and Rivu score
       queryClient.invalidateQueries({ queryKey: ['/api/budget-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] });
       setIsAddDialogOpen(false);
       setFormData({ name: "", budgetAmount: "", spentAmount: "0" });
       toast({
@@ -135,7 +138,10 @@ export default function BudgetPage() {
       return res.status === 204;
     },
     onSuccess: () => {
+      // Invalidate budget categories and Rivu score
       queryClient.invalidateQueries({ queryKey: ['/api/budget-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] });
       toast({
         title: "Budget category deleted",
         description: "Your budget category has been removed successfully.",

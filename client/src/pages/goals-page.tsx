@@ -97,6 +97,10 @@ export default function GoalsPage() {
       // Use helper function to invalidate all related queries
       invalidateRelatedQueries('goal');
       
+      // Also invalidate Rivu score to ensure it updates
+      queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] });
+      
       toast({
         title: "Goal created",
         description: "Your savings goal has been created successfully!",
@@ -122,6 +126,10 @@ export default function GoalsPage() {
     onSuccess: () => {
       // Use helper function to invalidate all related queries
       invalidateRelatedQueries('goal');
+      
+      // Also invalidate Rivu score to ensure it updates
+      queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] });
       
       toast({
         title: "Goal updated",
@@ -149,6 +157,10 @@ export default function GoalsPage() {
     onSuccess: () => {
       // Use helper function to invalidate all related queries
       invalidateRelatedQueries('goal');
+      
+      // Also invalidate Rivu score to ensure it updates
+      queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] });
       
       toast({
         title: "Contribution added",
@@ -181,6 +193,10 @@ export default function GoalsPage() {
     onSuccess: () => {
       // Use helper function to invalidate all related queries
       invalidateRelatedQueries('goal');
+      
+      // Also invalidate Rivu score to ensure it updates
+      queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] });
       
       toast({
         title: "Goal deleted",
