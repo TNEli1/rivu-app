@@ -56,7 +56,8 @@ export const createLinkToken = async (req: Request, res: Response) => {
       client_name: 'Rivu Finance',
       products: ['auth', 'transactions'] as Products[],
       language: 'en',
-      webhook: `${process.env.SERVER_URL}/api/plaid/webhook`, // Use your webhook URL
+      // Remove webhook for now since we don't have a valid public URL in development
+      // webhook: `${process.env.SERVER_URL}/api/plaid/webhook`,
       account_filters: {},
       country_codes: ['US'] as CountryCode[],
     };
