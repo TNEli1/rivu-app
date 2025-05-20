@@ -61,20 +61,12 @@ export const createLinkToken = async (req: Request, res: Response) => {
         client_user_id: userId.toString(), // Unique user ID from our system
       },
       client_name: 'Rivu Finance',
-      products: ['auth', 'transactions'] as Products[],
+      products: ['transactions'] as Products[], // Only request transactions - auth is not authorized
       language: 'en',
       // Remove webhook for now since we don't have a valid public URL in development
       // webhook: `${process.env.SERVER_URL}/api/plaid/webhook`,
       country_codes: ['US'] as CountryCode[],
-      // Properly formatted account_filters as required by Plaid production
-      account_filters: {
-        depository: {
-          account_subtypes: ['checking', 'savings']
-        },
-        credit: {
-          account_subtypes: ['credit card']
-        }
-      },
+      // Removing account_filters as it may not be needed and is causing typing issues
     };
 
     // Create the link token with Plaid API
