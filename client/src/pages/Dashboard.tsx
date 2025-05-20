@@ -226,6 +226,9 @@ export default function Dashboard() {
           </p>
         </header>
 
+        {/* Nudges Banner */}
+        <NudgesBanner />
+
         {/* Summary Cards */}
         <section className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card className={`rounded-lg p-5 shadow-sm ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
