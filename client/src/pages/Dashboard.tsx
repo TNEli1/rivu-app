@@ -3,6 +3,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import MobileNav from "@/components/layout/MobileNav";
 import BudgetSection from "@/components/dashboard/BudgetSection";
 import RivuScore from "@/components/dashboard/RivuScore";
+import NudgesBanner from "@/components/dashboard/NudgesBanner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea"; 
