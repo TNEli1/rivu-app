@@ -53,8 +53,11 @@ export default function Sidebar() {
   return (
     <aside className="hidden md:flex flex-col w-64 bg-card border-r border-border p-6 fixed inset-y-0 left-0 h-screen overflow-y-auto">
       <div className="flex items-center mb-10">
-        <i className="ri-line-chart-fill text-primary text-3xl mr-2"></i>
-        <h1 className="text-2xl font-bold text-foreground">Rivu</h1>
+        <img 
+          src="./assets/rivu_logo.png" 
+          alt="Rivu Logo" 
+          className="h-10 w-auto mr-2"
+        />
       </div>
       
       <nav className="flex-grow pb-4">
