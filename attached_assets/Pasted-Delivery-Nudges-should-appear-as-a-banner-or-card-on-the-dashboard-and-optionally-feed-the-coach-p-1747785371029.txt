@@ -1,0 +1,57 @@
+Delivery: Nudges should appear as a banner or card on the dashboard, and optionally feed the coach prompt.
+
+⸻
+
+✅ 3. Improve AI Coach Prompts
+
+Refactor coaching logic to use behavioral context and implicit user data without directly referencing survey inputs.
+	•	Avoid phrases like: “Based on your survey response…”
+	•	Replace with: “At your stage of life and risk comfort…”
+	•	Add variability: some prompts should ask reflective questions, others suggest habits, others praise wins
+	•	Futureproof by allowing tone settings (encouraging, direct, strict)
+
+⸻
+
+✅ 4. Upgrade Transaction + Account Tracking System
+
+Enable full multi-account support and richer transaction metadata using Plaid’s account and institution data:
+	•	Show transactions grouped by account (e.g., “Amex Credit,” “Chase Checking”)
+	•	Include account subtype (e.g., credit, checking, savings) and institution name/logo
+	•	Add filter option: view spending by individual account or across all accounts
+	•	Display total spend by account on dashboard
+	•	Future-ready for categorizing recurring or unexpected transactions
+
+⸻
+
+✅ 5. Reinforce Rivu Score Insights
+	•	Add a tooltip or tab explaining how the Rivu Score is calculated
+	•	Break down recent Rivu Score changes (e.g., “+8: stayed under budget, –5: no savings this week”)
+	•	Restore/update “Last Updated” timestamp for score updates
+
+⸻
+
+✅ 6. UI/UX Polish and Cohesion
+	•	Ensure all dashboards and budgeting/goal/transaction pages reflect the latest logic and data
+	•	Fix any layout issues on mobile, especially budget, goal, and nudge cards
+	•	Optimize the light/dark mode toggle to remember user preference across sessions
+
+⸻
+
+✅ 7. Social and Educational Integration
+	•	On the RivU page, include direct links to:
+	•	TikTok: https://www.tiktok.com/@tryrivu
+	•	Facebook: https://www.facebook.com/tryrivu
+	•	Substack: https://substack.com/@therivureport
+	•	YouTube: https://youtube.com/@tryrivu
+
+⸻
+
+✅ 8. Future Compliance (Optional)
+
+Prepare to support:
+	•	“Unlink Bank Account” button (for Plaid 1033 compliance)
+	•	Data deletion request flow (via support@tryrivu.com or future in-app toggle)
+
+⸻
+
+Please confirm each of these changes is complete and that logic, layout, and behavior across the app are unified and accurate. These improvements are essential for launch readiness. Let us know if any part needs clarification or restructuring.
