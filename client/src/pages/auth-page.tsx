@@ -153,7 +153,11 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
         <div className="mx-auto w-full max-w-md">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-semibold text-gray-800 dark:text-gray-100 mb-2">Rivu</h1>
+            <img 
+              src="/assets/rivu_logo.png" 
+              alt="Rivu Logo" 
+              className="h-16 w-auto mx-auto mb-3"
+            />
             <p className="text-gray-600 dark:text-gray-400">AI-Powered Personal Finance</p>
           </div>
           <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
