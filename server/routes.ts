@@ -219,12 +219,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       removeItem
     } = await import('./controllers/plaid-controller');
     
+    // Import Plaid Items controllers
+    const {
+      getPlaidItems,
+      getPlaidItemById,
+      refreshPlaidItem,
+      disconnectPlaidItem
+    } = await import('./controllers/plaid-items-controller');
+    
     // Register Plaid routes
     app.post(`${apiPath}/plaid/create_link_token`, protect, createLinkToken);
     app.post(`${apiPath}/plaid/exchange_token`, protect, exchangeToken);
     app.post(`${apiPath}/plaid/accounts`, protect, getPlaidAccounts);
     app.post(`${apiPath}/plaid/item/remove`, protect, removeItem);
     app.post(`${apiPath}/plaid/webhook`, handleWebhook); // Public webhook route
+    
+    // Register Plaid Items routes (for account management and 1033 compliance)
+    app.get(`${apiPath}/plaid/items`, protect, getPlaidItems);
+    app.get(`${apiPath}/plaid/items/:id`, protect, getPlaidItemById);
+    app.post(`${apiPath}/plaid/refresh/:id`, protect, refreshPlaidItem);
+    app.delete(`${apiPath}/plaid/disconnect/:id`, protect, disconnectPlaidItem);
     
     console.log('✅ Auth routes successfully mounted at /api');
     console.log('✅ Plaid routes successfully mounted at /api/plaid');
