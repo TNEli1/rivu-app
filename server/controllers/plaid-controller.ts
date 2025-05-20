@@ -22,12 +22,23 @@ console.log(`Using Plaid environment: ${process.env.PLAID_ENV}`);
 const plaidEnvironment = process.env.PLAID_ENV || 'production';
 const plaidBasePath = PlaidEnvironments[plaidEnvironment];
 
+// Print environment variables for debugging (not sensitive values)
+console.log('PLAID_ENV:', process.env.PLAID_ENV);
+console.log('CLIENT_ID available:', !!process.env.PLAID_CLIENT_ID);
+console.log('SECRET available:', !!process.env.PLAID_SECRET);
+console.log('Plaid base path:', plaidBasePath);
+
+// Use PLAID_SECRET_PRODUCTION directly since we know it exists
+const plaidSecret = process.env.PLAID_SECRET_PRODUCTION;
+
+console.log('Using production Plaid secret');
+
 const plaidConfig = new Configuration({
   basePath: plaidBasePath,
   baseOptions: {
     headers: {
       'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
-      'PLAID-SECRET': process.env.PLAID_SECRET,
+      'PLAID-SECRET': plaidSecret,
     },
   },
 });

@@ -7,12 +7,15 @@ import { storage } from '../storage';
 const plaidEnvironment = process.env.PLAID_ENV || 'production';
 const plaidBasePath = PlaidEnvironments[plaidEnvironment];
 
+// Use PLAID_SECRET_PRODUCTION directly
+const plaidSecret = process.env.PLAID_SECRET_PRODUCTION;
+
 const plaidConfig = new Configuration({
   basePath: plaidBasePath,
   baseOptions: {
     headers: {
       'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
-      'PLAID-SECRET': process.env.PLAID_SECRET,
+      'PLAID-SECRET': plaidSecret,
     },
   },
 });
