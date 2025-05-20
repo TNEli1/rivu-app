@@ -1,0 +1,67 @@
+Please perform a full audit and optimization of the Rivu web app. Address the following critical areas:
+
+⸻
+
+✅ 1. User Data Integrity
+	•	Ensure all user data is properly stored and associated with the correct user ID
+	•	Verify:
+	•	No user can see, query, or manipulate another user’s data
+	•	Data is scoped per authenticated session/token
+
+⸻
+
+✅ 2. Security and Authentication
+	•	Double check all authentication flows (login, password reset, session tokens, etc.)
+	•	Confirm:
+	•	Tokens are securely generated and stored
+	•	Passwords are hashed
+	•	Private routes are protected by auth middleware
+	•	Skip rate limiting and HTTPS enforcement for now since we are still testing and using a Replit dev domain
+	•	Make the app unhackable and secure user data at rest and in transit
+
+⸻
+
+✅ 3. Plaid Integration
+	•	We are seeing issues with bank account connections failing
+	•	Confirm the following:
+	•	We are in Production mode on the Plaid dashboard (or alert us if still in Sandbox)
+	•	All endpoints and credentials use production API keys
+	•	The Plaid connection flow works across desktop and mobile
+
+⸻
+
+✅ 4. Bank Account Unlinking / Data Deletion (1033 Compliance)
+	•	According to Plaid’s 1033 protocol, we must support:
+	•	User-initiated account unlinking
+	•	Data deletion upon request
+	•	If data deletion is handled via support@tryrivu.com, confirm that deletion is being logged and fully executed in backend
+	•	Add a “Unlink Bank Account” button to the app if not already present
+
+⸻
+
+✅ 5. Mobile and Web Optimization
+	•	Ensure the app:
+	•	Fully loads and functions on mobile devices
+	•	Is responsive across screen sizes
+	•	Does not crash or misalign elements on mobile views
+
+⸻
+
+✅ 6. Bug and Crash Audit
+	•	Run through all pages (dashboard, transactions, budget, goals, Rivu Score, etc.)
+	•	Look for:
+	•	Broken links
+	•	Unresponsive UI components
+	•	Errors in console
+	•	Incorrect data rendering
+
+⸻
+
+✅ 7. Final Suggestions
+	•	Review for:
+	•	Redundant API calls or unoptimized components
+	•	Missing loading states or error handling
+	•	Accessibility improvements
+	•	Let us know if any cleanup, refactoring, or architecture improvements are recommended before going fully live
+
+This should be treated as the final production-readiness sweep before domain deployment and onboarding live users.
