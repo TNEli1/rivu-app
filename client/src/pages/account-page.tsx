@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useState } from "react";
 import { Loader2, User, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
+import ConnectedAccountsSection from "@/components/settings/ConnectedAccountsSection";
 
 export default function AccountPage() {
   const { user, updateProfileMutation, logoutMutation } = useAuth();
@@ -264,6 +265,9 @@ export default function AccountPage() {
             </form>
           </CardContent>
         </Card>
+        
+        {/* Connected Bank Accounts - Added for 1033 Compliance */}
+        <ConnectedAccountsSection />
         
         {/* Account Information */}
         <Card>
