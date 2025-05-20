@@ -55,7 +55,7 @@ export const createLinkToken = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    // Configure the Plaid Link creation
+    // Configure the Plaid Link creation with proper account filters for production
     const configs: LinkTokenCreateRequest = {
       user: {
         client_user_id: userId.toString(), // Unique user ID from our system
@@ -65,8 +65,16 @@ export const createLinkToken = async (req: Request, res: Response) => {
       language: 'en',
       // Remove webhook for now since we don't have a valid public URL in development
       // webhook: `${process.env.SERVER_URL}/api/plaid/webhook`,
-      account_filters: {},
       country_codes: ['US'] as CountryCode[],
+      // Properly formatted account_filters as required by Plaid production
+      account_filters: {
+        depository: {
+          account_subtypes: ['checking', 'savings']
+        },
+        credit: {
+          account_subtypes: ['credit card']
+        }
+      },
     };
 
     // Create the link token with Plaid API
