@@ -2,13 +2,23 @@ import { Request, Response } from 'express';
 import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid';
 import { storage } from '../storage';
 
-// Initialize Plaid client
+// Initialize Plaid client with environment-specific credentials
+// Determine which secret to use based on environment
+const plaidSecret = process.env.PLAID_ENV === 'sandbox' 
+  ? process.env.PLAID_SECRET_SANDBOX 
+  : process.env.PLAID_SECRET_PRODUCTION;
+
+// Set the Plaid environment
+const plaidBasePath = process.env.PLAID_ENV === 'sandbox' 
+  ? PlaidEnvironments.sandbox 
+  : PlaidEnvironments.production;
+
 const plaidConfig = new Configuration({
-  basePath: PlaidEnvironments.production,
+  basePath: plaidBasePath,
   baseOptions: {
     headers: {
       'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
-      'PLAID-SECRET': process.env.PLAID_SECRET,
+      'PLAID-SECRET': plaidSecret,
     },
   },
 });
