@@ -18,6 +18,7 @@ const navItems: NavItem[] = [
   { title: "Goals", href: "/goals", icon: "ri-target-fill" },
   { title: "Insights", href: "/insights", icon: "ri-line-chart-line-fill" },
   { title: "RivU", href: "/rivu", icon: "ri-book-open-fill" },
+  { title: "Connect", href: "/connect", icon: "ri-global-fill" },
 ];
 
 export default function Sidebar() {

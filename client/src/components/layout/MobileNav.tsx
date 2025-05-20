@@ -19,6 +19,7 @@ export default function MobileNav() {
     { title: "Transactions", href: "/transactions", icon: "ri-exchange-dollar-line" },
     { title: "Goals", href: "/goals", icon: "ri-target-line" },
     { title: "RivU", href: "/rivu", icon: "ri-book-open-line" },
+    { title: "Connect", href: "/connect", icon: "ri-global-line" },
     { title: "Account", href: "/account", icon: "ri-user-settings-line" },
   ];
 

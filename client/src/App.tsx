@@ -14,6 +14,7 @@ import InsightsPage from "@/pages/insights-page";
 import SettingsPage from "@/pages/settings-page";
 import GoalsPage from "@/pages/goals-page";
 import RivUPage from "@/pages/rivu-page";
+import ConnectPage from "@/pages/connect-page";
 import ForgotPasswordPage from "@/pages/forgot-password";
 import ResetPasswordPage from "@/pages/reset-password";
 import PrivacyPolicyPage from "@/pages/privacy-policy";
@@ -32,6 +33,7 @@ function Router() {
       <ProtectedRoute path="/goals" component={GoalsPage} />
       <ProtectedRoute path="/insights" component={InsightsPage} />
       <ProtectedRoute path="/rivu" component={RivUPage} />
+      <ProtectedRoute path="/connect" component={ConnectPage} />
       <ProtectedRoute path="/account" component={AccountPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
       <ProtectedRoute path="/onboarding" component={OnboardingPage} />
