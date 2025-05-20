@@ -3,7 +3,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from "@/components/ui/separator";
 import Sidebar from "@/components/layout/Sidebar";
 import MobileNav from "@/components/layout/MobileNav";
-import { PlayCircle, BookOpen, Award, Clock } from "lucide-react";
+import { PlayCircle, BookOpen, Award, Clock, ExternalLink } from "lucide-react";
+import { FaTiktok, FaFacebook, FaYoutube } from "react-icons/fa";
+import { SiSubstack } from "react-icons/si";
 
 export default function RivUPage() {
   return (
@@ -201,6 +203,68 @@ export default function RivUPage() {
                   </CardFooter>
                 </Card>
               </div>
+            </div>
+
+            {/* Social Media Links Section */}
+            <div className="mt-12">
+              <h2 className="text-2xl font-bold mb-4">Stay Connected</h2>
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="mb-6 text-muted-foreground">
+                    Follow Rivu on social media for more financial tips, updates, and educational content.
+                  </p>
+                  
+                  <div className="flex flex-wrap gap-4 justify-center sm:justify-between items-center">
+                    <a 
+                      href="https://www.tiktok.com/@tryrivu" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex flex-col items-center gap-2 p-4 rounded-lg hover:bg-primary/5 transition-colors"
+                    >
+                      <FaTiktok className="h-8 w-8 text-black" />
+                      <span className="text-sm font-medium flex items-center gap-1">
+                        TikTok <ExternalLink className="h-3 w-3" />
+                      </span>
+                    </a>
+                    
+                    <a 
+                      href="https://www.facebook.com/tryrivu" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex flex-col items-center gap-2 p-4 rounded-lg hover:bg-primary/5 transition-colors"
+                    >
+                      <FaFacebook className="h-8 w-8 text-blue-600" />
+                      <span className="text-sm font-medium flex items-center gap-1">
+                        Facebook <ExternalLink className="h-3 w-3" />
+                      </span>
+                    </a>
+                    
+                    <a 
+                      href="https://substack.com/@therivureport" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex flex-col items-center gap-2 p-4 rounded-lg hover:bg-primary/5 transition-colors"
+                    >
+                      <SiSubstack className="h-8 w-8 text-orange-600" />
+                      <span className="text-sm font-medium flex items-center gap-1">
+                        The Rivu Report <ExternalLink className="h-3 w-3" />
+                      </span>
+                    </a>
+                    
+                    <a 
+                      href="https://youtube.com/@tryrivu" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex flex-col items-center gap-2 p-4 rounded-lg hover:bg-primary/5 transition-colors"
+                    >
+                      <FaYoutube className="h-8 w-8 text-red-600" />
+                      <span className="text-sm font-medium flex items-center gap-1">
+                        YouTube <ExternalLink className="h-3 w-3" />
+                      </span>
+                    </a>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
