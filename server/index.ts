@@ -44,14 +44,12 @@ if (process.env.NODE_ENV === 'production') {
 
 // Remove the explicit import since we'll use registerRoutes to handle this
 
-// Configure CORS
+// Configure CORS - ensure all origins are allowed for mobile testing
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.FRONTEND_URL || 'https://rivu.app']  // Use actual domain in production
-    : true, // Allow all origins in development
+  origin: '*', // Allow all origins for testing
   credentials: true, // Allow cookies
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 };
 app.use(cors(corsOptions));
 
