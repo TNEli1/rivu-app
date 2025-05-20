@@ -154,7 +154,7 @@ export default function AuthPage() {
         <div className="mx-auto w-full max-w-md">
           <div className="mb-8 text-center">
             <img 
-              src="./assets/rivu_logo.png" 
+              src="/images/rivu-logo.png" 
               alt="Rivu Logo" 
               className="h-16 w-auto mx-auto mb-3"
             />

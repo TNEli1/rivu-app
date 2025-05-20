@@ -55,6 +55,9 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
+// Serve static files from the public directory
+app.use(express.static('public'));
+
 // Parse JSON request body with size limit
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: false }));

@@ -54,7 +54,7 @@ export default function Sidebar() {
     <aside className="hidden md:flex flex-col w-64 bg-card border-r border-border p-6 fixed inset-y-0 left-0 h-screen overflow-y-auto">
       <div className="flex items-center mb-10">
         <img 
-          src="./assets/rivu_logo.png" 
+          src="/images/rivu-logo.png" 
           alt="Rivu Logo" 
           className="h-10 w-auto mr-2"
         />
