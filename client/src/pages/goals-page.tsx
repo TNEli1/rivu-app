@@ -554,12 +554,15 @@ export default function GoalsPage() {
                           <span className="text-sm text-muted-foreground">of {formatCurrency(goal.targetAmount)}</span>
                         </div>
                         
-                        <Progress value={progress} className="h-2 mb-4" />
+                        <div className="flex items-center mb-2">
+                          <Progress value={progress} className="h-3 flex-grow mr-3" />
+                          <span className={`text-base font-bold ${getProgressColor(progress)} px-2 py-1 rounded`}>{progress.toFixed(0)}%</span>
+                        </div>
                         
                         <div className="grid grid-cols-2 gap-4 mb-4 mt-auto">
                           <div>
-                            <p className="text-xs text-muted-foreground">Progress</p>
-                            <p className="font-medium">{progress.toFixed(0)}%</p>
+                            <p className="text-xs text-muted-foreground">Progress Status</p>
+                            <p className="font-medium">{progress >= 75 ? "Almost there!" : progress >= 50 ? "Halfway there" : progress >= 25 ? "Good start" : "Just started"}</p>
                           </div>
                           
                           <div>

@@ -56,7 +56,7 @@ export default function Sidebar() {
         <img 
           src="/images/rivu-logo.png" 
           alt="Rivu Logo" 
-          className="h-10 w-auto mr-2"
+          className="h-16 w-auto mr-2"
         />
       </div>
       
