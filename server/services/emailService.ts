@@ -111,7 +111,7 @@ export async function sendPasswordResetEmail(
       </div>
       
       <h2 style="color: #00C2A8; margin-top: 0;">Reset Your Rivu Password</h2>
-      <p>Hi ${email.split('@')[0]},</p>
+      <p>Hi,</p>
       <p>We received a request to reset your Rivu password.</p>
       <p>Click the button below to choose a new one:</p>
       <div style="text-align: center; margin: 30px 0;">
@@ -131,7 +131,7 @@ export async function sendPasswordResetEmail(
   const textContent = `
     Reset Your Rivu Password
     
-    Hi ${email.split('@')[0]},
+    Hi,
     
     We received a request to reset your Rivu password.
     Click the link below to choose a new one:
