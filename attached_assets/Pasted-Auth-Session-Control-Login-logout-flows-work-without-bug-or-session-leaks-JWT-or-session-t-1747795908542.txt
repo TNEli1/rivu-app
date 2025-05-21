@@ -1,0 +1,114 @@
+Auth & Session Control
+	•	Login / logout flows work without bug or session leaks
+	•	JWT or session tokens expire properly and block access on logout
+	•	Auth-guarded pages redirect unauthorized users
+	•	“Stay logged in” toggle or auto-expiry logic works as expected
+
+2. Signup Flow
+	•	Email validation + password requirements enforced
+	•	Error messages are clear for existing users, invalid emails, etc.
+	•	Terms & Conditions box is required and logged
+
+3. Dashboard
+	•	Rivu Score™ appears correctly with TM symbol
+	•	Goal progress % matches Goals page
+	•	Budget remaining, net flow, and spending metrics show real-time data
+	•	No broken or redundant modules (remove “Top Category” box)
+	•	Responsive design verified on mobile + desktop
+	•	Dark/light mode toggle stores and restores user preference
+
+4. Budgets
+	•	Can create/edit/delete budget categories
+	•	Monthly budgets update in dashboard correctly
+	•	Adding “spent” works and reflects on total/remaining
+	•	Duplicate budgets are blocked or handled
+
+5. Transactions
+	•	Users can:
+	•	Link bank accounts (Plaid)
+	•	Upload CSV
+	•	Manually add transactions
+	•	Each transaction shows correct date, category, amount
+	•	Grouped views by account and category work
+	•	Account balance doesn’t show NaN or placeholders
+	•	Connect/disconnect Plaid account button is functional (calls /item/remove)
+
+6. Goals
+	•	Users can create savings goals with target date
+	•	Contributions update progress correctly
+	•	Estimated completion logic is accurate
+	•	Dashboard goals box uses same logic as Goals page
+
+7. AI Coach & Nudges
+	•	Coach gives contextual advice based on real data
+	•	“Suggested questions” and typing indicator work
+	•	Users can choose tone: encouraging, direct, strict
+	•	Nudges are based on actual behavior — not demo data
+	•	Annoying or irrelevant nudges suppressed
+
+8. Rivu Score™
+	•	Score updates based on behavior
+	•	Historical view accurate and timestamped
+	•	“How your Rivu Score™ works” page has accurate logic
+	•	Back buttons route correctly (no 404s)
+	•	Score refresh button works and is debounced
+
+9. Settings & Profile
+	•	Can update profile data (if applicable)
+	•	Light/dark mode, tone preference, tutorial status all persist
+	•	Data deletion request info or support email visible
+	•	Link to reset password and go through full flow
+	•	Password reset email uses branding, logo, and color scheme
+
+10. Landing Page
+	•	Plaid/CSV/manual connection section is clear and has good icons
+	•	CTAs route to signup/login
+	•	Rivu branding and design are consistent
+	•	Copy reflects app capabilities accurately
+	•	Footer contains links to Terms, Privacy, Support
+
+11. Onboarding
+	•	Tutorial appears only on first login
+	•	Skip button works and stores preference
+	•	User can restart tutorial from Settings
+	•	Covers key features (dashboard, Plaid, goals, Rivu Score™, etc.)
+
+⸻
+
+✅ II. SECURITY & PRIVACY SWEEP
+
+1. User Isolation
+	•	All data (budgets, goals, transactions, coach, nudges, scores) scoped by user ID
+	•	No user can access or modify another user’s data
+	•	Multi-user test confirms correct isolation
+
+2. Database Security
+	•	Production database uses a secure password and SSL
+	•	.env variables (PLAID keys, DB credentials) not exposed to frontend
+	•	Backups enabled (via Render or managed host)
+	•	Queries use parameterization (no SQL injection risk)
+
+3. Plaid Integration
+	•	Production credentials used
+	•	Redirect URIs correctly registered
+	•	OAuth flow tested with major banks
+	•	Disconnect logic implemented (/item/remove)
+	•	Rate limiting readiness for scale (even if not enforced yet)
+
+4. Authentication & Session Management
+	•	Tokens securely stored
+	•	Session expiration logic validated
+	•	No route or dashboard data exposed without auth
+
+5. Compliance
+	•	Terms of service and privacy policy dated and accurate
+	•	User consent captured at signup
+	•	Email for support and data deletion present (support@tryrivu.com)
+	•	Compliant with Plaid’s 1033 requirements (or future-ready)
+
+⸻
+
+	•	Add basic error monitoring (Sentry or simple logs)
+	•	Add a “Help” or “Chat” button linking to email or RivU tab
+	•	Add a “Get Tips by Email” opt-in to grow a future mailing list
+	•	Add fallback page for 404s and session timeouts
