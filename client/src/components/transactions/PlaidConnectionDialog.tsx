@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { AlertCircle, ExternalLink, Building, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { usePlaidLink } from 'react-plaid-link';
+import { usePlaidLink, PlaidLinkOnSuccess, PlaidLinkOnExit } from 'react-plaid-link';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
@@ -121,9 +121,17 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
   }, [isOpen]);
 
   // Handle the success callback from Plaid Link
-  const onSuccess = useCallback(async (public_token: string, metadata: any) => {
+  const onSuccess: PlaidLinkOnSuccess = useCallback(async (public_token, metadata) => {
     setLoading(true);
     try {
+      console.log('Plaid Link success with metadata:', 
+        metadata ? JSON.stringify({
+          institution_id: metadata.institution?.institution_id,
+          link_session_id: metadata.link_session_id,
+          accounts_connected: metadata.accounts?.length || 0
+        }) : 'No metadata'
+      );
+      
       // Exchange the public token for an access token
       const response = await apiRequest('POST', '/api/plaid/exchange_token', {
         public_token,
@@ -133,8 +141,9 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
       const data = await response.json();
       
       if (data && data.success) {
-        // Log session ID and institution info for diagnostic purposes
-        console.log(`Plaid Link successful - Institution: ${metadata.institution.name}`);
+        // Get bank name if available, otherwise use a generic label
+        const bankName = metadata?.institution?.name || 'your bank';
+        console.log(`Plaid Link successful - Connected to: ${bankName}`);
         
         // Get accounts for the connected bank
         const accountsResponse = await apiRequest('POST', '/api/plaid/accounts', {});
@@ -146,7 +155,7 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
         setSuccess(true);
         toast({
           title: "Success!",
-          description: `Connected to ${metadata.institution.name}`
+          description: `Connected to ${bankName}`
         });
         
         // Close the dialog after a short delay
@@ -170,35 +179,50 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
   }, [onClose, queryClient, toast]);
 
   // Handle any errors from Plaid Link
-  const onExit = useCallback((err: any) => {
+  const onExit: PlaidLinkOnExit = useCallback((err) => {
     if (err) {
       console.error('Plaid Link error:', err);
       setError(err.error_message || 'Error connecting to bank');
     }
   }, []);
 
-  // Configure the Plaid Link hook for full OAuth support
+  // Configure the Plaid Link hook with proper configuration
   const config = {
     token: linkToken || '',
     onSuccess,
     onExit,
-    receivedRedirectUri: window.location.href,
     // Add OAuth required options
+    receivedRedirectUri: window.location.href,
     oauthRedirectUri: window.location.origin + '/callback',
     oauthNonce: Math.floor(Math.random() * 10000000).toString(), // Random nonce for security
   };
   
-  console.log('Plaid Link config:', { ...config, token: linkToken ? `${linkToken.substring(0, 10)}...` : 'none' });
+  console.log('Plaid Link config:', { 
+    ...config, 
+    hasToken: !!linkToken,
+    tokenPreview: linkToken ? `${linkToken.substring(0, 10)}...` : 'none' 
+  });
   
   const { open, ready } = usePlaidLink(config);
 
   // Trigger Plaid Link when button is clicked
   const handlePlaidLinkClick = useCallback(() => {
-    if (ready && linkToken) {
-      open();
-    } else {
-      setError('Bank connection service is not ready');
+    // Reset any previous errors before attempting to open
+    setError(null);
+    
+    if (!linkToken) {
+      setError('Link token is missing. Please try again later.');
+      return;
     }
+    
+    if (!ready) {
+      setError('Bank connection service is initializing. Please wait a moment.');
+      return;
+    }
+    
+    // Everything is ready, open the Plaid Link
+    console.log('Opening Plaid Link with token:', linkToken.substring(0, 10) + '...');
+    open();
   }, [ready, linkToken, open]);
 
   return (
