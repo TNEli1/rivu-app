@@ -4,6 +4,7 @@ import rateLimit from 'express-rate-limit';
 import crypto from 'crypto';
 import { storage } from '../storage';
 import { User } from '@shared/schema';
+import { logSecurityEvent, SecurityEventType } from '../services/securityLogger';
 
 // JWT Secret Key
 const JWT_SECRET = process.env.JWT_SECRET || 'rivu_jwt_secret_dev_key';
@@ -178,6 +179,15 @@ export const loginUser = async (req: any, res: any) => {
         lastLogin
       });
       
+      // Log successful login for security auditing
+      await logSecurityEvent(
+        SecurityEventType.LOGIN_SUCCESS,
+        user.id,
+        user.username,
+        req,
+        { loginCount, timestamp: new Date().toISOString() }
+      );
+      
       // Check for and create any new nudges based on user activity
       try {
         await storage.checkAndCreateNudges(user.id);
@@ -206,6 +216,15 @@ export const loginUser = async (req: any, res: any) => {
         token // Include token in response for clients not using cookies
       });
     } else {
+      // Log failed login attempt for security monitoring
+      await logSecurityEvent(
+        SecurityEventType.LOGIN_FAILURE,
+        undefined,
+        username,
+        req,
+        { reason: 'Invalid credentials', timestamp: new Date().toISOString() }
+      );
+      
       // Generic error message for security (don't specify if user doesn't exist or password is wrong)
       res.status(401).json({ 
         message: 'Invalid credentials',
@@ -554,11 +573,29 @@ export const updateLoginMetrics = async (req: any, res: any) => {
 /**
  * @desc    Logout user / clear cookie
  */
-export const logoutUser = (req: any, res: any) => {
-  // Clear the token cookie
-  clearTokenCookie(res);
-  
-  res.json({ message: 'Logged out successfully' });
+export const logoutUser = async (req: any, res: any) => {
+  try {
+    // Log the logout event if we have user information
+    if (req.user && req.user.id) {
+      await logSecurityEvent(
+        SecurityEventType.LOGOUT,
+        req.user.id,
+        req.user.username,
+        req,
+        { timestamp: new Date().toISOString() }
+      );
+    }
+    
+    // Clear the token cookie
+    clearTokenCookie(res);
+    
+    res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Error during logout:', error);
+    // Still proceed with logout even if logging fails
+    clearTokenCookie(res);
+    res.json({ message: 'Logged out successfully' });
+  }
 };
 
 /**
