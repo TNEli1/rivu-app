@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X, CheckCircle, BellRing, ArrowRight, AlertCircle } from "lucide-react";
@@ -25,57 +25,68 @@ export default function NudgesBanner() {
   const { theme } = useTheme();
   const [expandedNudgeId, setExpandedNudgeId] = useState<number | null>(null);
   
-  // Sample nudges for testing the UI
+  // Track which nudges have been handled locally
+  const [handledNudgeIds, setHandledNudgeIds] = useState<number[]>([]);
+  
+  // Sample nudges for testing the UI - reduced to just one example in development
   const [sampleNudges, setSampleNudges] = useState<Nudge[]>([
+    // Using a much higher ID to avoid conflicts with real nudges
     {
-      id: 1,
+      id: 10001,
       userId: 7,
       type: 'budget_warning',
       message: 'Your Entertainment budget is 85% used. Be careful with your spending!',
       status: 'active',
       triggerCondition: '{"type":"budget_at_risk","categoryId":22,"percentUsed":85}',
       createdAt: new Date().toISOString(),
-    },
-    {
-      id: 2,
-      userId: 7,
-      type: 'transaction_reminder',
-      message: 'You haven\'t logged a transaction in 5 days. Keep tracking to improve your Rivu Score!',
-      status: 'active',
-      triggerCondition: '{"type":"transaction_inactivity","days":5}',
-      createdAt: new Date().toISOString(),
     }
   ]);
 
-  // Fetch active nudges from API
-  const { data: apiNudges = [], isLoading } = useQuery<Nudge[]>({
+  // Fetch active nudges from API - limit to max 3 nudges to avoid overwhelming the user
+  const { data: apiNudges = [], isLoading, refetch } = useQuery<Nudge[]>({
     queryKey: ['/api/nudges'],
     queryFn: async () => {
       try {
         const res = await apiRequest('GET', '/api/nudges?status=active');
-        return res.json();
+        const data = await res.json();
+        // Only show up to 3 most recent nudges
+        return Array.isArray(data) ? data.slice(0, 3) : [];
       } catch (error) {
         console.error('Error fetching nudges:', error);
         return [];
       }
-    }
+    },
+    // Don't auto-refetch on window focus to reduce noise
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000 // 5 minutes
   });
+
+  // Filter out nudges that have been handled locally
+  const filteredApiNudges = apiNudges.filter(nudge => 
+    !handledNudgeIds.includes(nudge.id)
+  );
 
   // Dismiss nudge mutation
   const dismissNudge = useMutation({
     mutationFn: async (nudgeId: number) => {
       // For sample nudges, handle locally
-      if (nudgeId === 1 || nudgeId === 2) {
+      if (nudgeId > 10000) {
         setSampleNudges(prev => prev.filter(nudge => nudge.id !== nudgeId));
         return { message: 'Nudge dismissed successfully' };
       }
+      
+      // Immediately mark as handled locally
+      setHandledNudgeIds(prev => [...prev, nudgeId]);
       
       // For API nudges
       const res = await apiRequest('PUT', `/api/nudges/${nudgeId}/dismiss`);
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/nudges'] });
+      // Wait a moment before refetching to give the backend time to update
+      setTimeout(() => {
+        refetch();
+      }, 500);
     }
   });
 
@@ -83,17 +94,23 @@ export default function NudgesBanner() {
   const completeNudge = useMutation({
     mutationFn: async (nudgeId: number) => {
       // For sample nudges, handle locally
-      if (nudgeId === 1 || nudgeId === 2) {
+      if (nudgeId > 10000) {
         setSampleNudges(prev => prev.filter(nudge => nudge.id !== nudgeId));
         return { message: 'Nudge completed successfully' };
       }
+      
+      // Immediately mark as handled locally
+      setHandledNudgeIds(prev => [...prev, nudgeId]);
       
       // For API nudges
       const res = await apiRequest('PUT', `/api/nudges/${nudgeId}/complete`);
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/nudges'] });
+      // Wait a moment before refetching to give the backend time to update
+      setTimeout(() => {
+        refetch();
+      }, 500);
     }
   });
 
@@ -113,8 +130,8 @@ export default function NudgesBanner() {
     }
   };
 
-  // Combine local sample nudges with API nudges
-  const combinedNudges = [...sampleNudges, ...apiNudges];
+  // Combine sample nudges with filtered API nudges (max 3 total)
+  const combinedNudges = [...sampleNudges, ...filteredApiNudges].slice(0, 3);
 
   // If there are no active nudges or still loading, don't show anything
   if (combinedNudges.length === 0) {
