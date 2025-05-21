@@ -14,6 +14,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { formatCurrency } from "@/lib/utils";
 import { useTheme } from "@/hooks/use-theme";
 import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
 
 // Initial empty state for dashboard UI
 const initialSummaryData = {
@@ -362,24 +363,20 @@ export default function Dashboard() {
                 }
               </p>
               
-              {/* Estimated completion date if available */}
-              {goalsData && goalsData.length > 0 && goalsData[0].targetDate && goalsData[0].progressPercentage > 0 && (
+              {/* Estimated completion date - using the same calculation from goals-page.tsx */}
+              {goalsData && goalsData.length > 0 && goalsData[0].progressPercentage > 0 && (
                 <p className="text-xs mt-1 text-blue-500">
-                  Est. completion: {new Date(goalsData[0].targetDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                  Est. completion: {calculateEstimatedCompletion(goalsData[0])}
                 </p>
               )}
               
-              {/* Progress pace indicator */}
-              {goalsData && goalsData.length > 0 && goalsData[0].progressPercentage > 0 && goalsData[0].progressRate !== undefined && (
+              {/* Progress pace indicator - using similar logic to goals-page.tsx getGoalStatus */}
+              {goalsData && goalsData.length > 0 && goalsData[0].progressPercentage > 0 && (
                 <p className={`text-xs mt-1 ${
-                  (goalsData[0].progressRate || 0) > 1 ? 'text-green-500' : 
-                  (goalsData[0].progressRate || 0) >= 0.8 ? 'text-blue-500' : 'text-amber-500'
+                  getGoalStatusFromData(goalsData[0]) === 'ahead' ? 'text-green-500' :
+                  getGoalStatusFromData(goalsData[0]) === 'on-track' ? 'text-blue-500' : 'text-amber-500'
                 }`}>
-                  {(goalsData[0].progressRate || 0) > 1 
-                    ? 'Ahead of schedule' 
-                    : (goalsData[0].progressRate || 0) >= 0.8 
-                      ? 'On track' 
-                      : 'Behind schedule'}
+                  {getGoalStatusText(goalsData[0])}
                 </p>
               )}
             </CardContent>
