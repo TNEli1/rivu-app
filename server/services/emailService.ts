@@ -103,19 +103,28 @@ export async function sendPasswordResetEmail(
   const subject = 'Reset Your Rivu Password';
   
   const htmlContent = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #2F80ED;">Reset Your Rivu Password</h2>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px; border-radius: 8px;">
+      <!-- Rivu Logo Header -->
+      <div style="text-align: center; margin-bottom: 24px;">
+        <h1 style="color: #00C2A8; margin: 0; font-size: 28px;">RIVU</h1>
+        <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">Your AI Finance Partner</p>
+      </div>
+      
+      <h2 style="color: #00C2A8; margin-top: 0;">Reset Your Rivu Password</h2>
       <p>Hi ${email.split('@')[0]},</p>
       <p>We received a request to reset your Rivu password.</p>
       <p>Click the button below to choose a new one:</p>
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${resetUrl}" style="background-color: #2F80ED; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Reset My Password</a>
+        <a href="${resetUrl}" style="background-color: #00C2A8; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">Reset My Password</a>
       </div>
-      <p>If you didn't make this request, you can ignore this email.</p>
-      <p>Questions? Contact us anytime at support@tryrivu.com.</p>
+      <p>If you didn't make this request, you can safely ignore this email.</p>
+      <p>For security reasons, this link will expire in 24 hours.</p>
+      <p>Questions? Contact us anytime at <a href="mailto:support@tryrivu.com" style="color: #00C2A8; text-decoration: none;">support@tryrivu.com</a>.</p>
       <hr style="border: 1px solid #eee; margin-top: 30px;">
-      <p style="font-size: 12px; color: #666;">The Rivu Team</p>
-      <p style="font-size: 12px; color: #666;">Small moves. Big change.</p>
+      <div style="text-align: center;">
+        <p style="font-size: 14px; color: #333; margin-bottom: 5px;">The Rivu Team</p>
+        <p style="font-size: 14px; color: #00C2A8; font-style: italic; margin-top: 0;">Small moves. Big change.</p>
+      </div>
     </div>
   `;
   

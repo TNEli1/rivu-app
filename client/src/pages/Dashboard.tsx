@@ -492,32 +492,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
           
-          {/* New Top Spending Category Card */}
-          <Card className={`rounded-lg p-5 shadow-sm ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
-            <CardContent className="p-0">
-              <h2 className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-700'}`}>Top Spending Category</h2>
-              <p className={`text-xl font-bold mt-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
-                {summaryData?.topSpendingCategory?.name ? 
-                  summaryData.topSpendingCategory.name : 
-                  'None'
-                }
-              </p>
-              {summaryData?.topSpendingCategory?.amount ? (
-                <>
-                  <p className={`text-base font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                    {formatCurrency(summaryData.topSpendingCategory.amount)}
-                  </p>
-                  <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {summaryData.topSpendingCategory.percentage}% of monthly spend
-                  </p>
-                </>
-              ) : (
-                <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Add transactions to see spending insights
-                </p>
-              )}
-            </CardContent>
-          </Card>
+
         </section>
 
         {/* Transaction Table */}
