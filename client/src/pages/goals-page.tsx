@@ -491,15 +491,15 @@ export default function GoalsPage() {
           
           <Card>
             <CardContent className="pt-6">
-              <div className="flex items-center gap-2 mb-2">
-                <div className={`h-8 w-8 rounded-full flex items-center justify-center ${getProgressColor(summary.totalProgress)}`}>
-                  <span className="text-sm text-white font-bold">{summary.totalProgress}%</span>
+              <div className="flex items-center gap-3 mb-3">
+                <div className={`h-12 w-12 rounded-full flex items-center justify-center ${getProgressColor(summary.totalProgress)}`}>
+                  <span className="text-md text-white font-bold">{summary.totalProgress}%</span>
                 </div>
-                <p className="text-sm text-muted-foreground">Overall Progress</p>
+                <h3 className="font-semibold text-base">Overall Progress</h3>
               </div>
               <div className="flex items-center justify-between">
-                <Progress value={summary.totalProgress} className="h-3 mt-1 flex-grow" />
-                <span className="text-lg font-semibold ml-3">{summary.totalProgress}%</span>
+                <Progress value={summary.totalProgress} className="h-5 mt-1 flex-grow" />
+                <span className="text-xl font-semibold ml-4">{summary.totalProgress}%</span>
               </div>
             </CardContent>
           </Card>
@@ -548,7 +548,7 @@ export default function GoalsPage() {
                 const progress = goal.progressPercentage || 0;
                 return (
                   <Card key={getGoalId(goal)} className="overflow-hidden">
-                    <div className={`h-1.5 ${getProgressColor(progress)}`} style={{ width: `${progress}%` }}></div>
+                    <div className={`h-2.5 ${getProgressColor(progress)}`} style={{ width: `${progress}%` }}></div>
                     <CardContent className="pt-6">
                       <div className="flex flex-col h-full">
                         <h3 className="text-lg font-semibold mb-2 truncate">{goal.name}</h3>
@@ -557,9 +557,9 @@ export default function GoalsPage() {
                           <span className="text-sm text-muted-foreground">of {formatCurrency(goal.targetAmount)}</span>
                         </div>
                         
-                        <div className="flex items-center mb-2">
-                          <Progress value={progress} className="h-3 flex-grow mr-3" />
-                          <span className={`text-base font-bold ${getProgressColor(progress)} px-2 py-1 rounded`}>{progress.toFixed(0)}%</span>
+                        <div className="flex items-center mb-3">
+                          <Progress value={progress} className="h-5 flex-grow mr-3" />
+                          <span className={`text-xl font-bold ${getProgressColor(progress)} px-3 py-1 rounded`}>{progress.toFixed(0)}%</span>
                         </div>
                         
                         <div className="grid grid-cols-2 gap-4 mb-4 mt-auto">
