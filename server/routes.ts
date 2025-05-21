@@ -54,10 +54,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       resetPassword
     } = await import('./controllers-ts/userPasswordController');
 
-    // Register auth routes with our TypeScript controller
+    // Create production-ready rate limiters for critical endpoints
+    const authLimiter = rateLimit({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: process.env.NODE_ENV === 'production' ? 5 : 100, // 5 requests per 15 minutes in production
+      message: {
+        message: 'Too many authentication attempts, please try again later',
+        code: 'RATE_LIMITED'
+      }
+    });
+    
+    const apiLimiter = rateLimit({
+      windowMs: 60 * 1000, // 1 minute
+      max: process.env.NODE_ENV === 'production' ? 60 : 1000, // 60 requests per minute in production
+      message: {
+        message: 'Too many requests, please try again later',
+        code: 'RATE_LIMITED'
+      }
+    });
+    
+    // Register auth routes with our TypeScript controller with rate limiting
     const apiPath = '/api';
-    app.post(`${apiPath}/register`, registerUser);
-    app.post(`${apiPath}/login`, loginUser);
+    app.post(`${apiPath}/register`, authLimiter, registerUser);
+    app.post(`${apiPath}/login`, authLimiter, loginUser);
     app.post(`${apiPath}/logout`, protect, logoutUser);
     app.get(`${apiPath}/user`, protect, getUserProfile);
     app.put(`${apiPath}/user`, protect, updateUserProfile);
