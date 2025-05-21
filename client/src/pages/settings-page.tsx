@@ -4,13 +4,14 @@ import MobileNav from "@/components/layout/MobileNav";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Moon, Sun, ClipboardCheck, Info, MessageSquare } from "lucide-react";
+import { LogOut, Moon, Sun, ClipboardCheck, Info, MessageSquare, HelpCircle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import OnboardingTutorial from "@/components/dashboard/OnboardingTutorial";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +29,7 @@ export default function SettingsPage() {
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   const [skipSurvey, setSkipSurvey] = useState(user?.demographics?.skipPermanently || false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const [coachTone, setCoachTone] = useState<'encouraging' | 'direct' | 'strict'>(
     (user?.coachTone as 'encouraging' | 'direct' | 'strict') || 'encouraging'
   );
@@ -130,6 +132,23 @@ export default function SettingsPage() {
                   checked={theme === 'dark'} 
                   onCheckedChange={handleThemeToggle} 
                 />
+              </div>
+              
+              <div className="border-t pt-6 mt-6">
+                <h3 className="text-lg font-medium mb-4">Help & Tutorials</h3>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    className="flex items-center"
+                    onClick={() => setShowTutorial(true)}
+                  >
+                    <HelpCircle className="mr-2 h-4 w-4" />
+                    View App Tutorial
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Re-launch the interactive tutorial to learn about Rivu's key features
+                </p>
               </div>
             </Card>
           </TabsContent>
@@ -261,6 +280,11 @@ export default function SettingsPage() {
 
       {/* Mobile Bottom Navigation */}
       <MobileNav />
+      
+      {/* Tutorial Modal */}
+      {showTutorial && (
+        <OnboardingTutorial onClose={() => setShowTutorial(false)} />
+      )}
     </div>
   );
 }
