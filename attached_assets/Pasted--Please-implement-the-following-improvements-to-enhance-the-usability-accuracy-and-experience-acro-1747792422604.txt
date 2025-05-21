@@ -1,0 +1,89 @@
+
+Please implement the following improvements to enhance the usability, accuracy, and experience across the Rivu app:
+
+⸻
+
+✅ Grouped by Account – NaN Bug
+	•	When viewing transactions grouped by account, some values are returning NaN codes
+	•	Fix the logic to ensure proper numerical formatting for balances and totals across all accounts
+	•	Validate that account_id and subtype data from Plaid is parsed correctly before performing calculations
+
+⸻
+
+✅ Goals Page – Improve Overall Progress Visibility
+	•	On the Goals page, the overall progress percentage is difficult to read due to small font or low contrast
+	•	Increase font size or use a higher-contrast color to make the value more legible
+
+⸻
+
+✅ Rivu Logos – Sizing Adjustment
+	•	Make the Rivu logo significantly larger on the following pages:
+	•	Dashboard (top-left corner or header area)
+	•	Login screen
+	•	Sign-up screen
+	•	Maintain branding consistency across all viewports
+
+⸻
+
+✅ Top Spending Category – Accuracy Fix
+	•	Top spending category may still be showing inaccurate or misleading results
+	•	Update the logic using this structure:
+
+// Pseudocode for calculating top category
+const categoryTotals = {};
+
+transactions.forEach(tx => {
+  if (!categoryTotals[tx.category]) {
+    categoryTotals[tx.category] = 0;
+  }
+  categoryTotals[tx.category] += tx.amount;
+});
+
+const topCategory = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])[0];
+
+	Ensure the calculation is filtered by current calendar month and uses only completed (non-pending) transactions
+
+⸻
+
+✅ Coach – Improve Prompting and Add Personalization Settings
+	•	Improve coach prompt logic to give better financial advice, grounded in user transaction history, goals, and budgets
+	•	Add user preference setting that allows users to choose the coach tone:
+	•	“Encouraging”
+	•	“Direct”
+	•	“Strict”
+	•	Save this preference to user profile and tailor GPT prompts accordingly:
+
+// Pseudocode
+const tone = user.coachTone || "encouraging";
+const prompt = generateCoachPrompt(userData, tone);
+
+Branding – Add ™ to Rivu Score
+	•	On all major surfaces where Rivu Score is displayed (dashboard, insights tab, coach references), update to:
+	•	Rivu Score™
+	•	Apply only once per view to avoid overuse
+
+⸻
+
+✅ Landing Page Update – Plaid + Transaction Options
+
+Add a new section to the landing page that clearly explains how users can connect their financial data. Include the following:
+	•	Mention that Rivu partners with Plaid to securely connect bank accounts
+	•	Let users know they can also upload CSV files or enter transactions manually
+	•	Suggested text:
+Seamless Transaction Tracking
+Rivu partners with Plaid, the trusted leader in financial connectivity, so you can securely link your bank and credit accounts. Prefer not to connect a bank? No problem — simply upload a CSV or add transactions manually to stay on track.
+	•	Style this section in line with the rest of the landing page
+	•	Include the Plaid logo or badge if permitted under their brand guidelines
+
+⸻
+
+✅ Rivu Score Branding
+	•	Ensure every mention of “Rivu Score” across the app includes the ™ symbol
+	•	Examples:
+	•	“Your Rivu Score™ this month is 72”
+	•	“Improving your Rivu Score™ starts with building better habits”
+	•	Apply once per screen/view to avoid clutter
+
+Let us know once these changes are fully implemented. These are the last polish items before launch.
+
+Please confirm each fix is implemented and tested across both desktop and mobile environments. These changes are required to enhance polish and trust before launch.
