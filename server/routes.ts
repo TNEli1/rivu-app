@@ -247,6 +247,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } = await import('./controllers/plaid-items-controller');
     
     // Register Plaid routes
+    // Add a route to check Plaid API configuration status
+    app.get(`${apiPath}/plaid/status`, (req, res) => {
+      const hasCredentials = process.env.PLAID_CLIENT_ID && process.env.PLAID_SECRET_PRODUCTION;
+      if (!hasCredentials) {
+        return res.status(503).json({ error: 'Bank connection services not configured' });
+      }
+      return res.status(200).json({ status: 'ready' });
+    });
+    
     app.post(`${apiPath}/plaid/create_link_token`, protect, createLinkToken);
     app.post(`${apiPath}/plaid/exchange_token`, protect, exchangeToken);
     app.post(`${apiPath}/plaid/oauth_callback`, protect, handleOAuthCallback);

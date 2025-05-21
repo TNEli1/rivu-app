@@ -25,6 +25,7 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasPlaidKeys, setHasPlaidKeys] = useState(true);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -34,47 +35,79 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
       setLoading(true);
       setError(null);
       setSuccess(false);
+      setLinkToken(null); // Reset link token to ensure fresh state
       
       const fetchLinkToken = async () => {
         try {
-          // Get the CSRF token from cookies if available
-          const getCsrfToken = () => {
-            const cookie = document.cookie.split('; ').find(row => row.startsWith('csrf_token='));
-            return cookie ? cookie.split('=')[1] : '';
-          };
+          console.log('Verifying bank connection service...');
           
-          const csrfToken = getCsrfToken();
-          const headers: Record<string, string> = {
-            "Content-Type": "application/json",
-            "X-Requested-With": "XMLHttpRequest"
-          };
-          
-          if (csrfToken) {
-            headers["X-CSRF-Token"] = csrfToken;
-          }
-          
-          // First make a direct request to get a fresh CSRF token if needed
-          await fetch('/api/user', {
+          // First verify if Plaid keys are configured
+          const configResponse = await fetch('/api/plaid/status', {
             method: 'GET',
-            credentials: 'include',
-            headers: {
-              "X-Requested-With": "XMLHttpRequest"
-            }
+            credentials: 'include'
           });
           
-          // Then make the actual request for the link token
-          const response = await apiRequest('POST', '/api/plaid/create_link_token', {});
+          if (!configResponse.ok) {
+            if (configResponse.status === 503) {
+              setHasPlaidKeys(false);
+              throw new Error('Bank connection service is not configured');
+            }
+          }
+          
+          // Make a simple GET request to ensure session is valid
+          const userResponse = await fetch('/api/user', {
+            credentials: 'include'
+          });
+          
+          if (!userResponse.ok) {
+            throw new Error('Your session has expired. Please log in again.');
+          }
+
+          console.log('Requesting Plaid link token...');
+          
+          // Make the actual request for the link token
+          const response = await fetch('/api/plaid/create_link_token', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'include',
+            body: JSON.stringify({}) // Empty request body
+          });
+          
+          // Handle response status
+          if (!response.ok) {
+            // Try to parse error message from response
+            let errorMessage = 'Unable to initialize bank connection';
+            try {
+              const errorData = await response.json();
+              errorMessage = errorData.error || errorMessage;
+            } catch (e) {
+              // If JSON parsing fails, use text content if available
+              try {
+                errorMessage = await response.text() || errorMessage;
+              } catch (textError) {
+                // If text extraction fails, use status code
+                errorMessage = `Service error (${response.status})`;
+              }
+            }
+            throw new Error(errorMessage);
+          }
+          
+          // Parse the successful response
           const data = await response.json();
           
           if (data && data.link_token) {
+            console.log('Successfully received link token');
             setLinkToken(data.link_token);
           } else {
-            setError('Failed to get link token');
-            console.error('No link token in response:', data);
+            setError('Cannot connect to banking service');
+            console.error('Missing link token in response:', data);
           }
         } catch (err: any) {
-          console.error('Error getting link token:', err);
-          setError(err.message || 'Failed to connect to bank services');
+          console.error('Error in bank connection setup:', err);
+          setError(err.message || 'Unable to connect to banking services');
         } finally {
           setLoading(false);
         }
@@ -145,7 +178,7 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
   }, []);
 
   // Configure the Plaid Link hook for full OAuth support
-  const { open, ready } = usePlaidLink({
+  const config = {
     token: linkToken || '',
     onSuccess,
     onExit,
@@ -153,7 +186,11 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
     // Add OAuth required options
     oauthRedirectUri: window.location.origin + '/callback',
     oauthNonce: Math.floor(Math.random() * 10000000).toString(), // Random nonce for security
-  });
+  };
+  
+  console.log('Plaid Link config:', { ...config, token: linkToken ? `${linkToken.substring(0, 10)}...` : 'none' });
+  
+  const { open, ready } = usePlaidLink(config);
 
   // Trigger Plaid Link when button is clicked
   const handlePlaidLinkClick = useCallback(() => {

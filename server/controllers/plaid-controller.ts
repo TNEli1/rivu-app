@@ -48,15 +48,27 @@ const plaidClient = new PlaidApi(plaidConfig);
 // Create a link token to initialize Plaid Link
 export const createLinkToken = async (req: Request, res: Response) => {
   try {
+    console.log('Creating Plaid link token, request received');
+    
     // Get user ID from authenticated request
     const userId = req.user?.id;
 
     if (!userId) {
+      console.error('Authentication failure: No user ID in request');
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
+    console.log(`Authenticated user ID: ${userId}`);
+
+    // Check if Plaid credentials are available
+    if (!process.env.PLAID_CLIENT_ID || !process.env.PLAID_SECRET_PRODUCTION) {
+      console.error('Missing Plaid credentials');
+      return res.status(500).json({ error: 'Bank connection service not properly configured' });
+    }
+
     // Define redirect URI for OAuth flow - can be overridden from environment variable
-    const redirectUri = process.env.PLAID_REDIRECT_URI || 'https://rivu.repl.co/callback';
+    const origin = req.headers.origin || 'https://rivu.repl.co';
+    const redirectUri = process.env.PLAID_REDIRECT_URI || `${origin}/callback`;
     
     console.log(`Using OAuth redirect URI: ${redirectUri}`);
 
@@ -71,8 +83,18 @@ export const createLinkToken = async (req: Request, res: Response) => {
       country_codes: ['US'] as CountryCode[],
       redirect_uri: redirectUri, // OAuth redirect URI
     };
+    
+    console.log('Creating link token with config:', JSON.stringify({
+      client_user_id: userId.toString(),
+      client_name: 'Rivu Finance',
+      products: ['auth', 'transactions'],
+      language: 'en',
+      country_codes: ['US'],
+      redirect_uri: redirectUri
+    }));
 
     // Create the link token with Plaid API
+    console.log('Calling Plaid API to create link token...');
     const createTokenResponse = await plaidClient.linkTokenCreate(configs);
     const linkToken = createTokenResponse.data.link_token;
 
