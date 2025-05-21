@@ -141,13 +141,12 @@ export default function RivuScoreInfoPage() {
           </Card>
           
           <div className="flex justify-center mb-8">
-            <Link href="/dashboard">
-              <Button
-                className="bg-primary hover:bg-primary/90 text-white"
-              >
-                Return to Dashboard
-              </Button>
-            </Link>
+            <Button
+              className="bg-primary hover:bg-primary/90 text-white"
+              onClick={() => window.location.href = '/dashboard'}
+            >
+              Return to Dashboard
+            </Button>
           </div>
         </div>
       </main>
