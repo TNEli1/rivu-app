@@ -28,7 +28,9 @@ export default function SettingsPage() {
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   const [skipSurvey, setSkipSurvey] = useState(user?.demographics?.skipPermanently || false);
-  const [coachTone, setCoachTone] = useState<string>(user?.coachTone || 'encouraging');
+  const [coachTone, setCoachTone] = useState<'encouraging' | 'direct' | 'strict'>(
+    (user?.coachTone as 'encouraging' | 'direct' | 'strict') || 'encouraging'
+  );
   const [activeTab, setActiveTab] = useState(() => {
     // Check if URL has tab parameter
     const params = new URLSearchParams(window.location.search);
@@ -150,7 +152,7 @@ export default function SettingsPage() {
                     <div className="flex items-center space-x-2">
                       <RadioGroup 
                         value={coachTone} 
-                        onValueChange={(value) => {
+                        onValueChange={(value: 'encouraging' | 'direct' | 'strict') => {
                           setCoachTone(value);
                           // Update user profile with the new coach tone preference
                           updateProfileMutation.mutate({ coachTone: value }, {

@@ -77,6 +77,7 @@ type UpdateProfileData = {
   password?: string;
   firstName?: string;
   lastName?: string;
+  coachTone?: 'encouraging' | 'direct' | 'strict';
 };
 
 // Demographics update data
