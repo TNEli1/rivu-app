@@ -234,7 +234,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       exchangeToken,
       getAccounts: getPlaidAccounts,
       handleWebhook,
-      removeItem
+      removeItem,
+      handleOAuthCallback
     } = await import('./controllers/plaid-controller');
     
     // Import Plaid Items controllers
@@ -248,6 +249,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Register Plaid routes
     app.post(`${apiPath}/plaid/create_link_token`, protect, createLinkToken);
     app.post(`${apiPath}/plaid/exchange_token`, protect, exchangeToken);
+    app.post(`${apiPath}/plaid/oauth_callback`, protect, handleOAuthCallback);
     app.post(`${apiPath}/plaid/accounts`, protect, getPlaidAccounts);
     app.post(`${apiPath}/plaid/item/remove`, protect, removeItem);
     app.post(`${apiPath}/plaid/webhook`, handleWebhook); // Public webhook route

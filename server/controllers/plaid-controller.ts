@@ -55,18 +55,21 @@ export const createLinkToken = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    // Configure the Plaid Link creation with proper account filters for production
+    // Define redirect URI for OAuth flow - can be overridden from environment variable
+    const redirectUri = process.env.PLAID_REDIRECT_URI || 'https://rivu.repl.co/callback';
+    
+    console.log(`Using OAuth redirect URI: ${redirectUri}`);
+
+    // Configure the Plaid Link creation with proper OAuth support and account filters for production
     const configs: LinkTokenCreateRequest = {
       user: {
         client_user_id: userId.toString(), // Unique user ID from our system
       },
       client_name: 'Rivu Finance',
-      products: ['transactions'] as Products[], // Only request transactions - auth is not authorized
+      products: ['auth', 'transactions'] as Products[], // Request auth and transactions
       language: 'en',
-      // Remove webhook for now since we don't have a valid public URL in development
-      // webhook: `${process.env.SERVER_URL}/api/plaid/webhook`,
       country_codes: ['US'] as CountryCode[],
-      // Removing account_filters as it may not be needed and is causing typing issues
+      redirect_uri: redirectUri, // OAuth redirect URI
     };
 
     // Create the link token with Plaid API
@@ -420,6 +423,161 @@ async function handleItemWebhook(webhookCode: string, itemId: string, error: any
     console.error('Error handling item webhook:', error);
   }
 }
+
+// Handle OAuth callback
+export const handleOAuthCallback = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+    
+    const { oauth_state_id } = req.body;
+    if (!oauth_state_id) {
+      return res.status(400).json({ error: 'OAuth state ID is required' });
+    }
+    
+    console.log(`Processing OAuth callback for state ID: ${oauth_state_id}`);
+    
+    // Exchange the OAuth state ID for a public token
+    try {
+      const exchangeResponse = await plaidClient.itemPublicTokenExchange({
+        public_token: oauth_state_id
+      });
+      
+      const accessToken = exchangeResponse.data.access_token;
+      const itemId = exchangeResponse.data.item_id;
+      
+      // Get item details
+      const itemResponse = await plaidClient.itemGet({ access_token: accessToken });
+      const institutionId = itemResponse.data.item.institution_id || '';
+      
+      // Get institution details if available
+      let institutionName = 'Connected Bank';
+      if (institutionId) {
+        try {
+          const institutionResponse = await plaidClient.institutionsGetById({
+            institution_id: institutionId,
+            country_codes: ['US'] as CountryCode[],
+          });
+          institutionName = institutionResponse.data.institution.name;
+        } catch (instErr) {
+          console.error('Error getting institution details:', instErr);
+        }
+      }
+      
+      // Check if institution is Chase or Schwab - these are not yet available in OAuth
+      if (institutionId === 'ins_5' || institutionName.toLowerCase().includes('chase') ||
+          institutionId === 'ins_129447' || institutionName.toLowerCase().includes('schwab')) {
+        
+        return res.status(400).json({
+          success: false,
+          error: `${institutionName} is not yet available through OAuth. Please try another institution or check back soon.`
+        });
+      }
+      
+      // Check for duplicate institution connections
+      const hasExistingInstitution = await storage.hasLinkedPlaidItemForInstitution(userId, institutionId);
+      if (hasExistingInstitution) {
+        return res.status(409).json({
+          success: false,
+          error: 'This institution is already connected to your account',
+          institutionName,
+        });
+      }
+      
+      // Store the access token and item information
+      const plaidItem = await storage.createPlaidItem({
+        userId,
+        itemId,
+        accessToken,
+        institutionId,
+        institutionName,
+        status: 'active',
+      });
+
+      // Fetch accounts from Plaid
+      const accountsResponse = await plaidClient.accountsGet({ access_token: accessToken });
+      const accounts = accountsResponse.data.accounts;
+      
+      // Save accounts to database
+      const savedAccounts = await Promise.all(
+        accounts.map(async (account) => {
+          // Create new account
+          return await storage.createPlaidAccount({
+            userId,
+            plaidItemId: plaidItem.id,
+            accountId: account.account_id,
+            name: account.name,
+            officialName: account.official_name || null,
+            type: account.type,
+            subtype: account.subtype || null,
+            availableBalance: account.balances.available !== null && account.balances.available !== undefined 
+              ? String(account.balances.available) 
+              : null,
+            currentBalance: account.balances.current !== null && account.balances.current !== undefined 
+              ? String(account.balances.current) 
+              : null,
+            mask: account.mask || null,
+            isoCurrencyCode: account.balances.iso_currency_code || null,
+            status: 'active',
+          });
+        })
+      );
+      
+      // Also create corresponding transaction accounts (for UI display)
+      await Promise.all(
+        savedAccounts.map(async (account) => {
+          if (!account) return; // Skip if account is undefined
+          
+          // First check if a transaction account already exists for this Plaid account
+          const existingAccounts = await storage.getTransactionAccounts(userId);
+          const existingAccount = existingAccounts.find(a => 
+            a.name === account.name && 
+            a.institutionName === plaidItem.institutionName
+          );
+          
+          if (!existingAccount && account.name) {
+            await storage.createTransactionAccount({
+              userId,
+              name: account.name,
+              type: account.type === 'depository' ? 'bank' : account.type === 'credit' ? 'credit' : 'other',
+              institutionName: plaidItem.institutionName || undefined,
+              lastFour: account.mask || undefined,
+            });
+          }
+        })
+      );
+      
+      console.log(`OAuth connection successful - Item ID: ${itemId}, Institution: ${institutionName}`);
+      
+      return res.status(200).json({
+        success: true,
+        institution_name: institutionName,
+      });
+    } catch (exchangeError: any) {
+      // Special handling for OAuth errors
+      console.error('Error exchanging OAuth token:', exchangeError);
+      
+      // Check for specific error codes like INVALID_INPUT
+      const errorCode = exchangeError.response?.data?.error_code || 'UNKNOWN_ERROR';
+      const errorMessage = exchangeError.response?.data?.error_message || 'Failed to complete OAuth flow';
+      
+      return res.status(400).json({
+        success: false,
+        error: `Connection failed: ${errorMessage}`,
+        error_code: errorCode
+      });
+    }
+  } catch (error: any) {
+    console.error('Error handling OAuth callback:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to process OAuth callback',
+      requestId: error.response?.data?.request_id,
+    });
+  }
+};
 
 // Remove a Plaid item for a user
 export const removeItem = async (req: Request, res: Response) => {

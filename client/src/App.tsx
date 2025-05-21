@@ -16,6 +16,7 @@ import SettingsPage from "@/pages/settings-page";
 import GoalsPage from "@/pages/goals-page";
 import RivUPage from "@/pages/rivu-page";
 import ConnectPage from "@/pages/connect-page";
+import PlaidCallback from "@/pages/plaid-callback";
 import ForgotPasswordPage from "@/pages/forgot-password";
 import ResetPasswordPage from "@/pages/reset-password";
 import PrivacyPolicyPage from "@/pages/privacy-policy";
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/reset-password/:token" component={ResetPasswordPage} />
       <Route path="/privacy" component={PrivacyPolicyPage} />
       <Route path="/terms" component={TermsOfServicePage} />
+      <Route path="/callback" component={PlaidCallback} />
       
       {/* Protected Routes */}
       <ProtectedRoute path="/dashboard" component={Dashboard} />
