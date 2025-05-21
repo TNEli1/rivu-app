@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocation } from 'wouter';
+import { Link } from 'wouter';
 import { ChevronLeft, Info, PieChart, TrendingUp, Calendar, BarChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,8 +7,7 @@ import { useTheme } from '@/hooks/use-theme';
 import Sidebar from '@/components/layout/Sidebar';
 
 export default function RivuScoreInfoPage() {
-  // For navigation
-  const [, navigate] = useLocation();
+  // For theme
   const { theme } = useTheme();
   
   return (
@@ -20,15 +19,16 @@ export default function RivuScoreInfoPage() {
       <main className="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto max-h-screen">
         {/* Page Header */}
         <div className="flex items-center mb-6">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/dashboard')}
-            className="mr-2"
-          >
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Back
-          </Button>
+          <Link href="/dashboard">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mr-2"
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Back
+            </Button>
+          </Link>
           <h1 className="text-2xl font-semibold">How Your Rivu Score Works</h1>
         </div>
         
@@ -142,12 +142,13 @@ export default function RivuScoreInfoPage() {
           </Card>
           
           <div className="flex justify-center mb-8">
-            <Button
-              onClick={() => navigate('/dashboard')}
-              className="bg-primary hover:bg-primary/90 text-white"
-            >
-              Return to Dashboard
-            </Button>
+            <Link href="/dashboard">
+              <Button
+                className="bg-primary hover:bg-primary/90 text-white"
+              >
+                Return to Dashboard
+              </Button>
+            </Link>
           </div>
         </div>
       </main>
