@@ -29,7 +29,13 @@ function Router() {
   return (
     <Switch>
       {/* Public Routes */}
-      <Route path="/" component={LandingPage} />
+      <Route path="/landing" component={LandingPage} />
+      <Route path="/" hook={() => {
+        // Check if user is logged in from localStorage
+        const token = localStorage.getItem('token');
+        // If token exists, redirect to dashboard, else show landing page
+        return token ? "/dashboard" : "/landing";
+      }} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/login" component={AuthPage} />
       <Route path="/forgot-password" component={ForgotPasswordPage} />

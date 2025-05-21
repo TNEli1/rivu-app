@@ -16,12 +16,12 @@ export default function LandingPage() {
             <img src="/images/rivu-logo.png" alt="Rivu Logo" className="h-24 w-auto" />
           </div>
           <div className="space-x-1 md:space-x-4">
-            <a href="/auth?redirect=/dashboard">
+            <Link href="/auth?redirect=/dashboard">
               <Button variant="ghost" size="sm">Log in</Button>
-            </a>
-            <a href="/auth?signup=true&redirect=/dashboard">
+            </Link>
+            <Link href="/auth?signup=true&redirect=/dashboard">
               <Button variant="default" size="sm">Sign up for free</Button>
-            </a>
+            </Link>
           </div>
         </div>
       </nav>

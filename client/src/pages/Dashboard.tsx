@@ -33,7 +33,7 @@ function calculateEstimatedCompletion(goal: any): string {
   try {
     // Calculate average monthly contribution over the last 3 months or all available data
     const relevantMonths = monthlyContributions.slice(-3);
-    const averageMonthlyContribution = relevantMonths.reduce((sum, month) => sum + month.amount, 0) / relevantMonths.length;
+    const averageMonthlyContribution = relevantMonths.reduce((sum: number, month: any) => sum + month.amount, 0) / relevantMonths.length;
     
     if (averageMonthlyContribution <= 0) 
       return "Need more data";
@@ -48,6 +48,8 @@ function calculateEstimatedCompletion(goal: any): string {
     // Calculate completion date based on current contribution rate
     const completionDate = new Date();
     completionDate.setDate(completionDate.getDate() + (weeksNeeded * 7));
+    
+    // Format consistently with the goals page
     return format(completionDate, 'MMM yyyy');
   } catch (error) {
     console.error("Error calculating goal completion date:", error);
@@ -68,21 +70,21 @@ function getGoalStatusFromData(goal: any): 'on-track' | 'behind' | 'ahead' {
     return 'on-track';
   
   try {
-    // Calculate average monthly contribution
+    // Calculate average monthly contribution over the last 3 months or all available data
     const relevantMonths = monthlyContributions.slice(-3);
-    const averageMonthlyContribution = relevantMonths.reduce((sum, month) => sum + month.amount, 0) / relevantMonths.length;
+    const averageMonthlyContribution = relevantMonths.reduce((sum: number, month: any) => sum + month.amount, 0) / relevantMonths.length;
     
     if (averageMonthlyContribution <= 0) 
       return 'behind';
     
-    // Calculate weekly contribution
+    // Calculate weekly contribution (monthly / 4.3)
     const avgWeeklyContribution = averageMonthlyContribution / 4.3;
     
     // Calculate weeks needed
     const remaining = goal.targetAmount - goal.currentAmount;
     const weeksNeeded = Math.ceil(remaining / avgWeeklyContribution);
     
-    // Calculate completion date
+    // Calculate completion date based on current contribution rate
     const completionDate = new Date();
     completionDate.setDate(completionDate.getDate() + (weeksNeeded * 7));
     
