@@ -404,6 +404,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Also include the monthly expenses from transactions for reference
       console.log(`Monthly expenses from transactions: ${monthlyExpenses}`);
       
+      // Calculate top spending category based on actual transaction data
+      let topSpendingCategory = null;
+      
+      if (budgetCategories.length > 0 && totalBudgetSpent > 0) {
+        // Sort budget categories by spent amount in descending order
+        const sortedCategories = [...budgetCategories].sort((a, b) => {
+          const aSpent = typeof a.spentAmount === 'string' 
+            ? parseFloat(a.spentAmount) 
+            : (a.spentAmount || 0);
+            
+          const bSpent = typeof b.spentAmount === 'string' 
+            ? parseFloat(b.spentAmount) 
+            : (b.spentAmount || 0);
+            
+          return bSpent - aSpent;
+        });
+        
+        // Get the top category (first in sorted array)
+        if (sortedCategories.length > 0 && sortedCategories[0].spentAmount) {
+          const topCategory = sortedCategories[0];
+          const topAmount = typeof topCategory.spentAmount === 'string' 
+            ? parseFloat(topCategory.spentAmount) 
+            : (topCategory.spentAmount || 0);
+            
+          // Calculate percentage of total spending
+          const percentage = totalBudgetSpent > 0 
+            ? Math.round((topAmount / totalBudgetSpent) * 100) 
+            : 0;
+            
+          topSpendingCategory = {
+            name: topCategory.name,
+            amount: topAmount,
+            percentage: percentage
+          };
+        }
+      }
+      
       res.json({
         totalBalance,
         weeklySpending,
@@ -411,7 +448,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         monthlyIncome,
         monthlyExpenses,
         totalBudget,
-        totalSpent: totalBudgetSpent // Add category-based spent amount for consistency with budget page
+        totalSpent: totalBudgetSpent, // Add category-based spent amount for consistency with budget page
+        topSpendingCategory // Add top spending category data
       });
     } catch (error) {
       console.error('Error generating dashboard summary:', error);
