@@ -253,8 +253,20 @@ export default function Dashboard() {
               <p className={`text-xl font-bold mt-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
                 {formatCurrency(summaryData?.weeklySpending || 0)}
               </p>
-              <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                Last 7 days
+              <p className={`text-xs mt-1 flex items-center ${
+                (summaryData?.weeklySpendingChange || 0) > 0 
+                  ? 'text-red-500' 
+                  : (summaryData?.weeklySpendingChange || 0) < 0 
+                    ? 'text-green-500' 
+                    : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                {(summaryData?.weeklySpendingChange || 0) !== 0 && (
+                  <>
+                    {(summaryData?.weeklySpendingChange || 0) > 0 ? '↑' : '↓'}{' '}
+                    {Math.abs(summaryData?.weeklySpendingChange || 0)}% from last week
+                  </>
+                )}
+                {(summaryData?.weeklySpendingChange || 0) === 0 && 'Last 7 days'}
               </p>
             </CardContent>
           </Card>
