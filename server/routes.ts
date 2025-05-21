@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { z } from "zod";
 import OpenAI from "openai";
 import cors from "cors";
+import rateLimit from "express-rate-limit";
 import { BudgetCategory, Transaction, transactions } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql } from "drizzle-orm";
@@ -18,6 +19,19 @@ const openai = new OpenAI({
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup CORS
   app.use(cors());
+  
+  // Add health check endpoint for monitoring
+  app.get('/health', (req, res) => {
+    res.status(200).json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      version: process.env.npm_package_version || '1.0.0'
+    });
+  });
+  
+  // We'll apply rate limiting directly from the server/index.ts global settings
+  // Additional endpoint-specific rate limiting can be added once the app is stable
   
   // Set up API routes using PostgreSQL database
   try {
@@ -964,7 +978,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     name: string;
     targetAmount: number;
     currentAmount: number;
-    targetDate?: Date | string;
+    targetDate?: Date | string | null;
     progressPercentage: number;
     monthlySavings: Array<{
       month: string; // Format: "YYYY-MM"
@@ -1017,7 +1031,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }));
       
       // Log for debugging
-      console.log(`Found ${dbGoals.length} goals in DB and ${global.appGoals?.length || 0} goals in memory, total: ${dbGoals.length}`);
+      console.log(`Found ${dbGoals.length} goals in DB`);
       
       // Return all goals from database
       res.json(formattedGoals);

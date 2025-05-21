@@ -66,14 +66,18 @@ export const createLinkToken = async (req: Request, res: Response) => {
       return res.status(500).json({ error: 'Bank connection service not properly configured' });
     }
 
-    // Define redirect URI for OAuth flow - can be overridden from environment variable
-    const origin = req.headers.origin || 'https://rivu.repl.co';
-    const redirectUri = process.env.PLAID_REDIRECT_URI || `${origin}/callback`;
+    // Define redirect URI for OAuth flow from environment variable
+    // In production, this should be the fully qualified domain (e.g., https://tryrivu.com/callback)
+    const defaultRedirectUri = process.env.NODE_ENV === 'production' 
+      ? 'https://tryrivu.com/callback' 
+      : (req.headers.origin || 'https://rivu.repl.co') + '/callback';
+    
+    const redirectUri = process.env.PLAID_REDIRECT_URI || defaultRedirectUri;
     
     console.log(`Using OAuth redirect URI: ${redirectUri}`);
 
     // Configure the Plaid Link creation with proper account filters for production
-    // Start with base config (no OAuth)
+    // Start with base config (with OAuth for production)
     const configs: LinkTokenCreateRequest = {
       user: {
         client_user_id: userId.toString(), // Unique user ID from our system
@@ -82,15 +86,11 @@ export const createLinkToken = async (req: Request, res: Response) => {
       products: ['transactions'] as Products[], // Only request transactions product
       language: 'en',
       country_codes: ['US'] as CountryCode[],
+      redirect_uri: redirectUri, // Always include redirect_uri for production OAuth flow
     };
     
-    // Only add redirect_uri if the environment has PLAID_REDIRECT_REGISTERED set to true
-    if (process.env.PLAID_REDIRECT_REGISTERED === 'true') {
-      configs.redirect_uri = redirectUri;
-      console.log(`Using registered OAuth redirect: ${redirectUri}`);
-    } else {
-      console.log('Skipping OAuth redirect URI - not registered in Plaid dashboard');
-    }
+    // Log full configuration 
+    console.log(`Using Plaid Link config with redirect: ${redirectUri}`);
     
     console.log('Creating link token with config:', JSON.stringify({
       client_user_id: userId.toString(),
