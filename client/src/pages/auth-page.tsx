@@ -19,6 +19,25 @@ export default function AuthPage() {
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
   const [termsAgreed, setTermsAgreed] = useState(false);
+  const [redirectPath, setRedirectPath] = useState("/dashboard");
+  
+  // Check for signup parameter in URL
+  useEffect(() => {
+    // Get URL parameters
+    const params = new URLSearchParams(window.location.search);
+    const signup = params.get('signup');
+    const redirect = params.get('redirect');
+    
+    // Set active tab based on signup parameter
+    if (signup === 'true') {
+      setActiveTab('register');
+    }
+    
+    // Set redirect path if provided
+    if (redirect) {
+      setRedirectPath(redirect);
+    }
+  }, []);
   const [passwordFeedback, setPasswordFeedback] = useState<{
     message: string;
     isValid: boolean;
