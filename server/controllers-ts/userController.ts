@@ -219,8 +219,8 @@ export const loginUser = async (req: any, res: any) => {
         lastLogin,
         loginCount,
         onboardingStage: user.onboardingStage,
-        onboardingCompleted: user.onboardingCompleted,
-        token // Include token in response for clients not using cookies
+        onboardingCompleted: user.onboardingCompleted
+        // Token is already set in HTTP-only cookie for security
       });
     } else {
       // Log failed login attempt for security monitoring
