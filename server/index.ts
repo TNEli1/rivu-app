@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
+import helmet from "helmet";
 import { setCsrfToken, validateCsrfToken } from "./middleware/csrfProtection";
 import { pool } from "./db";
 import { requestLogger, errorLogger } from "./middleware/requestLogger";
@@ -64,6 +65,18 @@ const corsOptions = {
   ]
 };
 app.use(cors(corsOptions));
+
+// Apply Helmet middleware for enhanced security headers
+app.use(helmet({
+  // Enable Cross-Origin-Embedder-Policy
+  crossOriginEmbedderPolicy: true,
+  // Enable Cross-Origin-Opener-Policy
+  crossOriginOpenerPolicy: true,
+  // Enable Origin-Agent-Cluster header
+  originAgentCluster: true,
+  // Content Security Policy is handled separately below for more granular control
+  contentSecurityPolicy: false
+}));
 
 // Add request logging middleware for production monitoring
 app.use(requestLogger);
@@ -148,14 +161,34 @@ app.use((req, res, next) => {
   // Load API routes using PostgreSQL database
   const server = await registerRoutes(app);
 
-  // Health check endpoint for monitoring
-  app.get('/health', (req, res) => {
-    res.status(200).json({
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV || 'development',
-      version: process.env.APP_VERSION || '1.0.0'
-    });
+  // Enhanced health check endpoint for monitoring with DB connectivity check
+  app.get('/health', async (req, res) => {
+    try {
+      // Check database connectivity
+      const dbConnected = await pool.query('SELECT 1');
+      const dbStatus = dbConnected ? 'connected' : 'disconnected';
+      
+      // Calculate server uptime
+      const uptime = process.uptime();
+      const uptimeFormatted = `${Math.floor(uptime)}s`;
+      
+      res.status(200).json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development',
+        version: process.env.APP_VERSION || '1.0.0',
+        uptime: uptimeFormatted,
+        db: dbStatus
+      });
+    } catch (error) {
+      // Log error but don't expose details
+      console.error('Health check database error:', error);
+      res.status(500).json({
+        status: 'error',
+        timestamp: new Date().toISOString(),
+        db: 'disconnected'
+      });
+    }
   });
 
   // 404 handler for API routes (must come after API routes are registered)

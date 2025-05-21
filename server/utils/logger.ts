@@ -1,174 +1,97 @@
 /**
- * Production-ready logger for Rivu application
- * Handles structured logging with different severity levels
+ * Central logging utility for Rivu application
+ * 
+ * Provides structured logging for production environments
+ * with fallback to console in development
  */
 
-// Log levels in order of increasing severity
-type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'critical';
+import { Request, Response } from 'express';
 
-interface LogMessage {
-  timestamp: string;
-  level: LogLevel;
-  message: string;
-  context?: Record<string, any>;
-}
-
-/**
- * Centralized logger for the application
- * In production, we could extend this to write to a file or send to a logging service
- */
+// Simple logger implementation - can be replaced with Winston, Pino, etc.
 class Logger {
-  private minLevel: LogLevel;
-  private isProduction: boolean;
-
+  private env: string;
+  
   constructor() {
-    // In production, default to 'info' level, otherwise use 'debug'
-    this.isProduction = process.env.NODE_ENV === 'production';
-    this.minLevel = this.isProduction ? 'info' : 'debug';
+    this.env = process.env.NODE_ENV || 'development';
   }
-
-  /**
-   * Log a message at the specified level
-   */
-  private log(level: LogLevel, message: string, context?: Record<string, any>): void {
-    const levels: Record<LogLevel, number> = {
-      debug: 0,
-      info: 1,
-      warn: 2,
-      error: 3,
-      critical: 4
-    };
-
-    // Only log if the level is at or above the minimum level
-    if (levels[level] >= levels[this.minLevel]) {
-      const logEntry: LogMessage = {
-        timestamp: new Date().toISOString(),
-        level,
-        message,
-        context: this.isProduction ? this.sanitizeContext(context) : context
-      };
-
-      // In production, use structured logging for easier parsing
-      if (this.isProduction) {
-        // For production, we'll output a clean JSON object
-        console[level === 'critical' ? 'error' : level](JSON.stringify(logEntry));
-      } else {
-        // For development, more readable format with colors
-        const colors: Record<LogLevel, string> = {
-          debug: '\x1b[90m', // Gray
-          info: '\x1b[32m',  // Green
-          warn: '\x1b[33m',  // Yellow
-          error: '\x1b[31m', // Red
-          critical: '\x1b[41m\x1b[37m' // White on red background
-        };
-        
-        const reset = '\x1b[0m';
-        const coloredLevel = `${colors[level]}${level.toUpperCase()}${reset}`;
-        
-        console[level === 'critical' ? 'error' : level](
-          `[${logEntry.timestamp}] ${coloredLevel}: ${message}`,
-          context || ''
-        );
-      }
+  
+  // Log levels
+  info(message: string, meta?: any): void {
+    this.log('INFO', message, meta);
+  }
+  
+  warn(message: string, meta?: any): void {
+    this.log('WARN', message, meta);
+  }
+  
+  error(message: string, meta?: any): void {
+    this.log('ERROR', message, meta);
+  }
+  
+  debug(message: string, meta?: any): void {
+    // Only log debug in development
+    if (this.env !== 'production') {
+      this.log('DEBUG', message, meta);
     }
   }
-
+  
   /**
-   * Sanitize sensitive data from logs in production
+   * HTTP request logger
+   * Logs details about HTTP requests in a structured format
    */
-  private sanitizeContext(context?: Record<string, any>): Record<string, any> | undefined {
-    if (!context) return undefined;
-    
-    const sanitized = {...context};
-    
-    // List of sensitive fields to redact
-    const sensitiveFields = [
-      'password', 'token', 'secret', 'key', 'accessToken', 'refreshToken',
-      'auth', 'authorization', 'cookie', 'jwt', 'ssn', 'credit_card',
-      'cardNumber', 'cvv', 'pin'
-    ];
-    
-    // Recursively sanitize the context object
-    const sanitizeObj = (obj: Record<string, any>): Record<string, any> => {
-      for (const key in obj) {
-        // Check if the key contains any sensitive terms
-        const isSensitive = sensitiveFields.some(field => 
-          key.toLowerCase().includes(field.toLowerCase())
-        );
-        
-        if (isSensitive) {
-          // Redact sensitive value but indicate the type of value that was there
-          obj[key] = typeof obj[key] === 'string' 
-            ? '[REDACTED]' 
-            : `[REDACTED ${typeof obj[key]}]`;
-        } else if (typeof obj[key] === 'object' && obj[key] !== null) {
-          // Recursively sanitize nested objects
-          obj[key] = sanitizeObj(obj[key]);
-        }
-      }
-      return obj;
-    };
-    
-    return sanitizeObj(sanitized);
-  }
-
-  /**
-   * Debug level logging (development only)
-   */
-  debug(message: string, context?: Record<string, any>): void {
-    this.log('debug', message, context);
-  }
-
-  /**
-   * Information level logging
-   */
-  info(message: string, context?: Record<string, any>): void {
-    this.log('info', message, context);
-  }
-
-  /**
-   * Warning level logging
-   */
-  warn(message: string, context?: Record<string, any>): void {
-    this.log('warn', message, context);
-  }
-
-  /**
-   * Error level logging
-   */
-  error(message: string, context?: Record<string, any>): void {
-    this.log('error', message, context);
-  }
-
-  /**
-   * Critical error logging (highest severity)
-   */
-  critical(message: string, context?: Record<string, any>): void {
-    this.log('critical', message, context);
-  }
-
-  /**
-   * HTTP request logging
-   */
-  httpRequest(req: any, res: any, duration: number): void {
-    const context = {
+  httpRequest(req: Request, res: Response, duration: number): void {
+    // Extract important information from the request/response
+    const data = {
       method: req.method,
       url: req.originalUrl || req.url,
-      statusCode: res.statusCode,
-      userAgent: req.headers['user-agent'],
-      ip: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+      status: res.statusCode,
       duration: `${duration}ms`,
+      ip: req.ip || req.headers['x-forwarded-for'] || 'unknown',
+      userAgent: req.headers['user-agent'] || 'unknown',
+      userId: req.user?.id || 'unauthenticated',
       contentLength: res.getHeader('content-length'),
-      userId: req.user?.id || 'unauthenticated'
+      referrer: req.headers.referer || req.headers.referrer
     };
-
-    const level: LogLevel = res.statusCode >= 500 
-      ? 'error' 
-      : res.statusCode >= 400 
-        ? 'warn' 
-        : 'info';
     
-    this.log(level, `HTTP ${req.method} ${req.originalUrl || req.url} ${res.statusCode}`, context);
+    // Build a readable message for the log
+    const message = `HTTP ${data.method} ${data.url} ${data.status} ${data.duration}`;
+    
+    // Log at appropriate level based on status code
+    if (res.statusCode >= 500) {
+      this.error(message, data);
+    } else if (res.statusCode >= 400) {
+      this.warn(message, data);
+    } else {
+      this.info(message, data);
+    }
+  }
+  
+  private log(level: string, message: string, meta?: any): void {
+    const timestamp = new Date().toISOString();
+    
+    // In production, we'd likely use a proper logging service
+    // For now, use structured console logs
+    if (this.env === 'production') {
+      const logObject = {
+        timestamp,
+        level,
+        message,
+        ...(meta || {})
+      };
+      
+      // Use different console methods based on level
+      if (level === 'ERROR') {
+        console.error(JSON.stringify(logObject));
+      } else if (level === 'WARN') {
+        console.warn(JSON.stringify(logObject));
+      } else {
+        console.log(JSON.stringify(logObject));
+      }
+    } else {
+      // More readable format for development
+      const metaString = meta ? ` ${JSON.stringify(meta)}` : '';
+      console.log(`[${timestamp}] ${level}: ${message}${metaString}`);
+    }
   }
 }
 

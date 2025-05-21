@@ -4,7 +4,7 @@ import rateLimit from 'express-rate-limit';
 import crypto from 'crypto';
 import { storage } from '../storage';
 import { User } from '@shared/schema';
-import { logSecurityEvent, SecurityEventType } from '../services/securityLogger';
+import securityLogger, { SecurityEventType } from '../services/securityLogger';
 
 // JWT Secret Key - ensure we have a proper secret in production
 if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
@@ -187,13 +187,16 @@ export const loginUser = async (req: any, res: any) => {
       });
       
       // Log successful login for security auditing
-      await logSecurityEvent(
-        SecurityEventType.LOGIN_SUCCESS,
-        user.id,
-        user.username,
-        req,
-        { loginCount, timestamp: new Date().toISOString() }
-      );
+      securityLogger.logSecurityEvent({
+        type: SecurityEventType.LOGIN_SUCCESS,
+        userId: user.id,
+        details: {
+          username: user.username,
+          loginCount,
+          timestamp: new Date().toISOString(),
+          ip: req.ip
+        }
+      });
       
       // Check for and create any new nudges based on user activity
       try {
@@ -224,13 +227,15 @@ export const loginUser = async (req: any, res: any) => {
       });
     } else {
       // Log failed login attempt for security monitoring
-      await logSecurityEvent(
-        SecurityEventType.LOGIN_FAILURE,
-        undefined,
-        username,
-        req,
-        { reason: 'Invalid credentials', timestamp: new Date().toISOString() }
-      );
+      securityLogger.logSecurityEvent({
+        type: SecurityEventType.LOGIN_FAILURE,
+        details: {
+          username,
+          reason: 'Invalid credentials', 
+          timestamp: new Date().toISOString(),
+          ip: req.ip
+        }
+      });
       
       // Generic error message for security (don't specify if user doesn't exist or password is wrong)
       res.status(401).json({ 
@@ -584,13 +589,15 @@ export const logoutUser = async (req: any, res: any) => {
   try {
     // Log the logout event if we have user information
     if (req.user && req.user.id) {
-      await logSecurityEvent(
-        SecurityEventType.LOGOUT,
-        req.user.id,
-        req.user.username,
-        req,
-        { timestamp: new Date().toISOString() }
-      );
+      securityLogger.logSecurityEvent({
+        type: SecurityEventType.LOGOUT,
+        userId: req.user.id,
+        details: {
+          username: req.user.username,
+          timestamp: new Date().toISOString(),
+          ip: req.ip
+        }
+      });
     }
     
     // Clear the token cookie

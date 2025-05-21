@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid';
 import { storage } from '../storage';
-import { logSecurityEvent, SecurityEventType } from '../services/securityLogger';
+import securityLogger, { SecurityEventType } from '../services/securityLogger';
 
 // Initialize Plaid client with production credentials
 // Always use production environment for Plaid
@@ -256,17 +256,17 @@ export const disconnectPlaidItem = async (req: Request, res: Response) => {
     console.log(`User ${userId} disconnected Plaid item ${itemId} (${plaidItem.institutionName}) at ${new Date().toISOString()}`);
     
     // Add enhanced security logging for bank account disconnection
-    await logSecurityEvent(
-      SecurityEventType.BANK_DISCONNECT,
-      userId,
-      req.user?.username,
-      req,
-      {
+    securityLogger.logSecurityEvent({
+      type: SecurityEventType.BANK_DISCONNECT,
+      userId: userId,
+      details: {
+        username: req.user?.username,
         institutionName: plaidItem.institutionName,
         itemId: plaidItem.itemId,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        ip: req.ip
       }
-    );
+    });
     
     return res.status(200).json({
       success: true,

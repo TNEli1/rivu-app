@@ -5,8 +5,7 @@
  * This helps with security auditing, compliance requirements, and troubleshooting.
  */
 
-import fs from 'fs';
-import path from 'path';
+import { logger } from '../utils/logger';
 
 // Define event types for better type safety
 export enum SecurityEventType {
@@ -19,63 +18,39 @@ export enum SecurityEventType {
   ACCOUNT_UPDATE = 'ACCOUNT_UPDATE',
   BANK_CONNECT = 'BANK_CONNECT',
   BANK_DISCONNECT = 'BANK_DISCONNECT',
-  API_KEY_ACCESS = 'API_KEY_ACCESS'
+  API_KEY_ACCESS = 'API_KEY_ACCESS',
+  PERMISSION_DENIED = 'PERMISSION_DENIED',
+  DATA_ACCESS_DENIED = 'DATA_ACCESS_DENIED',
+  SUSPICIOUS_ACTIVITY = 'SUSPICIOUS_ACTIVITY'
 }
 
-interface SecurityEvent {
-  timestamp: string;
+// Interface for security event
+export interface SecurityEvent {
   type: SecurityEventType;
-  userId?: number | string;
-  username?: string;
-  ipAddress?: string;
-  userAgent?: string;
+  userId?: number | string;  // Optional because some events may occur before authentication
   details?: Record<string, any>;
+  timestamp?: Date;
 }
 
 /**
- * Log a security event.
+ * Log a security-related event
+ * In production, these would typically be stored in a secure database
+ * or sent to a dedicated security monitoring service
  */
-export async function logSecurityEvent(
-  type: SecurityEventType,
-  userId?: number | string,
-  username?: string,
-  req?: any, // Express request object
-  details?: Record<string, any>
-): Promise<void> {
+function logSecurityEvent(event: SecurityEvent): void {
   try {
-    const event: SecurityEvent = {
-      timestamp: new Date().toISOString(),
-      type,
-      userId,
-      username,
-      details
+    // Add timestamp if not present
+    const eventWithTimestamp = {
+      ...event,
+      timestamp: event.timestamp || new Date()
     };
-
-    // Add request-specific info if available
-    if (req) {
-      event.ipAddress = req.ip || req.headers['x-forwarded-for'] || 'unknown';
-      event.userAgent = req.headers['user-agent'] || 'unknown';
-    }
-
-    // For sensitive operations, mask any potentially sensitive data
-    if (details) {
-      // Deep clone to avoid modifying the original object
-      event.details = JSON.parse(JSON.stringify(details));
-      
-      // Mask sensitive fields if they exist
-      const sensitiveFields = ['password', 'token', 'accessToken', 'secret', 'key'];
-      sensitiveFields.forEach(field => {
-        if (event.details && event.details[field]) {
-          event.details[field] = '********';
-        }
-      });
-    }
-
-    console.log(`[SECURITY_EVENT] ${event.type} - User: ${event.userId || 'anonymous'} - ${JSON.stringify(event.details || {})}`);
+    
+    // Log the security event
+    logger.info(`[SECURITY_EVENT] ${event.type} - User: ${event.userId || 'anonymous'}`, event.details || {});
     
     // In production, we might also want to store in a database or send to a security monitoring service
   } catch (error) {
-    console.error('Failed to log security event:', error);
+    logger.error('Failed to log security event:', error);
   }
 }
 

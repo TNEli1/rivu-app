@@ -77,11 +77,15 @@ export const createLinkToken = async (req: Request, res: Response) => {
       });
     }
     
-    // Use the configured redirect URI, with fallbacks for development
+    // SECURITY: Use the configured redirect URI from .env ONLY - no client-provided values
+    // In production environment, this MUST be set to prevent OAuth redirect attacks
     const redirectUri = process.env.PLAID_REDIRECT_URI || 
       (process.env.NODE_ENV === 'production' 
-        ? 'https://tryrivu.com/callback'
-        : (req.headers.origin || 'http://localhost:8080') + '/callback');
+        ? 'https://tryrivu.com/callback' // Production default as specified in security audit
+        : 'http://localhost:8080/callback'); // Development default
+        
+    // Log where redirect URI is sourced from for audit trail
+    console.log(`[SECURITY] Plaid redirect URI sourced from: ${process.env.PLAID_REDIRECT_URI ? '.env file' : 'default value'}`);
     
     console.log(`Using OAuth redirect URI: ${redirectUri}`);
 
