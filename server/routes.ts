@@ -73,6 +73,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.put(`${apiPath}/accounts/:id`, protect, updateAccount);
     app.delete(`${apiPath}/accounts/:id`, protect, deleteAccount);
     
+    // Import nudge controller
+    const {
+      getNudges,
+      createNudge,
+      dismissNudge,
+      completeNudge,
+      checkAndCreateNudges,
+      updateOnboardingStage
+    } = await import('./controllers-ts/nudgeController');
+    
+    // Nudge system routes
+    app.get(`${apiPath}/nudges`, protect, getNudges);
+    app.post(`${apiPath}/nudges`, protect, createNudge);
+    app.post(`${apiPath}/nudges/check`, protect, checkAndCreateNudges);
+    app.put(`${apiPath}/nudges/:id/dismiss`, protect, dismissNudge);
+    app.put(`${apiPath}/nudges/:id/complete`, protect, completeNudge);
+    app.put(`${apiPath}/onboarding-stage`, protect, updateOnboardingStage);
+    
     // Import CSV controllers for transaction imports
     const {
       uploadCSV,
