@@ -132,6 +132,62 @@ export default function LandingPage() {
         </div>
       </section>
       
+      {/* Transaction Options Section */}
+      <section className={`py-16 ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`}>
+        <div className="container mx-auto px-6">
+          <h2 className="text-3xl font-bold text-center mb-8">Seamless Transaction Tracking</h2>
+          
+          <div className="max-w-3xl mx-auto">
+            <div className={`p-8 rounded-xl ${theme === 'dark' ? 'bg-gray-700' : 'bg-white'} shadow-lg`}>
+              <div className="flex flex-col md:flex-row items-center gap-6 mb-6">
+                <div className="md:w-1/4 flex justify-center">
+                  <img 
+                    src="/images/plaid-logo.png" 
+                    alt="Plaid Logo" 
+                    className="h-12 object-contain" 
+                    onError={(e) => {
+                      // Fallback if image doesn't exist
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                </div>
+                <div className="md:w-3/4">
+                  <p className={`text-lg ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                    Rivu partners with Plaid, the trusted leader in financial connectivity, so you can securely link your bank and credit accounts. Prefer not to connect a bank? No problem — simply upload a CSV or add transactions manually to stay on track.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+                <div className={`p-4 rounded-lg ${theme === 'dark' ? 'bg-gray-600' : 'bg-gray-50'} text-center`}>
+                  <div className="w-12 h-12 mx-auto rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 mb-3">
+                    <i className="ri-bank-line text-xl"></i>
+                  </div>
+                  <h3 className="font-medium mb-2">Bank Connection</h3>
+                  <p className="text-sm">Securely connect your accounts</p>
+                </div>
+                
+                <div className={`p-4 rounded-lg ${theme === 'dark' ? 'bg-gray-600' : 'bg-gray-50'} text-center`}>
+                  <div className="w-12 h-12 mx-auto rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center text-green-600 dark:text-green-300 mb-3">
+                    <i className="ri-file-upload-line text-xl"></i>
+                  </div>
+                  <h3 className="font-medium mb-2">CSV Upload</h3>
+                  <p className="text-sm">Import transactions from any source</p>
+                </div>
+                
+                <div className={`p-4 rounded-lg ${theme === 'dark' ? 'bg-gray-600' : 'bg-gray-50'} text-center`}>
+                  <div className="w-12 h-12 mx-auto rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center text-purple-600 dark:text-purple-300 mb-3">
+                    <i className="ri-edit-line text-xl"></i>
+                  </div>
+                  <h3 className="font-medium mb-2">Manual Entry</h3>
+                  <p className="text-sm">Add transactions as you go</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      
       {/* Testimonials Section */}
       <section className="py-20">
         <div className="container mx-auto px-6">
