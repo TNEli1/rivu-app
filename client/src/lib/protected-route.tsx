@@ -22,11 +22,11 @@ export function ProtectedRoute({
     );
   }
 
-  // If token expired or no user, redirect to auth page
+  // If authentication check fails or no user, redirect to auth page
   if (isTokenExpired || !user) {
     return (
       <Route path={path}>
-        <Redirect to="/login" />
+        <Redirect to="/auth" />
       </Route>
     );
   }
