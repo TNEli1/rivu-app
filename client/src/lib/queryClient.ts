@@ -1,8 +1,10 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-// Helper to get the auth token
+// Helper to check if user is logged in
 const getAuthToken = (): string | null => {
-  return localStorage.getItem('rivuToken');
+  // Now we rely on HTTP-only cookies for actual authentication
+  // This only checks if a user session is active based on localStorage flag
+  return localStorage.getItem('rivuLoggedIn') ? 'session-active' : null;
 };
 
 async function throwIfResNotOk(res: Response) {
@@ -17,17 +19,17 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const token = getAuthToken();
   const headers: Record<string, string> = {
     ...(data ? { "Content-Type": "application/json" } : {}),
-    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+    // Add CSRF protection header
+    "X-Requested-With": "XMLHttpRequest"
   };
 
   const res = await fetch(url, {
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
+    credentials: "include", // Include cookies for authentication
   });
 
   await throwIfResNotOk(res);
@@ -40,13 +42,14 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const token = getAuthToken();
-    const headers: Record<string, string> = token 
-      ? { "Authorization": `Bearer ${token}` } 
-      : {};
+    // We now rely on HTTP-only cookies for authentication
+    const headers: Record<string, string> = {
+      // Add CSRF protection header
+      "X-Requested-With": "XMLHttpRequest"
+    };
 
     const res = await fetch(queryKey[0] as string, {
-      credentials: "include",
+      credentials: "include", // Include cookies for session authentication
       headers
     });
 

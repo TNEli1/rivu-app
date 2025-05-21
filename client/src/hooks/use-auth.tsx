@@ -102,18 +102,25 @@ type ApiErrorResponse = {
 };
 
 // Helper function to store the token
+// We now rely on HTTP-only cookies for security, but also 
+// store a non-sensitive flag that indicates a user is logged in
 const storeToken = (token: string) => {
-  localStorage.setItem('rivuToken', token);
+  // Store only a login status flag, not the actual token
+  localStorage.setItem('rivuLoggedIn', 'true');
+  
+  // Note: The actual token is stored in HTTP-only cookies by the server
 };
 
-// Helper function to get the token
+// Helper function to check login status
 export const getToken = (): string | null => {
-  return localStorage.getItem('rivuToken');
+  // Check if the login indicator exists
+  // The actual token is managed securely in HTTP-only cookies
+  return localStorage.getItem('rivuLoggedIn') ? 'session-active' : null;
 };
 
-// Helper function to remove the token
+// Helper function to remove login state
 const removeToken = () => {
-  localStorage.removeItem('rivuToken');
+  localStorage.removeItem('rivuLoggedIn');
 };
 
 // Helper to check if a JWT token has expired
