@@ -1,0 +1,116 @@
+We are now performing the final comprehensive check before migrating the Rivu app off Replit. This is our production readiness and security hardening pass.
+
+The stack will be:
+	•	Frontend → Vercel (https://tryrivu.com)
+	•	Backend → Render (Node.js + Express)
+	•	Database → PostgreSQL on Render
+
+This is the last opportunity to ensure the codebase is hardened, bug-free, scalable, and ready to run in production.
+
+⸻
+
+PHASE 1: INFRASTRUCTURE MIGRATION CHECK
+
+Backend Structure (Node.js + Express):
+	•	Confirm the backend is standalone and can run via node index.js or npm start
+	•	Remove all Replit-specific paths, Replit DB, or hardcoded values
+	•	Verify .env variables are used for:
+	•	Plaid credentials
+	•	GPT keys
+	•	JWT secret
+	•	PostgreSQL connection string
+	•	Email server info
+	•	Add PORT=8080 fallback to support Render’s dynamic port allocation
+
+Database (PostgreSQL):
+	•	Remove all MongoDB code, models, and dependencies
+	•	Confirm all PostgreSQL queries are parameterized (no raw string injection risk)
+	•	Drizzle ORM: Confirm all table definitions match the live schema
+	•	Add migration scripts or schema sync logic (as needed)
+	•	Confirm referential integrity for budget → transaction → user relationships
+
+⸻
+
+PHASE 2: SECURITY HARDENING
+
+API Security:
+	•	Add rate limiting on:
+	•	Login
+	•	Registration
+	•	Password reset
+	•	Plaid /link_token/create and /token/exchange
+	•	AI advisory endpoints
+	•	Email triggers
+	•	Add helmet middleware (or similar) to enforce HTTP security headers
+	•	Ensure JWTs are verified and expire properly
+	•	Sanitize and validate all incoming data (especially user input, emails, date ranges, and amounts)
+
+Role-Based Access:
+	•	Enforce proper access control:
+	•	Employees should not access admin tools
+	•	Advisors should only see assigned users
+	•	Prevent endpoint spoofing with server-side role checks (not just frontend hiding)
+
+⸻
+
+PHASE 3: PLAID OAUTH FIX & VALIDATION
+	•	Rebuild and test full Plaid OAuth flow
+	•	redirect_uri must come from .env and be registered in Plaid (e.g., https://tryrivu.com/callback)
+	•	Frontend must extract oauth_state_id and pass receivedRedirectUri to Plaid.create()
+	•	Test with an OAuth bank (e.g., Wells Fargo)
+	•	Handle edge cases:
+	•	User cancels bank login
+	•	Bank returns with error or missing params
+	•	Duplicate account connection attempts
+
+⸻
+
+PHASE 4: EMAIL + PASSWORD WORKFLOWS
+	•	Confirm email sending works with a real SMTP provider (Postmark)
+	•	Validate:
+	•	Password reset sends correct links
+	•	Reset tokens are one-time use and expire
+	•	All tokens are securely stored (hashed or expiring)
+	•	Remove “no-reply@” addresses; use support@tryrivu.com or configured domain email
+
+⸻
+
+PHASE 5: FRONTEND READINESS FOR VERCEL
+	•	Confirm:
+	•	.env is externalized for Plaid keys and backend API base URL
+	•	Uses HTTPS in all fetch/axios calls
+	•	Uses production redirect_uri for Plaid
+	•	Has fallback states for:
+	•	Empty transactions
+	•	No budgets
+	•	Connection errors
+	•	Confirm responsiveness across devices
+	•	Confirm timezones reflect user’s locale (not server time)
+
+⸻
+
+PHASE 6: CLEAN CODE, STABILITY, OBSERVABILITY
+	•	Remove:
+	•	All console.log, debugger, commented-out code, test routes
+	•	Any demo/test users or backdoor access
+	•	Add:
+	•	/health endpoint for Render monitoring
+	•	Error logging (to file or console at minimum)
+	•	Graceful server shutdown logic (for Render reboots)
+
+⸻
+
+PHASE 7: FINAL VALIDATION
+	•	Test user registration, login, and logout
+	•	Link bank account (OAuth + non-OAuth)
+	•	Create and update a budget
+	•	Get AI financial advice
+	•	Export or import CSV transactions
+	•	Reset password flow
+	•	Trigger an error and ensure it returns a clean message (not a stack trace)
+	•	Check role access boundaries
+	•	Confirm frontend and backend talk smoothly on separate domains
+
+⸻
+
+Once all of the above is complete and verified, we will push to GitHub, connect Vercel + Render, and map the domain tryrivu.com for production deployment.
