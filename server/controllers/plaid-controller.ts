@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Configuration, PlaidApi, PlaidEnvironments, Products, CountryCode, LinkTokenCreateRequest } from 'plaid';
+import { Configuration, PlaidApi, PlaidEnvironments, Products, CountryCode, LinkTokenCreateRequest, InstitutionsGetByIdRequest } from 'plaid';
 import { storage } from '../storage';
 
 // Extend Express Request to include user property
@@ -18,17 +18,17 @@ declare global {
 // Initialize Plaid client with production credentials
 console.log(`Using Plaid environment: ${process.env.PLAID_ENV}`);
 
-// Set the Plaid environment - ensure we're using production
-const plaidEnvironment = process.env.PLAID_ENV || 'production';
+// Always use production environment for Plaid
+const plaidEnvironment = 'production';
 const plaidBasePath = PlaidEnvironments[plaidEnvironment];
 
 // Print environment variables for debugging (not sensitive values)
-console.log('PLAID_ENV:', process.env.PLAID_ENV);
+console.log('PLAID_ENV:', plaidEnvironment);
 console.log('CLIENT_ID available:', !!process.env.PLAID_CLIENT_ID);
-console.log('SECRET available:', !!process.env.PLAID_SECRET);
+console.log('SECRET available:', !!process.env.PLAID_SECRET_PRODUCTION);
 console.log('Plaid base path:', plaidBasePath);
 
-// Use PLAID_SECRET_PRODUCTION directly since we know it exists
+// Use PLAID_SECRET_PRODUCTION directly 
 const plaidSecret = process.env.PLAID_SECRET_PRODUCTION;
 
 console.log('Using production Plaid secret');
@@ -456,10 +456,11 @@ export const handleOAuthCallback = async (req: Request, res: Response) => {
       let institutionName = 'Connected Bank';
       if (institutionId) {
         try {
-          const institutionResponse = await plaidClient.institutionsGetById({
+          const institutionRequest: InstitutionsGetByIdRequest = {
             institution_id: institutionId,
             country_codes: ['US'] as CountryCode[],
-          });
+          };
+          const institutionResponse = await plaidClient.institutionsGetById(institutionRequest);
           institutionName = institutionResponse.data.institution.name;
         } catch (instErr) {
           console.error('Error getting institution details:', instErr);

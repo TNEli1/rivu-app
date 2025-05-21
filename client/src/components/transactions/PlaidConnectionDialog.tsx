@@ -117,13 +117,15 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
     }
   }, []);
 
-  // Configure the Plaid Link hook
+  // Configure the Plaid Link hook for full OAuth support
   const { open, ready } = usePlaidLink({
     token: linkToken || '',
     onSuccess,
     onExit,
-    // Only render if we have a link token
     receivedRedirectUri: window.location.href,
+    // Add OAuth required options
+    oauthRedirectUri: window.location.origin + '/callback',
+    oauthNonce: Math.floor(Math.random() * 10000000).toString(), // Random nonce for security
   });
 
   // Trigger Plaid Link when button is clicked

@@ -4,8 +4,8 @@ import { storage } from '../storage';
 import { logSecurityEvent, SecurityEventType } from '../services/securityLogger';
 
 // Initialize Plaid client with production credentials
-// Set the Plaid environment - ensure we're using production
-const plaidEnvironment = process.env.PLAID_ENV || 'production';
+// Always use production environment for Plaid
+const plaidEnvironment = 'production';
 const plaidBasePath = PlaidEnvironments[plaidEnvironment];
 
 // Use PLAID_SECRET_PRODUCTION directly
