@@ -37,7 +37,7 @@ export default function RivuScoreInfoPage() {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <PieChart className="mr-2 h-5 w-5 text-primary" />
-                What is the Rivu Score?
+                What is the Rivu Score™?
               </CardTitle>
               <CardDescription>
                 Your personalized financial health metric
@@ -45,11 +45,11 @@ export default function RivuScoreInfoPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p>
-                The Rivu Score is a personalized metric that measures your overall financial health on a scale from 0 to 100. 
+                The Rivu Score™ is a personalized metric that measures your overall financial health on a scale from 0 to 100. 
                 It's designed to give you quick insight into how well you're doing across multiple financial dimensions.
               </p>
               <div className={`p-4 rounded-md ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`}>
-                <p className="text-sm font-medium mb-2">Important: The Rivu Score is not a credit score</p>
+                <p className="text-sm font-medium mb-2">Important: The Rivu Score™ is not a credit score</p>
                 <p className="text-sm">
                   This score is private to you and is not shared with third parties. It's simply a way to track 
                   your personal financial progress over time.
