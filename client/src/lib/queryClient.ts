@@ -19,10 +19,19 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  // Get CSRF token from cookie if available
+  const getCsrfToken = () => {
+    const cookie = document.cookie.split('; ').find(row => row.startsWith('csrf_token='));
+    return cookie ? cookie.split('=')[1] : '';
+  };
+  
+  const csrfToken = getCsrfToken();
+  
   const headers: Record<string, string> = {
     ...(data ? { "Content-Type": "application/json" } : {}),
-    // Add CSRF protection header
-    "X-Requested-With": "XMLHttpRequest"
+    // Add CSRF protection headers
+    "X-Requested-With": "XMLHttpRequest",
+    ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {})
   };
 
   const res = await fetch(url, {
@@ -37,15 +46,25 @@ export async function apiRequest(
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
+// Helper function to get CSRF token from cookies
+const getCsrfToken = () => {
+  if (typeof document === 'undefined') return '';
+  const cookie = document.cookie.split('; ').find(row => row.startsWith('csrf_token='));
+  return cookie ? cookie.split('=')[1] : '';
+};
+
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     // We now rely on HTTP-only cookies for authentication
+    const csrfToken = getCsrfToken();
+    
     const headers: Record<string, string> = {
-      // Add CSRF protection header
-      "X-Requested-With": "XMLHttpRequest"
+      // Add CSRF protection headers
+      "X-Requested-With": "XMLHttpRequest",
+      ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {})
     };
 
     const res = await fetch(queryKey[0] as string, {

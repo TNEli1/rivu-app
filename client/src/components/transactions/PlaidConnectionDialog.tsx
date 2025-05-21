@@ -37,17 +37,44 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
       
       const fetchLinkToken = async () => {
         try {
+          // Get the CSRF token from cookies if available
+          const getCsrfToken = () => {
+            const cookie = document.cookie.split('; ').find(row => row.startsWith('csrf_token='));
+            return cookie ? cookie.split('=')[1] : '';
+          };
+          
+          const csrfToken = getCsrfToken();
+          const headers: Record<string, string> = {
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest"
+          };
+          
+          if (csrfToken) {
+            headers["X-CSRF-Token"] = csrfToken;
+          }
+          
+          // First make a direct request to get a fresh CSRF token if needed
+          await fetch('/api/user', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+              "X-Requested-With": "XMLHttpRequest"
+            }
+          });
+          
+          // Then make the actual request for the link token
           const response = await apiRequest('POST', '/api/plaid/create_link_token', {});
           const data = await response.json();
+          
           if (data && data.link_token) {
             setLinkToken(data.link_token);
           } else {
             setError('Failed to get link token');
             console.error('No link token in response:', data);
           }
-        } catch (err) {
+        } catch (err: any) {
           console.error('Error getting link token:', err);
-          setError('Failed to connect to bank services');
+          setError(err.message || 'Failed to connect to bank services');
         } finally {
           setLoading(false);
         }
