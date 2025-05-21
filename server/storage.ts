@@ -309,11 +309,23 @@ export class DatabaseStorage implements IStorage {
     return results;
   }
 
-  async getTransaction(id: number): Promise<Transaction | undefined> {
-    const [transaction] = await db
-      .select()
-      .from(transactions)
-      .where(eq(transactions.id, id));
+  async getTransaction(id: number, userId?: number): Promise<Transaction | undefined> {
+    // If userId is provided, ensure we only return transactions belonging to that user
+    // This prevents data leakage between accounts
+    const query = db.select().from(transactions);
+    
+    if (userId !== undefined) {
+      // When userId is provided, strictly enforce user data isolation
+      query.where(and(
+        eq(transactions.id, id),
+        eq(transactions.userId, userId)
+      ));
+    } else {
+      // Only use this branch for system operations, never for user-facing queries
+      query.where(eq(transactions.id, id));
+    }
+    
+    const [transaction] = await query;
     return transaction || undefined;
   }
 
@@ -432,19 +444,37 @@ export class DatabaseStorage implements IStorage {
     return true;
   }
 
-  async updateTransaction(id: number, data: Partial<Transaction>): Promise<Transaction | undefined> {
-    const [transaction] = await db
-      .select()
-      .from(transactions)
-      .where(eq(transactions.id, id));
+  async updateTransaction(id: number, data: Partial<Transaction>, userId?: number): Promise<Transaction | undefined> {
+    // First retrieve the transaction, ensuring it belongs to the correct user if userId is provided
+    const query = db.select().from(transactions);
     
+    if (userId !== undefined) {
+      // Strict user data isolation - only allow updating transactions that belong to this user
+      query.where(and(
+        eq(transactions.id, id),
+        eq(transactions.userId, userId)
+      ));
+    } else {
+      // Only for system operations, never for user-facing requests
+      query.where(eq(transactions.id, id));
+    }
+    
+    const [transaction] = await query;
     if (!transaction) return undefined;
     
-    const [updatedTransaction] = await db
-      .update(transactions)
-      .set(data)
-      .where(eq(transactions.id, id))
-      .returning();
+    // Now perform the update with the same user isolation
+    const updateQuery = db.update(transactions).set(data);
+    
+    if (userId !== undefined) {
+      updateQuery.where(and(
+        eq(transactions.id, id),
+        eq(transactions.userId, userId)
+      ));
+    } else {
+      updateQuery.where(eq(transactions.id, id));
+    }
+    
+    const [updatedTransaction] = await updateQuery.returning();
     
     // Recalculate Rivu score after updating a transaction
     await this.calculateAndUpdateRivuScore(transaction.userId);
@@ -452,22 +482,41 @@ export class DatabaseStorage implements IStorage {
     return updatedTransaction || undefined;
   }
 
-  async deleteTransaction(id: number): Promise<boolean> {
-    const [transaction] = await db
-      .select()
-      .from(transactions)
-      .where(eq(transactions.id, id));
+  async deleteTransaction(id: number, userId?: number): Promise<boolean> {
+    // First verify the transaction exists and belongs to the correct user if userId is provided
+    const query = db.select().from(transactions);
     
+    if (userId !== undefined) {
+      // Strict user data isolation - only allow deleting transactions that belong to this user
+      query.where(and(
+        eq(transactions.id, id),
+        eq(transactions.userId, userId)
+      ));
+    } else {
+      // Only for system operations, never for user-facing requests
+      query.where(eq(transactions.id, id));
+    }
+    
+    const [transaction] = await query;
     if (!transaction) return false;
     
-    const userId = transaction.userId;
-    const result = await db
-      .delete(transactions)
-      .where(eq(transactions.id, id));
+    // Now perform the delete with the same user isolation
+    const deleteQuery = db.delete(transactions);
+    
+    if (userId !== undefined) {
+      deleteQuery.where(and(
+        eq(transactions.id, id),
+        eq(transactions.userId, userId)
+      ));
+    } else {
+      deleteQuery.where(eq(transactions.id, id));
+    }
+    
+    const result = await deleteQuery;
     
     // Recalculate Rivu score after deleting a transaction
     if (result) {
-      await this.calculateAndUpdateRivuScore(userId);
+      await this.calculateAndUpdateRivuScore(transaction.userId);
     }
     
     return !!result;
