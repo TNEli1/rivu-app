@@ -14,7 +14,6 @@ export default function LandingPage() {
         <div className="flex justify-between items-center">
           <div className="flex items-center">
             <img src="/images/rivu-logo.png" alt="Rivu Logo" className="h-10 w-auto" />
-            <span className="ml-2 text-xl font-bold">Rivu</span>
           </div>
           <div className="space-x-1 md:space-x-4">
             <Link href="/login">
@@ -196,7 +195,6 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center mb-6 md:mb-0">
               <img src="/images/rivu-logo.png" alt="Rivu Logo" className="h-8 w-auto" />
-              <span className="ml-2 font-bold">Rivu</span>
             </div>
             <div className="flex space-x-6">
               <Link href="/privacy">
