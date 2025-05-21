@@ -6,8 +6,15 @@ import { storage } from '../storage';
 import { User } from '@shared/schema';
 import { logSecurityEvent, SecurityEventType } from '../services/securityLogger';
 
-// JWT Secret Key
-const JWT_SECRET = process.env.JWT_SECRET || 'rivu_jwt_secret_dev_key';
+// JWT Secret Key - ensure we have a proper secret in production
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  console.error('⛔ CRITICAL SECURITY ERROR: JWT_SECRET is not set in production!');
+  throw new Error('JWT_SECRET must be set in production environment');
+}
+
+// Only use fallback in development, never in production
+const JWT_SECRET = process.env.JWT_SECRET || 
+  (process.env.NODE_ENV !== 'production' ? 'rivu_jwt_secret_dev_key' : '');
 
 // JWT Expiration - 2 hours in seconds
 const JWT_EXPIRY = 60 * 60 * 2; 
@@ -124,15 +131,15 @@ export const registerUser = async (req: any, res: any) => {
         // Don't fail registration if nudge creation fails
       }
       
-      // Return user info without password
+      // Return user info without password and token
+      // Token is already set in HTTP-only cookie for security
       res.status(201).json({
         _id: user.id,
         username: user.username,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        onboardingStage: user.onboardingStage,
-        token // Include token in response for clients not using cookies
+        onboardingStage: user.onboardingStage
       });
     } else {
       res.status(400).json({ 

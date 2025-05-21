@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
+import { setCsrfToken, validateCsrfToken } from "./middleware/csrfProtection";
 
 // Load environment variables
 dotenv.config();
@@ -44,12 +45,20 @@ if (process.env.NODE_ENV === 'production') {
 
 // Remove the explicit import since we'll use registerRoutes to handle this
 
-// Configure CORS - ensure all origins are allowed for mobile testing
+// Configure CORS with proper security settings
 const corsOptions = {
-  origin: '*', // Allow all origins for testing
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.ALLOWED_ORIGINS?.split(',') || 'https://tryrivu.com' // Production: specific origins
+    : true, // Development: allow all origins but maintain credentials
   credentials: true, // Allow cookies
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With',
+    'CSRF-Token',
+    'X-CSRF-Token'
+  ]
 };
 app.use(cors(corsOptions));
 
@@ -60,6 +69,10 @@ app.use(express.static('public'));
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser()); // Parse cookies
+
+// Apply CSRF protection
+app.use(setCsrfToken); // Set CSRF token for all routes
+app.use('/api', validateCsrfToken); // Validate CSRF token for API routes
 
 // Set security headers
 app.use((req, res, next) => {
