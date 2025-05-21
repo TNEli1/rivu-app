@@ -120,7 +120,7 @@ export default function RivuScoreCard() {
     <Card className="bg-card rounded-xl">
       <CardContent className="p-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-foreground">Your Rivu Score</h2>
+          <h2 className="text-xl font-bold text-foreground">Your Rivu Score™</h2>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -137,7 +137,7 @@ export default function RivuScoreCard() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{refreshCooldown ? 'Wait before refreshing again' : 'Recalculate based on your latest progress'}</p>
+                <p>{refreshCooldown ? 'Wait before refreshing again' : 'Recalculate your Rivu Score™ based on latest progress'}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>

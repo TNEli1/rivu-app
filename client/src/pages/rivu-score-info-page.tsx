@@ -29,7 +29,7 @@ export default function RivuScoreInfoPage() {
               Back to Dashboard
             </Button>
           </Link>
-          <h1 className="text-2xl font-semibold">How Your Rivu Score Works</h1>
+          <h1 className="text-2xl font-semibold">How Your Rivu Score™ Works</h1>
         </div>
         
         <div className="max-w-3xl mx-auto">
