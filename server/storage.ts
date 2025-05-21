@@ -1223,16 +1223,25 @@ export class DatabaseStorage implements IStorage {
         // Create onboarding nudges based on onboarding stage
         const onboardingStage = user.onboardingStage || 'new';
         
+        // First check if user has budget categories before showing the "create a budget" nudge
         if (onboardingStage === 'new') {
-          // First-time user nudge
-          const nudge = await this.createNudge({
-            userId,
-            type: 'onboarding',
-            message: 'Welcome to Rivu! Start by creating a budget category.',
-            status: 'active',
-            triggerCondition: JSON.stringify({ type: 'new_user' }),
-          });
-          newNudges.push(nudge);
+          // Check if user already has budget categories
+          const budgetCategories = await this.getBudgetCategories(userId);
+          
+          // Only show the nudge if they don't have any budget categories
+          if (budgetCategories.length === 0) {
+            const nudge = await this.createNudge({
+              userId,
+              type: 'onboarding',
+              message: 'Welcome to Rivu! Start by creating a budget category.',
+              status: 'active',
+              triggerCondition: JSON.stringify({ type: 'new_user' }),
+            });
+            newNudges.push(nudge);
+          } else {
+            // If they have categories but are still in 'new' stage, update their stage
+            await this.updateOnboardingStage(userId, 'budget_created');
+          }
         } else if (onboardingStage === 'budget_created' && !user.lastTransactionDate) {
           // User created budget but hasn't added transactions
           const nudge = await this.createNudge({
@@ -1324,40 +1333,33 @@ export class DatabaseStorage implements IStorage {
                  parseFloat(String(category.budgetAmount)) > 0;
         });
         
+        // Setup formatters outside of loop for reuse
+        const formatMoney = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 2
+        });
+        
         // Create nudges for categories at risk
         for (const category of categoriesAtRisk) {
           // Get today's date to make the message more relevant
           const today = new Date();
           const dayOfMonth = today.getDate();
           
+          // Get the appropriate suffix for the day (1st, 2nd, 3rd, etc.)
+          let suffix = 'th';
+          if (dayOfMonth % 10 === 1 && dayOfMonth !== 11) suffix = 'st';
+          else if (dayOfMonth % 10 === 2 && dayOfMonth !== 12) suffix = 'nd';
+          else if (dayOfMonth % 10 === 3 && dayOfMonth !== 13) suffix = 'rd';
+          
           const nudge = await this.createNudge({
             userId,
             type: 'budget_warning',
-            message: `Your ${category.name} budget is ${category.percentUsed}% used${dayOfMonth < 20 ? ` and it's only the ${dayOfMonth}${getDaySuffix(dayOfMonth)}` : ''}. You have ${formatCurrency(category.remaining)} remaining.`,
+            message: `Your ${category.name} budget is ${category.percentUsed}% used${dayOfMonth < 20 ? ` and it's only the ${dayOfMonth}${suffix}` : ''}. You have ${formatMoney.format(category.remaining)} remaining.`,
             status: 'active',
             triggerCondition: JSON.stringify({ type: 'budget_at_risk', categoryId: category.id, percentUsed: category.percentUsed }),
           });
           newNudges.push(nudge);
-        }
-        
-        // Helper function to format currency
-        function formatCurrency(amount: number): string {
-          return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-            minimumFractionDigits: 2
-          }).format(amount);
-        }
-        
-        // Helper function to get day suffix (1st, 2nd, 3rd, etc.)
-        function getDaySuffix(day: number): string {
-          if (day > 3 && day < 21) return 'th';
-          switch (day % 10) {
-            case 1: return 'st';
-            case 2: return 'nd';
-            case 3: return 'rd';
-            default: return 'th';
-          }
         }
       }
       
