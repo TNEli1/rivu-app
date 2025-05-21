@@ -264,7 +264,10 @@ export default function Dashboard() {
         // If tutorial is already completed according to localStorage, make sure user state is updated
         if (localTutorialCompleted && user.tutorialCompleted === false) {
           // Update user profile in the background to match localStorage
-          updateProfileMutation.mutate({ tutorialCompleted: true });
+          // Use the apiRequest method directly since we don't have updateProfileMutation here
+          apiRequest('PUT', '/api/user', { tutorialCompleted: true }).catch(err => {
+            console.error('Failed to update tutorial state:', err);
+          });
         }
       }
     }

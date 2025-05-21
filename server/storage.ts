@@ -1497,11 +1497,11 @@ export class DatabaseStorage implements IStorage {
       const transactions = await this.getTransactions(userId);
       
       // Check if the user has connected a Plaid account
-      const plaidItems = await db.select()
-        .from(plaidItems)
-        .where(eq(plaidItems.userId, userId));
+      const userPlaidItems = await db.select()
+        .from(schema.plaidItems)
+        .where(eq(schema.plaidItems.userId, userId));
       
-      const hasBankLinked = plaidItems.length > 0;
+      const hasBankLinked = userPlaidItems.length > 0;
       
       if (transactions.length === 0 && hasBankLinked) {
         if (!existingNudgeTypes.has('empty_transactions') && !recentlyHandledTypes.has('empty_transactions')) {

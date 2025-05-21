@@ -49,14 +49,27 @@ export const getTransactionById = async (req: any, res: any) => {
     const userId = parseInt(req.user.id, 10);
     const transactionId = parseInt(req.params.id, 10);
     
-    // Get transaction from PostgreSQL storage
-    const transaction = await storage.getTransaction(transactionId);
+    console.log(`User ${userId} requesting transaction ID: ${transactionId}`);
     
-    // Check if transaction exists and belongs to user
-    if (!transaction || transaction.userId !== userId) {
+    // CRITICAL SECURITY FIX: Pass userId to storage layer to enforce data isolation at the query level
+    // This prevents any possibility of accessing another user's data
+    const transaction = await storage.getTransaction(transactionId, userId);
+    
+    // Enhanced security check with detailed logging
+    if (!transaction) {
+      console.log(`Transaction ID ${transactionId} not found for user ${userId} - access denied`);
       return res.status(404).json({ 
         message: 'Transaction not found',
         code: 'TRANSACTION_NOT_FOUND'
+      });
+    }
+    
+    // Double-check user ownership for extra security
+    if (transaction.userId !== userId) {
+      console.error(`SECURITY ALERT: Transaction ${transactionId} belongs to user ${transaction.userId} but accessed by ${userId}`);
+      return res.status(403).json({ 
+        message: 'Not authorized to access this transaction',
+        code: 'UNAUTHORIZED_ACCESS'
       });
     }
     
