@@ -51,9 +51,9 @@ export default function LandingPage() {
         </div>
         <div className="md:w-1/2 mt-10 md:mt-0 flex items-center justify-center">
           <div className="p-8 rounded-2xl bg-gradient-to-br from-teal-400 to-blue-500 shadow-xl text-center text-white">
-            <img src="/images/rivu-logo.png" alt="Rivu Logo" className="h-44 w-auto mx-auto mb-4" />
-            <h2 className="text-2xl font-bold mb-2">Smart. Simple. Secure.</h2>
-            <p className="text-lg">Your journey to financial wellness starts here</p>
+            <h2 className="text-3xl font-bold mb-3">Smart. Simple. Secure.</h2>
+            <p className="text-xl mb-2">Your journey to financial wellness starts here</p>
+            <p className="text-lg italic mt-4">Take control of your finances with AI-powered insights</p>
           </div>
         </div>
       </section>
