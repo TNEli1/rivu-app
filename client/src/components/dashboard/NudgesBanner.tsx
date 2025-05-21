@@ -324,33 +324,87 @@ export default function NudgesBanner() {
                     ? 'border-l-red-500'
                     : nudge.type === 'activity_reminder'
                       ? 'border-l-blue-500'
-                      : 'border-l-blue-500'
-          } ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}
+                      : nudge.type === 'saving_opportunity'
+                        ? 'border-l-green-500'
+                        : 'border-l-blue-500'
+          } ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} transition-all duration-200 ease-in-out`}
         >
           <CardContent className="p-4">
             <div className="flex justify-between items-start">
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3 flex-1">
                 <div className="mt-0.5 flex-shrink-0">
                   {getNudgeIcon(nudge.type)}
                 </div>
-                <div>
-                  <h3 className={`font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-900'}`}>
-                    {nudge.type.split('_').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                  </h3>
-                  <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                <div className="flex-1">
+                  <div className="flex justify-between items-center mb-1">
+                    <h3 className={`font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-900'}`}>
+                      {nudge.details?.title || nudge.type.split('_').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                    </h3>
+                    {getPriorityBadge(nudge.priority)}
+                  </div>
+                  
+                  <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
                     {nudge.message}
                   </p>
                   
+                  {/* If it's a budget or goal nudge with current and target values */}
+                  {expandedNudgeId === nudge.id && nudge.details && (nudge.type === 'budget_warning' || nudge.type === 'goal_reminder') && 
+                    typeof nudge.details.currentValue === 'number' && 
+                    typeof nudge.details.targetValue === 'number' && (
+                    <div className="mt-3">
+                      <div className="flex justify-between items-center text-xs mb-1">
+                        <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                          {formatCurrency(nudge.details.currentValue)}
+                        </span>
+                        <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                          {formatCurrency(nudge.details.targetValue)}
+                        </span>
+                      </div>
+                      <Progress 
+                        value={nudge.details.percentComplete || (nudge.details.currentValue / nudge.details.targetValue * 100)} 
+                        className={`h-2 ${
+                          nudge.type === 'budget_warning' ? 'bg-amber-100 dark:bg-amber-950' : 'bg-purple-100 dark:bg-purple-950'
+                        }`}
+                      />
+                    </div>
+                  )}
+                  
                   {/* Additional content when expanded */}
                   {expandedNudgeId === nudge.id && (
-                    <div className={`mt-3 text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                      <p>Created: {new Date(nudge.createdAt).toLocaleDateString()}</p>
-                      {nudge.dueDate && <p>Due: {new Date(nudge.dueDate).toLocaleDateString()}</p>}
+                    <div className={`mt-3 space-y-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                      {nudge.details?.description && (
+                        <p className="text-sm">{nudge.details.description}</p>
+                      )}
+                      
+                      {nudge.details?.impact && (
+                        <div className="flex items-start gap-1 text-xs">
+                          <TrendingUp className="h-3.5 w-3.5 text-green-500 flex-shrink-0 mt-0.5" />
+                          <p className="text-green-600 dark:text-green-400">{nudge.details.impact}</p>
+                        </div>
+                      )}
+                      
+                      {nudge.details?.suggestionText && (
+                        <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded-md text-xs mt-2">
+                          <p className="font-medium mb-1">AI Suggestion:</p>
+                          <p>{nudge.details.suggestionText}</p>
+                        </div>
+                      )}
+                      
+                      <div className="text-xs flex items-center gap-2 text-gray-500 dark:text-gray-400 mt-2">
+                        <Calendar className="h-3 w-3" />
+                        <span>Created: {new Date(nudge.createdAt).toLocaleDateString()}</span>
+                        {nudge.dueDate && (
+                          <>
+                            <span>•</span>
+                            <span>Due: {new Date(nudge.dueDate).toLocaleDateString()}</span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   )}
                   
                   {/* Action buttons */}
-                  <div className="mt-3 flex gap-2">
+                  <div className="mt-3 flex flex-wrap gap-2">
                     <Button 
                       variant="ghost" 
                       size="sm" 
@@ -362,13 +416,30 @@ export default function NudgesBanner() {
                       {completeNudge.isPending ? 'Marking...' : 'Mark as Done'}
                     </Button>
                     
+                    {nudge.actionPath && nudge.actionText && (
+                      <Link to={nudge.actionPath}>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-xs bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800 dark:hover:bg-blue-900"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                          {nudge.actionText}
+                        </Button>
+                      </Link>
+                    )}
+                    
                     <Button 
                       variant="link" 
                       size="sm" 
                       onClick={() => setExpandedNudgeId(expandedNudgeId === nudge.id ? null : nudge.id)}
                       className="text-xs"
                     >
-                      {expandedNudgeId === nudge.id ? 'Less' : 'More'}
+                      {expandedNudgeId === nudge.id ? (
+                        <>Less <ChevronUp className="h-3 w-3 ml-1" /></>
+                      ) : (
+                        <>More <ChevronDown className="h-3 w-3 ml-1" /></>
+                      )}
                     </Button>
                   </div>
                 </div>

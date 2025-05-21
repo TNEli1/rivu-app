@@ -506,6 +506,13 @@ export default function TransactionsPage() {
     
     setIsEditDialogOpen(true);
   };
+  
+  // Function to handle transaction deletion
+  const handleDeleteTransaction = (transaction: Transaction) => {
+    if (window.confirm(`Are you sure you want to delete this transaction: "${transaction.merchant}" for ${transaction.type === 'income' ? '+' : '-'}${formatCurrency(transaction.amount)}?`)) {
+      deleteTransactionMutation.mutate(transaction.id);
+    }
+  };
 
   const clearAllFilters = () => {
     setSearchTerm("");
