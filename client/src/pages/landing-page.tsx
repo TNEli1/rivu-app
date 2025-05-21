@@ -1,11 +1,21 @@
-import React from 'react';
-import { Link } from 'wouter';
+import React, { useEffect } from 'react';
+import { Link, useLocation } from 'wouter';
 import { ArrowRight, PieChart, Target, TrendingUp, BarChart2, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/use-theme';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function LandingPage() {
   const { theme } = useTheme();
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
+  
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (user) {
+      setLocation('/dashboard');
+    }
+  }, [user, setLocation]);
   
   return (
     <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'}`}>
