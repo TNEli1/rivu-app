@@ -2,6 +2,7 @@
 import { sql } from 'drizzle-orm';
 import { db, pool } from './db';
 import * as schema from '@shared/schema';
+import { QueryResult } from '@neondatabase/serverless';
 
 /**
  * Production-ready database migration script
@@ -27,11 +28,9 @@ async function main() {
           WHERE table_schema = 'public' 
           AND table_name = 'users'
         );
-      `);
+      `) as unknown as Array<{exists: boolean}>;
       
-      const usersTableExists = Array.isArray(result) && result.length > 0 
-        ? (result[0] as Record<string, unknown>)?.exists as boolean 
-        : false;
+      const usersTableExists = result.length > 0 ? result[0].exists : false;
       
       if (!usersTableExists) {
         console.log('Initial schema setup required - creating tables...');
@@ -50,9 +49,9 @@ async function main() {
             AND table_name = 'users' 
             AND column_name = 'last_budget_review_date'
           );
-        `);
+        `) as unknown as Array<{exists: boolean}>;
         
-        const columnExists = columnResult[0]?.exists;
+        const columnExists = columnResult.length > 0 ? columnResult[0].exists : false;
         
         if (!columnExists) {
           console.log('Adding last_budget_review_date field to users table...');
