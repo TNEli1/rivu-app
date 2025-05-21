@@ -428,9 +428,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ? parseFloat(topCategory.spentAmount) 
             : (topCategory.spentAmount || 0);
             
-          // Calculate percentage of total spending
-          const percentage = totalBudgetSpent > 0 
-            ? Math.round((topAmount / totalBudgetSpent) * 100) 
+          // Calculate percentage relative to monthlyExpenses (actual transactions)
+          // This gives a more accurate picture of what proportion of real spending 
+          // is in this category rather than relative to budgeted amounts
+          const percentage = monthlyExpenses > 0 
+            ? Math.round((topAmount / monthlyExpenses) * 100) 
             : 0;
             
           topSpendingCategory = {
