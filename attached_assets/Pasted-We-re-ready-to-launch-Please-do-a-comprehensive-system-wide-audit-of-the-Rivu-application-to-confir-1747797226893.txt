@@ -1,0 +1,122 @@
+We’re ready to launch. Please do a comprehensive system-wide audit of the Rivu application to confirm it’s clean, secure, and production-ready.
+
+⸻
+
+
+
+✅ 1. USER EXPERIENCE & FLOW
+	•	Check that all buttons, links, and forms across the app are functional on both desktop and mobile
+	•	Ensure all routing is stable (no redirect loops, broken links, or dead endpoints)
+	•	Validate keyboard accessibility for all interactive elements
+	•	Test app in light mode and dark mode, including persistence across sessions
+	•	Verify that text is readable and properly aligned across all screen sizes
+
+⸻
+
+✅ 2. AUTHENTICATION + SESSION CONTROL
+	•	Confirm users are properly logged in/out and tokens are cleared on logout
+	•	Ensure all protected routes redirect to login when not authenticated
+	•	Validate token expiration behavior and refresh handling
+	•	Confirm that forgot password + reset flow works from end to end and reflects Rivu branding
+
+⸻
+
+✅ 3. PLAID INTEGRATION + BANK CONNECTIONS
+	•	Confirm production keys are being used (PLAID_ENV=production)
+	•	Ensure user can:
+	•	Successfully connect a bank account
+	•	View account data and transactions
+	•	Disconnect their account via /item/remove
+	•	Ensure Plaid OAuth works with redirect flow
+	•	Validate handling of Plaid error states (e.g., invalid login, connection error)
+
+⸻
+
+✅ 4. BUDGETING + TRANSACTIONS
+	•	Ensure users can:
+	•	Create, edit, and delete budgets
+	•	Add transactions via Plaid, CSV, or manually
+	•	Validate that:
+	•	Budget remaining is accurate
+	•	Transactions show up in the correct month and category
+	•	No NaN, null, or placeholder data is rendered
+	•	Make sure all calculations match expected values
+
+⸻
+
+✅ 5. GOALS + RIVU SCORE™
+	•	Confirm goal progress updates correctly on both dashboard and goals page
+	•	Estimated completion date should be accurate based on contribution pattern
+	•	Confirm Rivu Score™ updates in real time and reflects correct logic
+	•	Rivu Score™ must display ™ symbol everywhere it appears — dashboard, insights, history, coach
+
+⸻
+
+✅ 6. AI COACH + NUDGES
+	•	Confirm coach tone personalization (encouraging, direct, strict) is respected in prompts
+	•	Coach should pull real user data (not demo/hardcoded values)
+	•	Nudges must be:
+	•	Contextually relevant (e.g., don’t ask for budget if already built)
+	•	Non-repetitive
+	•	Suppressed if not useful
+	•	Coach and nudges must never leak other users’ data
+
+⸻
+
+✅ 7. DATA INTEGRITY + PRIVACY
+	•	Confirm ALL user data (transactions, goals, budgets, scores, profile) is scoped by user ID
+	•	Do a multi-account test to confirm no cross-user data leakage
+	•	Validate that database queries use secure practices (parameterized queries, protected endpoints)
+	•	Ensure data stored in PostgreSQL is persisted, encrypted at rest (if supported), and retrievable
+
+⸻
+
+✅ 8. SECURITY CHECKPOINT
+	•	Scan for:
+	•	Exposed secrets or .env variables in frontend
+	•	Unprotected endpoints
+	•	Session hijacking vulnerabilities
+	•	Confirm:
+	•	HTTPS is enforced (once live)
+	•	JWTs are scoped and validated
+	•	All production keys are in Render or equivalent backend-only env store
+
+⸻
+
+✅ 9. COMPLIANCE + TERMS
+	•	Ensure:
+	•	Terms of Service and Privacy Policy are visible and dated
+	•	Terms acceptance checkbox on signup is required and logged
+	•	Data deletion can be requested (e.g., via support@tryrivu.com)
+	•	Disconnect bank option exists per Plaid requirements
+
+⸻
+
+✅ 10. LANDING PAGE
+	•	Copy should clearly explain the app:
+	•	Behavior-based budgeting
+	•	Rivu Score™
+	•	Secure Plaid connections, CSV, or manual entry
+	•	Make sure icons for Plaid, CSV, Manual are relevant (or include Plaid logo if permitted)
+	•	All CTAs route correctly to signup/login
+	•	Footer includes links to Terms, Privacy, Contact
+
+⸻
+
+✅ 11. ONBOARDING TUTORIAL
+	•	Tutorial appears on first login
+	•	Skip button works and stores preference
+	•	Option to relaunch tutorial available in Settings
+	•	Covers dashboard, Rivu Score™, Plaid connection, goals, budgets, and coach
+
+⸻
+
+✅ 12. FINAL POLISH & PERFORMANCE
+	•	Remove any debug console logs or test flags
+	•	Compress images and static assets
+	•	Ensure fast load times across all routes
+	•	Test in Safari, Chrome, and mobile browsers
+
+⸻
+
+Please treat this as a full pre-launch sweep. Confirm each issue above is validated, fixed if necessary, and tested across environments. This is the final pass before public release.
