@@ -19,7 +19,18 @@ import { useQuery } from "@tanstack/react-query";
 const initialSummaryData = {
   totalBalance: 0,
   weeklySpending: 0,
-  remainingBudget: 0
+  weeklySpendingChange: 0,
+  remainingBudget: 0,
+  monthlyIncome: 0,
+  monthlyExpenses: 0,
+  spendingRate: 0,
+  projectedOverspend: 0,
+  topSpendingCategory: {
+    name: '',
+    amount: 0,
+    percentage: 0
+  },
+  netFlowTrend: [0, 0, 0]
 };
 
 // Types for transaction data
@@ -35,9 +46,21 @@ type Transaction = {
 type DashboardSummary = {
   totalBalance: number;
   weeklySpending: number;
+  weeklySpendingChange?: number;
   remainingBudget: number;
   monthlyIncome?: number;
   monthlyExpenses?: number;
+  // New fields for projected spending
+  spendingRate?: number;
+  projectedOverspend?: number;
+  // Top spending category
+  topSpendingCategory?: {
+    name: string;
+    amount: number;
+    percentage: number;
+  };
+  // Monthly net flow trend (3-month)
+  netFlowTrend?: number[];
 };
 
 type GoalData = {
@@ -48,6 +71,7 @@ type GoalData = {
   currentAmount: number;
   progressPercentage: number;
   targetDate?: string | Date;
+  progressRate?: number; // Added for progress pace indicator
 };
 
 export default function Dashboard() {
@@ -230,7 +254,7 @@ export default function Dashboard() {
         <NudgesBanner />
 
         {/* Summary Cards */}
-        <section className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <section className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
           <Card className={`rounded-lg p-5 shadow-sm ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
             <CardContent className="p-0">
               <h2 className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-700'}`}>Monthly Net Flow</h2>
@@ -241,9 +265,33 @@ export default function Dashboard() {
               }`}>
                 {formatCurrency((summaryData?.monthlyIncome || 0) - (summaryData?.monthlyExpenses || 0))}
               </p>
-              <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                Income minus expenses
-              </p>
+              <div className="flex justify-between items-center">
+                <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Income minus expenses
+                </p>
+                {/* 3-month trend visualization */}
+                {summaryData?.netFlowTrend && summaryData.netFlowTrend.length > 0 && (
+                  <div className="flex items-center gap-1 mt-1">
+                    {summaryData.netFlowTrend.map((value, index) => (
+                      <div 
+                        key={index}
+                        className={`h-3 w-1.5 rounded-sm ${
+                          value > 0 
+                            ? 'bg-green-500' 
+                            : value < 0 
+                              ? 'bg-red-500' 
+                              : 'bg-gray-300'
+                        }`}
+                        style={{ 
+                          height: `${Math.min(Math.abs(value) * 3, 12)}px`,
+                          minHeight: '3px'
+                        }}
+                      ></div>
+                    ))}
+                    <span className="text-xs ml-1 text-gray-400">3mo</span>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
           
@@ -284,6 +332,17 @@ export default function Dashboard() {
               <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                 For this month
               </p>
+              {/* Projected overspend logic */}
+              {summaryData?.spendingRate && summaryData.spendingRate > 1 && (
+                <p className="text-xs mt-1 text-red-500">
+                  Projected to overspend by {formatCurrency(summaryData.projectedOverspend || 0)}
+                </p>
+              )}
+              {summaryData?.spendingRate && summaryData.spendingRate <= 1 && summaryData.spendingRate > 0.85 && (
+                <p className="text-xs mt-1 text-amber-500">
+                  At current rate, you'll spend {Math.round(summaryData.spendingRate * 100)}% of budget
+                </p>
+              )}
             </CardContent>
           </Card>
           
@@ -302,6 +361,54 @@ export default function Dashboard() {
                   'Create a goal to track progress'
                 }
               </p>
+              
+              {/* Estimated completion date if available */}
+              {goalsData && goalsData.length > 0 && goalsData[0].targetDate && goalsData[0].progressPercentage > 0 && (
+                <p className="text-xs mt-1 text-blue-500">
+                  Est. completion: {new Date(goalsData[0].targetDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                </p>
+              )}
+              
+              {/* Progress pace indicator */}
+              {goalsData && goalsData.length > 0 && goalsData[0].progressPercentage > 0 && goalsData[0].progressRate !== undefined && (
+                <p className={`text-xs mt-1 ${
+                  (goalsData[0].progressRate || 0) > 1 ? 'text-green-500' : 
+                  (goalsData[0].progressRate || 0) >= 0.8 ? 'text-blue-500' : 'text-amber-500'
+                }`}>
+                  {(goalsData[0].progressRate || 0) > 1 
+                    ? 'Ahead of schedule' 
+                    : (goalsData[0].progressRate || 0) >= 0.8 
+                      ? 'On track' 
+                      : 'Behind schedule'}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+          
+          {/* New Top Spending Category Card */}
+          <Card className={`rounded-lg p-5 shadow-sm ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+            <CardContent className="p-0">
+              <h2 className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-700'}`}>Top Spending Category</h2>
+              <p className={`text-xl font-bold mt-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
+                {summaryData?.topSpendingCategory?.name ? 
+                  summaryData.topSpendingCategory.name : 
+                  'None'
+                }
+              </p>
+              {summaryData?.topSpendingCategory?.amount ? (
+                <>
+                  <p className={`text-base font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                    {formatCurrency(summaryData.topSpendingCategory.amount)}
+                  </p>
+                  <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {summaryData.topSpendingCategory.percentage}% of monthly spend
+                  </p>
+                </>
+              ) : (
+                <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Add transactions to see spending insights
+                </p>
+              )}
             </CardContent>
           </Card>
         </section>
