@@ -1,0 +1,43 @@
+1. Goals Page – Improve Overall Progress Visibility
+	•	On the Goals page, the overall progress percentage in the fourth box from the left is hard to see
+	•	It’s currently too small and embedded in a teal circle — increase the font size and improve contrast to enhance visibility
+
+⸻
+
+✅ 2. Top Spending Category – Fix Calculation Display
+	•	The percentage displayed for top spending category appears correct
+	•	However, the amount displayed seems incorrect or misaligned
+	•	Logic should simply:
+	•	Group transactions by category
+	•	Add total spend per category
+	•	Identify the category with the highest total and display the correct category name, amount, and percentage
+
+⸻
+
+✅ 3. Rivu Score™ – Branding Not Consistently Applied
+	•	The ™ symbol is missing in several places:
+	•	Dashboard (main Rivu Score box)
+	•	“Score Updates and History” section on the “How Your Rivu Score Works” page
+	•	Please audit the app and make sure Rivu Score™ is displayed with ™ on first mention per view
+
+⸻
+
+✅ 4. Landing Page – Icon Adjustments
+	•	On the section describing how users can connect transactions (Plaid / CSV / Manual entry):
+	•	The current icons look generic or off-brand
+	•	Replace them with icons that better match the functionality (e.g., a file for CSV, a hand/input for manual, and ideally Plaid’s logo if permitted)
+	•	If Plaid’s official icon cannot be used, find a secure banking icon that clearly conveys the concept
+
+⸻
+
+✅ 5. New User Onboarding Tutorial
+	•	Create an automated onboarding tutorial for new users that:
+	•	Highlights key features (Rivu Score™, budgets, goals, Plaid, coach)
+	•	Appears on first login
+	•	Includes a “Skip Tutorial” button
+	•	Stores user preference (tutorialCompleted = true) so it does not show again unless the user manually reopens it
+	•	Add a “View Tutorial Again” link accessible from either:
+	•	The Settings page, or
+	•	A small icon/button on the dashboard
+
+These polish items are critical to a professional, production-ready launch. Please confirm once they’re implemented and verified across both desktop and mobile views.

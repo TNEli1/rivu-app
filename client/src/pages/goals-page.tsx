@@ -491,13 +491,16 @@ export default function GoalsPage() {
           
           <Card>
             <CardContent className="pt-6">
-              <div className="flex items-center gap-2">
-                <div className={`h-5 w-5 rounded-full flex items-center justify-center ${getProgressColor(summary.totalProgress)}`}>
-                  <span className="text-xs text-white font-medium">{summary.totalProgress}%</span>
+              <div className="flex items-center gap-2 mb-2">
+                <div className={`h-8 w-8 rounded-full flex items-center justify-center ${getProgressColor(summary.totalProgress)}`}>
+                  <span className="text-sm text-white font-bold">{summary.totalProgress}%</span>
                 </div>
                 <p className="text-sm text-muted-foreground">Overall Progress</p>
               </div>
-              <Progress value={summary.totalProgress} className="h-2 mt-2" />
+              <div className="flex items-center justify-between">
+                <Progress value={summary.totalProgress} className="h-3 mt-1 flex-grow" />
+                <span className="text-lg font-semibold ml-3">{summary.totalProgress}%</span>
+              </div>
             </CardContent>
           </Card>
         </div>
