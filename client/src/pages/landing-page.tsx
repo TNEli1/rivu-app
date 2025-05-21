@@ -13,15 +13,15 @@ export default function LandingPage() {
       <nav className="container mx-auto px-6 py-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
-            <img src="/images/rivu-logo.png" alt="Rivu Logo" className="h-10 w-auto" />
+            <img src="/images/rivu-logo.png" alt="Rivu Logo" className="h-16 w-auto" />
           </div>
           <div className="space-x-1 md:space-x-4">
-            <Link href="/login">
+            <a href="/auth">
               <Button variant="ghost" size="sm">Log in</Button>
-            </Link>
-            <Link href="/auth?signup=true">
+            </a>
+            <a href="/auth?signup=true">
               <Button variant="default" size="sm">Sign up for free</Button>
-            </Link>
+            </a>
           </div>
         </div>
       </nav>
@@ -36,12 +36,12 @@ export default function LandingPage() {
             The AI-powered personal finance platform that understands your behavior and helps you achieve your financial goals.
           </p>
           <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-            <Link href="/auth?signup=true">
+            <a href="/auth?signup=true">
               <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
                 Sign up for free
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-            </Link>
+            </a>
             <a href="#features">
               <Button variant="outline" size="lg">
                 See how it works
@@ -51,7 +51,7 @@ export default function LandingPage() {
         </div>
         <div className="md:w-1/2 mt-10 md:mt-0 flex items-center justify-center">
           <div className="p-8 rounded-2xl bg-gradient-to-br from-teal-400 to-blue-500 shadow-xl text-center text-white">
-            <img src="/images/rivu-logo.png" alt="Rivu Logo" className="h-20 w-auto mx-auto mb-4" />
+            <img src="/images/rivu-logo.png" alt="Rivu Logo" className="h-28 w-auto mx-auto mb-4" />
             <h2 className="text-2xl font-bold mb-2">Smart. Simple. Secure.</h2>
             <p className="text-lg">Your journey to financial wellness starts here</p>
           </div>
@@ -180,12 +180,12 @@ export default function LandingPage() {
           <p className={`text-xl mb-8 max-w-2xl mx-auto ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
             Join thousands of users who are building better financial futures with Rivu's behavior-based approach.
           </p>
-          <Link href="/auth?signup=true">
+          <a href="/auth?signup=true">
             <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
               Sign up for free
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
-          </Link>
+          </a>
         </div>
       </section>
       
@@ -194,15 +194,15 @@ export default function LandingPage() {
         <div className="container mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center mb-6 md:mb-0">
-              <img src="/images/rivu-logo.png" alt="Rivu Logo" className="h-8 w-auto" />
+              <img src="/images/rivu-logo.png" alt="Rivu Logo" className="h-16 w-auto" />
             </div>
             <div className="flex space-x-6">
-              <Link href="/privacy">
+              <a href="/privacy">
                 <span className={`text-sm ${theme === 'dark' ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'}`}>Privacy</span>
-              </Link>
-              <Link href="/terms">
+              </a>
+              <a href="/terms">
                 <span className={`text-sm ${theme === 'dark' ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'}`}>Terms</span>
-              </Link>
+              </a>
               <a href="mailto:support@tryrivu.com" className={`text-sm ${theme === 'dark' ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'}`}>
                 Contact
               </a>
