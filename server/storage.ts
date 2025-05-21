@@ -1163,6 +1163,37 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
+  async getNudgesByStatus(userId: number, status: string): Promise<Nudge[]> {
+    try {
+      const results = await db.select()
+        .from(nudges)
+        .where(and(
+          eq(nudges.userId, userId),
+          eq(nudges.status, status)
+        ))
+        .orderBy(desc(nudges.createdAt));
+      
+      return results;
+    } catch (error) {
+      console.error('Error fetching nudges by status:', error);
+      throw error;
+    }
+  }
+  
+  async hasLinkedPlaidAccount(userId: number): Promise<boolean> {
+    try {
+      // Check if the user has any Plaid items (linked bank accounts)
+      const items = await db.select()
+        .from(plaidItems)
+        .where(eq(plaidItems.userId, userId));
+      
+      return items.length > 0;
+    } catch (error) {
+      console.error('Error checking for linked Plaid accounts:', error);
+      return false; // Safely default to false in case of error
+    }
+  }
+  
   async updateNudgeStatus(id: number, status: string): Promise<Nudge | undefined> {
     try {
       const now = new Date();
