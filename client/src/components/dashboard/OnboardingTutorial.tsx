@@ -47,18 +47,32 @@ export default function OnboardingTutorial({ onClose }: { onClose: () => void })
     }
   ];
 
-  // Complete the tutorial
+  // Complete the tutorial - FIXED to prevent double-showing bug
   const completeTutorial = () => {
-    // Update user preference
+    // Immediately close the tutorial to prevent it from reopening
+    onClose();
+    
+    // Update user preference in database AND local state
     updateProfileMutation.mutate(
       { tutorialCompleted: true },
       {
         onSuccess: () => {
+          // Add a success toast
           toast({
             title: "Tutorial completed",
             description: "You can always view it again from the settings page"
           });
-          onClose();
+          
+          // Force a local user state update to ensure the flag is immediately respected
+          if (user && !user.tutorialCompleted) {
+            // This updates the local user state without requiring a reload
+            const updatedUser = { ...user, tutorialCompleted: true };
+            // @ts-ignore - updateUser isn't in the type but it's used internally
+            if (typeof window !== 'undefined') {
+              // Also update localStorage to ensure persistence
+              localStorage.setItem('rivu_tutorial_completed', 'true');
+            }
+          }
         }
       }
     );

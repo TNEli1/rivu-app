@@ -251,10 +251,21 @@ export default function Dashboard() {
         setLocation('/onboarding');
       }
       
-      // Show tutorial for new users
-      if (user.tutorialCompleted === false || 
-         (user.loginCount === 1 && user.tutorialCompleted === undefined)) {
+      // Show tutorial for new users - FIXED to prevent showing twice
+      // Check both server state and localStorage to ensure consistency
+      const localTutorialCompleted = localStorage.getItem('rivu_tutorial_completed') === 'true';
+      
+      if (!localTutorialCompleted && 
+          (user.tutorialCompleted === false || 
+          (user.loginCount === 1 && user.tutorialCompleted === undefined))) {
+        console.log('Showing tutorial based on user state:', user.tutorialCompleted);
         setShowTutorial(true);
+      } else {
+        // If tutorial is already completed according to localStorage, make sure user state is updated
+        if (localTutorialCompleted && user.tutorialCompleted === false) {
+          // Update user profile in the background to match localStorage
+          updateProfileMutation.mutate({ tutorialCompleted: true });
+        }
       }
     }
   }, [user, setLocation]);
