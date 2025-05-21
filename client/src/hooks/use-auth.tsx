@@ -123,19 +123,16 @@ const removeToken = () => {
   localStorage.removeItem('rivuLoggedIn');
 };
 
-// Helper to check if a JWT token has expired
-const isTokenExpired = (token: string | null): boolean => {
-  if (!token) return true;
+// Simplified method to check if we're logged in
+// Since the actual JWT is stored in HTTP-only cookies, we can't check expiration directly
+// We'll rely on API responses to tell us if the session is valid
+const isTokenExpired = (loginIndicator: string | null): boolean => {
+  // If we don't have a login indicator, we're not logged in
+  if (!loginIndicator) return true;
   
-  try {
-    // For JWT tokens, parse the payload to get expiration
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    const expiryTime = payload.exp * 1000; // Convert to milliseconds
-    return Date.now() >= expiryTime;
-  } catch (e) {
-    console.error('Error checking token expiration:', e);
-    return true; // If we can't decode the token, consider it expired
-  }
+  // We'll assume the session is valid if we have a login indicator
+  // The server will reject requests if the cookie is expired
+  return false;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -281,11 +278,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return await res.json();
     },
     onSuccess: (data: User) => {
-      // Store the token in localStorage
-      if (data.token) {
-        storeToken(data.token);
-        setTokenExpired(false);
-      }
+      // Set login indicator in localStorage
+      // The actual token is stored as HTTP-only cookie on the server
+      storeToken('session-active');
+      setTokenExpired(false);
       
       // Update user state
       setUser(data);
@@ -322,11 +318,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return await res.json();
     },
     onSuccess: (data: User) => {
-      // Store the token in localStorage
-      if (data.token) {
-        storeToken(data.token);
-        setTokenExpired(false);
-      }
+      // Set login indicator in localStorage
+      // The actual token is stored as HTTP-only cookie on the server
+      storeToken('session-active');
+      setTokenExpired(false);
       
       // Update user state
       setUser(data);
@@ -356,13 +351,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await apiRequest('POST', '/api/logout');
     },
     onSuccess: () => {
-      // Fully clear localStorage and sessionStorage
-      localStorage.clear();
-      sessionStorage.clear();
-      
-      // Also remove the specific token
+      // Clear local storage login indicator
       removeToken();
       setTokenExpired(true);
+      
+      // Also clear any other app data from storage
+      localStorage.removeItem('theme');
+      localStorage.removeItem('onboarding-viewed');
+      sessionStorage.clear();
       
       // Clear user state
       setUser(null);
