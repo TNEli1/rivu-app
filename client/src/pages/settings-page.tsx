@@ -4,10 +4,12 @@ import MobileNav from "@/components/layout/MobileNav";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Moon, Sun, ClipboardCheck, Info } from "lucide-react";
+import { LogOut, Moon, Sun, ClipboardCheck, Info, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
 import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
@@ -22,10 +24,11 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function SettingsPage() {
-  const { user, logoutMutation, updateDemographicsMutation } = useAuth();
+  const { user, logoutMutation, updateDemographicsMutation, updateProfileMutation } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   const [skipSurvey, setSkipSurvey] = useState(user?.demographics?.skipPermanently || false);
+  const [coachTone, setCoachTone] = useState<string>(user?.coachTone || 'encouraging');
   const [activeTab, setActiveTab] = useState(() => {
     // Check if URL has tab parameter
     const params = new URLSearchParams(window.location.search);
@@ -103,8 +106,9 @@ export default function SettingsPage() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
           <TabsList className="mb-4">
             <TabsTrigger value="appearance">Appearance</TabsTrigger>
+            <TabsTrigger value="coaching">Coaching</TabsTrigger>
             <TabsTrigger value="account">Account</TabsTrigger>
-            <TabsTrigger value="rivu-score">Rivu Score</TabsTrigger>
+            <TabsTrigger value="rivu-score">Rivu Score™</TabsTrigger>
           </TabsList>
           
           <TabsContent value="appearance">
@@ -124,6 +128,68 @@ export default function SettingsPage() {
                   checked={theme === 'dark'} 
                   onCheckedChange={handleThemeToggle} 
                 />
+              </div>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="coaching">
+            <Card className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <MessageSquare className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-semibold">AI Coach Preferences</h2>
+              </div>
+              
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-medium mb-2">Coach Tone</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Choose how you'd like your AI financial coach to communicate with you
+                  </p>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <RadioGroup 
+                        value={coachTone} 
+                        onValueChange={(value) => {
+                          setCoachTone(value);
+                          // Update user profile with the new coach tone preference
+                          updateProfileMutation.mutate({ coachTone: value }, {
+                            onSuccess: () => {
+                              toast({
+                                title: "Coach tone updated",
+                                description: "Your coach will now adapt their communication style.",
+                              });
+                            }
+                          });
+                        }}
+                      >
+                        <div className="flex items-center space-x-2 mb-2">
+                          <RadioGroupItem value="encouraging" id="encouraging" />
+                          <Label htmlFor="encouraging" className="font-medium">Encouraging</Label>
+                        </div>
+                        <p className="text-sm text-muted-foreground ml-6 mb-4">
+                          Positive, supportive guidance that emphasizes your progress and achievements
+                        </p>
+                        
+                        <div className="flex items-center space-x-2 mb-2">
+                          <RadioGroupItem value="direct" id="direct" />
+                          <Label htmlFor="direct" className="font-medium">Direct</Label>
+                        </div>
+                        <p className="text-sm text-muted-foreground ml-6 mb-4">
+                          Clear, straightforward advice that focuses on practical steps and solutions
+                        </p>
+                        
+                        <div className="flex items-center space-x-2 mb-2">
+                          <RadioGroupItem value="strict" id="strict" />
+                          <Label htmlFor="strict" className="font-medium">Strict</Label>
+                        </div>
+                        <p className="text-sm text-muted-foreground ml-6 mb-4">
+                          More challenging guidance that holds you accountable to your financial goals
+                        </p>
+                      </RadioGroup>
+                    </div>
+                  </div>
+                </div>
               </div>
             </Card>
           </TabsContent>
