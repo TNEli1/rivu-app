@@ -1,0 +1,47 @@
+Everything in the app looks and feels amazing — now let’s do a comprehensive sweep to prepare for production:
+
+⸻
+
+✅ 1. Remove Top Spending Category (Temporary)
+	•	The Top Spending Category box on the dashboard is still showing inconsistent or inaccurate data
+	•	Please remove this component for now — we can reintroduce it later once logic is fully accurate and tested
+
+⸻
+
+✅ 2. Improve Password Reset Email Design
+	•	Update the password reset email template to better reflect the Rivu brand:
+	•	Add the Rivu logo to the header (if it renders cleanly on email clients)
+	•	Use Rivu’s official color scheme (e.g., teal HEX #00C2A8) for buttons and highlights
+	•	Ensure it looks professional and trustworthy
+
+⸻
+
+✅ 3. Add “Disconnect Bank Account” Button (Plaid Compliance)
+	•	Add a visible option for users to disconnect their linked Plaid bank account(s)
+	•	This should call the /item/remove endpoint and remove the access token
+	•	Place it in a Settings > Connected Accounts section or somewhere visible on the Transactions page
+
+⸻
+
+✅ 4. Perform a Full Security and Privacy Audit
+	•	Review all authentication logic and confirm:
+	•	JWT tokens are scoped correctly
+	•	Routes are protected
+	•	Users can’t access or modify other users’ data
+	•	Verify all sensitive data is securely stored and encrypted (where applicable)
+	•	Ensure environment variables (e.g. API keys, DB credentials) are not exposed to frontend
+
+⸻
+
+✅ 5. Confirm All User Data Is Properly Scoped
+	•	Confirm that all budgets, goals, transactions, Rivu Scores™, and nudges are tied to a specific user ID
+	•	No user should ever see or load another user’s data under any circumstance
+
+⸻
+
+✅ 6. Additional GPT Suggestions
+	•	Consider logging security-sensitive events (e.g., login, password changes, Plaid disconnects)
+	•	Add a small “Data & Privacy” section in Settings with a note on how to request data deletion (support@tryrivu.com)
+	•	Confirm all mobile views are responsive and nothing breaks on small screens
+
+This is the final QA + compliance pass. Please confirm once each item is resolved and tested across environments.
