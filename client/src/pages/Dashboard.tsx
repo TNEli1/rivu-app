@@ -184,6 +184,7 @@ export default function Dashboard() {
   const [coachPrompt, setCoachPrompt] = useState("");
   const [summaryData, setSummaryData] = useState<DashboardSummary>(initialSummaryData);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [showTutorial, setShowTutorial] = useState(false);
   
   // Fetch goals data for metrics
   const { data: goalsData = [], isLoading: isGoalsLoading } = useQuery<GoalData[]>({
@@ -229,7 +230,7 @@ export default function Dashboard() {
     fetchTransactions();
   }, []);
   
-  // Track user login for engagement metrics
+  // Track user login for engagement metrics and check tutorial status
   useEffect(() => {
     if (user) {
       // Update last login and increment login count
@@ -248,6 +249,12 @@ export default function Dashboard() {
       // Check if user needs to complete onboarding
       if (user.demographics && !user.demographics.completed) {
         setLocation('/onboarding');
+      }
+      
+      // Show tutorial for new users
+      if (user.tutorialCompleted === false || 
+         (user.loginCount === 1 && user.tutorialCompleted === undefined)) {
+        setShowTutorial(true);
       }
     }
   }, [user, setLocation]);
@@ -693,6 +700,11 @@ export default function Dashboard() {
 
       {/* Mobile Bottom Navigation */}
       <MobileNav />
+      
+      {/* Onboarding Tutorial */}
+      {showTutorial && (
+        <OnboardingTutorial onClose={() => setShowTutorial(false)} />
+      )}
     </div>
   );
 }
