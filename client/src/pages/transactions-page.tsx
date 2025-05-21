@@ -514,12 +514,16 @@ export default function TransactionsPage() {
     setAccountFilter(null);
   };
 
+  // Added state for showing transactions by account view
+  const [groupByAccount, setGroupByAccount] = useState(false);
+  
   // Apply filters to transactions
   const filteredTransactions = transactions.filter(transaction => {
     // Text search (case insensitive)
     const matchesSearch = searchTerm === "" || 
       transaction.merchant.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transaction.category.toLowerCase().includes(searchTerm.toLowerCase());
+      transaction.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (transaction.institutionName && transaction.institutionName.toLowerCase().includes(searchTerm.toLowerCase()));
     
     // Type filter
     const matchesType = typeFilter === null || transaction.type === typeFilter;
@@ -532,6 +536,41 @@ export default function TransactionsPage() {
     
     return matchesSearch && matchesType && matchesCategory && matchesAccount;
   });
+  
+  // Group transactions by account
+  const accountGroups = useMemo(() => {
+    return filteredTransactions.reduce((acc, transaction) => {
+      const accountKey = transaction.account || 'Other';
+      if (!acc[accountKey]) {
+        acc[accountKey] = {
+          name: transaction.account,
+          transactions: [],
+          institutionName: transaction.institutionName || '',
+          accountType: transaction.accountType || '',
+          accountSubtype: transaction.accountSubtype || '',
+          totalSpent: 0,
+          totalIncome: 0
+        };
+      }
+      
+      if (transaction.type === 'expense') {
+        acc[accountKey].totalSpent += transaction.amount;
+      } else {
+        acc[accountKey].totalIncome += transaction.amount;
+      }
+      
+      acc[accountKey].transactions.push(transaction);
+      return acc;
+    }, {} as Record<string, {
+      name: string,
+      transactions: Transaction[],
+      institutionName: string,
+      accountType: string,
+      accountSubtype: string,
+      totalSpent: number,
+      totalIncome: number
+    }>);
+  }, [filteredTransactions]);
 
   // Sort transactions by date (newest first)
   const sortedTransactions = [...filteredTransactions].sort((a, b) => {
@@ -1011,7 +1050,121 @@ export default function TransactionsPage() {
                 </div>
               )}
             </div>
+          ) : groupByAccount ? (
+            // Account Grouped View
+            <div className="space-y-6">
+              {Object.entries(accountGroups).map(([accountKey, accountData]) => (
+                <div key={accountKey} className="border rounded-md dark:border-gray-700 overflow-hidden">
+                  {/* Account Header */}
+                  <div className="p-4 bg-gray-50 dark:bg-gray-800 border-b dark:border-gray-700 flex justify-between items-center">
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded-full">
+                        <CreditCard className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-900 dark:text-gray-100">{accountData.name}</h3>
+                        {accountData.institutionName && (
+                          <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                            <Building className="h-3 w-3 mr-1" />
+                            {accountData.institutionName}
+                            {accountData.accountSubtype && ` · ${accountData.accountSubtype}`}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Net: <span className={accountData.totalIncome - accountData.totalSpent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                          {formatCurrency(accountData.totalIncome - accountData.totalSpent)}
+                        </span>
+                      </p>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        <span className="text-green-600 dark:text-green-400 mr-2">+{formatCurrency(accountData.totalIncome)}</span>
+                        <span className="text-red-600 dark:text-red-400">-{formatCurrency(accountData.totalSpent)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Account Transactions */}
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+                        <th className="text-left p-3 font-medium text-gray-700 dark:text-gray-300 text-sm">Date</th>
+                        <th className="text-left p-3 font-medium text-gray-700 dark:text-gray-300 text-sm">Description</th>
+                        <th className="text-left p-3 font-medium text-gray-700 dark:text-gray-300 text-sm">Category</th>
+                        <th className="text-left p-3 font-medium text-gray-700 dark:text-gray-300 text-sm">Source</th>
+                        <th className="text-right p-3 font-medium text-gray-700 dark:text-gray-300 text-sm">Amount</th>
+                        <th className="text-right p-3 font-medium text-sm">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {accountData.transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(transaction => {
+                        const { icon, color } = getCategoryIconAndColor(transaction.category);
+                        const isIncome = transaction.type === 'income';
+                        
+                        return (
+                          <tr key={transaction.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                            <td className="p-3 align-middle">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                                <span className="text-gray-800 dark:text-gray-200">{formatDate(new Date(transaction.date))}</span>
+                              </div>
+                            </td>
+                            <td className="p-3 align-middle">
+                              <div className="flex flex-col">
+                                <span className="text-gray-800 dark:text-gray-200 font-medium truncate">{transaction.merchant}</span>
+                                {transaction.notes && <span className="text-xs text-gray-500 dark:text-gray-400 truncate">{transaction.notes}</span>}
+                                {transaction.isRecurring && <span className="text-xs text-blue-500">Recurring</span>}
+                              </div>
+                            </td>
+                            <td className="p-3 align-middle">
+                              <div className="flex items-center gap-2">
+                                <div className={`p-1 rounded ${color.split(' ')[0]}`}>
+                                  <i className={`${icon} text-sm`}></i>
+                                </div>
+                                <span>{transaction.category}</span>
+                              </div>
+                            </td>
+                            <td className="p-3 align-middle">
+                              <Badge variant="outline" className="capitalize">
+                                {transaction.source || 'manual'}
+                              </Badge>
+                            </td>
+                            <td className="p-3 text-right align-middle">
+                              <span className={isIncome ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                                {isIncome ? '+' : '-'} {formatCurrency(transaction.amount)}
+                              </span>
+                            </td>
+                            <td className="p-3 text-right align-middle">
+                              <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEditTransaction(transaction)}
+                                  className="h-8 w-8"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDeleteTransaction(transaction)}
+                                  className="h-8 w-8 text-red-500 hover:text-red-600"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
+            </div>
           ) : (
+            // Regular transaction list view
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
