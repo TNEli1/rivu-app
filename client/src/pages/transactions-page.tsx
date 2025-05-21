@@ -131,6 +131,7 @@ export default function TransactionsPage() {
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [accountFilter, setAccountFilter] = useState<string | null>(null);
+  const [groupByAccount, setGroupByAccount] = useState(false);
   
   // Create a date object using local date values to avoid timezone issues
   const today = new Date();
@@ -510,7 +511,7 @@ export default function TransactionsPage() {
   // Function to handle transaction deletion
   const handleDeleteTransaction = (transaction: Transaction) => {
     if (window.confirm(`Are you sure you want to delete this transaction: "${transaction.merchant}" for ${transaction.type === 'income' ? '+' : '-'}${formatCurrency(transaction.amount)}?`)) {
-      deleteTransactionMutation.mutate(transaction.id);
+      deleteMutation.mutate(transaction.id);
     }
   };
 
@@ -521,8 +522,7 @@ export default function TransactionsPage() {
     setAccountFilter(null);
   };
 
-  // Added state for showing transactions by account view
-  const [groupByAccount, setGroupByAccount] = useState(false);
+  // We already have groupByAccount state declared above
   
   // Apply filters to transactions
   const filteredTransactions = transactions.filter(transaction => {
@@ -587,6 +587,21 @@ export default function TransactionsPage() {
   // Get unique categories and accounts for filter dropdowns
   const uniqueCategories = Array.from(new Set(transactions.map(t => t.category)));
   const uniqueAccounts = Array.from(new Set(transactions.map(t => t.account)));
+  
+  // Group accounts by institution
+  const accountsByInstitution = transactions.reduce((acc, t) => {
+    if (!t.institutionName) return acc;
+    
+    if (!acc[t.institutionName]) {
+      acc[t.institutionName] = new Set();
+    }
+    
+    if (t.account) {
+      acc[t.institutionName].add(t.account);
+    }
+    
+    return acc;
+  }, {} as Record<string, Set<string>>);
 
   // Check if any filters are active
   const hasActiveFilters = typeFilter !== null || categoryFilter !== null || accountFilter !== null || searchTerm !== "";
