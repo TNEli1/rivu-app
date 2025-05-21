@@ -14,6 +14,15 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Helper function to get the API base URL
+export const getApiBaseUrl = (): string => {
+  // Use environment variable if available, otherwise determine based on environment
+  return import.meta.env.VITE_API_URL || 
+    (window.location.hostname === 'tryrivu.com' || window.location.hostname.endsWith('.vercel.app')
+      ? 'https://api.tryrivu.com' // Production API URL
+      : ''); // Use relative URLs for development (same domain)
+};
+
 export async function apiRequest(
   method: string,
   url: string,
@@ -27,6 +36,10 @@ export async function apiRequest(
   
   const csrfToken = getCsrfToken();
   
+  // Construct full URL with API base URL in production
+  const apiBaseUrl = getApiBaseUrl();
+  const fullUrl = url.startsWith('http') ? url : `${apiBaseUrl}${url}`;
+  
   const headers: Record<string, string> = {
     ...(data ? { "Content-Type": "application/json" } : {}),
     // Add CSRF protection headers
@@ -34,7 +47,7 @@ export async function apiRequest(
     ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {})
   };
 
-  const res = await fetch(url, {
+  const res = await fetch(fullUrl, {
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
@@ -67,7 +80,14 @@ export const getQueryFn: <T>(options: {
       ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {})
     };
 
-    const res = await fetch(queryKey[0] as string, {
+    // Get first query key as URL path
+    const urlPath = queryKey[0] as string;
+    
+    // Construct full URL with API base URL for production environment
+    const apiBaseUrl = getApiBaseUrl();
+    const fullUrl = urlPath.startsWith('http') ? urlPath : `${apiBaseUrl}${urlPath}`;
+
+    const res = await fetch(fullUrl, {
       credentials: "include", // Include cookies for session authentication
       headers
     });

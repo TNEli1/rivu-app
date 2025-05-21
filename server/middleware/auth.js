@@ -1,9 +1,19 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// JWT secret and config - in production, this should be stored in environment variables
-const JWT_SECRET = process.env.JWT_SECRET || 'rivu-secret-key-change-in-production';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '2h'; // 2 hours by default
+// JWT secret and config from environment variables
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'; // Default to 7 days if not specified
+
+// In production, JWT_SECRET must be set
+if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
+  console.error('CRITICAL SECURITY ERROR: JWT_SECRET environment variable is not set in production!');
+  // In production, we don't want to continue without a proper secret
+  process.exit(1);
+} else if (!JWT_SECRET) {
+  // In development, warn but continue with a default (not secure for production)
+  console.warn('WARNING: Using insecure default JWT_SECRET - DO NOT USE IN PRODUCTION');
+}
 
 // Middleware to protect routes
 const protect = async (req, res, next) => {
@@ -82,11 +92,29 @@ const generateToken = (id) => {
 
 // Set JWT as a secure HTTP-only cookie
 const setTokenCookie = (res, token) => {
+  // Calculate cookie expiration based on JWT_EXPIRES_IN
+  let maxAge = 7 * 24 * 60 * 60 * 1000; // Default to 7 days
+  
+  // Parse JWT_EXPIRES_IN if it's set
+  if (JWT_EXPIRES_IN) {
+    if (JWT_EXPIRES_IN.endsWith('d')) {
+      // Days
+      maxAge = parseInt(JWT_EXPIRES_IN) * 24 * 60 * 60 * 1000;
+    } else if (JWT_EXPIRES_IN.endsWith('h')) {
+      // Hours
+      maxAge = parseInt(JWT_EXPIRES_IN) * 60 * 60 * 1000;
+    } else if (JWT_EXPIRES_IN.endsWith('m')) {
+      // Minutes
+      maxAge = parseInt(JWT_EXPIRES_IN) * 60 * 1000;
+    }
+  }
+  
   res.cookie('token', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV !== 'development', // True in production
-    sameSite: 'Strict',
-    maxAge: 2 * 60 * 60 * 1000 // 2 hours (matches JWT_EXPIRES_IN)
+    sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax', // 'None' for cross-site usage in production
+    maxAge: maxAge,
+    domain: process.env.NODE_ENV === 'production' ? '.tryrivu.com' : undefined // Apply to domain and subdomains in production
   });
 };
 
@@ -94,7 +122,10 @@ const setTokenCookie = (res, token) => {
 const clearTokenCookie = (res) => {
   res.cookie('token', '', {
     httpOnly: true,
-    expires: new Date(0)
+    secure: process.env.NODE_ENV !== 'development', // True in production
+    sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+    expires: new Date(0),
+    domain: process.env.NODE_ENV === 'production' ? '.tryrivu.com' : undefined // Match domain used for setting
   });
 };
 

@@ -67,12 +67,21 @@ export const createLinkToken = async (req: Request, res: Response) => {
     }
 
     // Define redirect URI for OAuth flow from environment variable
-    // In production, this should be the fully qualified domain (e.g., https://tryrivu.com/callback)
-    const defaultRedirectUri = process.env.NODE_ENV === 'production' 
-      ? 'https://tryrivu.com/callback' 
-      : (req.headers.origin || 'https://rivu.repl.co') + '/callback';
+    // In production, this must be the registered URI in the Plaid dashboard
+    // It must be HTTPS and match exactly what's registered in Plaid
+    if (!process.env.PLAID_REDIRECT_URI && process.env.NODE_ENV === 'production') {
+      console.error('PLAID_REDIRECT_URI is required in production environment');
+      return res.status(500).json({ 
+        error: 'Bank connection service not properly configured',
+        details: 'Missing redirect URI configuration'
+      });
+    }
     
-    const redirectUri = process.env.PLAID_REDIRECT_URI || defaultRedirectUri;
+    // Use the configured redirect URI, with fallbacks for development
+    const redirectUri = process.env.PLAID_REDIRECT_URI || 
+      (process.env.NODE_ENV === 'production' 
+        ? 'https://tryrivu.com/callback'
+        : (req.headers.origin || 'http://localhost:8080') + '/callback');
     
     console.log(`Using OAuth redirect URI: ${redirectUri}`);
 

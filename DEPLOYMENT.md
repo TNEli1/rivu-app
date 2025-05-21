@@ -1,124 +1,123 @@
-# Rivu Finance Deployment Guide
+# Deployment Guide for Rivu Finance
 
-This document provides instructions for deploying the Rivu financial app to production using Vercel for the frontend and Render for the backend.
+This guide outlines the process for deploying the Rivu application in a production environment. The application architecture consists of:
+
+- **Frontend**: Deployed on Vercel (https://tryrivu.com)
+- **Backend**: Deployed on Render (Node.js + Express)
+- **Database**: PostgreSQL on Render
 
 ## Prerequisites
 
-1. **PostgreSQL Database** - Create a PostgreSQL database instance on Render or use Neon (https://neon.tech)
-2. **Plaid Development/Production Account** - Ensure you have Plaid API credentials
-3. **Vercel Account** - For deploying the frontend
-4. **Render Account** - For deploying the backend API
+Before deployment, ensure you have:
+
+- Access to the Rivu GitHub repository
+- Vercel account (for frontend deployment)
+- Render account (for backend and database deployment)
+- Domain access for tryrivu.com
+- All required API keys (Plaid, OpenAI, Postmark)
 
 ## Environment Variables
 
-### Required Environment Variables
+The following environment variables must be set in your deployment environments:
 
-Set these variables in both your Vercel and Render deployments:
+### Backend (Render)
 
 ```
-# Node Environment
 NODE_ENV=production
-
-# Database
+PORT=8080
 DATABASE_URL=postgresql://username:password@hostname:port/database
-
-# Authentication
-JWT_SECRET=your_secure_jwt_secret_key_here
-
-# Plaid API
+JWT_SECRET=your_secure_jwt_secret_key
+JWT_EXPIRES_IN=7d
 PLAID_CLIENT_ID=your_plaid_client_id
 PLAID_SECRET_PRODUCTION=your_plaid_production_secret
 PLAID_ENV=production
 PLAID_REDIRECT_URI=https://tryrivu.com/callback
 PLAID_REDIRECT_REGISTERED=true
-
-# Frontend URL (CORS)
-ALLOWED_ORIGINS=https://tryrivu.com
-
-# OpenAI API (for AI financial insights)
 OPENAI_API_KEY=your_openai_api_key
+POSTMARK_API_KEY=your_postmark_api_key
+POSTMARK_FROM_EMAIL=support@tryrivu.com
+POSTMARK_TEMPLATE_ID=your_template_id
+ALLOWED_ORIGINS=https://tryrivu.com
+APP_VERSION=1.0.0
+```
+
+### Frontend (Vercel)
+
+```
+VITE_API_URL=https://api.tryrivu.com
+VITE_PLAID_CLIENT_ID=your_plaid_client_id
+VITE_PLAID_ENV=production
+VITE_PLAID_REDIRECT_URI=https://tryrivu.com/callback
 ```
 
 ## Deployment Steps
 
-### 1. Backend Deployment (Render)
+### 1. Database Setup (PostgreSQL on Render)
 
-1. Create a new Web Service in Render
-2. Connect your GitHub repository
-3. Configure the service with the following settings:
-   - **Name**: `rivu-api`
-   - **Environment**: `Node`
-   - **Build Command**: `npm install && npm run build && npm run db:deploy`
-   - **Start Command**: `npm run start`
-   - **Plan**: At least the Standard plan ($7/month) is recommended
-   - **Set all the environment variables** listed above
+1. Log in to Render dashboard
+2. Create a new PostgreSQL database
+3. Note the connection string provided by Render
+4. Apply migrations using Drizzle:
+   ```
+   npm run db:deploy
+   ```
 
-4. Configure Auto-Deploy from your main branch
-5. Add a health check path: `/health`
+### 2. Backend Deployment (Render)
 
-### 2. Frontend Deployment (Vercel)
+1. Connect your GitHub repository to Render
+2. Create a new Web Service:
+   - Select the repository
+   - Environment: Node
+   - Build Command: `npm install && npm run build`
+   - Start Command: `npm start`
+   - Environment Variables: Add all backend variables listed above
 
-1. Create a new project in Vercel
-2. Connect your GitHub repository
-3. Configure the build settings:
-   - **Framework Preset**: `Vite`
-   - **Build Command**: (leave as default)
-   - **Output Directory**: `dist`
-   - **Install Command**: `npm install`
+3. Configure Custom Domain:
+   - Add `api.tryrivu.com` as a custom domain
+   - Follow Render's instructions to configure DNS settings
 
-4. Set the required environment variables:
-   - `VITE_API_URL=https://rivu-api.onrender.com` (your Render backend URL)
-   - `NODE_ENV=production`
+### 3. Frontend Deployment (Vercel)
 
-5. Deploy and set up your custom domain (`tryrivu.com`)
+1. Connect your GitHub repository to Vercel
+2. Configure project:
+   - Framework Preset: Vite
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+   - Environment Variables: Add all frontend variables listed above
 
-### 3. Database Setup
+3. Configure Custom Domain:
+   - Add `tryrivu.com` as a custom domain
+   - Follow Vercel's instructions to configure DNS settings
 
-The application is configured to automatically run migrations during the Render build process. If you need to manually run migrations:
+## Post-Deployment Verification
 
-```bash
-# SSH into your Render instance or run locally with production env vars
-npm run db:deploy
-```
+After deployment, verify the following:
 
-### 4. Plaid Configuration
+1. **Health Check**: Visit `https://api.tryrivu.com/health` to confirm the backend is running
+2. **Authentication**: Test registration, login, and logout functionality
+3. **Plaid Integration**: Connect a bank account using OAuth
+4. **Core Features**: Test budgeting, transactions, and goals functionality
+5. **Error Handling**: Confirm proper error responses (no stack traces exposed)
 
-1. Log in to your Plaid Dashboard
-2. Go to API Settings
-3. Add `https://tryrivu.com/callback` as an allowed redirect URI
-4. Enable webhooks and set the webhook URL to `https://rivu-api.onrender.com/api/plaid/webhook`
+## Troubleshooting
 
-### 5. Post-Deployment Verification
+### Common Issues
 
-After deploying, verify that:
+- **CORS Errors**: Verify `ALLOWED_ORIGINS` includes the frontend domain
+- **Database Connection**: Check the `DATABASE_URL` is correct and accessible
+- **Plaid OAuth**: Ensure `PLAID_REDIRECT_URI` matches exactly what's registered in Plaid dashboard
+- **Rate Limiting**: If facing "Too many requests" errors, check server logs for IP address patterns
 
-1. The health endpoint returns `200 OK`: `https://rivu-api.onrender.com/health`
-2. The frontend can successfully connect to the backend
-3. Authentication works properly
-4. Plaid connections can be created and OAuth flows complete successfully
-5. Transactions are syncing properly
+### Monitoring
 
-## Rollback Procedure
+- Use Render's built-in logging for backend monitoring
+- Set up Vercel Analytics for frontend performance metrics
+- Regularly check the `/health` endpoint for backend status
 
-If issues arise during deployment:
+## Rollback Process
 
-1. For Render, you can roll back to a previous deployment from the Deployments tab
-2. For Vercel, you can revert to a previous deployment from the Deployments section
+If deployment issues occur:
 
-## Monitoring and Maintenance
-
-- Render provides built-in logs and metrics
-- Set up Render alerts for the `/health` endpoint
-- Monitor database performance using the Neon dashboard
-- Check Plaid webhooks are being received properly
-
-## Security Considerations
-
-- The app implements rate limiting to prevent abuse
-- HTTPS is enforced on all connections
-- JWT tokens are used for authentication with HTTP-only cookies
-- Sensitive data is never logged
-
-## Support Contacts
-
-For deployment issues, contact your DevOps team or infrastructure provider.
+1. Immediately roll back to the previous stable version in Vercel/Render
+2. Verify database integrity using diagnostic queries
+3. Address issues in development environment before redeploying
