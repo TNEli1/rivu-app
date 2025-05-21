@@ -1496,12 +1496,13 @@ export class DatabaseStorage implements IStorage {
       // RULE 4: Check if user has any transactions
       const transactions = await this.getTransactions(userId);
       
-      // Check if the user has connected a Plaid account
-      const userPlaidItems = await db.select()
-        .from(schema.plaidItems)
-        .where(eq(schema.plaidItems.userId, userId));
+      // Check if the user has connected a Plaid account - FIXED
+      // Get all plaid items for this user for data isolation enforcement
+      const results = await db.select().from(plaidItems).where(eq(plaidItems.userId, userId));
+
       
-      const hasBankLinked = userPlaidItems.length > 0;
+      // Check if there are any linked bank accounts
+      const hasBankLinked = results.length > 0;
       
       if (transactions.length === 0 && hasBankLinked) {
         if (!existingNudgeTypes.has('empty_transactions') && !recentlyHandledTypes.has('empty_transactions')) {
