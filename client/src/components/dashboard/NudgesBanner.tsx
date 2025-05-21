@@ -61,115 +61,7 @@ export default function NudgesBanner() {
   // Track which nudges have been handled locally
   const [handledNudgeIds, setHandledNudgeIds] = useState<number[]>([]);
   
-  // Enhanced sample nudges that demonstrate the new behavioral nudge engine
-  const [sampleNudges, setSampleNudges] = useState<Nudge[]>([
-    // Budget overspending nudge
-    {
-      id: 10001,
-      userId: 7,
-      type: 'budget_warning',
-      message: "You've spent 85% of your dining budget and it's only the 12th.",
-      status: 'active',
-      triggerCondition: '{"type":"budget_at_risk","categoryId":22,"percentUsed":85,"dayOfMonth":12}',
-      createdAt: new Date().toISOString(),
-      category: 'Dining',
-      priority: 'high',
-      actionPath: '/budgets',
-      actionText: 'Adjust Budget',
-      details: {
-        title: 'Dining Budget Alert',
-        description: 'Your spending is above the expected pace for this month. If you continue at this rate, you may exceed your budget by $37.',
-        currentValue: 127.50,
-        targetValue: 150,
-        percentComplete: 85,
-        impact: 'Staying within budget improves your Rivu Score by up to 15 points.',
-        suggestionText: 'Consider cooking more meals at home for the rest of the month to stay within budget.'
-      }
-    },
-    // Goal progress nudge
-    {
-      id: 10002,
-      userId: 7,
-      type: 'goal_reminder',
-      message: "You're $75 behind pace for your emergency fund. Want to adjust?",
-      status: 'active',
-      triggerCondition: '{"type":"goal_behind_pace","goalId":1,"amountBehind":75}',
-      createdAt: new Date().toISOString(),
-      category: 'Emergency Fund',
-      priority: 'medium',
-      actionPath: '/goals',
-      actionText: 'Review Goal',
-      details: {
-        title: 'Emergency Fund Progress',
-        description: 'You need to add $75 more this month to stay on track with your savings goal timeline.',
-        currentValue: 1425,
-        targetValue: 5000,
-        percentComplete: 28.5,
-        impact: 'Regular progress on your emergency fund goal improves financial security and your Rivu Score.',
-        suggestionText: 'Try setting up an automatic transfer of $25 per week to catch up gradually.'
-      }
-    },
-    // Rivu Score drop nudge
-    {
-      id: 10003,
-      userId: 7,
-      type: 'score_alert',
-      message: "Your score dropped 12 points this week. Want to review your activity?",
-      status: 'active',
-      triggerCondition: '{"type":"score_decrease","pointsDropped":12}',
-      createdAt: new Date().toISOString(),
-      priority: 'medium',
-      actionPath: '/rivu-score-info',
-      actionText: 'View Score Details',
-      details: {
-        title: 'Rivu Score Change Alert',
-        description: 'Your financial health score decreased from 78 to 66 this week. The main factors were budget adherence and saving rate.',
-        impact: 'Understanding what affects your score can help you make targeted improvements.',
-        suggestionText: 'Focus on staying within your entertainment budget this month to recover points quickly.'
-      }
-    },
-    // Recurring transaction nudge
-    {
-      id: 10004,
-      userId: 7,
-      type: 'transaction_reminder',
-      message: "Your monthly Netflix payment of $14.99 is due tomorrow. Ready to record it?",
-      status: 'active',
-      triggerCondition: '{"type":"recurring_transaction","transactionId":3451,"daysUntilDue":1}',
-      createdAt: new Date().toISOString(),
-      category: 'Subscriptions',
-      priority: 'low',
-      actionPath: '/add-transaction',
-      actionText: 'Add Transaction',
-      details: {
-        title: 'Upcoming Subscription Payment',
-        description: 'Your Netflix subscription payment is scheduled for tomorrow.',
-        currentValue: 14.99,
-        impact: 'Tracking recurring payments helps maintain accurate financial records and budget projections.',
-        suggestionText: 'Consider reviewing all your subscriptions to identify potential savings opportunities.'
-      }
-    },
-    // Savings opportunity nudge
-    {
-      id: 10005,
-      userId: 7,
-      type: 'saving_opportunity',
-      message: "You could save $32/month by decreasing your eating out expenses by just 15%.",
-      status: 'active',
-      triggerCondition: '{"type":"savings_opportunity","categoryId":22,"potentialSavings":32}',
-      createdAt: new Date().toISOString(),
-      category: 'Dining',
-      priority: 'medium',
-      actionPath: '/insights',
-      actionText: 'View Insights',
-      details: {
-        title: 'Potential Savings Opportunity',
-        description: 'Based on your spending patterns, you could save $384 annually by slightly reducing dining expenses.',
-        impact: 'Small changes in daily habits can have a significant impact on your long-term financial health.',
-        suggestionText: 'Try replacing 1-2 restaurant meals per week with home cooking to achieve this goal.'
-      }
-    }
-  ]);
+  // No more sample nudges - we'll use only real data from the API
 
   // Fetch active nudges from API - limit to max 3 nudges to avoid overwhelming the user
   const { data: apiNudges = [], isLoading, refetch } = useQuery<Nudge[]>({
@@ -198,12 +90,6 @@ export default function NudgesBanner() {
   // Dismiss nudge mutation
   const dismissNudge = useMutation({
     mutationFn: async (nudgeId: number) => {
-      // For sample nudges, handle locally
-      if (nudgeId > 10000) {
-        setSampleNudges(prev => prev.filter(nudge => nudge.id !== nudgeId));
-        return { message: 'Nudge dismissed successfully' };
-      }
-      
       // Immediately mark as handled locally
       setHandledNudgeIds(prev => [...prev, nudgeId]);
       
@@ -226,12 +112,6 @@ export default function NudgesBanner() {
   // Complete nudge mutation
   const completeNudge = useMutation({
     mutationFn: async (nudgeId: number) => {
-      // For sample nudges, handle locally
-      if (nudgeId > 10000) {
-        setSampleNudges(prev => prev.filter(nudge => nudge.id !== nudgeId));
-        return { message: 'Nudge completed successfully' };
-      }
-      
       // Immediately mark as handled locally
       setHandledNudgeIds(prev => [...prev, nudgeId]);
       
@@ -300,17 +180,17 @@ export default function NudgesBanner() {
     );
   };
 
-  // Combine sample nudges with filtered API nudges (max 3 total)
-  const combinedNudges = [...sampleNudges, ...filteredApiNudges].slice(0, 3);
+  // Use only filtered API nudges (max 3)
+  const activeNudges = filteredApiNudges.slice(0, 3);
 
   // If there are no active nudges or still loading, don't show anything
-  if (combinedNudges.length === 0) {
+  if (activeNudges.length === 0) {
     return null;
   }
 
   return (
     <div className="mb-6 space-y-4">
-      {combinedNudges.map((nudge) => (
+      {activeNudges.map((nudge) => (
         <Card 
           key={nudge.id}
           className={`shadow-sm border-l-4 ${
