@@ -1,0 +1,66 @@
+We are preparing to fully deploy the Rivu app using:
+	•	Frontend on Vercel
+	•	Backend on Render
+	•	PostgreSQL hosted on Render
+	•	Custom domain: tryrivu.com
+
+Please do a final, thorough code cleanup and production readiness pass with the following tasks:
+
+⸻
+
+1. OAuth System – Restore and Validate
+	•	Reinstate full Plaid OAuth support for production.
+	•	Ensure:
+	•	redirect_uri is pulled from .env (e.g., https://tryrivu.com/callback)
+	•	The frontend captures oauth_state_id and uses receivedRedirectUri in Plaid.create()
+	•	Link token creation includes redirect_uri and works with Chase, Wells Fargo, and other OAuth banks
+
+⸻
+
+2. Database Configuration
+	•	Switch the app to use PostgreSQL, hosted on Render
+	•	Remove all MongoDB references from code, dependencies, and environment configs
+	•	Ensure schema is synced with Drizzle ORM
+	•	Confirm last_budget_review_date and all referenced fields exist
+	•	Add proper migrations if needed
+	•	Replace any outdated queries with optimized, parameterized PostgreSQL queries
+
+⸻
+
+3. HTTPS & Domain Readiness
+	•	Ensure all http references are replaced with https (especially in redirect_uri and callback routes)
+	•	Add a health check endpoint (e.g., /health) for Render monitoring
+	•	Ensure server supports deployment behind HTTPS (Vercel + Render will handle TLS, but code should not force HTTP)
+
+⸻
+
+4. Security Hardening
+	•	Add rate limiting to key endpoints (especially auth, registration, Plaid link, and webhooks)
+Use something like express-rate-limit with reasonable thresholds (e.g., 10 req/min per IP)
+	•	Sanitize and validate all inputs to prevent injection and abuse
+	•	Enforce role-based access control on backend routes
+	•	Ensure admin, advisor, user roles are respected and tested
+	•	Remove any test users, debug credentials, or unsecured dev routes
+	•	Obscure stack traces and internal errors in production mode
+
+⸻
+
+5. Environment & Deployment Readiness
+	•	Move all secrets to .env and verify nothing is hardcoded
+	•	Ensure backend is portable and can run as a Node.js web service on Render
+	•	Provide full start script and working package.json
+	•	Ensure frontend is portable and Vercel-compatible:
+	•	Uses API routes if needed (or points to external API)
+	•	Works with real production Plaid and backend URLs
+
+⸻
+
+6. Final QA and Code Quality
+	•	Fix any known bugs, crash points, or frontend state issues (e.g., undefined/null values)
+	•	Confirm timezones respect user’s local system
+	•	Confirm password reset, login, and Plaid flows all work E2E
+	•	Clean up any console logs, commented-out code, or unused files
+
+⸻
+
+This is the final cleanup before deployment. The code must be stable, secure, and fully production-ready for integration with PostgreSQL, Render, Vercel, and Plaid OAuth.
