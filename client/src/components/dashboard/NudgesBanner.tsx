@@ -1,10 +1,27 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, CheckCircle, BellRing, ArrowRight, AlertCircle } from "lucide-react";
+import { 
+  X, CheckCircle, BellRing, ArrowRight, AlertCircle, 
+  TrendingUp, BarChart3, DollarSign, Calendar, 
+  ChevronDown, ChevronUp, ExternalLink
+} from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useTheme } from "@/hooks/use-theme";
+import { Link } from "wouter";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Progress } from "@/components/ui/progress";
 
 // Define the Nudge type based on the schema
 type Nudge = {
@@ -18,6 +35,22 @@ type Nudge = {
   createdAt: string;
   dismissedAt?: string;
   completedAt?: string;
+  // Additional fields for enhanced nudges
+  category?: string;
+  priority?: 'low' | 'medium' | 'high';
+  actionPath?: string; // URL to redirect user for action
+  actionText?: string; // Button text for action
+  details?: {
+    // Detailed information based on nudge type
+    [key: string]: any;
+    title?: string; 
+    description?: string;
+    currentValue?: number;
+    targetValue?: number;
+    percentComplete?: number;
+    impact?: string; // Impact on financial health if addressed
+    suggestionText?: string; // AI-generated suggestion text
+  };
 };
 
 // Component to display nudges as a banner or card on the dashboard
@@ -39,6 +72,19 @@ export default function NudgesBanner() {
       status: 'active',
       triggerCondition: '{"type":"budget_at_risk","categoryId":22,"percentUsed":85,"dayOfMonth":12}',
       createdAt: new Date().toISOString(),
+      category: 'Dining',
+      priority: 'high',
+      actionPath: '/budgets',
+      actionText: 'Adjust Budget',
+      details: {
+        title: 'Dining Budget Alert',
+        description: 'Your spending is above the expected pace for this month. If you continue at this rate, you may exceed your budget by $37.',
+        currentValue: 127.50,
+        targetValue: 150,
+        percentComplete: 85,
+        impact: 'Staying within budget improves your Rivu Score by up to 15 points.',
+        suggestionText: 'Consider cooking more meals at home for the rest of the month to stay within budget.'
+      }
     },
     // Goal progress nudge
     {
@@ -49,6 +95,19 @@ export default function NudgesBanner() {
       status: 'active',
       triggerCondition: '{"type":"goal_behind_pace","goalId":1,"amountBehind":75}',
       createdAt: new Date().toISOString(),
+      category: 'Emergency Fund',
+      priority: 'medium',
+      actionPath: '/goals',
+      actionText: 'Review Goal',
+      details: {
+        title: 'Emergency Fund Progress',
+        description: 'You need to add $75 more this month to stay on track with your savings goal timeline.',
+        currentValue: 1425,
+        targetValue: 5000,
+        percentComplete: 28.5,
+        impact: 'Regular progress on your emergency fund goal improves financial security and your Rivu Score.',
+        suggestionText: 'Try setting up an automatic transfer of $25 per week to catch up gradually.'
+      }
     },
     // Rivu Score drop nudge
     {
@@ -59,16 +118,56 @@ export default function NudgesBanner() {
       status: 'active',
       triggerCondition: '{"type":"score_decrease","pointsDropped":12}',
       createdAt: new Date().toISOString(),
+      priority: 'medium',
+      actionPath: '/rivu-score-info',
+      actionText: 'View Score Details',
+      details: {
+        title: 'Rivu Score Change Alert',
+        description: 'Your financial health score decreased from 78 to 66 this week. The main factors were budget adherence and saving rate.',
+        impact: 'Understanding what affects your score can help you make targeted improvements.',
+        suggestionText: 'Focus on staying within your entertainment budget this month to recover points quickly.'
+      }
     },
-    // Inactivity nudge
+    // Recurring transaction nudge
     {
       id: 10004,
       userId: 7,
-      type: 'activity_reminder',
-      message: "You haven't checked in this week. Let's review your budget in 2 minutes.",
+      type: 'transaction_reminder',
+      message: "Your monthly Netflix payment of $14.99 is due tomorrow. Ready to record it?",
       status: 'active',
-      triggerCondition: '{"type":"inactivity","daysSinceLogin":7}',
+      triggerCondition: '{"type":"recurring_transaction","transactionId":3451,"daysUntilDue":1}',
       createdAt: new Date().toISOString(),
+      category: 'Subscriptions',
+      priority: 'low',
+      actionPath: '/add-transaction',
+      actionText: 'Add Transaction',
+      details: {
+        title: 'Upcoming Subscription Payment',
+        description: 'Your Netflix subscription payment is scheduled for tomorrow.',
+        currentValue: 14.99,
+        impact: 'Tracking recurring payments helps maintain accurate financial records and budget projections.',
+        suggestionText: 'Consider reviewing all your subscriptions to identify potential savings opportunities.'
+      }
+    },
+    // Savings opportunity nudge
+    {
+      id: 10005,
+      userId: 7,
+      type: 'saving_opportunity',
+      message: "You could save $32/month by decreasing your eating out expenses by just 15%.",
+      status: 'active',
+      triggerCondition: '{"type":"savings_opportunity","categoryId":22,"potentialSavings":32}',
+      createdAt: new Date().toISOString(),
+      category: 'Dining',
+      priority: 'medium',
+      actionPath: '/insights',
+      actionText: 'View Insights',
+      details: {
+        title: 'Potential Savings Opportunity',
+        description: 'Based on your spending patterns, you could save $384 annually by slightly reducing dining expenses.',
+        impact: 'Small changes in daily habits can have a significant impact on your long-term financial health.',
+        suggestionText: 'Try replacing 1-2 restaurant meals per week with home cooking to achieve this goal.'
+      }
     }
   ]);
 
@@ -152,6 +251,16 @@ export default function NudgesBanner() {
     }
   });
 
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    }).format(amount);
+  };
+
   // Enhanced helper function to get icon based on nudge type
   const getNudgeIcon = (type: string) => {
     switch (type) {
@@ -164,12 +273,31 @@ export default function NudgesBanner() {
       case 'transaction_reminder':
         return <BellRing className="h-5 w-5 text-green-500" />;
       case 'score_alert':
-        return <AlertCircle className="h-5 w-5 text-red-500" />;
+        return <TrendingUp className="h-5 w-5 text-red-500" />;
       case 'activity_reminder':
-        return <BellRing className="h-5 w-5 text-blue-500" />;
+        return <Calendar className="h-5 w-5 text-blue-500" />;
+      case 'saving_opportunity':
+        return <DollarSign className="h-5 w-5 text-green-500" />;
       default:
         return <BellRing className="h-5 w-5 text-primary" />;
     }
+  };
+  
+  // Get priority badge
+  const getPriorityBadge = (priority?: 'low' | 'medium' | 'high') => {
+    if (!priority) return null;
+    
+    const badgeColors = {
+      low: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+      medium: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
+      high: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+    };
+    
+    return (
+      <Badge variant="outline" className={`capitalize text-xs ${badgeColors[priority]}`}>
+        {priority} priority
+      </Badge>
+    );
   };
 
   // Combine sample nudges with filtered API nudges (max 3 total)
