@@ -18,37 +18,73 @@ Before deployment, ensure you have:
 
 ## Environment Variables
 
-The following environment variables must be set in your deployment environments:
+The following environment variables must be set in your deployment environments. **Never commit these values to the repository.**
 
 ### Backend (Render)
 
 ```
+# Core Configuration
 NODE_ENV=production
 PORT=8080
+APP_VERSION=1.0.0
+ALLOWED_ORIGINS=https://tryrivu.com
+
+# Database
 DATABASE_URL=postgresql://username:password@hostname:port/database
-JWT_SECRET=your_secure_jwt_secret_key
-JWT_EXPIRES_IN=7d
+
+# Security (Generate strong, random values)
+JWT_SECRET=use_a_minimum_32_character_random_string
+JWT_EXPIRES_IN=30m  # Short-lived tokens (30 minutes) 
+JWT_REFRESH_EXPIRES_IN=7d
+
+# Plaid Integration
 PLAID_CLIENT_ID=your_plaid_client_id
-PLAID_SECRET_PRODUCTION=your_plaid_production_secret
+PLAID_SECRET_PRODUCTION=your_plaid_production_secret  # Keep this secret!
 PLAID_ENV=production
 PLAID_REDIRECT_URI=https://tryrivu.com/callback
 PLAID_REDIRECT_REGISTERED=true
-OPENAI_API_KEY=your_openai_api_key
-POSTMARK_API_KEY=your_postmark_api_key
+
+# AI Services
+OPENAI_API_KEY=your_openai_api_key  # Keep this secret!
+
+# Email Services
+POSTMARK_API_KEY=your_postmark_api_key  # Keep this secret!
 POSTMARK_FROM_EMAIL=support@tryrivu.com
 POSTMARK_TEMPLATE_ID=your_template_id
-ALLOWED_ORIGINS=https://tryrivu.com
-APP_VERSION=1.0.0
+
+# Rate Limiting (Production Values)
+RATE_LIMIT_WINDOW_MS=60000  # 1 minute in milliseconds
+RATE_LIMIT_MAX_REQUESTS=30  # Maximum requests per minute
+AUTH_RATE_LIMIT_MAX=10      # Stricter limit for auth endpoints
 ```
 
 ### Frontend (Vercel)
 
 ```
+# API Configuration - Only include public/safe values
 VITE_API_URL=https://api.tryrivu.com
-VITE_PLAID_CLIENT_ID=your_plaid_client_id
-VITE_PLAID_ENV=production
-VITE_PLAID_REDIRECT_URI=https://tryrivu.com/callback
+VITE_APP_NAME=Rivu Finance
+VITE_APP_VERSION=1.0.0
+
+# Plaid Configuration - Only expose what's necessary for the frontend
+VITE_PLAID_ENV=production  # Safe to expose - just indicates environment
+VITE_PLAID_PRODUCTS=transactions
+VITE_PLAID_COUNTRY_CODES=US
+VITE_PLAID_LANGUAGE=en
 ```
+
+### ⚠️ Important Security Notes
+
+1. **Never store secrets in the frontend**: No API keys or secrets in client-side code - only use `VITE_` prefixed vars for public information.
+
+2. **Generate strong secrets**: Use a secure random generator for JWT_SECRET:
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   ```
+
+3. **Rotate secrets regularly**: Change sensitive keys every 30-90 days.
+
+4. **Separate development/production secrets**: Never use the same secret values across environments.
 
 ## Deployment Steps
 
@@ -121,3 +157,34 @@ If deployment issues occur:
 1. Immediately roll back to the previous stable version in Vercel/Render
 2. Verify database integrity using diagnostic queries
 3. Address issues in development environment before redeploying
+
+## Git Security Practices
+
+When working with the Rivu codebase in Git:
+
+1. **Never commit secrets or environment files**:
+   - The `.gitignore` file already excludes `.env` and other secret files
+   - Always use `.env.example` as a template without real values
+
+2. **If secrets are accidentally committed**:
+   - Immediately remove them from the repository:
+     ```bash
+     git rm --cached .env
+     git commit -m "Remove accidentally committed .env file"
+     ```
+   - For secrets that were previously committed, purge them from Git history:
+     ```bash
+     git filter-branch --force --index-filter 'git rm --cached --ignore-unmatch .env' --prune-empty --tag-name-filter cat -- --all
+     git push --force
+     ```
+   - Immediately rotate all affected credentials/secrets
+
+3. **Code reviews**:
+   - Always check pull requests for accidental inclusion of secrets
+   - Scan for hardcoded credentials, API keys, or tokens
+   
+4. **Secret scanning**:
+   - Consider enabling GitHub's secret scanning feature for the repository
+   - Run `git diff --staged` before every commit to review changes
+
+Remember: A secret that has ever been committed to Git should be considered compromised and rotated, even if later removed from the history.

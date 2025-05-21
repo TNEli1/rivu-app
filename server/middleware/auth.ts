@@ -7,7 +7,8 @@ import { logger } from '../utils/logger';
 import securityLogger, { SecurityEventType, SecurityEvent } from '../services/securityLogger';
 
 // JWT secret and config from environment variables
-const JWT_SECRET = process.env.JWT_SECRET || 'devonlyjwtsecret123456789';
+// Read JWT secret from environment or use a unique random value for development only
+const JWT_SECRET = process.env.JWT_SECRET || `dev_${Math.random().toString(36).substring(2, 15)}`;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '30m'; // Default to 30 minutes if not specified
 const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d'; // Default to 7 days for refresh tokens
 
