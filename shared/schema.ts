@@ -29,6 +29,7 @@ export const users = pgTable("users", {
   lastTransactionDate: timestamp("last_transaction_date"),
   lastGoalUpdateDate: timestamp("last_goal_update_date"),
   lastBudgetUpdateDate: timestamp("last_budget_update_date"),
+  lastBudgetReviewDate: timestamp("last_budget_review_date"), // Track when user last reviewed budget
   onboardingStage: text("onboarding_stage").default("new"), // 'new', 'budget_created', 'transaction_added', 'goal_created', 'completed'
   onboardingCompleted: boolean("onboarding_completed").default(false),
   accountCreationDate: timestamp("account_creation_date").defaultNow().notNull(),

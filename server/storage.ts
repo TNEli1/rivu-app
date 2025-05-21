@@ -1258,8 +1258,8 @@ export class DatabaseStorage implements IStorage {
       const now = new Date();
       
       // Check for existing active nudges to avoid duplication
-      const activeNudges = await this.getNudgesByStatus(userId, 'active');
-      const existingNudgeTypes = new Set(activeNudges.map(n => {
+      const activeNudges = await this.getNudges(userId, 'active');
+      const existingNudgeTypes = new Set(activeNudges.map((n: Nudge) => {
         try {
           const condition = JSON.parse(n.triggerCondition);
           return condition.type;
@@ -1282,7 +1282,7 @@ export class DatabaseStorage implements IStorage {
           )
         ));
       
-      const recentlyHandledTypes = new Set(recentlyHandledNudges.map(n => {
+      const recentlyHandledTypes = new Set(recentlyHandledNudges.map((n: Nudge) => {
         try {
           const condition = JSON.parse(n.triggerCondition);
           return condition.type;
@@ -1315,7 +1315,8 @@ export class DatabaseStorage implements IStorage {
         const lastWeek = new Date(now);
         lastWeek.setDate(lastWeek.getDate() - 7);
         
-        const hasReviewedBudget = user.lastBudgetReviewDate && new Date(user.lastBudgetReviewDate) > lastWeek;
+        // Check if the user has reviewed their budget recently
+        const hasReviewedBudget = user.lastBudgetUpdateDate && new Date(user.lastBudgetUpdateDate) > lastWeek;
         
         if (!hasReviewedBudget && budgetCategories.length > 0) {
           if (!existingNudgeTypes.has('budget_review') && !recentlyHandledTypes.has('budget_review')) {
@@ -1445,7 +1446,13 @@ export class DatabaseStorage implements IStorage {
       
       // RULE 4: Check if user has any transactions
       const transactions = await this.getTransactions(userId);
-      const hasBankLinked = await this.hasLinkedPlaidAccount(userId);
+      
+      // Check if the user has connected a Plaid account
+      const plaidItems = await db.select()
+        .from(plaidItems)
+        .where(eq(plaidItems.userId, userId));
+      
+      const hasBankLinked = plaidItems.length > 0;
       
       if (transactions.length === 0 && hasBankLinked) {
         if (!existingNudgeTypes.has('empty_transactions') && !recentlyHandledTypes.has('empty_transactions')) {
