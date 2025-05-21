@@ -621,6 +621,15 @@ export default function TransactionsPage() {
           </div>
           <div className="flex flex-wrap gap-2 mt-4 md:mt-0">
             <Button 
+              variant={groupByAccount ? "default" : "outline"}
+              onClick={() => setGroupByAccount(!groupByAccount)}
+              className="flex items-center justify-center whitespace-nowrap gap-2"
+            >
+              <CreditCard className="h-4 w-4 flex-shrink-0" /> 
+              <span className="truncate">{groupByAccount ? "Grouped by Account" : "Group by Account"}</span>
+            </Button>
+            
+            <Button 
               variant="outline"
               onClick={() => setIsPlaidConnectionOpen(true)}
               className="flex items-center justify-center whitespace-nowrap gap-2 border-gray-300 text-gray-700 hover:text-gray-900 dark:border-gray-600 dark:text-gray-300 dark:hover:text-gray-100 max-w-[180px] overflow-hidden"
