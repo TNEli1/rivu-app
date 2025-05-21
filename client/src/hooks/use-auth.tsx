@@ -286,6 +286,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Login successful",
         description: `Welcome back, ${data.firstName || data.username}!`,
       });
+      
+      // Redirect to dashboard after successful login
+      setLocation("/dashboard");
     },
     onError: (error: Error) => {
       toast({
@@ -463,7 +466,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // If onboarding was completed, redirect to dashboard
       if (data.demographics?.completed) {
-        setLocation("/");
+        setLocation("/dashboard");
       }
     },
     onError: (error: Error) => {
