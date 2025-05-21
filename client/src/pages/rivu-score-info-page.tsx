@@ -19,15 +19,16 @@ export default function RivuScoreInfoPage() {
       <main className="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto max-h-screen">
         {/* Page Header */}
         <div className="flex items-center mb-6">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mr-2"
-            onClick={() => window.location.href = '/dashboard'}
-          >
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Back
-          </Button>
+          <Link href="/dashboard">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mr-2"
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Back to Dashboard
+            </Button>
+          </Link>
           <h1 className="text-2xl font-semibold">How Your Rivu Score Works</h1>
         </div>
         

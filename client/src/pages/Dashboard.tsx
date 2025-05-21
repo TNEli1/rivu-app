@@ -16,6 +16,106 @@ import { useTheme } from "@/hooks/use-theme";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 
+// Helper functions for goal completion calculation - matches the logic on goals-page.tsx
+function calculateEstimatedCompletion(goal: any): string {
+  if (parseFloat(String(goal.progressPercentage)) >= 100) 
+    return "Completed!";
+  
+  if (parseFloat(String(goal.progressPercentage)) <= 0) 
+    return "Not started";
+  
+  // Calculate average weekly contribution
+  const monthlyContributions = Array.isArray(goal.monthlySavings) ? goal.monthlySavings : [];
+  
+  if (monthlyContributions.length === 0) 
+    return "Calculating...";
+  
+  try {
+    // Calculate average monthly contribution over the last 3 months or all available data
+    const relevantMonths = monthlyContributions.slice(-3);
+    const averageMonthlyContribution = relevantMonths.reduce((sum, month) => sum + month.amount, 0) / relevantMonths.length;
+    
+    if (averageMonthlyContribution <= 0) 
+      return "Need more data";
+    
+    // Calculate weekly contribution (monthly / 4.3)
+    const avgWeeklyContribution = averageMonthlyContribution / 4.3;
+    
+    // Calculate weeks needed
+    const remaining = goal.targetAmount - goal.currentAmount;
+    const weeksNeeded = Math.ceil(remaining / avgWeeklyContribution);
+    
+    // Calculate completion date based on current contribution rate
+    const completionDate = new Date();
+    completionDate.setDate(completionDate.getDate() + (weeksNeeded * 7));
+    return format(completionDate, 'MMM yyyy');
+  } catch (error) {
+    console.error("Error calculating goal completion date:", error);
+    return "Calculation error";
+  }
+}
+
+function getGoalStatusFromData(goal: any): 'on-track' | 'behind' | 'ahead' {
+  if (parseFloat(String(goal.progressPercentage)) >= 100) 
+    return 'ahead';
+  
+  if (parseFloat(String(goal.progressPercentage)) <= 0) 
+    return 'behind';
+  
+  const monthlyContributions = Array.isArray(goal.monthlySavings) ? goal.monthlySavings : [];
+  
+  if (monthlyContributions.length === 0) 
+    return 'on-track';
+  
+  try {
+    // Calculate average monthly contribution
+    const relevantMonths = monthlyContributions.slice(-3);
+    const averageMonthlyContribution = relevantMonths.reduce((sum, month) => sum + month.amount, 0) / relevantMonths.length;
+    
+    if (averageMonthlyContribution <= 0) 
+      return 'behind';
+    
+    // Calculate weekly contribution
+    const avgWeeklyContribution = averageMonthlyContribution / 4.3;
+    
+    // Calculate weeks needed
+    const remaining = goal.targetAmount - goal.currentAmount;
+    const weeksNeeded = Math.ceil(remaining / avgWeeklyContribution);
+    
+    // Calculate completion date
+    const completionDate = new Date();
+    completionDate.setDate(completionDate.getDate() + (weeksNeeded * 7));
+    
+    // Determine if on track based on target date
+    if (goal.targetDate) {
+      const targetDate = new Date(goal.targetDate);
+      
+      // Compare estimated completion with target date
+      if (completionDate > targetDate) {
+        return 'behind';
+      } else if (completionDate < targetDate) {
+        return 'ahead';
+      }
+    }
+    
+    return 'on-track';
+  } catch (error) {
+    console.error("Error determining goal status:", error);
+    return 'on-track';
+  }
+}
+
+function getGoalStatusText(goal: any): string {
+  const status = getGoalStatusFromData(goal);
+  
+  if (status === 'ahead')
+    return 'Ahead of schedule';
+  else if (status === 'behind')
+    return 'Behind schedule';
+  else
+    return 'On track';
+}
+
 // Initial empty state for dashboard UI
 const initialSummaryData = {
   totalBalance: 0,
