@@ -1216,105 +1216,96 @@ export class DatabaseStorage implements IStorage {
         throw new Error('User not found');
       }
       
-      // Check if user is still in onboarding period (first 7 days)
-      const isNewUser = await this.isNewUser(userId);
+      // Format money helper
+      const formatMoney = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2
+      });
       
-      if (isNewUser) {
-        // Create onboarding nudges based on onboarding stage
-        const onboardingStage = user.onboardingStage || 'new';
-        
-        // First check if user has budget categories before showing the "create a budget" nudge
-        if (onboardingStage === 'new') {
-          // Check if user already has budget categories
-          const budgetCategories = await this.getBudgetCategories(userId);
-          
-          // Only show the nudge if they don't have any budget categories
-          if (budgetCategories.length === 0) {
-            const nudge = await this.createNudge({
-              userId,
-              type: 'onboarding',
-              message: 'Welcome to Rivu! Start by creating a budget category.',
-              status: 'active',
-              triggerCondition: JSON.stringify({ type: 'new_user' }),
-            });
-            newNudges.push(nudge);
-          } else {
-            // If they have categories but are still in 'new' stage, update their stage
-            await this.updateOnboardingStage(userId, 'budget_created');
-          }
-        } else if (onboardingStage === 'budget_created' && !user.lastTransactionDate) {
-          // User created budget but hasn't added transactions
+      // Get current date
+      const now = new Date();
+      
+      // Check for existing active nudges to avoid duplication
+      const activeNudges = await this.getNudgesByStatus(userId, 'active');
+      const existingNudgeTypes = new Set(activeNudges.map(n => {
+        try {
+          const condition = JSON.parse(n.triggerCondition);
+          return condition.type;
+        } catch (e) {
+          return n.type;
+        }
+      }));
+      
+      // Check for recently dismissed or completed nudges (within 5 days)
+      const fiveDaysAgo = new Date(now);
+      fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+      
+      const recentlyHandledNudges = await db.select()
+        .from(nudges)
+        .where(and(
+          eq(nudges.userId, userId),
+          or(
+            gte(nudges.dismissedAt, fiveDaysAgo),
+            gte(nudges.completedAt, fiveDaysAgo)
+          )
+        ));
+      
+      const recentlyHandledTypes = new Set(recentlyHandledNudges.map(n => {
+        try {
+          const condition = JSON.parse(n.triggerCondition);
+          return condition.type;
+        } catch (e) {
+          return n.type;
+        }
+      }));
+      
+      // RULE 1: Check if user has any budget categories
+      const budgetCategories = await this.getBudgetCategories(userId);
+      if (budgetCategories.length === 0) {
+        // Only create if no active nudge of this type and not recently handled
+        if (!existingNudgeTypes.has('empty_budget') && !recentlyHandledTypes.has('empty_budget')) {
           const nudge = await this.createNudge({
             userId,
-            type: 'onboarding',
-            message: "Let's add your first transaction together.",
+            type: 'budget_suggestion',
+            message: 'Try setting a monthly budget to take control of your spending.',
             status: 'active',
-            triggerCondition: JSON.stringify({ type: 'budget_created_no_transactions' }),
+            triggerCondition: JSON.stringify({ 
+              type: 'empty_budget',
+              checked_at: now.toISOString()
+            }),
+            // Set a reasonable due date (7 days from now)
+            dueDate: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
           });
           newNudges.push(nudge);
-        } else if (onboardingStage === 'transaction_added') {
-          // User has added transactions but no savings goal
-          const goals = await this.getSavingsGoals(userId);
-          if (goals.length === 0) {
-            const nudge = await this.createNudge({
-              userId,
-              type: 'onboarding',
-              message: 'Set a savings goal to start tracking your progress.',
-              status: 'active',
-              triggerCondition: JSON.stringify({ type: 'transactions_no_goals' }),
-            });
-            newNudges.push(nudge);
-          }
         }
       } else {
-        // User is past onboarding period, check for behavioral nudges
-        const now = new Date();
+        // RULE 2: Check if user has reviewed budget recently (within a week)
+        const lastWeek = new Date(now);
+        lastWeek.setDate(lastWeek.getDate() - 7);
         
-        // Check for transaction inactivity (no transactions in 5 days)
-        if (user.lastTransactionDate) {
-          const lastTransactionDate = new Date(user.lastTransactionDate);
-          const daysSinceLastTransaction = Math.floor((now.getTime() - lastTransactionDate.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (daysSinceLastTransaction >= 5) {
+        const hasReviewedBudget = user.lastBudgetReviewDate && new Date(user.lastBudgetReviewDate) > lastWeek;
+        
+        if (!hasReviewedBudget && budgetCategories.length > 0) {
+          if (!existingNudgeTypes.has('budget_review') && !recentlyHandledTypes.has('budget_review')) {
             const nudge = await this.createNudge({
               userId,
-              type: 'transaction_reminder',
-              message: 'You haven\'t logged a transaction in 5 days. Keep tracking to improve your Rivu Score!',
+              type: 'budget_review',
+              message: 'Review your budget and make sure your spending aligns with your goals.',
               status: 'active',
-              triggerCondition: JSON.stringify({ type: 'transaction_inactivity', days: daysSinceLastTransaction }),
+              triggerCondition: JSON.stringify({ 
+                type: 'budget_review',
+                checked_at: now.toISOString()
+              }),
+              dueDate: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000) // 3 days from now
             });
             newNudges.push(nudge);
           }
         }
         
-        // Check for goal inactivity (no updates in 14 days)
-        if (user.lastGoalUpdateDate) {
-          const lastGoalDate = new Date(user.lastGoalUpdateDate);
-          const daysSinceLastGoalUpdate = Math.floor((now.getTime() - lastGoalDate.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (daysSinceLastGoalUpdate >= 14) {
-            const nudge = await this.createNudge({
-              userId,
-              type: 'goal_reminder',
-              message: 'Your savings goals haven\'t been updated in 2 weeks. Make progress towards your financial targets!',
-              status: 'active',
-              triggerCondition: JSON.stringify({ type: 'goal_inactivity', days: daysSinceLastGoalUpdate }),
-            });
-            newNudges.push(nudge);
-          }
-        }
-        
-        // Check budget categories at risk of being exceeded (> 80% spent)
-        const categories = await this.getBudgetCategories(userId);
-        
-        // Log categories for debugging
-        console.log(`Checking budget categories for nudges for user ${userId}:`);
-        for (const cat of categories) {
-          console.log(`Budget category: ${cat.name}, amount: ${cat.budgetAmount}, spent: ${cat.spentAmount}`);
-        }
-        
+        // RULE 2B: Check for budget categories at risk (75-95% spent)
         // Calculate remaining budget for each category
-        const categoriesWithRemainingBudget = categories.map(category => {
+        const categoriesWithRemainingBudget = budgetCategories.map(category => {
           const spent = parseFloat(String(category.spentAmount || 0));
           const budget = parseFloat(String(category.budgetAmount || 0));
           const percentUsed = budget > 0 ? Math.min(Math.round((spent / budget) * 100), 100) : 0;
@@ -1333,16 +1324,14 @@ export class DatabaseStorage implements IStorage {
                  parseFloat(String(category.budgetAmount)) > 0;
         });
         
-        // Setup formatters outside of loop for reuse
-        const formatMoney = new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'USD',
-          minimumFractionDigits: 2
-        });
-        
-        // Create nudges for categories at risk
-        for (const category of categoriesAtRisk) {
-          // Get today's date to make the message more relevant
+        // Only show ONE budget warning at a time to avoid overwhelming the user
+        if (categoriesAtRisk.length > 0 && 
+            !existingNudgeTypes.has('budget_at_risk') && 
+            !recentlyHandledTypes.has('budget_at_risk')) {
+          // Sort by percentage used (descending) to prioritize most at-risk budgets
+          categoriesAtRisk.sort((a, b) => b.percentUsed - a.percentUsed);
+          const category = categoriesAtRisk[0]; // Take the most at-risk category
+          
           const today = new Date();
           const dayOfMonth = today.getDate();
           
@@ -1357,10 +1346,117 @@ export class DatabaseStorage implements IStorage {
             type: 'budget_warning',
             message: `Your ${category.name} budget is ${category.percentUsed}% used${dayOfMonth < 20 ? ` and it's only the ${dayOfMonth}${suffix}` : ''}. You have ${formatMoney.format(category.remaining)} remaining.`,
             status: 'active',
-            triggerCondition: JSON.stringify({ type: 'budget_at_risk', categoryId: category.id, percentUsed: category.percentUsed }),
+            triggerCondition: JSON.stringify({ 
+              type: 'budget_at_risk', 
+              categoryId: category.id, 
+              percentUsed: category.percentUsed,
+              checked_at: now.toISOString()
+            }),
           });
           newNudges.push(nudge);
         }
+      }
+      
+      // RULE 3: Check if user has any savings goals
+      const goals = await this.getSavingsGoals(userId);
+      if (goals.length === 0) {
+        if (!existingNudgeTypes.has('empty_goals') && !recentlyHandledTypes.has('empty_goals')) {
+          const nudge = await this.createNudge({
+            userId,
+            type: 'goal_suggestion',
+            message: 'Create a savings goal to start building financial momentum.',
+            status: 'active',
+            triggerCondition: JSON.stringify({ 
+              type: 'empty_goals',
+              checked_at: now.toISOString()
+            }),
+            dueDate: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000) // 5 days from now
+          });
+          newNudges.push(nudge);
+        }
+      } else {
+        // RULE 3B: Check for goals that are at risk
+        for (const goal of goals) {
+          // Skip if we already have 2 nudges (to avoid overwhelming the user)
+          if (newNudges.length >= 2) break;
+          
+          // Calculate goal progress
+          const targetAmount = parseFloat(String(goal.targetAmount));
+          const currentAmount = parseFloat(String(goal.currentAmount));
+          const progress = targetAmount > 0 ? currentAmount / targetAmount : 0;
+          
+          // Calculate days remaining
+          const targetDate = goal.targetDate ? new Date(goal.targetDate) : null;
+          const daysLeft = targetDate ? Math.max(0, Math.ceil((targetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))) : null;
+          
+          // Check if goal is behind schedule and due soon (progress < 25% and < 30 days left)
+          if (progress < 0.25 && daysLeft !== null && daysLeft < 30) {
+            const goalRiskKey = `goal_behind_${goal.id}`;
+            if (!existingNudgeTypes.has(goalRiskKey) && !recentlyHandledTypes.has(goalRiskKey)) {
+              const nudge = await this.createNudge({
+                userId,
+                type: 'goal_at_risk',
+                message: `You're behind on your goal for ${goal.name}. Consider increasing your contributions.`,
+                status: 'active',
+                triggerCondition: JSON.stringify({ 
+                  type: goalRiskKey,
+                  goalId: goal.id,
+                  progress: progress,
+                  daysLeft: daysLeft,
+                  checked_at: now.toISOString()
+                }),
+              });
+              newNudges.push(nudge);
+            }
+          }
+        }
+      }
+      
+      // RULE 4: Check if user has any transactions
+      const transactions = await this.getTransactions(userId);
+      const hasBankLinked = await this.hasLinkedPlaidAccount(userId);
+      
+      if (transactions.length === 0 && hasBankLinked) {
+        if (!existingNudgeTypes.has('empty_transactions') && !recentlyHandledTypes.has('empty_transactions')) {
+          const nudge = await this.createNudge({
+            userId,
+            type: 'transaction_reminder',
+            message: 'No new transactions this week — make sure your bank is syncing properly.',
+            status: 'active',
+            triggerCondition: JSON.stringify({ 
+              type: 'empty_transactions',
+              checked_at: now.toISOString()
+            }),
+          });
+          newNudges.push(nudge);
+        }
+      }
+      
+      // RULE 5: Check if user has linked a bank account
+      if (!hasBankLinked) {
+        const hasUploadedCSV = transactions.length > 0; // If they have transactions but no bank, they probably uploaded CSV
+        
+        if (!hasUploadedCSV && !existingNudgeTypes.has('no_bank_connection') && !recentlyHandledTypes.has('no_bank_connection')) {
+          const nudge = await this.createNudge({
+            userId,
+            type: 'bank_connection',
+            message: 'Connect your bank or upload a CSV to start tracking your finances.',
+            status: 'active',
+            triggerCondition: JSON.stringify({ 
+              type: 'no_bank_connection',
+              checked_at: now.toISOString()
+            }),
+            dueDate: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000) // 2 days from now
+          });
+          newNudges.push(nudge);
+        }
+      }
+      
+      // Limit to 2 nudges max at a time to avoid overwhelming the user
+      if (newNudges.length > 2) {
+        // Sort by priority and trim
+        // We keep the first 2 in the list (we prioritize as we add them)
+        newNudges.splice(2);
       }
       
       return newNudges;
