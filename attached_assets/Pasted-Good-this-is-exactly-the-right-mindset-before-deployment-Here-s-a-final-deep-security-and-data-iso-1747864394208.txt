@@ -1,0 +1,299 @@
+Good—this is exactly the right mindset before deployment. Here’s a final, deep security and data-isolation audit checklist tailored to Rivu.
+
+This assumes:
+	•	Node.js + Express backend
+	•	PostgreSQL database via Render
+	•	Frontend on Vercel
+	•	Auth via JWT
+	•	Role-based access (admin, user, advisor)
+
+⸻
+
+1. DATA ISOLATION (Critical)
+
+Backend:
+	•	Every request that reads or writes user data uses req.user.id (from JWT) as a filter.
+
+const userId = req.user.id;
+const budgets = await db.query('SELECT * FROM budgets WHERE user_id = $1', [userId]);
+
+•	No route accepts raw user IDs from the client. The only ID that matters is from the authenticated session.
+	•	Advisors or admins must be explicitly checked for additional access (e.g., sub-users).
+
+Database:
+	•	Ensure foreign keys (user_id) exist and are enforced in all tables (budgets, transactions, goals, etc.).
+	•	Add ON DELETE CASCADE only where it’s safe (e.g., deleting a user should clean up their data—but never cascade across tenants).
+	•	Use row-level security (RLS) if using Supabase/Postgres-native features later.
+
+⸻
+
+2. AUTHENTICATION
+	•	All protected routes use an auth middleware to verify JWTs.
+	•	JWT tokens are:
+	•	Signed with a strong secret (JWT_SECRET)
+	•	Short-lived (e.g., 15–30 minutes) + support refresh
+	•	Stored in httpOnly cookies or secure local storage on the frontend
+
+// Middleware
+if (!req.user || !req.user.id) return res.status(401).json({ error: 'Unauthorized' });
+
+•	Token payloads do not include sensitive info (email okay, but no passwords, full profiles, etc.)
+
+⸻
+
+3. AUTHORIZATION (Role-Based Access)
+	•	Role (user, admin, advisor) is stored on the user model
+	•	Backend checks for role before accessing privileged endpoints
+
+if (req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+
+Frontend should not expose admin-only routes (but this is secondary; backend must enforce)
+
+⸻
+
+4. INPUT VALIDATION & SANITIZATION
+	•	Use a schema validator (e.g., zod, joi, or express-validator) to:
+	•	Prevent SQL injection, XSS, malformed JSON
+	•	Check emails, amounts, budget names, etc.
+	•	Reject all unexpected fields (don’t just ignore them)
+
+// Example
+email: z.string().email(),
+amount: z.number().positive(),
+
+Sanitize strings for dangerous input (especially budget names, notes, goals)
+
+⸻
+
+5. RATE LIMITING + DDOS PROTECTION
+	•	Install express-rate-limit and apply to:
+	•	/api/auth/login
+	•	/api/auth/register
+	•	/api/plaid/*
+	•	Any AI/GPT endpoints
+
+const limiter = rateLimit({ windowMs: 1 * 60 * 1000, max: 10 });
+app.use("/api/auth", limiter);
+
+•	Consider express-slow-down to delay abusive users instead of blocking outright
+
+⸻
+
+6. SENSITIVE OPERATIONS
+	•	Passwords are:
+	•	Hashed with bcrypt (minimum 12 salt rounds)
+	•	Never returned to the client, even hashed
+	•	Password reset tokens:
+	•	Are random UUIDs or cryptographically secure strings
+	•	Stored hashed in DB
+	•	Expire in 15 minutes
+	•	Can only be used once
+
+⸻
+
+7. PLAID SECURITY & OAUTH
+	•	redirect_uri is only accepted from .env, not the client
+	•	OAuth callback captures oauth_state_id and passes receivedRedirectUri correctly
+	•	Access tokens from Plaid are encrypted at rest or rotated regularly
+	•	Webhooks (if used) validate Plaid’s signature
+
+⸻
+
+8. EMAIL + COMMUNICATION SECURITY
+	•	All outgoing emails use support@tryrivu.com, not no-reply@
+	•	Email templates do not leak sensitive data
+	•	Use a reputable provider (e.g., SendGrid, Mailgun)
+	•	Monitor for bounce/abuse rate
+
+⸻
+
+9. FRONTEND SECURITY
+	•	No console logs in production
+	•	Local storage does not store sensitive tokens (prefer httpOnly cookies or auth headers)
+	•	Protect admin-only routes client-side (even though backend should enforce it)
+	•	Strip null/undefined values before sending to backend
+
+⸻
+
+10. OBSERVABILITY & FAILSAFES
+	•	Add a /health route for Render monitoring
+	•	Catch all 500 errors and return safe messages (no stack traces to user)
+	•	Log errors server-side using console.error() or a logger (Winston, Pino, etc.)
+
+⸻
+
+Summary: Final Must-Haves Before You Push to GitHub
+	•	✅ Every API query is filtered by req.user.id
+	•	✅ Auth middleware is applied to every route
+	•	✅ Rate limiting is enforced
+	•	✅ Role-based access checks are in place
+	•	✅ JWT is safe, short-lived, and validated
+	•	✅ Passwords and reset tokens are securely stored
+	•	✅ Environment variables handle secrets—not hardcoded anywhere
+
+NO HARDCODED SECRETS (Frontend or Backend)
+	•	No API keys, secrets, or tokens are hardcoded in the frontend.
+	•	Frontend should only have NEXT_PUBLIC_ values for safe, non-sensitive config (e.g., API base URL).
+	•	All secrets are stored in .env and injected at build time:
+	•	PLAID_CLIENT_ID, PLAID_SECRET, JWT_SECRET, OPENAI_API_KEY, etc.
+	•	No Plaid or GPT keys are exposed in the frontend or network tab.
+
+⸻
+
+2. SQL INJECTION PROTECTION
+	•	All DB queries use parameterized inputs:
+
+const result = await db.query("SELECT * FROM transactions WHERE user_id = $1", [userId]);
+
+•	No raw query concatenation with user inputs—EVER.
+	•	Budget names, notes, custom labels are sanitized and length-limited.
+
+⸻
+
+3. DDOS + ABUSE MITIGATION
+	•	Rate limiting is active (e.g., express-rate-limit) on:
+	•	/auth/login
+	•	/auth/register
+	•	/plaid/*
+	•	/openai/*
+	•	Use express-slow-down to delay repeated abusive requests without locking out legit users.
+	•	Add global 429 error handler with friendly messaging.
+	•	HTTP headers hardened with helmet:
+
+app.use(require("helmet")());
+
+4. FULL AUTHENTICATION COVERAGE
+	•	Every protected route uses authMiddleware to verify JWT:
+
+if (!req.user || !req.user.id) return res.status(401).json({ error: "Unauthorized" });
+
+•	No frontend actions (like fetch requests) should assume the user is authenticated—JWT must be sent with every request.
+	•	JWT tokens:
+	•	Signed with a strong secret
+	•	Expire after ~15–30 minutes
+	•	Are not stored in localStorage unless secure, encrypted alternatives are unavailable
+	•	Role-based access enforced in backend (admin, advisor, user)
+
+⸻
+
+5. FRONTEND SECURITY
+	•	Strip all console logs and stack traces from production build
+	•	No use of eval() or dynamic code execution
+	•	Null/undefined-safe handling of all state and API responses
+	•	All network requests sent over https://, with no fallback to http://
+	•	No sensitive tokens, user IDs, or credentials are ever stored in browser memory or cookies unless httpOnly and Secure
+
+⸻
+
+6. PASSWORD + SESSION SECURITY
+	•	Passwords are hashed using bcrypt with at least 12 salt rounds
+	•	Reset tokens:
+	•	Are securely randomized (e.g., crypto or UUID)
+	•	Stored hashed (not plaintext)
+	•	Expire after 10–15 minutes
+	•	Are single-use only
+	•	Password reset endpoints verify token + expiration + matching user
+
+⸻
+
+7. USER DATA ISOLATION
+	•	Every query is filtered by req.user.id from the JWT payload—not passed by the client
+	•	Users cannot specify IDs in URL or body to access other users’ data
+	•	DB enforces foreign key constraints between users → transactions, budgets, goals, etc.
+
+⸻
+
+8. OAUTH FLOW PROTECTION (Plaid)
+	•	redirect_uri is configured in .env only—not set by the frontend
+	•	After OAuth redirect:
+	•	oauth_state_id is extracted
+	•	Plaid.create() is called with receivedRedirectUri
+	•	Access tokens from Plaid are encrypted or protected on the backend—never sent to the frontend
+
+⸻
+
+9. EMAIL AND NOTIFICATIONS
+	•	Outgoing emails use a professional sender (support@tryrivu.com)
+	•	No sensitive data in the body (e.g., don’t email full usernames or tokens)
+	•	All email triggers (e.g., password reset) are rate-limited per email/IP
+
+⸻
+
+10. OBSERVABILITY + FAILSAFE
+	•	All 500 errors are caught with a safe message; no stack trace leaks
+	•	All failed login attempts and system errors are logged
+	•	Add /health route that returns:
+
+{ "status": "ok", "uptime": "432000s", "db": "connected" }
+
+Add Content-Security-Policy via helmet to limit scripts
+	•	Use cors() to restrict frontend access to your domain only:
+
+cors({ origin: ["https://tryrivu.com"], credentials: true });
+
+Simulate attacks (e.g., Burp Suite, OWASP Zap)
+	•	Add Cloudflare or DDoS proxy layer in front of Render
+	•	Add SOC2 checklist and audit logging
+
+
+We’re finalizing the Rivu app for full production deployment. Please complete the following tasks to ensure airtight security, proper user data isolation, and observability before we migrate to Vercel (frontend), Render (backend), and PostgreSQL (on Render).
+
+This is our final security hardening pass—please treat every item as required.
+
+⸻
+
+1. USER DATA ISOLATION & AUTH VALIDATION
+	•	Audit the entire backend codebase to ensure all data queries filter by req.user.id, not username, email, or client-passed values.
+	•	Example: SELECT * FROM budgets WHERE user_id = $1
+	•	Remove any logic that filters or identifies users by username or email—these are not unique enough and caused a real bug where users with similar names saw each other’s data.
+	•	Confirm that every route extracting data (budgets, transactions, goals, etc.) is protected by authentication middleware and references the authenticated user’s internal ID only.
+
+⸻
+
+2. POSTHOG ANALYTICS INTEGRATION
+	•	Integrate PostHog into the frontend using the official PostHog JS SDK.
+	•	On successful login, use:
+
+posthog.identify(userId, { email: user.email });
+
+	•	Track the following events:
+	•	User login
+	•	Budget created/updated/deleted
+	•	Transactions added
+	•	Plaid link started/success/failure
+	•	AI coaching accessed
+	•	Page navigations (dashboard, goals, analytics, etc.)
+	•	On the backend, optionally log system-level events (Plaid errors, GPT failures, etc.) using the Node SDK—but do not send PII, tokens, or sensitive financial data.
+
+⸻
+
+3. SECURITY HARDENING (FINAL PASS)
+	•	Confirm no secrets (Plaid keys, GPT, SMTP, etc.) are hardcoded in the frontend or backend. Everything must be sourced via .env.
+	•	Add rate limiting to:
+	•	/api/auth/login
+	•	/api/auth/register
+	•	/api/plaid/*
+	•	/api/openai/*
+	•	Sanitize all inputs and validate fields server-side using a schema validator like zod or express-validator.
+	•	Add helmet() to enforce secure headers.
+	•	Add a global error handler that prevents stack traces from leaking to the client.
+	•	Ensure JWT payload only contains id and role. Token must be verified on all protected routes.
+
+⸻
+
+4. DNS + REDIRECT URI LOCKDOWN
+	•	Ensure redirect_uri is configured strictly via .env (not passed in by client).
+Value should be: https://tryrivu.com/callback
+	•	All Plaid OAuth redirects must use receivedRedirectUri after capturing oauth_state_id.
+
+⸻
+
+5. FINAL CHECKLIST
+	•	Add a /health endpoint for uptime checks
+	•	Remove all test users, demo admin credentials, and dev shortcuts
+	•	Confirm frontend does not store sensitive tokens or leak data via logs
+	•	Remove any console.log() or debug code from production builds
+	•	Run a test with two users with similar usernames and verify full data isolation
+
+
+Once this checklist is complete, we will push to GitHub, finalize Render + Vercel deployment, and point tryrivu.com live. Treat this as the last code pass before real users. Thank you.
