@@ -19,6 +19,14 @@ type RivuScoreResponse = {
     incomeToSpendingRatio: number;
   };
   lastUpdated: string;
+  recentChanges?: {
+    netChange: number;
+    changes: {
+      factor: string;
+      change: number;
+      reason: string;
+    }[];
+  };
 };
 
 type ScoreFactor = {
@@ -182,15 +190,59 @@ export default function RivuScore() {
         ))}
       </div>
       
+      {/* Recent changes section */}
+      {data?.recentChanges && (
+        <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
+          <h4 className={`text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-800'}`}>
+            Recent Score Changes
+          </h4>
+          <div className="text-sm">
+            <div className={`flex items-center justify-between mb-1 ${
+              data.recentChanges.netChange > 0 
+                ? 'text-green-500' 
+                : data.recentChanges.netChange < 0 
+                  ? 'text-red-500' 
+                  : ''
+            }`}>
+              <span>Net change:</span>
+              <span>
+                {data.recentChanges.netChange > 0 ? '+' : ''}
+                {data.recentChanges.netChange} points
+              </span>
+            </div>
+            
+            <div className="space-y-1 mt-2">
+              {data.recentChanges.changes.map((change, index) => (
+                <div key={index} className="flex items-center justify-between text-xs">
+                  <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-700'}`}>
+                    {change.factor}:
+                  </span>
+                  <span className={
+                    change.change > 0 
+                      ? 'text-green-500' 
+                      : change.change < 0 
+                        ? 'text-red-500' 
+                        : theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }>
+                    {change.change > 0 ? '+' : ''}
+                    {change.change}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      
       {data?.lastUpdated && lastUpdated !== 'Not available' && (
-        <div className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+        <div className={`text-xs mt-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
           Last updated: {lastUpdated}
         </div>
       )}
       
       <div className="mt-2">
         <Link 
-          to="/settings?tab=rivu-score" 
+          to="/rivu-score-info" 
           className={`text-xs underline ${theme === 'dark' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'}`}
         >
           How your Rivu Score works

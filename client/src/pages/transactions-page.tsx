@@ -61,10 +61,17 @@ type Transaction = {
   category: string;
   subcategory?: string;
   account: string;
+  accountId?: string;
+  accountType?: string;
+  accountSubtype?: string;
+  institutionName?: string;
+  institutionLogo?: string;
   type: 'income' | 'expense';
   notes?: string;
   source?: 'manual' | 'csv' | 'plaid';
   isDuplicate?: boolean;
+  isRecurring?: boolean;
+  isUnexpected?: boolean;
 };
 
 type BudgetCategory = {
@@ -78,8 +85,12 @@ type TransactionAccount = {
   id: string;
   name: string;
   type: string;
+  subtype?: string;  // Added for account subtype (checking, savings, credit, etc.)
   institutionName?: string;
+  institutionLogo?: string; // Added for displaying bank logo
   lastFour?: string;
+  balance?: number;  // Added for displaying current balance
+  isPlaid?: boolean; // Added to identify Plaid-connected accounts
 };
 
 type TransactionFormData = {

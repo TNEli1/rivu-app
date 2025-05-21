@@ -28,16 +28,46 @@ export default function NudgesBanner() {
   // Track which nudges have been handled locally
   const [handledNudgeIds, setHandledNudgeIds] = useState<number[]>([]);
   
-  // Sample nudges for testing the UI - reduced to just one example in development
+  // Enhanced sample nudges that demonstrate the new behavioral nudge engine
   const [sampleNudges, setSampleNudges] = useState<Nudge[]>([
-    // Using a much higher ID to avoid conflicts with real nudges
+    // Budget overspending nudge
     {
       id: 10001,
       userId: 7,
       type: 'budget_warning',
-      message: 'Your Entertainment budget is 85% used. Be careful with your spending!',
+      message: "You've spent 85% of your dining budget and it's only the 12th.",
       status: 'active',
-      triggerCondition: '{"type":"budget_at_risk","categoryId":22,"percentUsed":85}',
+      triggerCondition: '{"type":"budget_at_risk","categoryId":22,"percentUsed":85,"dayOfMonth":12}',
+      createdAt: new Date().toISOString(),
+    },
+    // Goal progress nudge
+    {
+      id: 10002,
+      userId: 7,
+      type: 'goal_reminder',
+      message: "You're $75 behind pace for your emergency fund. Want to adjust?",
+      status: 'active',
+      triggerCondition: '{"type":"goal_behind_pace","goalId":1,"amountBehind":75}',
+      createdAt: new Date().toISOString(),
+    },
+    // Rivu Score drop nudge
+    {
+      id: 10003,
+      userId: 7,
+      type: 'score_alert',
+      message: "Your score dropped 12 points this week. Want to review your activity?",
+      status: 'active',
+      triggerCondition: '{"type":"score_decrease","pointsDropped":12}',
+      createdAt: new Date().toISOString(),
+    },
+    // Inactivity nudge
+    {
+      id: 10004,
+      userId: 7,
+      type: 'activity_reminder',
+      message: "You haven't checked in this week. Let's review your budget in 2 minutes.",
+      status: 'active',
+      triggerCondition: '{"type":"inactivity","daysSinceLogin":7}',
       createdAt: new Date().toISOString(),
     }
   ]);
@@ -122,7 +152,7 @@ export default function NudgesBanner() {
     }
   });
 
-  // Helper function to get icon based on nudge type
+  // Enhanced helper function to get icon based on nudge type
   const getNudgeIcon = (type: string) => {
     switch (type) {
       case 'onboarding':
@@ -133,6 +163,10 @@ export default function NudgesBanner() {
         return <ArrowRight className="h-5 w-5 text-purple-500" />;
       case 'transaction_reminder':
         return <BellRing className="h-5 w-5 text-green-500" />;
+      case 'score_alert':
+        return <AlertCircle className="h-5 w-5 text-red-500" />;
+      case 'activity_reminder':
+        return <BellRing className="h-5 w-5 text-blue-500" />;
       default:
         return <BellRing className="h-5 w-5 text-primary" />;
     }
@@ -158,7 +192,11 @@ export default function NudgesBanner() {
                 ? 'border-l-purple-500'
                 : nudge.type === 'transaction_reminder'
                   ? 'border-l-green-500'
-                  : 'border-l-blue-500'
+                  : nudge.type === 'score_alert'
+                    ? 'border-l-red-500'
+                    : nudge.type === 'activity_reminder'
+                      ? 'border-l-blue-500'
+                      : 'border-l-blue-500'
           } ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}
         >
           <CardContent className="p-4">
