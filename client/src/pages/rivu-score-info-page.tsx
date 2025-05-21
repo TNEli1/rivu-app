@@ -8,12 +8,8 @@ import Sidebar from '@/components/layout/Sidebar';
 
 export default function RivuScoreInfoPage() {
   // For navigation
-  const [location, setLocation] = useLocation();
+  const [, navigate] = useLocation();
   const { theme } = useTheme();
-  
-  const navigate = (path: string) => {
-    setLocation(path);
-  };
   
   return (
     <div className="flex flex-col md:flex-row min-h-screen">
