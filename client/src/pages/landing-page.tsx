@@ -13,7 +13,7 @@ export default function LandingPage() {
       <nav className="container mx-auto px-6 py-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl">R</div>
+            <img src="/images/rivu-logo.png" alt="Rivu Logo" className="h-10 w-auto" />
             <span className="ml-2 text-xl font-bold">Rivu</span>
           </div>
           <div className="space-x-1 md:space-x-4">
@@ -21,7 +21,7 @@ export default function LandingPage() {
               <Button variant="ghost" size="sm">Log in</Button>
             </Link>
             <Link href="/auth?signup=true">
-              <Button variant="default" size="sm">Sign up free</Button>
+              <Button variant="default" size="sm">Sign up for free</Button>
             </Link>
           </div>
         </div>
@@ -39,30 +39,22 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
             <Link href="/auth?signup=true">
               <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
-                Join free today
+                Sign up for free
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
-            <Link href="#features">
+            <a href="#features">
               <Button variant="outline" size="lg">
                 See how it works
               </Button>
-            </Link>
+            </a>
           </div>
         </div>
-        <div className="md:w-1/2 mt-10 md:mt-0">
-          <div className="rounded-2xl shadow-xl overflow-hidden">
-            <img 
-              src="/images/rivu-dashboard-preview.png" 
-              alt="Rivu Dashboard Preview" 
-              className="w-full"
-              onError={(e) => {
-                // If image fails to load, show gradient placeholder
-                const target = e.target as HTMLImageElement;
-                target.style.height = '400px';
-                target.style.background = 'linear-gradient(to right, #3b82f6, #8b5cf6)';
-              }}
-            />
+        <div className="md:w-1/2 mt-10 md:mt-0 flex items-center justify-center">
+          <div className="p-8 rounded-2xl bg-gradient-to-br from-teal-400 to-blue-500 shadow-xl text-center text-white">
+            <img src="/images/rivu-logo.png" alt="Rivu Logo" className="h-20 w-auto mx-auto mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Smart. Simple. Secure.</h2>
+            <p className="text-lg">Your journey to financial wellness starts here</p>
           </div>
         </div>
       </section>
@@ -191,7 +183,7 @@ export default function LandingPage() {
           </p>
           <Link href="/auth?signup=true">
             <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
-              Start building better habits now
+              Sign up for free
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </Link>
@@ -203,7 +195,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center mb-6 md:mb-0">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">R</div>
+              <img src="/images/rivu-logo.png" alt="Rivu Logo" className="h-8 w-auto" />
               <span className="ml-2 font-bold">Rivu</span>
             </div>
             <div className="flex space-x-6">
