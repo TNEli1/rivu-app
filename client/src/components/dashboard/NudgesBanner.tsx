@@ -78,15 +78,19 @@ export default function NudgesBanner() {
       // Immediately mark as handled locally
       setHandledNudgeIds(prev => [...prev, nudgeId]);
       
-      // For API nudges
-      const res = await apiRequest('PUT', `/api/nudges/${nudgeId}/dismiss`);
-      return res.json();
+      try {
+        // For API nudges
+        const res = await apiRequest('PUT', `/api/nudges/${nudgeId}/dismiss`);
+        return res.json();
+      } catch (error) {
+        console.error('Error dismissing nudge:', error);
+        // Still considered success for UI purposes since we handled it locally
+        return { message: 'Nudge dismissed locally' };
+      }
     },
     onSuccess: () => {
-      // Wait a moment before refetching to give the backend time to update
-      setTimeout(() => {
-        refetch();
-      }, 500);
+      // No need to refetch - we're already handling locally
+      // This prevents race conditions with the server
     }
   });
 
@@ -102,15 +106,19 @@ export default function NudgesBanner() {
       // Immediately mark as handled locally
       setHandledNudgeIds(prev => [...prev, nudgeId]);
       
-      // For API nudges
-      const res = await apiRequest('PUT', `/api/nudges/${nudgeId}/complete`);
-      return res.json();
+      try {
+        // For API nudges
+        const res = await apiRequest('PUT', `/api/nudges/${nudgeId}/complete`);
+        return res.json();
+      } catch (error) {
+        console.error('Error completing nudge:', error);
+        // Still considered success for UI purposes since we handled it locally
+        return { message: 'Nudge completed locally' };
+      }
     },
     onSuccess: () => {
-      // Wait a moment before refetching to give the backend time to update
-      setTimeout(() => {
-        refetch();
-      }, 500);
+      // No need to refetch - we're already handling locally
+      // This prevents race conditions with the server
     }
   });
 

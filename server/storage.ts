@@ -1297,22 +1297,67 @@ export class DatabaseStorage implements IStorage {
         
         // Check budget categories at risk of being exceeded (> 80% spent)
         const categories = await this.getBudgetCategories(userId);
-        const categoriesAtRisk = categories.filter(category => {
-          const spent = parseFloat(String(category.spentAmount));
-          const budget = parseFloat(String(category.budgetAmount));
-          return (spent / budget) >= 0.8 && (spent / budget) < 1.0; // 80-99% of budget used
+        
+        // Log categories for debugging
+        console.log(`Checking budget categories for nudges for user ${userId}:`);
+        for (const cat of categories) {
+          console.log(`Budget category: ${cat.name}, amount: ${cat.budgetAmount}, spent: ${cat.spentAmount}`);
+        }
+        
+        // Calculate remaining budget for each category
+        const categoriesWithRemainingBudget = categories.map(category => {
+          const spent = parseFloat(String(category.spentAmount || 0));
+          const budget = parseFloat(String(category.budgetAmount || 0));
+          const percentUsed = budget > 0 ? Math.min(Math.round((spent / budget) * 100), 100) : 0;
+          const remaining = Math.max(0, budget - spent);
+          
+          return {
+            ...category,
+            percentUsed,
+            remaining
+          };
         });
         
+        // Filter categories at risk (75-95% spent)
+        const categoriesAtRisk = categoriesWithRemainingBudget.filter(category => {
+          return category.percentUsed >= 75 && category.percentUsed < 95 && 
+                 parseFloat(String(category.budgetAmount)) > 0;
+        });
+        
+        // Create nudges for categories at risk
         for (const category of categoriesAtRisk) {
-          const percentUsed = Math.round((parseFloat(String(category.spentAmount)) / parseFloat(String(category.budgetAmount))) * 100);
+          // Get today's date to make the message more relevant
+          const today = new Date();
+          const dayOfMonth = today.getDate();
+          
           const nudge = await this.createNudge({
             userId,
             type: 'budget_warning',
-            message: `Your ${category.name} budget is ${percentUsed}% used. Be careful with your spending!`,
+            message: `Your ${category.name} budget is ${category.percentUsed}% used${dayOfMonth < 20 ? ` and it's only the ${dayOfMonth}${getDaySuffix(dayOfMonth)}` : ''}. You have ${formatCurrency(category.remaining)} remaining.`,
             status: 'active',
-            triggerCondition: JSON.stringify({ type: 'budget_at_risk', categoryId: category.id, percentUsed }),
+            triggerCondition: JSON.stringify({ type: 'budget_at_risk', categoryId: category.id, percentUsed: category.percentUsed }),
           });
           newNudges.push(nudge);
+        }
+        
+        // Helper function to format currency
+        function formatCurrency(amount: number): string {
+          return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2
+          }).format(amount);
+        }
+        
+        // Helper function to get day suffix (1st, 2nd, 3rd, etc.)
+        function getDaySuffix(day: number): string {
+          if (day > 3 && day < 21) return 'th';
+          switch (day % 10) {
+            case 1: return 'st';
+            case 2: return 'nd';
+            case 3: return 'rd';
+            default: return 'th';
+          }
         }
       }
       
