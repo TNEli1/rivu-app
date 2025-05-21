@@ -175,7 +175,7 @@ export default function AuthPage() {
             <img 
               src="/images/rivu-logo.png" 
               alt="Rivu Logo" 
-              className="h-16 w-auto mx-auto mb-3"
+              className="h-24 w-auto mx-auto mb-3"
             />
             <p className="text-gray-600 dark:text-gray-400">AI-Powered Personal Finance</p>
           </div>

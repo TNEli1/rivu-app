@@ -23,7 +23,7 @@ export default function LandingPage() {
       <nav className="container mx-auto px-6 py-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
-            <img src="/images/rivu-logo.png" alt="Rivu Logo" className="h-24 w-auto" />
+            <img src="/images/rivu-logo.png" alt="Rivu Logo" className="h-32 w-auto" />
           </div>
           <div className="space-x-1 md:space-x-4">
             <Link href="/auth?redirect=/dashboard">

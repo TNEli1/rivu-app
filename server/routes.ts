@@ -312,8 +312,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }, 0);
       
       // Calculate monthly income and expenses
-      const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const currentDateTime = new Date();
+      const startOfMonth = new Date(currentDateTime.getFullYear(), currentDateTime.getMonth(), 1);
       
       // Get all budget categories to calculate total budget
       const budgetCategories = await storage.getBudgetCategories(userId);
@@ -405,42 +405,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Monthly expenses from transactions: ${monthlyExpenses}`);
       
       // Calculate top spending category based on actual transaction data
+      // Using the structure provided in the requirements for more accurate calculation
       let topSpendingCategory = null;
       
-      if (budgetCategories.length > 0 && totalBudgetSpent > 0) {
-        // Sort budget categories by spent amount in descending order
-        const sortedCategories = [...budgetCategories].sort((a, b) => {
-          const aSpent = typeof a.spentAmount === 'string' 
-            ? parseFloat(a.spentAmount) 
-            : (a.spentAmount || 0);
-            
-          const bSpent = typeof b.spentAmount === 'string' 
-            ? parseFloat(b.spentAmount) 
-            : (b.spentAmount || 0);
-            
-          return bSpent - aSpent;
-        });
+      // Get current month transactions only
+      const currentDate = new Date();
+      const currentMonthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const currentMonthTransactions = transactions.filter(tx => 
+        new Date(tx.date) >= currentMonthStart && 
+        tx.type === 'expense'
+        // Note: removed pending check as it's not in the transaction schema
+      );
+      
+      // Create a map of category totals
+      const categoryTotals: Record<string, number> = {};
+      
+      // Calculate totals for each category
+      currentMonthTransactions.forEach(tx => {
+        const category = tx.category || 'Uncategorized';
         
-        // Get the top category (first in sorted array)
-        if (sortedCategories.length > 0 && sortedCategories[0].spentAmount) {
-          const topCategory = sortedCategories[0];
-          const topAmount = typeof topCategory.spentAmount === 'string' 
-            ? parseFloat(topCategory.spentAmount) 
-            : (topCategory.spentAmount || 0);
-            
-          // Calculate percentage relative to monthlyExpenses (actual transactions)
-          // This gives a more accurate picture of what proportion of real spending 
-          // is in this category rather than relative to budgeted amounts
-          const percentage = monthlyExpenses > 0 
-            ? Math.round((topAmount / monthlyExpenses) * 100) 
-            : 0;
-            
-          topSpendingCategory = {
-            name: topCategory.name,
-            amount: topAmount,
-            percentage: percentage
-          };
+        if (!categoryTotals[category]) {
+          categoryTotals[category] = 0;
         }
+        
+        // Ensure amount is a number before adding
+        const amount = typeof tx.amount === 'string' 
+          ? parseFloat(tx.amount) 
+          : (tx.amount || 0);
+          
+        if (!isNaN(amount)) {
+          categoryTotals[category] += amount;
+        }
+      });
+      
+      // Find the top category (with highest total spending)
+      if (Object.keys(categoryTotals).length > 0) {
+        const topCategoryEntry = Object.entries(categoryTotals)
+          .sort((a, b) => b[1] - a[1])[0];
+        
+        const topCategoryName = topCategoryEntry[0];
+        const topAmount = topCategoryEntry[1];
+        
+        // Calculate percentage relative to monthly expenses
+        const percentage = monthlyExpenses > 0 
+          ? Math.round((topAmount / monthlyExpenses) * 100) 
+          : 0;
+          
+        topSpendingCategory = {
+          name: topCategoryName,
+          amount: topAmount,
+          percentage: percentage
+        };
       }
       
       res.json({
@@ -841,9 +856,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Found ${transactions.length} transactions for summary calculation`);
       
       // Get current month and previous month dates
-      const now = new Date();
-      const currentMonth = now.getMonth();
-      const currentYear = now.getFullYear();
+      const currentDate = new Date();
+      const currentMonth = currentDate.getMonth();
+      const currentYear = currentDate.getFullYear();
       
       // Filter transactions for current month with proper date parsing
       const currentMonthTransactions = transactions.filter(t => {

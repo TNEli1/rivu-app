@@ -34,6 +34,7 @@ export type User = {
   profilePicture?: string;
   token?: string;
   themePreference?: 'light' | 'dark';
+  coachTone?: 'encouraging' | 'direct' | 'strict'; // Adding coach tone preference
   createdAt?: string;
   updatedAt?: string;
   lastLogin?: string;

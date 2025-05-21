@@ -62,8 +62,8 @@ export default function RivuScoreCard() {
       queryClient.invalidateQueries({ queryKey: ["/api/goals/summary"] });
       
       toast({
-        title: "Rivu Score Updated",
-        description: `Your Rivu Score has been recalculated: ${data.score}`,
+        title: "Rivu Score™ Updated",
+        description: `Your Rivu Score™ has been recalculated: ${data.score}`,
       });
       
       // Set cooldown for 30 seconds to prevent abuse
