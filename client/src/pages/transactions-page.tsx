@@ -550,7 +550,7 @@ export default function TransactionsPage() {
       const accountKey = transaction.account || 'Other';
       if (!acc[accountKey]) {
         acc[accountKey] = {
-          name: transaction.account,
+          name: transaction.account || 'Other', // Ensure name is never undefined
           transactions: [],
           institutionName: transaction.institutionName || '',
           accountType: transaction.accountType || '',
@@ -560,10 +560,14 @@ export default function TransactionsPage() {
         };
       }
       
-      if (transaction.type === 'expense') {
-        acc[accountKey].totalSpent += transaction.amount;
-      } else {
-        acc[accountKey].totalIncome += transaction.amount;
+      // Validate that amount is a valid number before adding
+      const amount = parseFloat(String(transaction.amount));
+      if (!isNaN(amount)) {
+        if (transaction.type === 'expense') {
+          acc[accountKey].totalSpent += amount;
+        } else {
+          acc[accountKey].totalIncome += amount;
+        }
       }
       
       acc[accountKey].transactions.push(transaction);
