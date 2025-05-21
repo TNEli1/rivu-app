@@ -34,7 +34,8 @@ export type User = {
   profilePicture?: string;
   token?: string;
   themePreference?: 'light' | 'dark';
-  coachTone?: 'encouraging' | 'direct' | 'strict'; // Adding coach tone preference
+  coachTone?: 'encouraging' | 'direct' | 'strict'; // Coach tone preference
+  tutorialCompleted?: boolean; // Onboarding tutorial status
   createdAt?: string;
   updatedAt?: string;
   lastLogin?: string;
@@ -78,6 +79,7 @@ type UpdateProfileData = {
   firstName?: string;
   lastName?: string;
   coachTone?: 'encouraging' | 'direct' | 'strict';
+  tutorialCompleted?: boolean;
 };
 
 // Demographics update data
