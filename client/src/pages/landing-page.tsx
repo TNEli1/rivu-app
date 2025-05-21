@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
-import { ArrowRight, PieChart, Target, TrendingUp, BarChart2, Shield } from 'lucide-react';
+import { ArrowRight, PieChart, Target, TrendingUp, BarChart2, Shield, FileSpreadsheet, Lock, Edit3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/hooks/use-auth';
@@ -112,9 +112,9 @@ export default function LandingPage() {
               <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center text-red-600 dark:text-red-300 mb-4">
                 <PieChart className="h-6 w-6" />
               </div>
-              <h3 className="text-xl font-semibold mb-3">Rivu Score</h3>
+              <h3 className="text-xl font-semibold mb-3">Rivu Score™</h3>
               <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-                Track your financial health with our proprietary Rivu Score that measures and helps improve your overall financial wellbeing.
+                Track your financial health with our proprietary Rivu Score™ that measures and helps improve your overall financial wellbeing.
               </p>
             </div>
             
@@ -161,7 +161,7 @@ export default function LandingPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
                 <div className={`p-4 rounded-lg ${theme === 'dark' ? 'bg-gray-600' : 'bg-gray-50'} text-center`}>
                   <div className="w-12 h-12 mx-auto rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 mb-3">
-                    <i className="ri-bank-line text-xl"></i>
+                    <Lock className="h-6 w-6" />
                   </div>
                   <h3 className="font-medium mb-2">Bank Connection</h3>
                   <p className="text-sm">Securely connect your accounts</p>
@@ -169,7 +169,7 @@ export default function LandingPage() {
                 
                 <div className={`p-4 rounded-lg ${theme === 'dark' ? 'bg-gray-600' : 'bg-gray-50'} text-center`}>
                   <div className="w-12 h-12 mx-auto rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center text-green-600 dark:text-green-300 mb-3">
-                    <i className="ri-file-upload-line text-xl"></i>
+                    <FileSpreadsheet className="h-6 w-6" />
                   </div>
                   <h3 className="font-medium mb-2">CSV Upload</h3>
                   <p className="text-sm">Import transactions from any source</p>
@@ -177,7 +177,7 @@ export default function LandingPage() {
                 
                 <div className={`p-4 rounded-lg ${theme === 'dark' ? 'bg-gray-600' : 'bg-gray-50'} text-center`}>
                   <div className="w-12 h-12 mx-auto rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center text-purple-600 dark:text-purple-300 mb-3">
-                    <i className="ri-edit-line text-xl"></i>
+                    <Edit3 className="h-6 w-6" />
                   </div>
                   <h3 className="font-medium mb-2">Manual Entry</h3>
                   <p className="text-sm">Add transactions as you go</p>
