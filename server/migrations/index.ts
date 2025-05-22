@@ -1,4 +1,5 @@
-import { runMigration as addScoreHistoryFields } from './add-score-history-fields';
+
+import { runMigration as createScoreHistory } from './add-score-history-fields';
 
 /**
  * Run all migrations in the correct order
@@ -8,7 +9,7 @@ export async function runMigrations() {
   
   try {
     // Add new migrations here in sequence
-    await addScoreHistoryFields();
+    await createScoreHistory();
     
     console.log('All migrations completed successfully');
   } catch (error) {
