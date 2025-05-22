@@ -168,3 +168,82 @@ export async function sendPasswordResetEmail(
     html: htmlContent
   });
 }
+
+/**
+ * Send email verification email to newly registered users
+ */
+export async function sendEmailVerificationEmail(
+  email: string, 
+  firstName: string = "",
+  verificationUrl: string
+): Promise<boolean> {
+  const subject = 'Verify Your Rivu Account Email';
+  const name = firstName || "there";
+  
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 30px; border-radius: 8px; color: #333;">
+      <!-- Rivu Logo Header -->
+      <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #00C2A8; margin: 0; font-size: 32px; letter-spacing: 1px;">RIVU</h1>
+        <p style="color: #666; margin: 8px 0 0 0; font-size: 15px;">Your AI Finance Partner</p>
+      </div>
+      
+      <h2 style="color: #00C2A8; margin-top: 0; margin-bottom: 20px; font-size: 22px;">Verify Your Email Address</h2>
+      
+      <p style="margin-bottom: 15px; line-height: 1.5; font-size: 16px;">Hi ${name},</p>
+      
+      <p style="margin-bottom: 15px; line-height: 1.5; font-size: 16px;">Thanks for signing up for Rivu! Please verify your email address to complete your registration and access all features.</p>
+      
+      <p style="margin-bottom: 15px; line-height: 1.5; font-size: 16px;">Click the button below to verify your email:</p>
+      
+      <div style="text-align: center; margin: 35px 0;">
+        <a href="${verificationUrl}" style="background-color: #00C2A8; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-size: 16px; letter-spacing: 0.5px;">Verify My Email</a>
+      </div>
+      
+      <p style="margin-bottom: 15px; line-height: 1.5; font-size: 16px;">If you didn't create a Rivu account, you can safely ignore this email.</p>
+      
+      <p style="margin-bottom: 15px; line-height: 1.5; font-size: 16px;">For security reasons, this link will expire in 24 hours.</p>
+      
+      <p style="margin-bottom: 30px; line-height: 1.5; font-size: 16px;">Questions? Contact us anytime at <a href="mailto:support@tryrivu.com" style="color: #00C2A8; text-decoration: none; font-weight: bold;">support@tryrivu.com</a>.</p>
+      
+      <hr style="border: 1px solid #eee; margin: 30px 0;">
+      
+      <div style="text-align: center;">
+        <p style="font-size: 15px; color: #333; margin-bottom: 6px; font-weight: 500;">The Rivu Team</p>
+        <p style="font-size: 15px; color: #00C2A8; font-style: italic; margin-top: 0;">Small moves. Big change.</p>
+      </div>
+    </div>
+  `;
+  
+  const textContent = `
+    RIVU
+    Your AI Finance Partner
+    
+    VERIFY YOUR EMAIL ADDRESS
+    
+    Hi ${name},
+    
+    Thanks for signing up for Rivu! Please verify your email address to complete your registration and access all features.
+    
+    Click the link below to verify your email:
+    
+    ${verificationUrl}
+    
+    If you didn't create a Rivu account, you can safely ignore this email.
+    
+    For security reasons, this link will expire in 24 hours.
+    
+    Questions? Contact us anytime at support@tryrivu.com.
+    
+    —
+    The Rivu Team
+    Small moves. Big change.
+  `;
+  
+  return await sendEmail({
+    to: email,
+    subject,
+    text: textContent,
+    html: htmlContent
+  });
+}

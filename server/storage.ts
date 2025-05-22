@@ -48,6 +48,11 @@ export interface IStorage {
   verifyPasswordResetToken(tokenHash: string): Promise<User | null>;
   resetPassword(tokenHash: string, newPassword: string): Promise<boolean>;
   
+  // Email verification methods
+  verifyEmailToken(tokenHash: string, email: string): Promise<User | null>;
+  markEmailAsVerified(userId: number): Promise<boolean>;
+  updateUserVerificationToken(userId: number, token: string, expiry: Date): Promise<boolean>;
+  
   // Budget category operations
   getBudgetCategories(userId: number): Promise<BudgetCategory[]>;
   getBudgetCategory(id: number): Promise<BudgetCategory | undefined>;
@@ -270,6 +275,82 @@ export class DatabaseStorage implements IStorage {
       return true;
     } catch (error) {
       console.error('Error resetting password:', error);
+      return false;
+    }
+  }
+  
+  /**
+   * Verify an email verification token
+   */
+  async verifyEmailToken(tokenHash: string, email: string): Promise<User | null> {
+    try {
+      // Find user by email
+      const user = await this.getUserByEmail(email);
+      
+      if (!user) {
+        return null;
+      }
+      
+      // Check if token matches
+      if (user.verificationToken !== tokenHash) {
+        return null;
+      }
+      
+      // Check if token is expired
+      if (!user.verificationTokenExpiry || new Date() > new Date(user.verificationTokenExpiry)) {
+        // Clear expired token
+        await db.update(users)
+          .set({
+            verificationToken: null,
+            verificationTokenExpiry: null
+          })
+          .where(eq(users.id, user.id));
+        
+        return null;
+      }
+      
+      return user;
+    } catch (error) {
+      console.error('Error verifying email token:', error);
+      return null;
+    }
+  }
+  
+  /**
+   * Mark a user's email as verified
+   */
+  async markEmailAsVerified(userId: number): Promise<boolean> {
+    try {
+      await db.update(users)
+        .set({ 
+          emailVerified: true,
+          verificationToken: null,
+          verificationTokenExpiry: null
+        })
+        .where(eq(users.id, userId));
+      
+      return true;
+    } catch (error) {
+      console.error('Error marking email as verified:', error);
+      return false;
+    }
+  }
+  
+  /**
+   * Update user's verification token
+   */
+  async updateUserVerificationToken(userId: number, token: string, expiry: Date): Promise<boolean> {
+    try {
+      await db.update(users)
+        .set({
+          verificationToken: token,
+          verificationTokenExpiry: expiry
+        })
+        .where(eq(users.id, userId));
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating verification token:', error);
       return false;
     }
   }

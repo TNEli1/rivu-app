@@ -15,6 +15,10 @@ export const users = pgTable("users", {
   // Account status fields
   status: text("status").default("active"), // 'active', 'inactive', 'deleted'
   lastActivityDate: timestamp("last_activity_date"), // Track last activity for inactive status
+  // Email verification fields
+  emailVerified: boolean("email_verified").default(false),
+  verificationToken: text("verification_token"),
+  verificationTokenExpiry: timestamp("verification_token_expiry"),
   // Password reset fields
   resetToken: text("reset_token"),
   resetTokenExpiry: timestamp("reset_token_expiry"),
@@ -50,6 +54,9 @@ export const insertUserSchema = createInsertSchema(users).pick({
   themePreference: true,
   status: true,
   lastActivityDate: true,
+  emailVerified: true,
+  verificationToken: true,
+  verificationTokenExpiry: true,
   onboardingStage: true,
   onboardingCompleted: true,
   accountCreationDate: true,

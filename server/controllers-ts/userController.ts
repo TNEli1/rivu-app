@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
 import crypto from 'crypto';
 import { storage } from '../storage';
-import { User } from '@shared/schema';
+import { users, type User } from '@shared/schema';
 import securityLogger, { SecurityEventType } from '../services/securityLogger';
 
 // JWT Secret Key - ensure we have a proper secret in production
@@ -68,16 +68,34 @@ const clearTokenCookie = (res: any) => {
 };
 
 /**
- * @desc    Register a new user
+ * @desc    Register a new user with enhanced security and email verification
  */
 export const registerUser = async (req: any, res: any) => {
   try {
-    const { username, email, password, firstName, lastName } = req.body;
+    const { username, email, password, passwordConfirmation, firstName, lastName } = req.body;
     
+    // Validate required fields
     if (!username || !email || !password) {
       return res.status(400).json({ 
         message: 'Please provide username, email and password',
         code: 'VALIDATION_ERROR'
+      });
+    }
+    
+    // Check password confirmation
+    if (password !== passwordConfirmation) {
+      return res.status(400).json({
+        message: 'Passwords do not match',
+        code: 'PASSWORD_MISMATCH'
+      });
+    }
+    
+    // Enforce strong password policy
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        message: 'Password must be at least 8 characters long and include uppercase, lowercase, number, and special character',
+        code: 'WEAK_PASSWORD'
       });
     }
     
@@ -90,8 +108,14 @@ export const registerUser = async (req: any, res: any) => {
       });
     }
     
-    // Note: We need to add email check in storage interface
-    // For now, assume username uniqueness is sufficient
+    // Check if user already exists with email
+    const existingEmail = await storage.getUserByEmail(email);
+    if (existingEmail) {
+      return res.status(400).json({ 
+        message: 'An account with this email already exists',
+        code: 'EMAIL_EXISTS'
+      });
+    }
     
     // Hash password with bcrypt (salt factor 12)
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -110,6 +134,7 @@ export const registerUser = async (req: any, res: any) => {
       avatarInitials: avatarInitials || username.substring(0, 2).toUpperCase(),
       themePreference: 'dark', // Default to dark mode per bug report
       onboardingStage: 'new',
+      emailVerified: false, // Start with unverified email
       onboardingCompleted: false,
       accountCreationDate: new Date(),
       loginCount: 1,
@@ -122,6 +147,28 @@ export const registerUser = async (req: any, res: any) => {
       
       // Set token as HTTP-only cookie
       setTokenCookie(res, token);
+      
+      // Send verification email
+      try {
+        // Import email verification service
+        const { sendVerificationEmail } = await import('./userVerificationController');
+        
+        // Send verification email
+        const emailSent = await sendVerificationEmail(
+          user.id,
+          user.email,
+          user.firstName
+        );
+        
+        if (!emailSent) {
+          console.warn(`Failed to send verification email to ${user.email}`);
+        } else {
+          console.log(`Verification email sent to ${user.email}`);
+        }
+      } catch (emailError) {
+        console.error('Error sending verification email:', emailError);
+        // Don't fail registration if email sending fails
+      }
       
       // Check for initial nudges to create for the new user
       try {
@@ -139,7 +186,9 @@ export const registerUser = async (req: any, res: any) => {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        onboardingStage: user.onboardingStage
+        onboardingStage: user.onboardingStage,
+        emailVerified: false,
+        message: 'Registration successful. Please check your email to verify your account.'
       });
     } else {
       res.status(400).json({ 
@@ -376,7 +425,7 @@ export const updateUserProfile = async (req: any, res: any) => {
     }
     
     // Data to update
-    const updateData: Partial<User> = {};
+    const updateData: any = {};
     
     // If changing username, check if it's already in use
     if (username && username !== user.username) {
@@ -462,7 +511,7 @@ export const updateDemographics = async (req: any, res: any) => {
     }
     
     // Prepare the update data
-    const updateData: Partial<User> = {};
+    const updateData: any = {};
     
     // Update individual demographic fields
     if (demographics.ageRange !== undefined) {
@@ -627,11 +676,9 @@ export const forgotPassword = async (req: any, res: any) => {
       });
     }
     
-    // Import User model dynamically
-    const { default: User } = await import('../models/User.js');
-    
+    // Use our storage system to generate reset token
     // For security reasons, don't reveal if user exists or not
-    const user = await User.findOne({ email });
+    const user = await storage.getUserByEmail(email);
     if (!user) {
       // Still return 200 even if user not found to prevent email enumeration
       return res.status(200).json({
@@ -641,7 +688,6 @@ export const forgotPassword = async (req: any, res: any) => {
     }
     
     // Generate a reset token
-    const crypto = require('crypto');
     const resetToken = crypto.randomBytes(32).toString('hex');
     
     // Hash the token for storage
@@ -650,11 +696,11 @@ export const forgotPassword = async (req: any, res: any) => {
       .update(resetToken)
       .digest('hex');
     
-    // Save the hashed token with expiration
-    user.resetPasswordToken = resetTokenHashed;
-    user.resetPasswordExpires = Date.now() + 30 * 60 * 1000; // 30 minutes
+    // Set token expiry (30 minutes)
+    const resetTokenExpiry = new Date(Date.now() + 30 * 60 * 1000);
     
-    await user.save();
+    // Save the token using our storage system
+    await storage.createPasswordResetToken(email, resetTokenHashed, resetTokenExpiry);
     
     // In a real app, send email with reset link, for development return token
     // You would use Nodemailer or similar to send an actual email
@@ -696,21 +742,14 @@ export const resetPassword = async (req: any, res: any) => {
       });
     }
     
-    // Import User model and crypto dynamically
-    const { default: User } = await import('../models/User.js');
-    const crypto = require('crypto');
-    
     // Hash the token for comparison
     const resetTokenHashed = crypto
       .createHash('sha256')
       .update(resetToken)
       .digest('hex');
     
-    // Find user with matching token and valid expiration
-    const user = await User.findOne({
-      resetPasswordToken: resetTokenHashed,
-      resetPasswordExpires: { $gt: Date.now() }
-    });
+    // Use our storage system to verify the reset token
+    const user = await storage.verifyPasswordResetToken(resetTokenHashed);
     
     if (!user) {
       return res.status(400).json({
@@ -727,25 +766,27 @@ export const resetPassword = async (req: any, res: any) => {
       });
     }
     
-    // Set new password and clear reset token fields
-    user.password = await bcrypt.hash(password, 12);
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpires = undefined;
+    // Reset the password using our storage system
+    const success = await storage.resetPassword(resetTokenHashed, password);
     
-    await user.save();
+    if (!success) {
+      return res.status(500).json({
+        message: 'Failed to reset password',
+        code: 'RESET_FAILED'
+      });
+    }
     
     // Generate a new JWT token and log the user in
-    const authToken = generateToken(user._id);
+    const authToken = generateToken(user.id.toString());
     setTokenCookie(res, authToken);
     
     res.status(200).json({
       message: 'Password reset successful',
-      _id: user._id,
+      id: user.id,
       username: user.username,
       email: user.email,
       firstName: user.firstName || '',
       lastName: user.lastName || '',
-      token: authToken,
       code: 'PASSWORD_RESET_SUCCESS'
     });
     

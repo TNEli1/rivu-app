@@ -125,6 +125,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
     
+    // Import email verification controllers
+    const {
+      verifyEmail,
+      resendVerificationEmail
+    } = await import('./controllers-ts/userVerificationController');
+    
     // Register auth routes with our TypeScript controller with rate limiting
     const apiPath = '/api';
     app.post(`${apiPath}/register`, authLimiter, registerUser);
@@ -134,6 +140,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.put(`${apiPath}/user`, protect, updateUserProfile);
     app.put(`${apiPath}/user/demographics`, protect, updateDemographics);
     app.post(`${apiPath}/user/login-metric`, protect, updateLoginMetrics);
+    
+    // Email verification routes
+    app.get(`${apiPath}/verify-email`, verifyEmail);
+    app.post(`${apiPath}/send-verification`, resendVerificationEmail);
     
     // Import theme preference controller
     const { updateThemePreference } = await import('./controllers-ts/userController');
