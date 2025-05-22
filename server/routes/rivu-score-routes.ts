@@ -1,5 +1,5 @@
 import express from 'express';
-import { rivuScoreController } from '../controllers/rivu-score-controller.ts';
+import { rivuScoreController } from '../controllers/rivu-score-controller';
 
 const router = express.Router();
 

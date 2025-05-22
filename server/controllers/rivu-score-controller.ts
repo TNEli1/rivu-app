@@ -9,7 +9,7 @@ export class RivuScoreController {
   /**
    * Get the current Rivu Score for a user
    */
-  async getScore(req: Request, res: Response) {
+  getScore = async (req: Request, res: Response) => {
     try {
       const userId = Number(req.user?.id);
       if (!userId) {
@@ -33,7 +33,7 @@ export class RivuScoreController {
   /**
    * Get the Rivu Score history for a user
    */
-  async getScoreHistory(req: Request, res: Response) {
+  getScoreHistory = async (req: Request, res: Response) => {
     try {
       const userId = Number(req.user?.id);
       if (!userId) {
@@ -63,7 +63,7 @@ export class RivuScoreController {
    * Manually add a score history entry with a specific reason
    * Used for special events like completing goals or onboarding steps
    */
-  async addScoreHistoryEntry(req: Request, res: Response) {
+  addScoreHistoryEntry = async (req: Request, res: Response) => {
     try {
       const userId = Number(req.user?.id);
       if (!userId) {
@@ -100,7 +100,7 @@ export class RivuScoreController {
       console.error('Error adding Rivu Score history entry:', error);
       return res.status(500).json({ error: 'Failed to add Rivu Score history entry' });
     }
-  }
+  };
 }
 
 export const rivuScoreController = new RivuScoreController();
