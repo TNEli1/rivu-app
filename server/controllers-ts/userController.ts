@@ -225,6 +225,28 @@ export const loginUser = async (req: any, res: any) => {
 
     // Check if user exists and password matches
     if (user && await bcrypt.compare(password, user.password)) {
+      // Check if email is verified
+      if (!user.emailVerified) {
+        // Log verification failure event
+        securityLogger.logSecurityEvent({
+          type: SecurityEventType.LOGIN_FAILURE,
+          userId: user.id,
+          details: {
+            username: user.username,
+            reason: 'Email not verified',
+            timestamp: new Date().toISOString(),
+            ip: req.ip
+          }
+        });
+        
+        // Return error requiring email verification
+        return res.status(403).json({
+          message: 'Please verify your email before logging in. Check your inbox for a verification link.',
+          code: 'EMAIL_NOT_VERIFIED',
+          email: user.email // Include email to allow resending verification
+        });
+      }
+      
       // Update login metrics
       const loginCount = (user.loginCount || 0) + 1;
       const lastLogin = new Date();
@@ -271,7 +293,8 @@ export const loginUser = async (req: any, res: any) => {
         lastLogin,
         loginCount,
         onboardingStage: user.onboardingStage,
-        onboardingCompleted: user.onboardingCompleted
+        onboardingCompleted: user.onboardingCompleted,
+        emailVerified: user.emailVerified
         // Token is already set in HTTP-only cookie for security
       });
     } else {

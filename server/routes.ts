@@ -143,7 +143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     // Email verification routes
     app.get(`${apiPath}/verify-email`, verifyEmail);
-    app.post(`${apiPath}/send-verification`, resendVerificationEmail);
+    app.post(`${apiPath}/send-verification`, authLimiter, resendVerificationEmail);
     
     // Import theme preference controller
     const { updateThemePreference } = await import('./controllers-ts/userController');
