@@ -1,0 +1,73 @@
+We have experienced several critical issues affecting the functionality and reliability of our application. Please conduct a thorough audit and address the following areas to ensure the application’s robustness and security:
+
+⸻
+
+1. Database Configuration and Migrations
+	•	Issue: The application was previously connected to an incorrect NeonDB instance.
+	•	Action Required:
+	•	Ensure that the DATABASE_URL environment variable is correctly set to the Render PostgreSQL database.
+	•	Remove any residual NeonDB configurations or secrets to prevent accidental usage.
+	•	Re-run all necessary migrations to ensure the database schema is up-to-date.
+
+⸻
+
+2. Frontend API Base URL Configuration
+	•	Issue: The frontend was using relative URLs in production, leading to failed API calls.
+	•	Action Required:
+	•	Update the getApiBaseUrl() function to return the correct base URL (https://rivu-app.onrender.com) when in production.
+	•	Ensure this configuration is consistent across all environments and deployment branches.
+
+⸻
+
+3. User Registration and Authentication Flow
+	•	Issues Identified:
+	•	Registration failures due to API misconfigurations.
+	•	Lack of password confirmation during sign-up.
+	•	Potential for duplicate account creation using the same email.
+	•	Action Required:
+	•	Implement a password confirmation field during registration and validate that both entries match.
+	•	Add checks to prevent duplicate account creation using the same email address.
+	•	Integrate email verification upon registration using our Postmark API key.
+
+⸻
+
+4. Security Enhancements
+	•	Action Required:
+	•	Enforce strong password policies (minimum length, complexity requirements).
+	•	Implement Multi-Factor Authentication (MFA) for added security.
+	•	Ensure secure session management with appropriate timeouts and invalidation mechanisms.
+	•	Store credentials securely using strong, salted hashing algorithms (e.g., bcrypt).
+	•	Provide generic error messages to prevent information disclosure.
+
+⸻
+
+5. Rate Limiting and Account Lockout Mechanisms
+	•	Action Required:
+	•	Apply rate limiting to login attempts to prevent brute-force attacks.
+	•	Implement account lockout mechanisms after a defined number of failed login attempts.
+	•	Notify users of password changes via email.
+
+⸻
+
+6. Database Optimization and Maintenance
+	•	Action Required:
+	•	Optimize queries and implement indexing to enhance performance.
+	•	Validate data server-side to maintain data integrity.
+	•	Set up automated, regular backups of the database.
+	•	Use parameterized queries and limit data retrieval to necessary information.
+	•	Implement role-based access controls to restrict data access.
+
+⸻
+
+7. Documentation and Troubleshooting Guide
+	•	Action Required:
+	•	Document all changes and updates in the TROUBLESHOOTING_GUIDE.md file, including:
+	•	The issue addressed.
+	•	The solution implemented.
+	•	The date of the change.
+	•	Files modified.
+	•	Confirmation of the fix in production.
+
+⸻
+
+Please confirm once all the above tasks have been completed and the application is ready for launch.
