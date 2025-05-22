@@ -62,87 +62,35 @@ if (process.env.NODE_ENV === 'production') {
 
 // Configure CORS with proper security settings
 const corsOptions = {
-  // In production, we need to explicitly handle origins to support credentials
-  origin: function(origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-    // For development/testing requests with no origin
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) {
-      console.log('Request with no origin allowed');
-      callback(null, true);
-      return;
+      return callback(null, true);
     }
     
-    // Log all origins in development to help with debugging
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`CORS request from origin: ${origin}`);
-    }
+    const allowedOrigins = [
+      'https://tryrivu.com',
+      'https://www.tryrivu.com',
+      'https://rivu-app.onrender.com'
+    ];
     
-    // Specific allowed origins based on environment
-    const allowedDomains = process.env.NODE_ENV === 'production'
-      ? [
-          'https://tryrivu.com',
-          'https://www.tryrivu.com',
-          'https://rivu-app.onrender.com'
-        ]
-      : [
-          'http://localhost:3000',
-          'http://localhost:5000',
-          'https://localhost:5000',
-          'http://localhost:5173',
-          'https://localhost:5173'
-        ];
-    
-    // Add Replit domains in development if environment variables are available
-    if (process.env.NODE_ENV !== 'production' && process.env.REPL_SLUG && process.env.REPL_OWNER) {
-      allowedDomains.push('https://' + process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co');
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS'));
     }
-    
-    // Add any additional domains from environment variables
-    if (process.env.ALLOWED_ORIGINS) {
-      allowedDomains.push(...process.env.ALLOWED_ORIGINS.split(','));
-    }
-        
-    // First check exact matches
-    if (allowedDomains.includes(origin)) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.log(`CORS allowed for exact match: ${origin}`);
-      }
-      callback(null, true);
-      return;
-    }
-    
-    // Then check for pattern matches in production
-    if (process.env.NODE_ENV === 'production') {
-      // Allow all tryrivu.com domains (main domain or subdomains)
-      if (origin === 'https://tryrivu.com' || origin.endsWith('.tryrivu.com')) {
-        console.log(`CORS allowed for tryrivu domain: ${origin}`);
-        callback(null, true);
-        return;
-      }
-      
-      // Allow render.com and replit.app domains for development/staging
-      if (origin.endsWith('.render.com') || origin.endsWith('.replit.app')) {
-        console.log(`CORS allowed for development domain: ${origin}`);
-        callback(null, true);
-        return;
-      }
-    }
-    
-    // If not allowed, log and reject
-    console.log(`CORS blocked request from origin: ${origin}`);
-    callback(new Error('Not allowed by CORS'));
   },
-  credentials: true, // Allow cookies for cross-domain authentication
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: [
-    'Content-Type', 
-    'Authorization', 
+    'Content-Type',
+    'Authorization',
     'X-Requested-With',
     'CSRF-Token',
     'X-CSRF-Token',
     'X-Skip-Rate-Limit'
   ],
-  exposedHeaders: ['Set-Cookie'],
-  maxAge: 600 // Cache preflight requests for 10 minutes
+  exposedHeaders: ['Set-Cookie']
 };
 app.use(cors(corsOptions));
 
@@ -206,7 +154,7 @@ app.use((req, res, next) => {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
       "font-src 'self' https://fonts.gstatic.com; " +
       "img-src 'self' data: https:; " +
-      "connect-src 'self' https://rivu-app.onrender.com https://api.tryrivu.com https://*.render.com https://cdn.plaid.com https://production.plaid.com https://app.posthog.com; " +
+      "connect-src 'self' https://rivu-app.onrender.com https://tryrivu.com https://api.tryrivu.com https://*.render.com https://cdn.plaid.com https://production.plaid.com https://app.posthog.com https://eu.posthog.com; " +
       "frame-src 'self' https://cdn.plaid.com; " +
       "object-src 'none';"
     );

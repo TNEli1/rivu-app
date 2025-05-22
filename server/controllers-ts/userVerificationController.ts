@@ -32,9 +32,10 @@ export const sendVerificationEmail = async (userId: number, email: string, first
     
     // Send verification email
     const baseUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://tryrivu.com' 
+      ? 'https://rivu-app.onrender.com' 
       : 'http://localhost:8080';
     
+    // Make sure the verification URL is properly formatted
     const verificationUrl = `${baseUrl}/api/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`;
     
     return await sendEmailVerificationEmail(email, firstName, verificationUrl);
