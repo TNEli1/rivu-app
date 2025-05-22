@@ -16,6 +16,8 @@ export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const [activeTab, setActiveTab] = useState("login");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordsMatch, setPasswordsMatch] = useState(true);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
   const [termsAgreed, setTermsAgreed] = useState(false);
@@ -77,6 +79,11 @@ export default function AuthPage() {
       });
       return;
     }
+    
+    // Check if passwords match when either changes
+    if (confirmPassword) {
+      setPasswordsMatch(password === confirmPassword);
+    }
 
     // Check for various password requirements
     const hasMinLength = password.length >= 8;
@@ -118,7 +125,14 @@ export default function AuthPage() {
         hasSpecialChar
       }
     });
-  }, [password]);
+  }, [password, confirmPassword]);
+  
+  // Effect to handle confirm password changes
+  useEffect(() => {
+    if (confirmPassword) {
+      setPasswordsMatch(password === confirmPassword);
+    }
+  }, [confirmPassword, password]);
 
   // Helper to get strength color
   const getStrengthColor = () => {
@@ -267,6 +281,13 @@ export default function AuthPage() {
                   <form 
                     onSubmit={(e) => {
                       e.preventDefault();
+                      
+                      // Verify passwords match before submitting
+                      if (password !== confirmPassword) {
+                        setPasswordsMatch(false);
+                        return; // Prevent form submission
+                      }
+                      
                       const formData = new FormData(e.currentTarget);
                       registerMutation.mutate({
                         username: formData.get('username') as string,
@@ -327,6 +348,25 @@ export default function AuthPage() {
                         onChange={(e) => setPassword(e.target.value)}
                         className={password ? (passwordFeedback.isValid ? "border-green-500" : "border-red-500") : ""}
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm-password">Confirm Password</Label>
+                      <Input 
+                        id="confirm-password" 
+                        name="confirmPassword" 
+                        type="password" 
+                        placeholder="••••••••" 
+                        required
+                        value={confirmPassword}
+                        onChange={(e) => {
+                          setConfirmPassword(e.target.value);
+                          setPasswordsMatch(e.target.value === password);
+                        }}
+                        className={confirmPassword ? (passwordsMatch ? "border-green-500" : "border-red-500") : ""}
+                      />
+                      {confirmPassword && !passwordsMatch && (
+                        <p className="text-red-500 text-xs mt-1">Passwords do not match</p>
+                      )}
                       
                       {/* Password strength meter */}
                       {password && (
@@ -430,7 +470,7 @@ export default function AuthPage() {
                     <Button 
                       type="submit" 
                       className="w-full" 
-                      disabled={registerMutation.isPending || (password.length > 0 && !passwordFeedback.isValid) || !termsAgreed}
+                      disabled={registerMutation.isPending || (password.length > 0 && !passwordFeedback.isValid) || !termsAgreed || (confirmPassword.length > 0 && !passwordsMatch)}
                     >
                       {registerMutation.isPending ? (
                         <>

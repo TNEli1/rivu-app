@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { LogOut, Moon, Sun, ClipboardCheck, Info, MessageSquare, HelpCircle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
+import { DeleteAccountButton } from "@/components/DeleteAccountButton";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -331,6 +332,16 @@ export default function SettingsPage() {
                 <p className="text-sm text-muted-foreground">
                   Last login: {user?.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Unknown'}
                 </p>
+              </div>
+              
+              <div className="border-t border-gray-200 dark:border-gray-700 mt-6 pt-6">
+                <h3 className="text-lg font-medium mb-4 text-destructive">Danger Zone</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Permanently delete your account and all of your data. This action cannot be undone.
+                </p>
+                
+                {/* Import the DeleteAccountButton component */}
+                <DeleteAccountButton />
               </div>
             </Card>
           </TabsContent>

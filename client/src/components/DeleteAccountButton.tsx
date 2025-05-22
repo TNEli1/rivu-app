@@ -18,7 +18,7 @@ export function DeleteAccountButton() {
   const [password, setPassword] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
 
   const handleDeleteAccount = async () => {
     if (!password) {
@@ -33,8 +33,11 @@ export function DeleteAccountButton() {
     setIsDeleting(true);
     
     try {
-      const response = await apiRequest('/api/user/account', {
+      const response = await fetch('/api/user/account', {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ password }),
       });
 
@@ -46,7 +49,10 @@ export function DeleteAccountButton() {
         
         // Navigate to login page after successful deletion
         setTimeout(() => {
-          navigate('/login');
+          setLocation('/login');
+          // Also clear any stored auth tokens
+          localStorage.removeItem('userToken');
+          sessionStorage.removeItem('userToken');
         }, 1500);
       } else {
         const error = await response.json();

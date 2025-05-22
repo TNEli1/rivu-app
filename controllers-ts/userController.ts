@@ -931,20 +931,26 @@ export const resetPassword = async (req: any, res: any) => {
       });
     }
     
-    // Set new password and clear reset token fields
-    user.password = await bcrypt.hash(password, 12);
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpires = undefined;
+    // Update password using the storage interface
+    const hashedPassword = await bcrypt.hash(password, 12);
     
-    await user.save();
+    // Reset password and clear token
+    const passwordResetSuccess = await storage.resetPassword(resetTokenHashed, hashedPassword);
+    
+    if (!passwordResetSuccess) {
+      return res.status(500).json({
+        message: 'Failed to reset password',
+        code: 'RESET_FAILED'
+      });
+    }
     
     // Generate a new JWT token and log the user in
-    const authToken = generateToken(user._id);
+    const authToken = generateToken(user.id.toString());
     setTokenCookie(res, authToken);
     
     res.status(200).json({
       message: 'Password reset successful',
-      _id: user._id,
+      id: user.id,
       username: user.username,
       email: user.email,
       firstName: user.firstName || '',
@@ -1029,8 +1035,12 @@ export const checkAllInactiveUsers = async (): Promise<void> => {
     // Check each user for inactivity
     for (const user of allUsers) {
       try {
-        const wasInactive = await checkInactiveStatus(user.id);
-        if (wasInactive) {
+        // Call the function but don't test its return value since it's void
+        await checkInactiveStatus(user.id);
+        
+        // Check if user is now inactive after the check
+        const updatedUser = await storage.getUser(user.id);
+        if (updatedUser && updatedUser.status === UserAccountStatus.INACTIVE) {
           inactiveCount++;
         }
       } catch (error) {
