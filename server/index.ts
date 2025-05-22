@@ -62,8 +62,8 @@ if (process.env.NODE_ENV === 'production') {
 // Configure CORS with proper security settings
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? process.env.ALLOWED_ORIGINS?.split(',') || 'https://tryrivu.com' // Production: specific origins
-    : ['http://localhost:5000', 'https://localhost:5000', 'http://localhost:5173', 'https://localhost:5173', 'https://' + process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co'], // Development: allow specific origins but maintain credentials
+    ? process.env.ALLOWED_ORIGINS?.split(',') || ['https://tryrivu.com', 'https://www.tryrivu.com', 'https://rivu-app.onrender.com'] // Production: specific origins
+    : ['http://localhost:3000', 'http://localhost:5000', 'https://localhost:5000', 'http://localhost:5173', 'https://localhost:5173', 'https://' + process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co'], // Development: allow specific origins but maintain credentials
   credentials: true, // Allow cookies
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: [

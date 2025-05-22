@@ -16,16 +16,27 @@ async function throwIfResNotOk(res: Response) {
 
 // Helper function to get the API base URL
 export const getApiBaseUrl = (): string => {
-  // Use environment variable if available, otherwise determine based on environment
-  // For Render unified deployment, we should use relative URLs since backend and frontend are served from the same domain
-  // For Replit development, use the actual backend port
-  return import.meta.env.VITE_API_URL || 
-    (window.location.hostname === 'tryrivu.com' || 
-     window.location.hostname.endsWith('.vercel.app') || 
-     window.location.hostname.endsWith('.render.com') || 
-     window.location.hostname.endsWith('.replit.app')
-      ? '' // Use relative URLs for all production deployments
-      : 'http://localhost:8080'); // Use backend server URL for local development
+  // If VITE_API_URL is explicitly set, use it as highest priority
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+
+  // Production environment detection
+  const isProduction = 
+    window.location.hostname === 'tryrivu.com' || 
+    window.location.hostname.endsWith('.vercel.app') || 
+    window.location.hostname.endsWith('.render.com') || 
+    window.location.hostname.endsWith('.replit.app');
+
+  // Determine the appropriate base URL based on environment
+  if (isProduction) {
+    // In production (tryrivu.com or other production domains)
+    // Use the Render production backend URL
+    return 'https://rivu-app.onrender.com';
+  } else {
+    // In development environment
+    return 'http://localhost:8080';
+  }
 };
 
 export async function apiRequest(
