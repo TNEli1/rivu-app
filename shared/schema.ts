@@ -12,6 +12,9 @@ export const users = pgTable("users", {
   lastName: text("last_name").notNull(),
   avatarInitials: text("avatar_initials").notNull(),
   themePreference: text("theme_preference").default("dark"),
+  // Account status fields
+  status: text("status").default("active"), // 'active', 'inactive', 'deleted'
+  lastActivityDate: timestamp("last_activity_date"), // Track last activity for inactive status
   // Password reset fields
   resetToken: text("reset_token"),
   resetTokenExpiry: timestamp("reset_token_expiry"),
@@ -45,6 +48,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
   lastName: true,
   avatarInitials: true,
   themePreference: true,
+  status: true,
+  lastActivityDate: true,
   onboardingStage: true,
   onboardingCompleted: true,
   accountCreationDate: true,

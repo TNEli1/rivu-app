@@ -66,6 +66,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up API routes using PostgreSQL database
   try {
     // Import our user controllers
+    const userController = await import('./controllers-ts/userController');
     const {
       registerUser,
       loginUser,
@@ -75,7 +76,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       updateDemographics,
       updateLoginMetrics,
       protect
-    } = await import('./controllers-ts/userController');
+    } = userController;
+    
+    // Destructure additional user management functions
+    const { deleteAccount: deleteUserAccount, updateThemePreference } = userController;
     
     // Import password reset controllers
     const {
@@ -115,29 +119,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.put(`${apiPath}/user`, protect, updateUserProfile);
     app.put(`${apiPath}/user/demographics`, protect, updateDemographics);
     app.post(`${apiPath}/user/login-metric`, protect, updateLoginMetrics);
+    app.delete(`${apiPath}/user/account`, protect, authLimiter, deleteUserAccount);
     
-    // Import theme preference controller
-    const { updateThemePreference } = await import('./controllers-ts/userController');
+    // Register theme preference route
     app.put(`${apiPath}/user/theme-preference`, protect, updateThemePreference);
     app.post(`${apiPath}/forgot-password`, forgotPassword);
     app.get(`${apiPath}/verify-reset-token/:token`, verifyResetToken);
     app.post(`${apiPath}/reset-password/:token`, resetPassword);
     
     // Import transaction account controller
+    const accountController = await import('./controllers-ts/accountController');
     const {
       getAccounts,
       getAccountById,
       createAccount,
-      updateAccount,
-      deleteAccount
-    } = await import('./controllers-ts/accountController');
+      updateAccount
+    } = accountController;
+    const { deleteAccount: deleteTransactionAccount } = accountController;
     
     // Transaction account routes
     app.get(`${apiPath}/accounts`, protect, getAccounts);
     app.get(`${apiPath}/accounts/:id`, protect, getAccountById);
     app.post(`${apiPath}/accounts`, protect, createAccount);
     app.put(`${apiPath}/accounts/:id`, protect, updateAccount);
-    app.delete(`${apiPath}/accounts/:id`, protect, deleteAccount);
+    app.delete(`${apiPath}/accounts/:id`, protect, deleteTransactionAccount);
     
     // Import nudge controller
     const {
