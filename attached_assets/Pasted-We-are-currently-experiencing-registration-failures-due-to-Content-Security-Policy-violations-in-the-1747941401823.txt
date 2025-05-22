@@ -1,0 +1,125 @@
+We are currently experiencing registration failures due to Content Security Policy violations in the frontend when trying to connect to our backend at https://rivu-app.onrender.com.
+
+Please address the following immediately:
+
+⸻
+
+1. Fix Content Security Policy violations
+
+We are getting:
+
+Refused to connect to https://rivu-app.onrender.com/api/register because it violates the document’s Content Security Policy: "connect-src 'self'"
+
+Action required:
+	•	Either:
+	•	Relax the CSP header or meta tag to include https://rivu-app.onrender.com
+
+<meta http-equiv="Content-Security-Policy" content="connect-src 'self' https://rivu-app.onrender.com;">
+
+•	OR configure the frontend to proxy all API requests to /api/... and forward them to the backend using a reverse proxy setup (recommended)
+
+⸻
+
+2. Ensure frontend fetch logic uses correct URL
+
+Verify that getApiBaseUrl() or related functions return the appropriate value in production:
+
+return 'https://rivu-app.onrender.com';
+
+Document the fix in TROUBLESHOOTING_GUIDE.md
+
+Please log:
+	•	Root cause (CSP violation and missing secrets)
+	•	Solution (CSP update or proxy, secret sync)
+	•	Date and commit hash of the applied fix
+
+
+Please implement the following frontend production optimizations to improve performance, indexing, and device compatibility:
+
+⸻
+
+1. Enable content-based file hashing
+
+Ensure all production builds generate hashed filenames for cache-busting:
+	•	For Vite, confirm build.rollupOptions.output.entryFileNames and related settings are using [hash]
+	•	For example:
+
+
+build: {
+  rollupOptions: {
+    output: {
+      entryFileNames: 'assets/[name].[hash].js',
+      chunkFileNames: 'assets/[name].[hash].js',
+      assetFileNames: 'assets/[name].[hash].[ext]'
+    }
+  }
+}
+
+
+•	This prevents cached CSS/JS files from breaking after deploys
+
+⸻
+
+2. SEO optimization
+	•	Add meta tags for:
+	•	Title and description
+	•	Open Graph (og:title, og:description, og:image)
+	•	Twitter Card support
+	•	Ensure semantic HTML structure: proper use of <h1>, <main>, <footer>, etc.
+	•	Add <meta name="robots" content="index, follow">
+
+⸻
+
+3. Mobile optimization
+	•	Ensure viewport tag is present in <head>:
+
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+•	Confirm all layout components are responsive using Tailwind or media queries
+	•	Test on both iOS and Android for tap targets, font sizing, and overflow behavior
+
+⸻
+
+Document all changes in TROUBLESHOOTING_GUIDE.md or DEPLOYMENT_NOTES.md and let us know once production is optimized.
+
+We’ve added a new checkbox on the signup form allowing users to opt in to receive emails from Rivu about updates, products, and services.
+
+Please confirm and implement the following:
+
+⸻
+
+1. Collect opt-in status and store it
+	•	Ensure the signup form passes an emailOptIn boolean field to the backend
+	•	Update the database schema (if not already) to include a column such as:
+
+email_opt_in BOOLEAN DEFAULT false
+
+
+On user creation, persist this opt-in value alongside the user record
+
+⸻
+
+2. Confirm backend handles this field securely
+	•	Validate and sanitize the incoming value
+	•	Default to false if the field is missing
+
+⸻
+
+3. Make opt-in status accessible for future use
+	•	Ensure it’s available in user profile management or CRM export
+	•	This will allow us to build segmented email lists for Postmark or another email provider
+
+⸻
+
+4. Document changes
+	•	Add this update to the TROUBLESHOOTING_GUIDE.md or SCHEMA_CHANGELOG.md, including:
+	•	Date of change
+	•	Column added
+	•	Route or function modified
+
+Let us know when the opt-in data is being captured and can be queried for campaigns.
+
+⸻
+
+Let us know once these tasks are complete so we can re-test registration. This issue is currently blocking launch.
