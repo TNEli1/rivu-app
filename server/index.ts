@@ -11,6 +11,7 @@ import { requestLogger, errorLogger } from "./middleware/requestLogger";
 import { logger } from "./utils/logger";
 import { configureStaticFileServing } from "./static";
 import { configureDevelopmentProxy } from "./dev-proxy";
+import { activityTracker } from "./middleware/activityTracker";
 import path from 'path';
 import fs from 'fs';
 import { runMigrations } from './migrations';
@@ -175,6 +176,10 @@ app.use('/api', sanitizeInputs);
 // Apply CSRF protection
 app.use(setCsrfToken); // Set CSRF token for all routes
 app.use('/api', validateCsrfToken); // Validate CSRF token for API routes
+
+// Track user activity for all authenticated API requests
+// This updates the last_activity_date field for user inactivity tracking
+app.use('/api', activityTracker);
 
 // Set comprehensive security headers
 app.use((req, res, next) => {
