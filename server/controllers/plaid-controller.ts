@@ -96,7 +96,7 @@ export const createLinkToken = async (req: Request, res: Response) => {
         client_user_id: userId.toString(), // Unique user ID from our system
       },
       client_name: 'Rivu Finance',
-      products: ['transactions'] as Products[], // Only request transactions product
+      products: ['transactions', 'balance', 'identity'] as Products[], // Request all required products
       language: 'en',
       country_codes: ['US'] as CountryCode[],
       redirect_uri: redirectUri, // Always include redirect_uri for production OAuth flow
@@ -266,6 +266,7 @@ export const getAccounts = async (req: Request, res: Response) => {
               : null,
             mask: account.mask || null,
             isoCurrencyCode: account.balances.iso_currency_code || null,
+            lastUpdated: new Date(), // Update lastUpdated timestamp
           });
         } else {
           // Create new account
@@ -315,6 +316,11 @@ export const getAccounts = async (req: Request, res: Response) => {
       })
     );
 
+    // Update the last_synced_at timestamp for the Plaid item
+    await storage.updatePlaidItem(plaidItem.id, {
+      lastUpdated: new Date()
+    });
+
     console.log(`Retrieved ${accounts.length} accounts for item ${itemId}, request ID: ${requestId}`);
 
     return res.status(200).json({
@@ -329,12 +335,353 @@ export const getAccounts = async (req: Request, res: Response) => {
       })),
       request_id: requestId,
       institution_name: plaidItem.institutionName,
+      last_synced_at: new Date(),
     });
   } catch (error: any) {
     console.error('Error getting accounts:', error);
     return res.status(500).json({
       error: error.message || 'Failed to get accounts',
       requestId: error.response?.data?.request_id,
+    });
+  }
+};
+
+// Fetch user identity data from Plaid
+export const fetchIdentity = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const { itemId } = req.params;
+    if (!itemId) {
+      return res.status(400).json({ error: 'Item ID is required' });
+    }
+
+    // Get the Plaid item from database
+    const plaidItem = await storage.getPlaidItemById(Number(itemId));
+    if (!plaidItem) {
+      return res.status(404).json({ error: 'Plaid item not found' });
+    }
+
+    // Security check: Make sure the plaid item belongs to this user
+    if (plaidItem.userId !== userId) {
+      return res.status(403).json({ error: 'Not authorized to access this Plaid item' });
+    }
+
+    try {
+      // Fetch identity data from Plaid
+      const identityResponse = await plaidClient.identityGet({ 
+        access_token: plaidItem.accessToken 
+      });
+      
+      const identityData = identityResponse.data.accounts;
+      
+      // Process and store the identity data
+      const names: string[] = [];
+      const emails: string[] = [];
+      const phoneNumbers: string[] = [];
+      const addresses: any[] = [];
+      
+      // Extract identity information from all accounts
+      identityData.forEach(account => {
+        if (account.owners && account.owners.length > 0) {
+          account.owners.forEach(owner => {
+            if (owner.names) names.push(...owner.names);
+            if (owner.emails) emails.push(...owner.emails.map(e => e.data));
+            if (owner.phone_numbers) phoneNumbers.push(...owner.phone_numbers.map(p => p.data));
+            if (owner.addresses) addresses.push(...owner.addresses);
+          });
+        }
+      });
+      
+      // Check if we already have identity data for this item
+      const existingIdentities = await storage.getPlaidUserIdentities(userId);
+      const existingIdentity = existingIdentities.find(id => id.plaidItemId === plaidItem.id);
+      
+      let savedIdentity;
+      
+      if (existingIdentity) {
+        // Update existing identity
+        savedIdentity = await storage.updatePlaidUserIdentity(existingIdentity.id, {
+          names: JSON.stringify(names as string[]),
+          emails: JSON.stringify(emails as string[]),
+          phoneNumbers: JSON.stringify(phoneNumbers as string[]),
+          addresses: JSON.stringify(addresses),
+          rawData: JSON.stringify(identityResponse.data),
+          lastUpdated: new Date()
+        });
+      } else {
+        // Create new identity record
+        savedIdentity = await storage.createPlaidUserIdentity({
+          userId,
+          plaidItemId: plaidItem.id,
+          names: JSON.stringify(names as string[]),
+          emails: JSON.stringify(emails as string[]),
+          phoneNumbers: JSON.stringify(phoneNumbers as string[]),
+          addresses: JSON.stringify(addresses),
+          rawData: JSON.stringify(identityResponse.data)
+        });
+      }
+      
+      // Update the last_synced_at timestamp for the Plaid item
+      await storage.updatePlaidItem(plaidItem.id, {
+        lastUpdated: new Date()
+      });
+      
+      return res.status(200).json({
+        identity: {
+          names,
+          emails,
+          phoneNumbers,
+          addresses
+        },
+        last_synced_at: new Date()
+      });
+    } catch (error: any) {
+      console.error('Error fetching identity from Plaid:', error);
+      
+      // Check if this is a PRODUCT_NOT_READY error
+      if (error.response?.data?.error_code === 'PRODUCT_NOT_READY') {
+        return res.status(202).json({
+          error: 'Identity data is still being processed by Plaid',
+          message: 'Please try again later, Plaid is still preparing the identity data',
+          requestId: error.response?.data?.request_id
+        });
+      }
+      
+      // Return the most accurate error message
+      return res.status(500).json({
+        error: error.response?.data?.error_message || error.message || 'Failed to fetch identity data',
+        requestId: error.response?.data?.request_id
+      });
+    }
+  } catch (error: any) {
+    console.error('Error in fetchIdentity:', error);
+    return res.status(500).json({
+      error: error.message || 'Failed to process identity request'
+    });
+  }
+};
+
+// Fetch transactions from Plaid
+export const fetchTransactions = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const { itemId } = req.params;
+    if (!itemId) {
+      return res.status(400).json({ error: 'Item ID is required' });
+    }
+
+    // Get the Plaid item from database
+    const plaidItem = await storage.getPlaidItemById(Number(itemId));
+    if (!plaidItem) {
+      return res.status(404).json({ error: 'Plaid item not found' });
+    }
+
+    // Security check: Make sure the plaid item belongs to this user
+    if (plaidItem.userId !== userId) {
+      return res.status(403).json({ error: 'Not authorized to access this Plaid item' });
+    }
+
+    try {
+      // Calculate date ranges (last 90 days)
+      const endDate = new Date().toISOString().split('T')[0]; // today in YYYY-MM-DD
+      const startDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 90 days ago
+
+      // Fetch transactions from Plaid
+      const transactionsResponse = await plaidClient.transactionsGet({
+        access_token: plaidItem.accessToken,
+        start_date: startDate,
+        end_date: endDate,
+      });
+      
+      const transactions = transactionsResponse.data.transactions;
+      const accounts = transactionsResponse.data.accounts;
+      
+      // Process and store the transactions in our database
+      const savedTransactions = await Promise.all(
+        transactions.map(async (transaction) => {
+          // Find the corresponding account
+          const account = accounts.find(a => a.account_id === transaction.account_id);
+          
+          // Check if this transaction already exists
+          const amount = Math.abs(transaction.amount); // Store as positive
+          const type = transaction.amount < 0 ? 'expense' : 'income'; // Negative amounts are expenses
+          
+          const transactionData = {
+            userId,
+            amount: amount.toString(),
+            merchant: transaction.merchant_name || transaction.name,
+            category: transaction.category ? transaction.category[0] : 'Uncategorized',
+            subcategory: transaction.category && transaction.category.length > 1 ? transaction.category[1] : null,
+            account: account?.name || 'Unknown Account',
+            date: new Date(transaction.date),
+            type,
+            notes: transaction.pending ? 'Pending transaction' : '',
+            source: 'plaid',
+          };
+          
+          // Check for duplicate transactions
+          const isDuplicate = await storage.checkForDuplicateTransactions(transactionData);
+          
+          if (isDuplicate) {
+            console.log(`Skipping duplicate transaction: ${transaction.name} - ${transaction.amount}`);
+            return null;
+          }
+          
+          // Create the transaction
+          return await storage.createTransaction({
+            ...transactionData,
+            isDuplicate: false,
+          });
+        })
+      );
+      
+      // Filter out nulls (duplicates)
+      const newTransactions = savedTransactions.filter(t => t !== null);
+      
+      // Update the last_synced_at timestamp for the Plaid item
+      await storage.updatePlaidItem(plaidItem.id, {
+        lastUpdated: new Date()
+      });
+      
+      return res.status(200).json({
+        message: `Successfully processed ${transactions.length} transactions`,
+        new_transactions: newTransactions.length,
+        duplicates: transactions.length - newTransactions.length,
+        last_synced_at: new Date()
+      });
+    } catch (error: any) {
+      console.error('Error fetching transactions from Plaid:', error);
+      
+      // Check if this is a PRODUCT_NOT_READY error
+      if (error.response?.data?.error_code === 'PRODUCT_NOT_READY') {
+        return res.status(202).json({
+          error: 'Transactions are still being processed by Plaid',
+          message: 'Please try again later, Plaid is still preparing the transaction data',
+          requestId: error.response?.data?.request_id
+        });
+      }
+      
+      // Return the most accurate error message
+      return res.status(500).json({
+        error: error.response?.data?.error_message || error.message || 'Failed to fetch transactions',
+        requestId: error.response?.data?.request_id
+      });
+    }
+  } catch (error: any) {
+    console.error('Error in fetchTransactions:', error);
+    return res.status(500).json({
+      error: error.message || 'Failed to process transactions request'
+    });
+  }
+};
+
+// Get balances for all accounts of a user
+export const getBalance = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const { itemId } = req.params;
+    if (!itemId) {
+      return res.status(400).json({ error: 'Item ID is required' });
+    }
+
+    // Get the Plaid item from database
+    const plaidItem = await storage.getPlaidItemById(Number(itemId));
+    if (!plaidItem) {
+      return res.status(404).json({ error: 'Plaid item not found' });
+    }
+
+    // Security check: Make sure the plaid item belongs to this user
+    if (plaidItem.userId !== userId) {
+      return res.status(403).json({ error: 'Not authorized to access this Plaid item' });
+    }
+
+    try {
+      // Fetch balances from Plaid
+      const balanceResponse = await plaidClient.accountsBalanceGet({ 
+        access_token: plaidItem.accessToken 
+      });
+      
+      const accounts = balanceResponse.data.accounts;
+      
+      // Update account balances in our database
+      const updatedAccounts = await Promise.all(
+        accounts.map(async (account) => {
+          // Find the account in our database
+          const existingAccount = await storage.getPlaidAccountByAccountId(account.account_id);
+          
+          if (existingAccount) {
+            // Update the account with new balance information
+            return await storage.updatePlaidAccount(existingAccount.id, {
+              availableBalance: account.balances.available !== null && account.balances.available !== undefined 
+                ? String(account.balances.available) 
+                : null,
+              currentBalance: account.balances.current !== null && account.balances.current !== undefined 
+                ? String(account.balances.current) 
+                : null,
+              lastUpdated: new Date()
+            });
+          } else {
+            // This is a new account that wasn't in our database
+            return await storage.createPlaidAccount({
+              userId,
+              plaidItemId: plaidItem.id,
+              accountId: account.account_id,
+              name: account.name,
+              officialName: account.official_name || null,
+              type: account.type,
+              subtype: account.subtype || null,
+              availableBalance: account.balances.available !== null && account.balances.available !== undefined 
+                ? String(account.balances.available) 
+                : null,
+              currentBalance: account.balances.current !== null && account.balances.current !== undefined 
+                ? String(account.balances.current) 
+                : null,
+              mask: account.mask || null,
+              isoCurrencyCode: account.balances.iso_currency_code || null,
+              status: 'active',
+            });
+          }
+        })
+      );
+      
+      // Update the last_synced_at timestamp for the Plaid item
+      await storage.updatePlaidItem(plaidItem.id, {
+        lastUpdated: new Date()
+      });
+      
+      return res.status(200).json({
+        accounts: accounts.map(account => ({
+          id: account.account_id,
+          name: account.name,
+          type: account.type,
+          subtype: account.subtype,
+          balances: account.balances
+        })),
+        last_synced_at: new Date()
+      });
+    } catch (error: any) {
+      console.error('Error fetching balances from Plaid:', error);
+      return res.status(500).json({
+        error: error.response?.data?.error_message || error.message || 'Failed to fetch balance data',
+        requestId: error.response?.data?.request_id
+      });
+    }
+  } catch (error: any) {
+    console.error('Error in getBalance:', error);
+    return res.status(500).json({
+      error: error.message || 'Failed to process balance request'
     });
   }
 };

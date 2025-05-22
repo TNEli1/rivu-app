@@ -301,7 +301,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       getAccounts: getPlaidAccounts,
       handleWebhook,
       removeItem,
-      handleOAuthCallback
+      handleOAuthCallback,
+      fetchIdentity,
+      getBalance,
+      fetchTransactions
     } = await import('./controllers/plaid-controller');
     
     // Import Plaid Items controllers
@@ -345,6 +348,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Apply plaidLimiter to all sensitive Plaid operations
     app.post(`${apiPath}/plaid/create_link_token`, protect, plaidLimiter, createLinkToken);
     app.post(`${apiPath}/plaid/exchange_token`, protect, plaidLimiter, exchangeToken);
+    
+    // Add routes for fetching Plaid data
+    app.get(`${apiPath}/user/identity/:itemId`, protect, fetchIdentity);
+    app.get(`${apiPath}/user/balance/:itemId`, protect, getBalance);
+    app.get(`${apiPath}/user/transactions/:itemId`, protect, fetchTransactions);
     app.post(`${apiPath}/plaid/oauth_callback`, protect, plaidLimiter, handleOAuthCallback);
     app.post(`${apiPath}/plaid/accounts`, protect, plaidLimiter, getPlaidAccounts);
     app.post(`${apiPath}/plaid/item/remove`, protect, plaidLimiter, removeItem);

@@ -10,7 +10,8 @@ import {
   Subcategory, InsertSubcategory,
   PlaidItem, InsertPlaidItem,
   PlaidAccount, InsertPlaidAccount,
-  PlaidWebhookEvent, InsertPlaidWebhookEvent
+  PlaidWebhookEvent, InsertPlaidWebhookEvent,
+  PlaidUserIdentity, InsertPlaidUserIdentity
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lt, isNull, sql, or, between } from "drizzle-orm";
@@ -26,7 +27,8 @@ import {
   subcategories,
   plaidItems,
   plaidAccounts,
-  plaidWebhookEvents
+  plaidWebhookEvents,
+  plaidUserIdentities
 } from "@shared/schema";
 // Import direct database access
 // We'll modify the getSavingsGoals function to handle in-memory goals
@@ -124,6 +126,12 @@ export interface IStorage {
   getPlaidWebhookEvents(itemId: string): Promise<PlaidWebhookEvent[]>;
   createPlaidWebhookEvent(event: InsertPlaidWebhookEvent): Promise<PlaidWebhookEvent>;
   markPlaidWebhookEventAsProcessed(id: number): Promise<PlaidWebhookEvent | undefined>;
+  
+  // Plaid User Identity operations
+  getPlaidUserIdentities(userId: number): Promise<PlaidUserIdentity[]>;
+  getPlaidUserIdentity(id: number): Promise<PlaidUserIdentity | undefined>;
+  createPlaidUserIdentity(identity: InsertPlaidUserIdentity): Promise<PlaidUserIdentity>;
+  updatePlaidUserIdentity(id: number, data: Partial<PlaidUserIdentity>): Promise<PlaidUserIdentity | undefined>;
   
   // Helper methods
   calculateRivuScore(userId: number): Promise<number>;
@@ -1859,6 +1867,62 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error checking for linked Plaid institution:', error);
       return false;
+    }
+  }
+
+  // Plaid User Identity operations
+  async getPlaidUserIdentities(userId: number): Promise<PlaidUserIdentity[]> {
+    try {
+      return await db.select().from(plaidUserIdentities)
+        .where(eq(plaidUserIdentities.userId, userId))
+        .orderBy(desc(plaidUserIdentities.createdAt));
+    } catch (error) {
+      console.error('Error getting Plaid user identities:', error);
+      return [];
+    }
+  }
+
+  async getPlaidUserIdentity(id: number): Promise<PlaidUserIdentity | undefined> {
+    try {
+      const results = await db.select().from(plaidUserIdentities)
+        .where(eq(plaidUserIdentities.id, id))
+        .limit(1);
+      return results[0];
+    } catch (error) {
+      console.error('Error getting Plaid user identity:', error);
+      return undefined;
+    }
+  }
+
+  async createPlaidUserIdentity(identity: InsertPlaidUserIdentity): Promise<PlaidUserIdentity> {
+    try {
+      const results = await db.insert(plaidUserIdentities)
+        .values({
+          ...identity,
+          lastUpdated: new Date(),
+          createdAt: new Date()
+        })
+        .returning();
+      return results[0];
+    } catch (error) {
+      console.error('Error creating Plaid user identity:', error);
+      throw error;
+    }
+  }
+
+  async updatePlaidUserIdentity(id: number, data: Partial<PlaidUserIdentity>): Promise<PlaidUserIdentity | undefined> {
+    try {
+      const results = await db.update(plaidUserIdentities)
+        .set({
+          ...data,
+          lastUpdated: new Date()
+        })
+        .where(eq(plaidUserIdentities.id, id))
+        .returning();
+      return results[0];
+    } catch (error) {
+      console.error('Error updating Plaid user identity:', error);
+      return undefined;
     }
   }
 }

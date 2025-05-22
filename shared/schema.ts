@@ -340,3 +340,30 @@ export type InsertPlaidAccount = z.infer<typeof insertPlaidAccountSchema>;
 
 export type PlaidWebhookEvent = typeof plaidWebhookEvents.$inferSelect;
 export type InsertPlaidWebhookEvent = z.infer<typeof insertPlaidWebhookEventSchema>;
+
+// Plaid User Identity
+export const plaidUserIdentities = pgTable("plaid_user_identities", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  plaidItemId: integer("plaid_item_id").notNull(),
+  names: text("names"), // JSON array of names
+  emails: text("emails"), // JSON array of emails
+  phoneNumbers: text("phone_numbers"), // JSON array of phone numbers
+  addresses: text("addresses"), // JSON array of addresses
+  rawData: text("raw_data"), // Full JSON response
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertPlaidUserIdentitySchema = createInsertSchema(plaidUserIdentities).pick({
+  userId: true,
+  plaidItemId: true,
+  names: true,
+  emails: true,
+  phoneNumbers: true,
+  addresses: true,
+  rawData: true,
+});
+
+export type PlaidUserIdentity = typeof plaidUserIdentities.$inferSelect;
+export type InsertPlaidUserIdentity = z.infer<typeof insertPlaidUserIdentitySchema>;
