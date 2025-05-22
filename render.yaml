@@ -1,0 +1,21 @@
+services:
+  # Main web service that serves both frontend and backend
+  - type: web
+    name: rivu-app
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8080
+      - key: DATABASE_URL
+        fromDatabase:
+          name: rivu-db
+          property: connectionString
+
+databases:
+  - name: rivu-db
+    databaseName: rivu_production
+    plan: standard

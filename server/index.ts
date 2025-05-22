@@ -1,6 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-// Removed Vite dependency for Render deployment
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
@@ -10,11 +9,13 @@ import { setCsrfToken, validateCsrfToken } from "./middleware/csrfProtection";
 import { pool } from "./db";
 import { requestLogger, errorLogger } from "./middleware/requestLogger";
 import { logger } from "./utils/logger";
+import { configureStaticFileServing } from "./static";
+import { configureDevelopmentProxy } from "./dev-proxy";
 import path from 'path';
 import fs from 'fs';
 
 // Simple logging function to replace the one from vite
-function log(message, source = "express") {
+function log(message: string, source = "express") {
   const time = new Date().toLocaleTimeString();
   console.log(`${time} [${source}] ${message}`);
 }
@@ -251,26 +252,12 @@ app.use((req, res, next) => {
     }
   });
 
-  // Serve static files in production without Vite
-  if (app.get("env") === "production") {
-    const publicPath = path.join(process.cwd(), 'dist/public');
-    console.log(`Serving static files from: ${publicPath}`);
-    app.use(express.static(publicPath));
-    
-    // Handle SPA routes
-    app.get('*', (req, res) => {
-      // Skip API routes
-      if (req.url.startsWith('/api/')) {
-        return res.status(404).json({ error: 'API endpoint not found' });
-      }
-      
-      const indexPath = path.join(publicPath, 'index.html');
-      if (fs.existsSync(indexPath)) {
-        return res.sendFile(indexPath);
-      } else {
-        return res.status(404).send('Application not found');
-      }
-    });
+  // In production, serve static files for the frontend
+  if (process.env.NODE_ENV === 'production') {
+    configureStaticFileServing(app);
+    console.log('✅ Production mode: Serving frontend from static build');
+  } else {
+    console.log('⚠️ Development mode: Frontend must be served separately via "cd client && npm run dev"');
   }
 
   // Use PORT environment variable with fallback for Render's dynamic port allocation

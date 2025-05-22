@@ -2,8 +2,7 @@
 
 This guide outlines the process for deploying the Rivu application in a production environment. The application architecture consists of:
 
-- **Frontend**: Deployed on Vercel (https://tryrivu.com)
-- **Backend**: Deployed on Render (Node.js + Express)
+- **Full-stack Application**: Deployed on Render (https://tryrivu.com)
 - **Database**: PostgreSQL on Render
 
 ## Prerequisites
@@ -11,8 +10,7 @@ This guide outlines the process for deploying the Rivu application in a producti
 Before deployment, ensure you have:
 
 - Access to the Rivu GitHub repository
-- Vercel account (for frontend deployment)
-- Render account (for backend and database deployment)
+- Render account (for application and database deployment)
 - Domain access for tryrivu.com
 - All required API keys (Plaid, OpenAI, Postmark)
 
@@ -20,14 +18,13 @@ Before deployment, ensure you have:
 
 The following environment variables must be set in your deployment environments. **Never commit these values to the repository.**
 
-### Backend (Render)
+### Production Environment (Render)
 
 ```
 # Core Configuration
 NODE_ENV=production
 PORT=8080
 APP_VERSION=1.0.0
-ALLOWED_ORIGINS=https://tryrivu.com
 
 # Database
 DATABASE_URL=postgresql://username:password@hostname:port/database
@@ -56,18 +53,11 @@ POSTMARK_TEMPLATE_ID=your_template_id
 RATE_LIMIT_WINDOW_MS=60000  # 1 minute in milliseconds
 RATE_LIMIT_MAX_REQUESTS=30  # Maximum requests per minute
 AUTH_RATE_LIMIT_MAX=10      # Stricter limit for auth endpoints
-```
 
-### Frontend (Vercel)
-
-```
-# API Configuration - Only include public/safe values
-VITE_API_URL=https://api.tryrivu.com
+# Frontend Configuration 
 VITE_APP_NAME=Rivu Finance
 VITE_APP_VERSION=1.0.0
-
-# Plaid Configuration - Only expose what's necessary for the frontend
-VITE_PLAID_ENV=production  # Safe to expose - just indicates environment
+VITE_PLAID_ENV=production
 VITE_PLAID_PRODUCTS=transactions
 VITE_PLAID_COUNTRY_CODES=US
 VITE_PLAID_LANGUAGE=en
@@ -95,10 +85,10 @@ VITE_PLAID_LANGUAGE=en
 3. Note the connection string provided by Render
 4. Apply migrations using Drizzle:
    ```
-   npm run db:deploy
+   npm run db:push
    ```
 
-### 2. Backend Deployment (Render)
+### 2. Full-Stack Application Deployment (Render)
 
 1. Connect your GitHub repository to Render
 2. Create a new Web Service:
@@ -106,30 +96,17 @@ VITE_PLAID_LANGUAGE=en
    - Environment: Node
    - Build Command: `npm install && npm run build`
    - Start Command: `npm start`
-   - Environment Variables: Add all backend variables listed above
-
-3. Configure Custom Domain:
-   - Add `api.tryrivu.com` as a custom domain
-   - Follow Render's instructions to configure DNS settings
-
-### 3. Frontend Deployment (Vercel)
-
-1. Connect your GitHub repository to Vercel
-2. Configure project:
-   - Framework Preset: Vite
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
-   - Environment Variables: Add all frontend variables listed above
+   - Environment Variables: Add all environment variables listed above
 
 3. Configure Custom Domain:
    - Add `tryrivu.com` as a custom domain
-   - Follow Vercel's instructions to configure DNS settings
+   - Follow Render's instructions to configure DNS settings
 
 ## Post-Deployment Verification
 
 After deployment, verify the following:
 
-1. **Health Check**: Visit `https://api.tryrivu.com/health` to confirm the backend is running
+1. **Health Check**: Visit `https://tryrivu.com/health` to confirm the application is running
 2. **Authentication**: Test registration, login, and logout functionality
 3. **Plaid Integration**: Connect a bank account using OAuth
 4. **Core Features**: Test budgeting, transactions, and goals functionality
@@ -139,22 +116,22 @@ After deployment, verify the following:
 
 ### Common Issues
 
-- **CORS Errors**: Verify `ALLOWED_ORIGINS` includes the frontend domain
+- **Static File Serving**: Ensure the frontend assets are built properly before deployment
 - **Database Connection**: Check the `DATABASE_URL` is correct and accessible
 - **Plaid OAuth**: Ensure `PLAID_REDIRECT_URI` matches exactly what's registered in Plaid dashboard
 - **Rate Limiting**: If facing "Too many requests" errors, check server logs for IP address patterns
 
 ### Monitoring
 
-- Use Render's built-in logging for backend monitoring
-- Set up Vercel Analytics for frontend performance metrics
-- Regularly check the `/health` endpoint for backend status
+- Use Render's built-in logging for application monitoring
+- Implement client-side error tracking if needed
+- Regularly check the `/health` endpoint for application status
 
 ## Rollback Process
 
 If deployment issues occur:
 
-1. Immediately roll back to the previous stable version in Vercel/Render
+1. Immediately roll back to the previous stable version in Render
 2. Verify database integrity using diagnostic queries
 3. Address issues in development environment before redeploying
 

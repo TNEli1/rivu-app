@@ -2,12 +2,13 @@
 
 A modern personal finance platform that combines intelligent financial tracking with advanced user engagement and security features.
 
-## Migration from Replit to Production
+## Deployment Information
 
-This repository has been prepared for migration from Replit to:
-- Frontend → Vercel (https://tryrivu.com)
-- Backend → Render (Node.js + Express)
+This application is configured for deployment to:
+- Full-stack application → Render (https://tryrivu.com)
 - Database → PostgreSQL on Render
+
+The application is built as a unified deployment with Express serving both the API and the React frontend from a single service.
 
 ## Quick Start
 
