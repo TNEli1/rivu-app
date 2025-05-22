@@ -5,7 +5,7 @@ import {
   UseMutationResult,
   useQueryClient
 } from "@tanstack/react-query";
-import { apiRequest } from "../lib/queryClient";
+import { apiRequest, getApiBaseUrl } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 
@@ -334,14 +334,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerMutation = useMutation({
     mutationFn: async (userData: RegisterData) => {
-      const res = await apiRequest('POST', '/api/register', userData);
-      
-      if (!res.ok) {
-        const errorData: ApiErrorResponse = await res.json();
-        throw new Error(errorData.message || "Registration failed");
+      try {
+        // Get the API base URL directly from the imported function
+        const apiUrl = getApiBaseUrl();
+        console.log("Attempting registration with backend at:", apiUrl);
+        
+        const res = await apiRequest('POST', '/api/register', userData);
+        
+        if (!res.ok) {
+          // Try to parse the error response
+          try {
+            const errorData: ApiErrorResponse = await res.json();
+            throw new Error(errorData.message || "Registration failed");
+          } catch (jsonError) {
+            // If we can't parse the JSON, use the status text
+            throw new Error(`Registration failed: ${res.status} ${res.statusText || "Server error"}`);
+          }
+        }
+        
+        return await res.json();
+      } catch (error) {
+        console.error("Registration error:", error);
+        // Make sure we always throw an Error object with a message
+        if (error instanceof Error) {
+          throw error;
+        } else {
+          throw new Error("Registration failed: Network error");
+        }
       }
-      
-      return await res.json();
     },
     onSuccess: (data: User) => {
       // Set login indicator in localStorage
@@ -364,6 +384,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLocation("/onboarding");
     },
     onError: (error: Error) => {
+      console.error("Registration mutation error:", error);
+      
       toast({
         title: "Registration failed",
         description: error.message || "Could not create account. Please try again.",

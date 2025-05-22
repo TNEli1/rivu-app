@@ -85,6 +85,90 @@ Migrations not applied to the Render-hosted production database. While the schem
 **Date of Fix:** May 22, 2025
 
 
+### Registration failed – Load failed
+
+**Error Message/Behavior:**  
+After fixing the database migration issue, users were seeing a new error during registration: "Registration failed: Load failed" on the production site (https://tryrivu.com).
+
+**Cause:**  
+1. CORS configuration in the backend wasn't correctly handling requests from the production domain
+2. The frontend API client wasn't properly handling network errors or CORS issues
+3. Wildcard origin settings (like `*.tryrivu.com`) don't work in CORS and needed a function-based approach
+4. Error handling in API requests was too generic, making debugging difficult
+
+**Fix:**  
+1. Enhanced CORS configuration on the backend to better handle domain patterns:
+   - Added function-based origin validation to handle domain patterns
+   - Added proper subdomain detection for tryrivu.com
+   - Added additional allowed headers for cross-origin requests
+   - Improved CORS error logging for debugging
+   
+2. Improved API client error handling:
+   - Added detailed logging of API requests and responses
+   - Implemented a retry mechanism with exponential backoff for network issues
+   - Enhanced error messages to be more descriptive
+   - Added request tracing to identify specific failures
+
+3. Updated registration mutation in auth hooks:
+   - Improved error capture and reporting
+   - Added additional validation and error handling
+   - Enhanced logging during the registration process
+
+**Files/Lines Modified:**
+- `/server/index.ts` - Updated CORS configuration with function-based origin validation:
+  ```typescript
+  const corsOptions = {
+    origin: function(origin, callback) {
+      // Allow production domains and subdomains
+      if (origin === 'https://tryrivu.com' || origin.endsWith('.tryrivu.com')) {
+        callback(null, true);
+        return;
+      }
+      // Additional origin validation logic...
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    // Additional CORS settings...
+  }
+  ```
+  
+- `/client/src/lib/queryClient.ts` - Enhanced API request handling with retries:
+  ```typescript
+  export async function apiRequest(method, url, data) {
+    // Setup retry mechanism for network errors
+    let retries = 0;
+    const maxRetries = 2;
+    
+    while (retries <= maxRetries) {
+      try {
+        const res = await fetch(fullUrl, {
+          // Request configuration...
+        });
+        
+        // Improved error handling and retry logic
+      } catch (error) {
+        // Retry logic with exponential backoff
+      }
+    }
+  }
+  ```
+  
+- `/client/src/hooks/use-auth.tsx` - Improved registration mutation:
+  ```typescript
+  const registerMutation = useMutation({
+    mutationFn: async (userData) => {
+      try {
+        // Enhanced error handling during registration
+      } catch (error) {
+        // Better error reporting
+      }
+    }
+  });
+  ```
+
+**Date of Fix:** May 22, 2025
+
+
 ### Missing Database Migrations
 
 **Error Message/Behavior:**  

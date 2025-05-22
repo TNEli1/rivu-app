@@ -24,6 +24,7 @@ export const getApiBaseUrl = (): string => {
   // Production environment detection
   const isProduction = 
     window.location.hostname === 'tryrivu.com' || 
+    window.location.hostname.includes('tryrivu.com') || // Include subdomains
     window.location.hostname.endsWith('.vercel.app') || 
     window.location.hostname.endsWith('.render.com') || 
     window.location.hostname.endsWith('.replit.app');
@@ -44,34 +45,91 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  // Get CSRF token from cookie if available
-  const getCsrfToken = () => {
-    const cookie = document.cookie.split('; ').find(row => row.startsWith('csrf_token='));
-    return cookie ? cookie.split('=')[1] : '';
-  };
-  
-  const csrfToken = getCsrfToken();
-  
-  // Construct full URL with API base URL in production
-  const apiBaseUrl = getApiBaseUrl();
-  const fullUrl = url.startsWith('http') ? url : `${apiBaseUrl}${url}`;
-  
-  const headers: Record<string, string> = {
-    ...(data ? { "Content-Type": "application/json" } : {}),
-    // Add CSRF protection headers
-    "X-Requested-With": "XMLHttpRequest",
-    ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {})
-  };
+  try {
+    // Get CSRF token from cookie if available
+    const getCsrfToken = () => {
+      const cookie = document.cookie.split('; ').find(row => row.startsWith('csrf_token='));
+      return cookie ? cookie.split('=')[1] : '';
+    };
+    
+    const csrfToken = getCsrfToken();
+    
+    // Construct full URL with API base URL in production
+    const apiBaseUrl = getApiBaseUrl();
+    const fullUrl = url.startsWith('http') ? url : `${apiBaseUrl}${url}`;
+    
+    console.log(`Making API request to: ${fullUrl}`); // Log the URL for debugging
+    
+    const headers: Record<string, string> = {
+      ...(data ? { "Content-Type": "application/json" } : {}),
+      // Add CSRF protection headers
+      "X-Requested-With": "XMLHttpRequest",
+      ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {})
+    };
 
-  const res = await fetch(fullUrl, {
-    method,
-    headers,
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include", // Include cookies for authentication
-  });
-
-  await throwIfResNotOk(res);
-  return res;
+    // Setup retry mechanism for network errors
+    let retries = 0;
+    const maxRetries = 2;
+    
+    while (retries <= maxRetries) {
+      try {
+        const res = await fetch(fullUrl, {
+          method,
+          headers,
+          body: data ? JSON.stringify(data) : undefined,
+          credentials: "include", // Include cookies for authentication
+          mode: 'cors', // Explicitly request CORS mode
+        });
+    
+        // For debugging: log response status
+        console.log(`API response status: ${res.status} ${res.statusText}`);
+        
+        // Don't retry for client errors (4xx)
+        if (res.status >= 400 && res.status < 500) {
+          await throwIfResNotOk(res);
+          return res;
+        }
+        
+        // Check if successful
+        if (res.ok) {
+          return res;
+        }
+        
+        // If we get here, it's a server error (5xx) which may be retried
+        if (retries === maxRetries) {
+          await throwIfResNotOk(res);
+          return res; // Will throw from throwIfResNotOk
+        }
+        
+        // Log retry attempt
+        console.log(`Retrying request due to ${res.status} error (attempt ${retries + 1} of ${maxRetries})`);
+      } catch (fetchError) {
+        // If this is the last retry, rethrow
+        if (retries === maxRetries) {
+          throw fetchError;
+        }
+        console.log(`Network error, retrying (attempt ${retries + 1} of ${maxRetries})`);
+      }
+      
+      // Exponential backoff
+      await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retries)));
+      retries++;
+    }
+    
+    // Should never reach here due to throw in the loop
+    throw new Error("Request failed after retries");
+  } catch (error) {
+    console.error("API request failed:", error);
+    
+    // Format a clear user-facing error message
+    if (error instanceof Error) {
+      // Keep original error message if possible
+      throw error;
+    } else {
+      // Generic fallback message
+      throw new Error("Load failed: Network connection error");
+    }
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
