@@ -21,6 +21,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup CORS
   app.use(cors());
   
+  // Temporary debug endpoint to check database tables
+  app.get('/debug/schema', async (req, res) => {
+    try {
+      const tablesResult = await db.execute(sql`
+        SELECT table_name FROM information_schema.tables 
+        WHERE table_schema = 'public'
+      `);
+      
+      return res.json({
+        tables: tablesResult.rows,
+        message: 'Database tables query completed'
+      });
+    } catch (error) {
+      console.error('Error checking database tables:', error);
+      return res.status(500).json({ error: 'Failed to query database tables' });
+    }
+  });
+  
   // Add comprehensive health check endpoint for monitoring
   app.get('/health', async (req, res) => {
     try {

@@ -64,6 +64,27 @@ Users could register with mismatched passwords as the registration form didn't p
 
 **Date of Fix:** May 22, 2025
 
+### "users" table missing – production DB not migrated
+
+**Error Message/Behavior:**  
+Registration failing with error: "relation 'users' does not exist" on the production website.
+
+**Cause:**  
+Migrations not applied to the Render-hosted production database. While the schema was defined in the codebase, the schema wasn't pushed to the production database instance.
+
+**Fix:**  
+1. Used drizzle-kit to push the schema to the production database
+2. Executed `npm run db:push` command to push all schema definitions to the database using the DATABASE_URL environment variable
+3. Verified all tables were created successfully including the users table
+4. Confirmed all necessary columns exist in the users table
+5. Added temporary debug endpoint to verify database schema in the future
+
+**Files/Lines Modified:**
+- No code changes required; the issue was resolved by running `npm run db:push` to apply the schema to the production database
+
+**Date of Fix:** May 22, 2025
+
+
 ### Missing Database Migrations
 
 **Error Message/Behavior:**  
