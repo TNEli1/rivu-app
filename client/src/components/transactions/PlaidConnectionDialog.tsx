@@ -193,10 +193,8 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
     onExit,
     // Add OAuth required options with production-ready URL handling
     receivedRedirectUri: window.location.href,
-    // Ensure callback URL always uses HTTPS in production
-    oauthRedirectUri: process.env.NODE_ENV === 'production' 
-      ? 'https://tryrivu.com/callback'
-      : window.location.origin + '/callback',
+    // Always use the current domain for the redirect URI to support unified deployments
+    oauthRedirectUri: window.location.origin + '/callback',
     oauthNonce: Math.floor(Math.random() * 10000000).toString(), // Random nonce for security
   };
   

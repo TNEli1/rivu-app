@@ -15,7 +15,7 @@ export function initializeAnalytics(apiKey: string): boolean {
   try {
     // Configure PostHog with privacy-first settings for a financial app
     posthog.init(apiKey, {
-      api_host: 'https://app.posthog.com',
+      api_host: import.meta.env.VITE_POSTHOG_HOST || 'https://app.posthog.com',
       capture_pageview: true,
       capture_pageleave: true,
       mask_all_text: true, // Mask all text inputs for privacy protection

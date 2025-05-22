@@ -17,10 +17,14 @@ async function throwIfResNotOk(res: Response) {
 // Helper function to get the API base URL
 export const getApiBaseUrl = (): string => {
   // Use environment variable if available, otherwise determine based on environment
+  // For Render unified deployment, we should use relative URLs since backend and frontend are served from the same domain
   return import.meta.env.VITE_API_URL || 
-    (window.location.hostname === 'tryrivu.com' || window.location.hostname.endsWith('.vercel.app')
-      ? 'https://api.tryrivu.com' // Production API URL
-      : ''); // Use relative URLs for development (same domain)
+    (window.location.hostname === 'tryrivu.com' || 
+     window.location.hostname.endsWith('.vercel.app') || 
+     window.location.hostname.endsWith('.render.com') || 
+     window.location.hostname.endsWith('.replit.app')
+      ? '' // Use relative URLs for all production deployments
+      : ''); // Use relative URLs for development too (same domain)
 };
 
 export async function apiRequest(
