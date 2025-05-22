@@ -24,7 +24,17 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
     const duration = Date.now() - startTime;
     
     // Log the request using our structured logger
-    logger.httpRequest(req, res, duration);
+    logger.info(`HTTP ${req.method} ${req.originalUrl || req.url}`, {
+      method: req.method,
+      url: req.originalUrl || req.url,
+      status: res.statusCode,
+      duration: `${duration}ms`,
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      userId: req.user?.id || 'unauthenticated',
+      contentLength: res.get('Content-Length'),
+      referrer: req.get('Referrer')
+    });
   });
   
   next();

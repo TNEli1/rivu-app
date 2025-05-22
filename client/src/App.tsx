@@ -57,16 +57,21 @@ function Router() {
   );
 }
 
+// Import the AnalyticsProvider
+import { AnalyticsProvider } from './lib/AnalyticsContext';
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <ThemeProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-          </TooltipProvider>
-        </ThemeProvider>
+        <AnalyticsProvider>
+          <ThemeProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Router />
+            </TooltipProvider>
+          </ThemeProvider>
+        </AnalyticsProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

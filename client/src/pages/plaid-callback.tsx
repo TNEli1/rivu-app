@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
+import posthog from 'posthog-js';
 
 export default function PlaidCallback() {
   const [isProcessing, setIsProcessing] = useState(true);
@@ -65,6 +66,13 @@ export default function PlaidCallback() {
         if (data.success) {
           setSuccess(true);
           setInstitutionName(data.institution_name || 'your bank');
+          
+          // Track successful bank connection with PostHog
+          posthog.capture('plaid_connected', {
+            institution_name: data.institution_name || 'unknown bank',
+            account_count: data.accounts?.length || 0,
+            connection_method: 'oauth'
+          });
           
           // Invalidate queries to refresh account data
           queryClient.invalidateQueries({ queryKey: ['/api/plaid/items'] });

@@ -137,6 +137,9 @@ const isTokenExpired = (loginIndicator: string | null): boolean => {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+// Import PostHog for event tracking
+import posthog from 'posthog-js';
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -144,6 +147,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [, setLocation] = useLocation();
   const [tokenExpired, setTokenExpired] = useState<boolean>(isTokenExpired(getToken()));
   const checkingInterval = useRef<number | null>(null);
+  
+  // Track authenticated user with PostHog
+  useEffect(() => {
+    if (user) {
+      // Identify user in PostHog for better analytics
+      posthog.identify(user._id.toString(), {
+        // Only include non-sensitive user data
+        $name: `${user.firstName} ${user.lastName}`.trim(),
+        createdAt: user.createdAt,
+        themePreference: user.themePreference,
+        tutorialCompleted: user.tutorialCompleted
+      });
+      
+      // Track login event (once we know the user is authenticated)
+      if (user.lastLogin) {
+        posthog.capture('user_authenticated');
+      }
+    } else {
+      // Reset identity when user is not authenticated
+      posthog.reset();
+    }
+  }, [user]);
 
   // Set up token expiration checking
   useEffect(() => {
