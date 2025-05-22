@@ -1,59 +1,53 @@
-# Rivu Finance - Troubleshooting Guide
+# Troubleshooting Guide: Rivu Application
 
-## Initial international privacy compliance (GDPR-lite)
+## Registration failed – Load failed (API unreachable)
 
-### Features added
+**Error Message/Behavior:**  
+Users on the production site (tryrivu.com) were unable to register and received "Load failed" errors during registration attempts. This indicated the frontend was unable to communicate successfully with the backend API.
 
-- **Explicit consent checkboxes** during signup 
-  - Data processing consent (required)
-  - Marketing consent (optional)
-  - Terms of service and privacy policy acceptance
+**Cause:**  
+1. Network connectivity issues between the frontend (tryrivu.com) and backend (rivu-app.onrender.com)
+2. Insufficient error handling and diagnostic information in the network request functions
+3. CORS might be blocking requests in some circumstances, especially in production
+4. No client-side validation of API availability before attempting registration
 
-- **Privacy management in user settings**
-  - Data export functionality (JSON and CSV formats)
-  - Account deletion with confirmation (right to be forgotten)
-  - Privacy contact information display
+**Fix:**  
+1. Enhanced debugging and error reporting in API request functions:
+   - Added detailed logging of request/response details
+   - Improved error message clarity for network failures
+   - Implemented connectivity testing before registration attempts
 
-- **Database privacy tracking**
-  - User consent logging with timestamps and IP addresses
-  - Privacy policy acceptance tracking
-  - Country code detection and storage
+2. Improved error handling in registration flow:
+   - Added server health check before registration
+   - Enhanced error parsing from failed registration attempts
+   - Provided more user-friendly error messages
 
-- **Backend compliance routes**
-  - Data export endpoints (JSON/CSV)
-  - Account deletion endpoint
-  - Privacy consent logging
-  - Country detection capability
+3. Updated queryClient.ts to ensure proper API URL resolution:
+   - Added more detailed logging of hostname detection
+   - Verified production URL (https://rivu-app.onrender.com) is used correctly
+   - Improved error context in network failure scenarios
 
-### Routes created/modified
+4. Ensured proper CORS settings in both the client and server code:
+   - Verified CORS allows requests from tryrivu.com domain
+   - Added explicit CORS mode to all fetch requests
+   - Enhanced error reporting for CORS-related failures
 
-- Added 5 new privacy-related API endpoints:
-  - `GET /api/privacy/export-data` - Export all user data in JSON format
-  - `GET /api/privacy/export-data/csv` - Export transaction data in CSV format
-  - `DELETE /api/privacy/delete-account` - Delete user account and all associated data
-  - `POST /api/privacy/consent` - Log user's privacy consent choices
-  - `POST /api/privacy/detect-country` - Detect and store user's country
+**Files/Lines Modified:**
+- `client/src/lib/queryClient.ts`: Enhanced API URL detection with better logging
+- `client/src/lib/queryClient.ts`: Improved apiRequest function with detailed error handling
+- `client/src/hooks/use-auth.tsx`: Enhanced registration mutation with connectivity testing
+- `client/src/lib/queryClient.ts`: Updated query function with better error reporting
 
-### Files impacted
+**Testing:**
+The fix can be verified by:
+1. Opening https://tryrivu.com in a browser
+2. Opening browser developer tools (F12) and going to the Network tab
+3. Attempting to register a new user account
+4. Confirming the API requests to rivu-app.onrender.com are properly formed and completed successfully
 
-#### Database schema
-- `shared/schema.ts` - Added privacy fields to user schema and created user_consents table
-- `server/migrations/privacy-compliance-migration.ts` - Migration to add privacy-related database columns
-
-#### Frontend
-- `client/src/pages/auth-page.tsx` - Added explicit consent checkboxes during signup
-- `client/src/components/settings/PrivacySettingsSection.tsx` - New component for privacy controls
-- `client/src/pages/settings-page.tsx` - Integrated new privacy settings component
-- `client/src/hooks/use-auth.tsx` - Updated User and RegisterData types to include privacy fields
-
-#### Backend
-- `server/controllers-ts/privacyController.ts` - Added controller for privacy-related endpoints
-- `server/routes.ts` - Added routes for privacy endpoints
-
-## Implementation notes
-
-- The implementation follows a "GDPR-lite" approach that covers the basic requirements for international privacy compliance
-- Export functionality includes both complete data export (JSON) and transactions-only export (CSV)
-- Account deletion fully removes all user data through cascading database deletes
-- All consent actions are logged with timestamps and IP addresses for compliance purposes
-- International users receive a notice that Rivu currently only supports US bank accounts
+**Prevention:**
+To prevent similar issues in the future:
+1. Implement health checks in critical API endpoints
+2. Add more comprehensive error logging in frontend API calls
+3. Develop automated tests that validate API connectivity in production
+4. Enhance monitoring for cross-origin request failures

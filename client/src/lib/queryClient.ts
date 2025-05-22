@@ -18,25 +18,34 @@ async function throwIfResNotOk(res: Response) {
 export const getApiBaseUrl = (): string => {
   // If VITE_API_URL is explicitly set, use it as highest priority
   if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
+    const url = import.meta.env.VITE_API_URL;
+    console.log(`Using API URL from environment: ${url}`);
+    return url;
   }
 
   // Production environment detection
+  const hostname = window.location.hostname;
   const isProduction = 
-    window.location.hostname === 'tryrivu.com' || 
-    window.location.hostname.includes('tryrivu.com') || // Include subdomains
-    window.location.hostname.endsWith('.vercel.app') || 
-    window.location.hostname.endsWith('.render.com') || 
-    window.location.hostname.endsWith('.replit.app');
+    hostname === 'tryrivu.com' || 
+    hostname.includes('tryrivu.com') || // Include subdomains
+    hostname.endsWith('.vercel.app') || 
+    hostname.endsWith('.render.com') || 
+    hostname.endsWith('.replit.app');
+
+  console.log(`Hostname detected: ${hostname}, isProduction: ${isProduction}`);
 
   // Determine the appropriate base URL based on environment
   if (isProduction) {
     // In production (tryrivu.com or other production domains)
     // Use the Render production backend URL
-    return 'https://rivu-app.onrender.com';
+    const prodUrl = 'https://rivu-app.onrender.com';
+    console.log(`Using production API URL: ${prodUrl}`);
+    return prodUrl;
   } else {
     // In development environment
-    return 'http://localhost:8080';
+    const devUrl = 'http://localhost:8080';
+    console.log(`Using development API URL: ${devUrl}`);
+    return devUrl;
   }
 };
 
@@ -53,12 +62,16 @@ export async function apiRequest(
     };
     
     const csrfToken = getCsrfToken();
+    console.log(`CSRF Token available: ${Boolean(csrfToken)}`);
     
     // Construct full URL with API base URL in production
     const apiBaseUrl = getApiBaseUrl();
     const fullUrl = url.startsWith('http') ? url : `${apiBaseUrl}${url}`;
     
-    console.log(`Making API request to: ${fullUrl}`); // Log the URL for debugging
+    console.log(`[DEBUG] Making ${method} request to: ${fullUrl}`); 
+    if (data) {
+      console.log(`[DEBUG] Request payload:`, data);
+    }
     
     const headers: Record<string, string> = {
       ...(data ? { "Content-Type": "application/json" } : {}),
@@ -67,12 +80,17 @@ export async function apiRequest(
       ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {})
     };
 
+    console.log(`[DEBUG] Request headers:`, headers);
+
     // Setup retry mechanism for network errors
     let retries = 0;
     const maxRetries = 2;
     
     while (retries <= maxRetries) {
       try {
+        console.log(`[DEBUG] Attempting fetch (${retries === 0 ? 'initial' : `retry ${retries}`})`);
+        
+        const fetchStartTime = Date.now();
         const res = await fetch(fullUrl, {
           method,
           headers,
@@ -80,55 +98,94 @@ export async function apiRequest(
           credentials: "include", // Include cookies for authentication
           mode: 'cors', // Explicitly request CORS mode
         });
-    
-        // For debugging: log response status
-        console.log(`API response status: ${res.status} ${res.statusText}`);
+        const fetchEndTime = Date.now();
+        
+        console.log(`[DEBUG] Fetch completed in ${fetchEndTime - fetchStartTime}ms`);
+        console.log(`[DEBUG] Response status: ${res.status} ${res.statusText}`);
+        
+        // Try to get response headers for debugging
+        try {
+          const responseHeaders: Record<string, string> = {};
+          res.headers.forEach((value, key) => {
+            responseHeaders[key] = value;
+          });
+          console.log(`[DEBUG] Response headers:`, responseHeaders);
+        } catch (headerError) {
+          console.log(`[DEBUG] Could not read response headers: ${headerError}`);
+        }
         
         // Don't retry for client errors (4xx)
         if (res.status >= 400 && res.status < 500) {
+          console.log(`[DEBUG] Client error (${res.status}), not retrying`);
+          try {
+            const errorResponse = await res.clone().text();
+            console.log(`[DEBUG] Error response body: ${errorResponse}`);
+          } catch (textError) {
+            console.log(`[DEBUG] Could not read error response: ${textError}`);
+          }
+          
           await throwIfResNotOk(res);
           return res;
         }
         
         // Check if successful
         if (res.ok) {
+          console.log(`[DEBUG] Request successful`);
           return res;
         }
         
         // If we get here, it's a server error (5xx) which may be retried
         if (retries === maxRetries) {
+          console.log(`[DEBUG] Max retries reached, returning error response`);
+          try {
+            const errorResponse = await res.clone().text();
+            console.log(`[DEBUG] Final error response: ${errorResponse}`);
+          } catch (textError) {
+            console.log(`[DEBUG] Could not read final error response: ${textError}`);
+          }
+          
           await throwIfResNotOk(res);
-          return res; // Will throw from throwIfResNotOk
+          return res;
         }
         
         // Log retry attempt
-        console.log(`Retrying request due to ${res.status} error (attempt ${retries + 1} of ${maxRetries})`);
+        console.log(`[DEBUG] Retrying request due to ${res.status} error (attempt ${retries + 1} of ${maxRetries})`);
       } catch (fetchError) {
         // If this is the last retry, rethrow
         if (retries === maxRetries) {
+          console.log(`[DEBUG] Network error on final retry:`, fetchError);
+          if (fetchError instanceof TypeError && 
+              (fetchError.message.includes('Failed to fetch') || 
+               fetchError.message.includes('NetworkError'))) {
+            throw new Error(`Network error connecting to ${apiBaseUrl}. Please check if the server is accessible.`);
+          }
           throw fetchError;
         }
-        console.log(`Network error, retrying (attempt ${retries + 1} of ${maxRetries})`);
+        console.log(`[DEBUG] Network error, retrying (attempt ${retries + 1} of ${maxRetries}):`, fetchError);
       }
       
       // Exponential backoff
-      await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retries)));
+      const backoffTime = 1000 * Math.pow(2, retries);
+      console.log(`[DEBUG] Waiting ${backoffTime}ms before retry`);
+      await new Promise(resolve => setTimeout(resolve, backoffTime));
       retries++;
     }
     
     // Should never reach here due to throw in the loop
     throw new Error("Request failed after retries");
   } catch (error) {
-    console.error("API request failed:", error);
-    
-    // Format a clear user-facing error message
+    // Log and rethrow with detailed information
+    console.error("[DEBUG] API request failed:", error);
     if (error instanceof Error) {
-      // Keep original error message if possible
+      // Enhance error message to be more user-friendly
+      if (error.message.includes('Failed to fetch') || 
+          error.message.includes('NetworkError') || 
+          error.message.includes('Network error')) {
+        throw new Error(`Unable to connect to the server at ${getApiBaseUrl()}. Please check your network connection or if the server is running.`);
+      }
       throw error;
-    } else {
-      // Generic fallback message
-      throw new Error("Load failed: Network connection error");
     }
+    throw new Error(`Load failed: Unable to connect to the server`);
   }
 }
 
@@ -147,6 +204,7 @@ export const getQueryFn: <T>(options: {
   async ({ queryKey }) => {
     // We now rely on HTTP-only cookies for authentication
     const csrfToken = getCsrfToken();
+    console.log(`[DEBUG][getQueryFn] CSRF Token available: ${Boolean(csrfToken)}`);
     
     const headers: Record<string, string> = {
       // Add CSRF protection headers
@@ -160,18 +218,62 @@ export const getQueryFn: <T>(options: {
     // Construct full URL with API base URL for production environment
     const apiBaseUrl = getApiBaseUrl();
     const fullUrl = urlPath.startsWith('http') ? urlPath : `${apiBaseUrl}${urlPath}`;
+    console.log(`[DEBUG][getQueryFn] Making request to: ${fullUrl}`);
 
-    const res = await fetch(fullUrl, {
-      credentials: "include", // Include cookies for session authentication
-      headers
-    });
+    try {
+      const fetchStartTime = Date.now();
+      const res = await fetch(fullUrl, {
+        credentials: "include", // Include cookies for session authentication
+        headers,
+        mode: 'cors' // Explicitly request CORS mode
+      });
+      const fetchEndTime = Date.now();
+      
+      console.log(`[DEBUG][getQueryFn] Fetch completed in ${fetchEndTime - fetchStartTime}ms`);
+      console.log(`[DEBUG][getQueryFn] Response status: ${res.status} ${res.statusText}`);
+      
+      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+        console.log(`[DEBUG][getQueryFn] Unauthorized (401) with returnNull policy`);
+        return null;
+      }
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+      // Try to get response headers for debugging
+      try {
+        const responseHeaders: Record<string, string> = {};
+        res.headers.forEach((value, key) => {
+          responseHeaders[key] = value;
+        });
+        console.log(`[DEBUG][getQueryFn] Response headers:`, responseHeaders);
+      } catch (headerError) {
+        console.log(`[DEBUG][getQueryFn] Could not read response headers: ${headerError}`);
+      }
+
+      if (!res.ok) {
+        try {
+          // Clone response to avoid consuming the body before throwIfResNotOk
+          const errorText = await res.clone().text();
+          console.log(`[DEBUG][getQueryFn] Error response body: ${errorText}`);
+        } catch (textError) {
+          console.log(`[DEBUG][getQueryFn] Could not read error response: ${textError}`);
+        }
+      } else {
+        console.log(`[DEBUG][getQueryFn] Request successful`);
+      }
+
+      await throwIfResNotOk(res);
+      return await res.json();
+    } catch (error) {
+      console.error(`[DEBUG][getQueryFn] Request failed:`, error);
+      
+      // Enhance error messages for network failures
+      if (error instanceof TypeError && 
+          (error.message.includes('Failed to fetch') || 
+           error.message.includes('NetworkError'))) {
+        throw new Error(`Unable to connect to ${apiBaseUrl}. Please check your network connection or if the server is running.`);
+      }
+      
+      throw error;
     }
-
-    await throwIfResNotOk(res);
-    return await res.json();
   };
 
 // Helper to invalidate related queries when data changes

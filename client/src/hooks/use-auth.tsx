@@ -349,29 +349,77 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         // Get the API base URL directly from the imported function
         const apiUrl = getApiBaseUrl();
-        console.log("Attempting registration with backend at:", apiUrl);
+        console.log("[DEBUG][Register] Attempting registration with backend at:", apiUrl);
+        console.log("[DEBUG][Register] Registration payload:", userData);
         
+        // Test the backend connectivity before making the actual request
+        try {
+          console.log("[DEBUG][Register] Testing server connection...");
+          const testStart = Date.now();
+          const testResponse = await fetch(`${apiUrl}/health`, {
+            method: 'GET',
+            mode: 'cors',
+            credentials: 'omit' // No credentials needed for health check
+          });
+          const testEnd = Date.now();
+          
+          if (testResponse.ok) {
+            console.log(`[DEBUG][Register] Server connection test successful (${testEnd - testStart}ms)`);
+            const healthData = await testResponse.json();
+            console.log(`[DEBUG][Register] Server health data:`, healthData);
+          } else {
+            console.warn(`[DEBUG][Register] Server connection test failed: ${testResponse.status} ${testResponse.statusText}`);
+          }
+        } catch (testError) {
+          console.error(`[DEBUG][Register] Server connection test failed with error:`, testError);
+        }
+        
+        // Proceed with actual registration
+        console.log("[DEBUG][Register] Making registration API call...");
         const res = await apiRequest('POST', '/api/register', userData);
+        console.log(`[DEBUG][Register] Registration response received, status: ${res.status}`);
         
         if (!res.ok) {
           // Try to parse the error response
           try {
-            const errorData: ApiErrorResponse = await res.json();
-            throw new Error(errorData.message || "Registration failed");
+            const errorText = await res.clone().text();
+            console.error(`[DEBUG][Register] Error response body: ${errorText}`);
+            
+            try {
+              const errorData: ApiErrorResponse = JSON.parse(errorText);
+              throw new Error(errorData.message || "Registration failed");
+            } catch (jsonParseError) {
+              // If we can't parse the JSON, use the raw text
+              throw new Error(`Registration failed: ${res.status} - ${errorText || res.statusText || "Server error"}`);
+            }
           } catch (jsonError) {
-            // If we can't parse the JSON, use the status text
+            // If we can't read the response at all
+            console.error(`[DEBUG][Register] Failed to read error response:`, jsonError);
             throw new Error(`Registration failed: ${res.status} ${res.statusText || "Server error"}`);
           }
         }
         
-        return await res.json();
+        try {
+          const jsonData = await res.json();
+          console.log(`[DEBUG][Register] Registration successful, response data:`, jsonData);
+          return jsonData;
+        } catch (jsonError) {
+          console.error(`[DEBUG][Register] Failed to parse success response:`, jsonError);
+          throw new Error("Registration appeared successful but received invalid response data");
+        }
       } catch (error) {
-        console.error("Registration error:", error);
-        // Make sure we always throw an Error object with a message
+        console.error("[DEBUG][Register] Registration error:", error);
+        
+        // Enhance error messages for better user feedback
         if (error instanceof Error) {
+          if (error.message.includes('Failed to fetch') || 
+              error.message.includes('NetworkError') || 
+              error.message.includes('Network error')) {
+            throw new Error(`Unable to connect to the server at ${getApiBaseUrl()}. Please check your network connection.`);
+          }
           throw error;
         } else {
-          throw new Error("Registration failed: Network error");
+          throw new Error("Registration failed: Unknown network error");
         }
       }
     },
