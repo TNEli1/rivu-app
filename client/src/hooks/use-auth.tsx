@@ -79,6 +79,7 @@ type RegisterData = {
   // Privacy and compliance fields
   dataConsentGiven?: boolean;
   marketingConsentGiven?: boolean;
+  emailOptIn?: boolean; // New field for email opt-in consent
   dataConsentDate?: Date;
   lastPrivacyPolicyAccepted?: Date;
   countryCode?: string;

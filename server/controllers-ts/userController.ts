@@ -72,7 +72,7 @@ const clearTokenCookie = (res: any) => {
  */
 export const registerUser = async (req: any, res: any) => {
   try {
-    const { username, email, password, passwordConfirmation, firstName, lastName } = req.body;
+    const { username, email, password, passwordConfirmation, firstName, lastName, emailOptIn } = req.body;
     
     // Validate required fields
     if (!username || !email || !password) {
@@ -138,7 +138,9 @@ export const registerUser = async (req: any, res: any) => {
       onboardingCompleted: false,
       accountCreationDate: new Date(),
       loginCount: 1,
-      lastLogin: new Date() // matches schema field name
+      lastLogin: new Date(), // matches schema field name
+      marketingConsentGiven: emailOptIn === true, // Store email opt-in preference
+      dataConsentDate: new Date() // Record when consent was given
     });
     
     if (user) {

@@ -22,7 +22,7 @@ export default function AuthPage() {
   const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [dataConsent, setDataConsent] = useState(false);
-  const [marketingConsent, setMarketingConsent] = useState(false);
+  const [emailOptIn, setEmailOptIn] = useState(false);
   const [redirectPath, setRedirectPath] = useState("/dashboard");
   
   // Check for signup parameter in URL
@@ -300,7 +300,8 @@ export default function AuthPage() {
                         lastName: formData.get('lastName') as string || undefined,
                         // Privacy consent fields
                         dataConsentGiven: dataConsent,
-                        marketingConsentGiven: marketingConsent,
+                        marketingConsentGiven: emailOptIn, // Map emailOptIn to marketingConsentGiven
+                        emailOptIn: emailOptIn, // Add the new field
                         // Capture timestamp of consent
                         dataConsentDate: new Date(),
                         lastPrivacyPolicyAccepted: new Date()
@@ -500,20 +501,20 @@ export default function AuthPage() {
                         </Label>
                       </div>
                       
-                      {/* Marketing Consent (Optional) */}
+                      {/* Email Opt-in */}
                       <div className="flex items-start space-x-2">
                         <Checkbox 
-                          id="marketing-consent" 
-                          name="marketingConsent"
-                          checked={marketingConsent}
-                          onCheckedChange={(checked) => setMarketingConsent(checked === true)}
+                          id="email-opt-in" 
+                          name="emailOptIn"
+                          checked={emailOptIn}
+                          onCheckedChange={(checked) => setEmailOptIn(checked === true)}
                           className="mt-0.5"
                         />
                         <Label
-                          htmlFor="marketing-consent"
+                          htmlFor="email-opt-in"
                           className="text-sm font-normal leading-tight peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                         >
-                          (Optional) I would like to receive updates about Rivu products, services, and features.
+                          I would like to receive emails from Rivu about updates, products, and services.
                         </Label>
                       </div>
                     </div>
