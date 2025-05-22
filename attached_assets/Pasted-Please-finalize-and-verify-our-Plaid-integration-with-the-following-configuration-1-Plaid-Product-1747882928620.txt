@@ -1,0 +1,147 @@
+Please finalize and verify our Plaid integration with the following configuration:
+
+1. Plaid Products Enabled
+
+We have the following products activated on the Plaid account:
+	•	balance
+	•	identity
+	•	transactions
+
+2. Data Fetching
+
+After exchanging the public_token for an access_token, fetch:
+	•	Identity:
+
+const identity = await plaidClient.identityGet({ access_token });
+
+Balance
+
+const balances = await plaidClient.accountsBalanceGet({ access_token });
+
+Transactions (last 90 days):
+
+const transactions = await plaidClient.transactionsGet({
+  access_token,
+  start_date: '2024-02-01', // use dynamic start date
+  end_date: '2024-05-21',
+});
+
+3. Data Storage
+	•	Store identity, balances, and transactions in PostgreSQL, scoped by userId
+	•	Use the correct Drizzle schema for:
+	•	plaid_accounts
+	•	transactions
+	•	user_identity
+
+4. API Endpoints
+
+Create or confirm working backend endpoints:
+	•	GET /api/user/identity
+	•	GET /api/user/balance
+	•	GET /api/user/transactions
+
+These should fetch fresh data from Plaid if access is valid, or return cached data from PostgreSQL otherwise.
+
+5. Security & Auth
+	•	Ensure these routes are protected by JWT authentication
+	•	Data must only be accessible to the userId that owns the access token
+
+Once confirmed, trigger a test sync from the frontend and check for data in the DB and UI.
+
+Please update the Rivu AI Coach logic to optimize GPT usage and reduce token spend:
+
+1. Trigger Conditions
+
+The AI Coach (GPT) should only respond under these conditions:
+	•	A user explicitly clicks a “Get Advice” or “Ask Coach” button
+	•	The frontend sends a specific API request (e.g. POST /api/coach/advice) with intent
+
+2. Prevent Passive GPT Calls
+
+Do not auto-trigger GPT:
+	•	On every page load
+	•	After syncing Plaid data
+	•	After saving budgets, goals, or profile updates (unless paired with an explicit advice flag)
+
+3. Enable Smart Nudges (Optional)
+
+If nudges are enabled:
+	•	Use deterministic logic (non-GPT) to trigger a UI nudge:
+	•	Example: “You’re $100 over budget in ‘Dining’ this month”
+	•	If the user clicks “Explain” or “What should I do?”, then query GPT
+
+4. Monitoring
+
+Add logging to track:
+	•	How often GPT is triggered
+	•	Which routes or events are leading to token usage
+
+5. Security & Budget Control
+
+Ensure any GPT API key is not exposed in frontend
+Use server-side proxy (if not already in place) to mediate all GPT traffic
+
+The goal is to maintain UX quality while minimizing GPT token usage — no passive polling or auto-advice. GPT should feel like a feature, not a drain.
+
+
+Please implement the following product, backend, and analytics improvements to strengthen usability, investor readiness, and growth tracking. The app is currently served entirely from Render (frontend + backend together).
+
+⸻
+
+1. Onboarding Context Questions
+	•	Add a lightweight onboarding flow after signup with:
+	•	“What’s your #1 financial goal?” (free text)
+	•	“How often do you budget?” (radio: Weekly / Monthly / Never)
+	•	Store in user_profile or new onboarding_responses table, tied to userId
+
+⸻
+
+2. Rivu Score History Tracking
+	•	Create a new table: score_history (user_id, score, reason, created_at)
+	•	When GPT generates a new Rivu Score, insert a row with the score + explanation (e.g. “3 missed goals”)
+	•	Expose this via GET /api/score/history for frontend visualization
+
+⸻
+
+3. Plaid Sync Timestamp
+	•	Add last_synced_at to each linked Plaid account
+	•	Update this field whenever identity, balance, or transactions are refreshed
+	•	Frontend should show: “Synced X minutes ago” with optional manual refresh trigger
+
+⸻
+
+4. In-App Feedback Collection
+	•	Add thumbs-up/thumbs-down UI to any GPT advice
+	•	Add optional textarea: “What could be improved?”
+	•	Store in new table user_feedback (user_id, context, sentiment, message, created_at)
+
+⸻
+
+5. PostHog Funnel Setup (Track Events Already Emitting)
+
+Ensure the following events are tracked in PostHog:
+	•	user_signed_up
+	•	plaid_connected
+	•	goal_created
+	•	dashboard_engaged
+	•	asked_coach
+
+No code changes needed here if tracking is already emitting — just confirm the funnel is defined in the PostHog UI so we can visualize activation and drop-off.
+
+⸻
+
+6. Dev-Only Seed Script
+	•	Build a seed script for development or demo that:
+	•	Creates a test user with dummy credentials
+	•	Adds 1 Plaid-linked account, 6 transactions, 2 financial goals, and 1 GPT-generated Rivu Score
+	•	Allow running this in dev or local environments with one command
+
+⸻
+
+7. Backend Guardrail Audit
+	•	Double-check all backend routes:
+	•	Enforce user_id = auth.id in all DB queries
+	•	Return 403 on unauthenticated requests
+	•	Prevent leaking secrets or tokens to logs or frontend
+
+Goal: tighten security and avoid accidental exposure or cross-user data access.
