@@ -13,14 +13,17 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Configure Pool with production settings
+// Configure Pool with production settings optimized for Render
 const poolConfig = {
   connectionString: process.env.DATABASE_URL,
   // Add production-optimized settings
   max: process.env.NODE_ENV === 'production' ? 10 : 3, // More connections for production
   idleTimeoutMillis: 30000, // Close idle connections after 30 seconds
   connectionTimeoutMillis: 5000, // 5 second connection timeout
-  ssl: process.env.NODE_ENV === 'production' // Always use SSL in production
+  ssl: process.env.NODE_ENV === 'production', // Always use SSL in production
+  // Add connection retries for Render's managed databases
+  retries: 5,
+  allowExitOnIdle: true // Close idle connections for scaling environments
 };
 
 // Initialize connection pool

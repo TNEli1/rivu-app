@@ -98,6 +98,10 @@ app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser()); // Parse cookies
 
+// Add input sanitization for all API routes
+import { sanitizeInputs } from './middleware/sanitize';
+app.use('/api', sanitizeInputs);
+
 // Apply CSRF protection
 app.use(setCsrfToken); // Set CSRF token for all routes
 app.use('/api', validateCsrfToken); // Validate CSRF token for API routes
@@ -123,13 +127,14 @@ app.use((req, res, next) => {
     res.setHeader(
       'Content-Security-Policy',
       "default-src 'self'; " +
-      "script-src 'self' https://cdn.plaid.com https://*.vercel.app 'unsafe-inline'; " +
+      "script-src 'self' https://cdn.plaid.com https://*.posthog.com https://*.tryrivu.com https://*.render.com 'unsafe-inline'; " +
       "style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; " +
       "font-src 'self' https://fonts.gstatic.com; " +
       "img-src 'self' data: https:; " +
-      "connect-src 'self' https://api.tryrivu.com https://*.render.com https://cdn.plaid.com https://production.plaid.com; " +
+      "connect-src 'self' https://api.tryrivu.com https://*.render.com https://cdn.plaid.com https://production.plaid.com https://*.posthog.com; " +
       "frame-src 'self' https://cdn.plaid.com; " +
-      "object-src 'none';"
+      "object-src 'none';" + 
+      "form-action 'self';"
     );
   }
   
@@ -166,7 +171,23 @@ app.use((req, res, next) => {
   next();
 });
 
+import { ensureDatabaseConnection, setupGracefulDatabaseShutdown } from './utils/db-connector';
+
 (async () => {
+  // Ensure database connection is established (with retries)
+  // This is especially important for deployment environments
+  if (process.env.NODE_ENV === 'production') {
+    const connected = await ensureDatabaseConnection();
+    if (!connected) {
+      console.error('Failed to connect to database after maximum retries');
+      // Continue startup, but API will likely not work properly
+      // This allows the server to at least serve static files
+    }
+  }
+  
+  // Set up graceful database shutdown
+  setupGracefulDatabaseShutdown();
+  
   // Load API routes using PostgreSQL database
   const server = await registerRoutes(app);
 
@@ -256,8 +277,13 @@ app.use((req, res, next) => {
   if (process.env.NODE_ENV === 'production') {
     configureStaticFileServing(app);
     console.log('✅ Production mode: Serving frontend from static build');
+    console.log('✅ Visit the app at: https://tryrivu.com');
   } else {
+    // In development, we still configure static serving for testing
+    // but show a warning that the frontend should be started separately
+    configureStaticFileServing(app);
     console.log('⚠️ Development mode: Frontend must be served separately via "cd client && npm run dev"');
+    console.log('   However, static files will be served if they exist in dist/public');
   }
 
   // Use PORT environment variable with fallback for Render's dynamic port allocation

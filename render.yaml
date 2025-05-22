@@ -1,21 +1,19 @@
 services:
-  # Main web service that serves both frontend and backend
   - type: web
-    name: rivu-app
+    name: rivu-finance-app
     env: node
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
+    buildCommand: chmod +x ./build.sh && ./build.sh
+    startCommand: NODE_ENV=production node dist/index.js
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 8080
       - key: DATABASE_URL
         fromDatabase:
-          name: rivu-db
+          name: rivu-database
           property: connectionString
+      - fromGroup: rivu-secrets
 
 databases:
-  - name: rivu-db
-    databaseName: rivu_production
-    plan: standard
+  - name: rivu-database
+    databaseName: rivu
+    ipAllowList: [] # only allow internal connections

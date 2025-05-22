@@ -16,6 +16,20 @@ export function configureStaticFileServing(app: Express): void {
   
   console.log(`Configuring static file serving from: ${clientBuildPath}`);
   
+  // Check if the client build directory exists
+  if (!fs.existsSync(clientBuildPath)) {
+    console.warn(`⚠️ Client build directory not found at ${clientBuildPath}`);
+    console.warn('Static file serving will be configured but may not work until the frontend is built');
+    
+    // Create the directory to prevent errors
+    try {
+      fs.mkdirSync(clientBuildPath, { recursive: true });
+      console.log(`Created empty directory at ${clientBuildPath}`);
+    } catch (err) {
+      console.error(`Failed to create directory: ${err}`);
+    }
+  }
+  
   // Serve static assets with caching headers
   app.use(express.static(clientBuildPath, {
     maxAge: '1d', // Cache static assets for 1 day
