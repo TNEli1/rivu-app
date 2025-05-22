@@ -1,0 +1,54 @@
+Please conduct a full audit and double-check all functionality, security, and compliance work completed to date. We need to confirm that Rivu is stable, properly branded, and compliant — especially if international users begin signing up.
+
+⸻
+
+1. Database & Environment
+	•	Confirm the app is connected to the correct Render PostgreSQL database via DATABASE_URL from secrets.
+	•	Ensure no references to NeonDB remain in code or secrets.
+	•	Validate all migrations have been applied and tables (like users) exist and are in use.
+
+⸻
+
+2. Signup & Email Verification
+	•	Confirm the following:
+	•	Email verification flow works end-to-end using Postmark
+	•	Emails are sent from support@tryrivu.com
+	•	No reference to “Rivu Finance” in subject/body
+	•	Emails use Rivu branding and colors (e.g., #00C2A8)
+	•	After signup, users are routed to the login page and blocked from logging in until they verify
+
+⸻
+
+3. Login, Password Reset, and Security
+	•	Confirm:
+	•	Users cannot bypass verification to log in
+	•	Password reset email works and is styled correctly
+	•	POSTMARK_API_KEY is securely used from secrets
+	•	No sensitive data or full tokens are logged
+
+⸻
+
+4. International Readiness
+	•	Ensure the app is ready for non-U.S. users by:
+	•	Detecting and logging user country (via IP or geolocation logic)
+	•	Showing a notice if the user is outside the U.S.
+	•	Privacy policy and terms are linked and include global data use
+	•	Data deletion/export endpoints are built or planned
+
+⸻
+
+5. Final Code & Config Cleanup
+	•	Ensure no duplicate or conflicting API base URL logic (e.g., localhost fallback in prod)
+	•	Remove any deprecated dev/test secrets or config files
+	•	Ensure all logic is environment-aware (NODE_ENV checks, etc.)
+
+⸻
+
+6. Log All Findings in TROUBLESHOOTING_GUIDE.md
+	•	For each confirmed feature or fix, log:
+	•	Title of feature/fix
+	•	Status (working/not working)
+	•	Files updated or confirmed
+	•	Any outstanding gaps
+
+Let me know once everything is reviewed, confirmed, and documented. We need to ensure launch-readiness and avoid regressions.
