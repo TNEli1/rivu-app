@@ -1,9 +1,9 @@
 # Rivu App Troubleshooting Guide
 
-## Registration failures due to Content Security Policy violations (Updated May 22, 2025)
+## Content Security Policy (CSP) Configuration Updates (Updated May 22, 2025)
 
 **Error Message/Behavior:**  
-Users on the production site were unable to register due to Content Security Policy (CSP) violations when trying to connect to the backend at https://rivu-app.onrender.com.
+Users on the production site were unable to register due to conflicting Content Security Policy (CSP) configurations that prevented connections to external services like PostHog and Plaid.
 
 The specific error was:
 ```
@@ -11,25 +11,34 @@ Refused to connect to https://rivu-app.onrender.com/api/register because it viol
 ```
 
 **Cause:**  
-1. The frontend was running with a restrictive Content Security Policy that only allowed connections to the same origin ('self')
-2. In production, the backend runs on a different domain (rivu-app.onrender.com) than the frontend
-3. Missing CSP header to allow connections to the production backend
+1. Conflicting CSP configurations between client-side meta tag and server-side HTTP header
+2. Insufficient allowances for external services like PostHog, Plaid, and the backend API
+3. Redundant CSP rules causing browsers to apply the most restrictive policies
 
 **Fix:**  
-1. Added appropriate CSP meta tag in the client/index.html to allow connections to the production backend
-2. Updated the CSP policy to include all required external domains:
+1. Removed redundant CSP meta tag from client/index.html to eliminate conflicts with server-side CSP
+2. Updated server-side CSP header in server/index.ts with comprehensive allowances:
    ```
-   connect-src 'self' https://rivu-app.onrender.com https://api.tryrivu.com https://cdn.plaid.com https://production.plaid.com https://posthog.com
-   script-src 'self' https://cdn.plaid.com https://posthog.com https://replit.app https://render.com https://replit.com 'unsafe-inline'
+   default-src 'self'; 
+   script-src 'self' 'unsafe-inline' https://cdn.plaid.com https://posthog.com https://replit.com https://replit.app https://render.com; 
+   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; 
+   font-src 'self' https://fonts.gstatic.com; 
+   img-src 'self' data: https:; 
+   connect-src 'self' https://rivu-app.onrender.com https://api.tryrivu.com https://cdn.plaid.com https://production.plaid.com https://posthog.com; 
+   frame-src 'self' https://cdn.plaid.com; 
+   object-src 'none';
    ```
-3. Added SEO-related meta tags to improve indexing and search visibility
-4. Ensured proper CORS configuration in the backend to accept requests from the frontend domain
-5. Added server-side CSP header with comprehensive permissions for all production services
+3. Implemented a cleaner, more maintainable CSP configuration structure
 
 **Files/Lines Modified:**
-- `client/index.html` - Updated CSP meta tag with comprehensive connect-src directive
-- `server/index.ts` - Enhanced server-side CSP header for production environments
-- `server/controllers-ts/userController.ts` - Updated to properly handle email opt-in field
+- `client/index.html` - Removed redundant CSP meta tag to avoid conflicts
+- `server/index.ts` - Updated server-side CSP header with comprehensive configuration
+
+**Verification Process:**
+1. Clear browser cache or hard reload (Cmd+Shift+R or Ctrl+Shift+R) to force fresh CSP
+2. Confirm registration works without "Load failed" errors
+3. Check browser DevTools console for absence of CSP violations
+4. Verify successful requests to PostHog analytics and backend APIs
 
 **Date Applied:** May 22, 2025
 
