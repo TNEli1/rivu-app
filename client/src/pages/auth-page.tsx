@@ -293,6 +293,7 @@ export default function AuthPage() {
                         username: formData.get('username') as string,
                         email: formData.get('email') as string,
                         password: formData.get('password') as string,
+                        passwordConfirmation: formData.get('confirmPassword') as string,
                         firstName: formData.get('firstName') as string || undefined,
                         lastName: formData.get('lastName') as string || undefined
                       });
