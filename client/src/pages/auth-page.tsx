@@ -21,6 +21,8 @@ export default function AuthPage() {
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
   const [termsAgreed, setTermsAgreed] = useState(false);
+  const [dataConsent, setDataConsent] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [redirectPath, setRedirectPath] = useState("/dashboard");
   
   // Check for signup parameter in URL
@@ -295,7 +297,13 @@ export default function AuthPage() {
                         password: formData.get('password') as string,
                         passwordConfirmation: formData.get('confirmPassword') as string,
                         firstName: formData.get('firstName') as string || undefined,
-                        lastName: formData.get('lastName') as string || undefined
+                        lastName: formData.get('lastName') as string || undefined,
+                        // Privacy consent fields
+                        dataConsentGiven: dataConsent,
+                        marketingConsentGiven: marketingConsent,
+                        // Capture timestamp of consent
+                        dataConsentDate: new Date(),
+                        lastPrivacyPolicyAccepted: new Date()
                       });
                     }}
                     className="space-y-4"
@@ -445,27 +453,69 @@ export default function AuthPage() {
                       )}
                     </div>
 
-                    {/* Terms Agreement Checkbox */}
-                    <div className="flex items-center space-x-2 py-2">
-                      <Checkbox 
-                        id="terms" 
-                        checked={termsAgreed}
-                        onCheckedChange={(checked) => setTermsAgreed(checked === true)}
-                        required
-                      />
-                      <Label
-                        htmlFor="terms"
-                        className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        I agree to the{" "}
-                        <Link href="/terms" className="text-primary hover:underline" target="_blank">
-                          Terms of Service
-                        </Link>{" "}
-                        and{" "}
-                        <Link href="/privacy" className="text-primary hover:underline" target="_blank">
-                          Privacy Policy
-                        </Link>
-                      </Label>
+                    {/* Terms & Data Processing Consent */}
+                    <div className="space-y-3 py-2">
+                      {/* Terms Agreement Checkbox */}
+                      <div className="flex items-start space-x-2">
+                        <Checkbox 
+                          id="terms" 
+                          checked={termsAgreed}
+                          onCheckedChange={(checked) => setTermsAgreed(checked === true)}
+                          required
+                          className="mt-0.5"
+                        />
+                        <Label
+                          htmlFor="terms"
+                          className="text-sm font-normal leading-tight peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          I agree to the{" "}
+                          <Link href="/terms" className="text-primary hover:underline" target="_blank">
+                            Terms of Service
+                          </Link>{" "}
+                          and{" "}
+                          <Link href="/privacy" className="text-primary hover:underline" target="_blank">
+                            Privacy Policy
+                          </Link>
+                        </Label>
+                      </div>
+                      
+                      {/* GDPR Data Processing Consent */}
+                      <div className="flex items-start space-x-2">
+                        <Checkbox 
+                          id="data-consent" 
+                          name="dataConsent"
+                          checked={dataConsent}
+                          onCheckedChange={(checked) => setDataConsent(checked === true)}
+                          required
+                          className="mt-0.5"
+                        />
+                        <Label
+                          htmlFor="data-consent"
+                          className="text-sm font-normal leading-tight peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          I consent to Rivu collecting and processing my personal data as described in the{" "}
+                          <Link href="/privacy" className="text-primary hover:underline" target="_blank">
+                            Privacy Policy
+                          </Link>.
+                        </Label>
+                      </div>
+                      
+                      {/* Marketing Consent (Optional) */}
+                      <div className="flex items-start space-x-2">
+                        <Checkbox 
+                          id="marketing-consent" 
+                          name="marketingConsent"
+                          checked={marketingConsent}
+                          onCheckedChange={(checked) => setMarketingConsent(checked === true)}
+                          className="mt-0.5"
+                        />
+                        <Label
+                          htmlFor="marketing-consent"
+                          className="text-sm font-normal leading-tight peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          (Optional) I would like to receive updates about Rivu products, services, and features.
+                        </Label>
+                      </div>
                     </div>
                     
                     <Button 

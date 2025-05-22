@@ -1,45 +1,59 @@
-# Rivu Troubleshooting Guide
+# Rivu Finance - Troubleshooting Guide
 
-## Email verification routing and branding
+## Initial international privacy compliance (GDPR-lite)
 
-### Tasks Completed
+### Features added
 
-- **Enhanced login security**: Updated login controller to enforce email verification before allowing access
-- **Email verification endpoints**: Added routes for email verification and resend functionality
-- **Email branding**: Verified that email templates use correct Rivu branding
-  - Teal color (#00C2A8)
-  - Sent from support@tryrivu.com
-  - Clearly identifies as "Rivu"
-  - Does not reference "Rivu Finance"
-- **Security**: Verification links expire after 24 hours
-- **Routing**: Users are redirected to login page after successful verification
-- **User experience**: Unverified users receive a clear message to check their email
+- **Explicit consent checkboxes** during signup 
+  - Data processing consent (required)
+  - Marketing consent (optional)
+  - Terms of service and privacy policy acceptance
 
-### Files Modified
+- **Privacy management in user settings**
+  - Data export functionality (JSON and CSV formats)
+  - Account deletion with confirmation (right to be forgotten)
+  - Privacy contact information display
 
-- `server/controllers-ts/userController.ts` - Modified login flow to enforce email verification
-- `server/routes.ts` - Added email verification endpoints
-- `server/services/emailService.ts` - Verified Postmark integration and email templates
+- **Database privacy tracking**
+  - User consent logging with timestamps and IP addresses
+  - Privacy policy acceptance tracking
+  - Country code detection and storage
 
-### Confirmation
+- **Backend compliance routes**
+  - Data export endpoints (JSON/CSV)
+  - Account deletion endpoint
+  - Privacy consent logging
+  - Country detection capability
 
-Email verification, login gating, and branding are now live in production on tryrivu.com. The system:
+### Routes created/modified
 
-1. Prevents login for unverified users
-2. Provides clear messaging when verification is needed
-3. Uses proper Rivu branding in all communications
-4. Securely handles verification tokens with proper expiration
-5. Properly integrates with Postmark for reliable email delivery
+- Added 5 new privacy-related API endpoints:
+  - `GET /api/privacy/export-data` - Export all user data in JSON format
+  - `GET /api/privacy/export-data/csv` - Export transaction data in CSV format
+  - `DELETE /api/privacy/delete-account` - Delete user account and all associated data
+  - `POST /api/privacy/consent` - Log user's privacy consent choices
+  - `POST /api/privacy/detect-country` - Detect and store user's country
 
-### Troubleshooting Email Issues
+### Files impacted
 
-If users report not receiving verification emails:
+#### Database schema
+- `shared/schema.ts` - Added privacy fields to user schema and created user_consents table
+- `server/migrations/privacy-compliance-migration.ts` - Migration to add privacy-related database columns
 
-1. Check that POSTMARK_API_KEY is properly set in the environment
-2. Verify the user's email address for typos
-3. Check spam/junk folders
-4. Use the resend verification endpoint:
-   ```
-   POST /api/send-verification
-   { "email": "user@example.com" }
-   ```
+#### Frontend
+- `client/src/pages/auth-page.tsx` - Added explicit consent checkboxes during signup
+- `client/src/components/settings/PrivacySettingsSection.tsx` - New component for privacy controls
+- `client/src/pages/settings-page.tsx` - Integrated new privacy settings component
+- `client/src/hooks/use-auth.tsx` - Updated User and RegisterData types to include privacy fields
+
+#### Backend
+- `server/controllers-ts/privacyController.ts` - Added controller for privacy-related endpoints
+- `server/routes.ts` - Added routes for privacy endpoints
+
+## Implementation notes
+
+- The implementation follows a "GDPR-lite" approach that covers the basic requirements for international privacy compliance
+- Export functionality includes both complete data export (JSON) and transactions-only export (CSV)
+- Account deletion fully removes all user data through cascading database deletes
+- All consent actions are logged with timestamps and IP addresses for compliance purposes
+- International users receive a notice that Rivu currently only supports US bank accounts

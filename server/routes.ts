@@ -152,6 +152,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.get(`${apiPath}/verify-reset-token/:token`, verifyResetToken);
     app.post(`${apiPath}/reset-password/:token`, resetPassword);
     
+    // Import privacy controller for GDPR compliance
+    const {
+      exportUserData,
+      exportUserDataCSV,
+      deleteUserAccount,
+      logPrivacyConsent,
+      detectCountry
+    } = await import('./controllers-ts/privacyController');
+    
+    // Privacy compliance routes
+    app.get(`${apiPath}/privacy/export-data`, protect, exportUserData);
+    app.get(`${apiPath}/privacy/export-data/csv`, protect, exportUserDataCSV);
+    app.delete(`${apiPath}/privacy/delete-account`, protect, deleteUserAccount);
+    app.post(`${apiPath}/privacy/consent`, protect, logPrivacyConsent);
+    app.post(`${apiPath}/privacy/detect-country`, protect, detectCountry);
+    
     // Import transaction account controller
     const {
       getAccounts,

@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PrivacySettingsSection from "@/components/settings/PrivacySettingsSection";
 import OnboardingTutorial from "@/components/dashboard/OnboardingTutorial";
 import {
   AlertDialog,
@@ -218,61 +219,8 @@ export default function SettingsPage() {
           </TabsContent>
           
           <TabsContent value="privacy">
-            <Card className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Info className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold">Data & Privacy</h2>
-              </div>
-              
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Your Data</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Rivu prioritizes your privacy. We only collect data that's necessary to provide you with our financial services.
-                  </p>
-                  
-                  <div className="bg-primary/5 p-4 rounded-lg border mb-6">
-                    <h4 className="font-medium mb-2">Data We Collect</h4>
-                    <ul className="list-disc pl-5 text-sm space-y-1 text-muted-foreground">
-                      <li>Basic account information (name, email)</li>
-                      <li>Financial information you choose to provide</li>
-                      <li>Transaction data when you connect your bank accounts</li>
-                      <li>Goals and budget settings you create</li>
-                      <li>App usage to improve your experience</li>
-                    </ul>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Data Deletion</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    You can request complete deletion of your account and all associated data at any time.
-                  </p>
-                  <a 
-                    href="mailto:support@tryrivu.com?subject=Data%20Deletion%20Request&body=I%20would%20like%20to%20request%20deletion%20of%20my%20Rivu%20account%20and%20all%20associated%20data.%20My%20email%20address%20associated%20with%20the%20account%20is%3A%20%5BYOUR%20EMAIL%5D"
-                    className="inline-block"
-                  >
-                    <Button variant="outline" className="text-destructive">
-                      Request Data Deletion
-                    </Button>
-                  </a>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Email support@tryrivu.com with "Data Deletion Request" as the subject.
-                    We'll process your request within 30 days as required by applicable privacy laws.
-                  </p>
-                </div>
-                
-                <div className="border-t pt-4 mt-4">
-                  <h3 className="text-lg font-medium mb-2">Security Practices</h3>
-                  <ul className="list-disc pl-5 text-sm space-y-1 text-muted-foreground">
-                    <li>All data is encrypted in transit and at rest</li>
-                    <li>We never store your bank credentials</li>
-                    <li>Regular security audits and testing</li>
-                    <li>Bank connections are secured through Plaid's industry-leading protocols</li>
-                  </ul>
-                </div>
-              </div>
-            </Card>
+            {/* Import our enhanced privacy settings component with GDPR compliance features */}
+            <PrivacySettingsSection />
           </TabsContent>
           
           <TabsContent value="rivu-score">

@@ -36,6 +36,12 @@ export type User = {
   themePreference?: 'light' | 'dark';
   coachTone?: 'encouraging' | 'direct' | 'strict'; // Coach tone preference
   tutorialCompleted?: boolean; // Onboarding tutorial status
+  // Privacy and compliance fields
+  countryCode?: string;
+  dataConsentGiven?: boolean;
+  dataConsentDate?: string;
+  marketingConsentGiven?: boolean;
+  lastPrivacyPolicyAccepted?: string;
   createdAt?: string;
   updatedAt?: string;
   lastLogin?: string;
@@ -70,6 +76,12 @@ type RegisterData = {
   passwordConfirmation: string;
   firstName?: string;
   lastName?: string;
+  // Privacy and compliance fields
+  dataConsentGiven?: boolean;
+  marketingConsentGiven?: boolean;
+  dataConsentDate?: Date;
+  lastPrivacyPolicyAccepted?: Date;
+  countryCode?: string;
 };
 
 // Profile update data

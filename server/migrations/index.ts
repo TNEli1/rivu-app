@@ -3,6 +3,7 @@ import { runMigration as createScoreHistory } from './add-score-history-fields';
 import { runMigration as addUserStatusFields } from './add-user-status-fields';
 import { runMigration as addLastLoginColumn } from './add-last-login-column';
 import { checkAndMarkInactiveUsers } from './inactiveUsers';
+import { runPrivacyMigration } from './privacy-compliance-migration';
 
 /**
  * Run all migrations in the correct order
@@ -22,6 +23,9 @@ export async function runMigrations() {
     
     // Check for users who haven't been active in 90+ days and mark them as inactive
     await checkAndMarkInactiveUsers();
+    
+    // Run privacy compliance migration
+    await runPrivacyMigration();
     
     console.log('All migrations completed successfully');
   } catch (error) {

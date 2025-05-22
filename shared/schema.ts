@@ -30,6 +30,12 @@ export const users = pgTable("users", {
   experienceLevel: text("experience_level"),
   demographicsCompleted: boolean("demographics_completed").default(false),
   skipDemographics: boolean("skip_demographics").default(false),
+  // Privacy and compliance fields
+  countryCode: text("country_code"), // For regional detection
+  dataConsentGiven: boolean("data_consent_given").default(false), // GDPR consent tracking
+  dataConsentDate: timestamp("data_consent_date"), // When consent was given
+  marketingConsentGiven: boolean("marketing_consent_given").default(false), // Optional marketing consent
+  lastPrivacyPolicyAccepted: timestamp("last_privacy_policy_accepted"), // When user last accepted privacy policy
   // Metrics
   loginCount: integer("login_count").default(0),
   lastLogin: timestamp("last_login"),
@@ -62,6 +68,12 @@ export const insertUserSchema = createInsertSchema(users).pick({
   accountCreationDate: true,
   loginCount: true,
   lastLogin: true,
+  // Privacy and compliance fields
+  countryCode: true,
+  dataConsentGiven: true,
+  dataConsentDate: true, 
+  marketingConsentGiven: true,
+  lastPrivacyPolicyAccepted: true,
 });
 
 // Budget Categories
@@ -405,3 +417,27 @@ export const insertPlaidUserIdentitySchema = createInsertSchema(plaidUserIdentit
 
 export type PlaidUserIdentity = typeof plaidUserIdentities.$inferSelect;
 export type InsertPlaidUserIdentity = z.infer<typeof insertPlaidUserIdentitySchema>;
+
+// User Consent Logs - Track all consent-related events for compliance
+export const userConsents = pgTable("user_consents", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  consentType: text("consent_type").notNull(), // 'data_processing', 'marketing', 'privacy_policy_acceptance', etc.
+  ipAddress: text("ip_address"), // IP address when consent was given
+  userAgent: text("user_agent"), // Browser/device info
+  consentValue: boolean("consent_value").default(true), // Whether consent was given or withdrawn
+  consentVersion: text("consent_version"), // Version of policy/terms agreed to
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertUserConsentSchema = createInsertSchema(userConsents).pick({
+  userId: true,
+  consentType: true,
+  ipAddress: true,
+  userAgent: true,
+  consentValue: true,
+  consentVersion: true,
+});
+
+export type UserConsent = typeof userConsents.$inferSelect;
+export type InsertUserConsent = z.infer<typeof insertUserConsentSchema>;
