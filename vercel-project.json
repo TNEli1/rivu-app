@@ -1,0 +1,11 @@
+{
+  "projectId": "rivu-client",
+  "orgId": "rivu",
+  "settings": {
+    "framework": "vite",
+    "buildCommand": "cd client && npm install && npm run build",
+    "outputDirectory": "client/dist",
+    "rootDirectory": "client",
+    "devCommand": "npm run dev"
+  }
+}
