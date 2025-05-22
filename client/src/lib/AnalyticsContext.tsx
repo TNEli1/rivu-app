@@ -47,6 +47,18 @@ interface AnalyticsContextProps {
     count: number,
     categories?: string[]
   ) => void;
+  
+  // Dashboard engagement tracking
+  trackDashboardEngagement: (
+    featureClicked: string,
+    actionTaken?: string
+  ) => void;
+  
+  // Page view tracking (enhanced)
+  trackPageView: (
+    pageName: string,
+    properties?: Record<string, any>
+  ) => void;
 }
 
 // Create the context with default values
@@ -60,6 +72,8 @@ const AnalyticsContext = createContext<AnalyticsContextProps>({
   trackBudgetSet: () => {},
   trackPlaidConnected: () => {},
   trackTransactionAdded: () => {},
+  trackDashboardEngagement: () => {},
+  trackPageView: () => {},
 });
 
 // Provider component
@@ -148,6 +162,28 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     });
   };
   
+  // Dashboard engagement tracking
+  const trackDashboardEngagement = (
+    featureClicked: string,
+    actionTaken?: string
+  ) => {
+    posthog.capture('dashboard_engagement', {
+      feature: featureClicked,
+      action: actionTaken || 'viewed',
+    });
+  };
+  
+  // Enhanced page view tracking
+  const trackPageView = (
+    pageName: string,
+    properties?: Record<string, any>
+  ) => {
+    posthog.capture('page_viewed', {
+      page: pageName,
+      ...properties
+    });
+  };
+  
   // Create the value object with all tracking functions
   const value = {
     posthog,
@@ -159,6 +195,8 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     trackBudgetSet,
     trackPlaidConnected,
     trackTransactionAdded,
+    trackDashboardEngagement,
+    trackPageView
   };
   
   return (

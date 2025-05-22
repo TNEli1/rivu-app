@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { RefreshCw, TrendingUp, TrendingDown, Info, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'wouter';
+import { useAnalytics } from '@/lib/AnalyticsContext';
 import { 
   Tooltip,
   TooltipContent,
@@ -77,6 +78,7 @@ export default function RivuScore() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const { trackDashboardEngagement } = useAnalytics();
   const [timeRange, setTimeRange] = useState('3months'); // '1month', '3months', '6months', 'year'
   const [showHistory, setShowHistory] = useState(false);
   
@@ -113,11 +115,17 @@ export default function RivuScore() {
     },
     onMutate: () => {
       setIsRefreshing(true);
+      // Track when a user initiates score refresh
+      trackDashboardEngagement('rivu_score', 'refresh_initiated');
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       // Invalidate and refetch all relevant queries
       queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] });
+      
+      // Track successful score refresh with current score value
+      trackDashboardEngagement('rivu_score', 'refresh_completed');
+      
       toast({
         title: "Rivu Score Refreshed",
         description: "Your financial health score has been recalculated.",
@@ -319,7 +327,16 @@ export default function RivuScore() {
             variant="ghost" 
             size="sm" 
             className="h-6 text-xs px-2"
-            onClick={() => setShowHistory(!showHistory)}
+            onClick={() => {
+              const newState = !showHistory;
+              setShowHistory(newState);
+              
+              // Track when users view their score history details
+              trackDashboardEngagement(
+                'rivu_score_history', 
+                newState ? 'expanded' : 'collapsed'
+              );
+            }}
           >
             {showHistory ? 'Hide Details' : 'Show Details'}
           </Button>

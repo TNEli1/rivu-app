@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { useAnalytics } from '@/lib/AnalyticsContext';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -123,6 +124,7 @@ export default function CSVUploadDialog({ isOpen, onClose }: CSVUploadDialogProp
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { trackTransactionAdded } = useAnalytics();
 
   // Parse CSV data from file
   const parseCSV = (text: string): CSVData => {
@@ -390,6 +392,15 @@ export default function CSVUploadDialog({ isOpen, onClose }: CSVUploadDialogProp
       const verifyTransactions = await fetch('/api/transactions');
       const refreshedTransactions = await verifyTransactions.json();
       console.log(`Transaction data refreshed after CSV import: ${refreshedTransactions.length} transactions now available`);
+      
+      // Track successful CSV import in PostHog
+      trackTransactionAdded(
+        'csv',
+        result.imported, 
+        csvData && columnMapping.category ? 
+          Array.from(new Set(csvData.data.map(row => row[columnMapping.category]))) : 
+          ['Uncategorized'] 
+      );
       
       toast({
         title: "Import successful",

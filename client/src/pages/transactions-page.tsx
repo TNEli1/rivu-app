@@ -321,6 +321,13 @@ export default function TransactionsPage() {
       queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] });
       
+      // Track transaction creation in PostHog
+      trackTransactionAdded(
+        'manual', 
+        1, 
+        [formData.category || 'Uncategorized']
+      );
+      
       setIsAddDialogOpen(false);
       resetForm();
       toast({

@@ -10,6 +10,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useTheme } from "@/hooks/use-theme";
 import { Link } from "wouter";
+import { useAnalytics } from "@/lib/AnalyticsContext";
 import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
@@ -56,6 +57,7 @@ type Nudge = {
 // Component to display nudges as a banner or card on the dashboard
 export default function NudgesBanner() {
   const { theme } = useTheme();
+  const { trackDashboardEngagement } = useAnalytics();
   const [expandedNudgeId, setExpandedNudgeId] = useState<number | null>(null);
   
   // Track which nudges have been handled locally
@@ -93,6 +95,12 @@ export default function NudgesBanner() {
       // Immediately mark as handled locally
       setHandledNudgeIds(prev => [...prev, nudgeId]);
       
+      // Track nudge dismissal for analytics
+      const nudge = filteredApiNudges.find(n => n.id === nudgeId);
+      if (nudge) {
+        trackDashboardEngagement('nudge_dismissed', nudge.type);
+      }
+      
       try {
         // For API nudges
         const res = await apiRequest('PUT', `/api/nudges/${nudgeId}/dismiss`);
@@ -114,6 +122,12 @@ export default function NudgesBanner() {
     mutationFn: async (nudgeId: number) => {
       // Immediately mark as handled locally
       setHandledNudgeIds(prev => [...prev, nudgeId]);
+      
+      // Track nudge completion for analytics
+      const nudge = filteredApiNudges.find(n => n.id === nudgeId);
+      if (nudge) {
+        trackDashboardEngagement('nudge_completed', nudge.type);
+      }
       
       try {
         // For API nudges
@@ -297,7 +311,7 @@ export default function NudgesBanner() {
                     </Button>
                     
                     {nudge.actionPath && nudge.actionText && (
-                      <Link to={nudge.actionPath}>
+                      <Link to={nudge.actionPath} onClick={() => trackDashboardEngagement('nudge_action_clicked', nudge.type)}>
                         <Button 
                           variant="outline" 
                           size="sm" 
@@ -312,7 +326,15 @@ export default function NudgesBanner() {
                     <Button 
                       variant="link" 
                       size="sm" 
-                      onClick={() => setExpandedNudgeId(expandedNudgeId === nudge.id ? null : nudge.id)}
+                      onClick={() => {
+                        const newExpandedState = expandedNudgeId === nudge.id ? null : nudge.id;
+                        setExpandedNudgeId(newExpandedState);
+                        // Track when users expand/collapse nudges
+                        trackDashboardEngagement(
+                          newExpandedState ? 'nudge_expanded' : 'nudge_collapsed', 
+                          nudge.type
+                        );
+                      }}
                       className="text-xs"
                     >
                       {expandedNudgeId === nudge.id ? (
