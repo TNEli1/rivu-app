@@ -1,282 +1,116 @@
-import { storage } from '../storage';
 import { Request, Response } from 'express';
 import multer from 'multer';
+import { storage } from '../storage';
 import path from 'path';
 import fs from 'fs';
-import { InsertTransaction } from '@shared/schema';
+import { z } from 'zod';
 
-// Set up multer for temporary file storage
-const upload = multer({
-  dest: path.join(process.cwd(), 'tmp'),
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit
+// Custom Request type that includes user property
+interface AuthenticatedRequest extends Request {
+  user?: {
+    id: number;
+    username?: string;
+    [key: string]: any;
+  };
+}
+
+// Configure multer for file upload
+const csvUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      const uploadDir = path.join(process.cwd(), 'tmp');
+      
+      // Create directory if it doesn't exist
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      
+      cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+      // Create unique filename with timestamp and random string
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      cb(null, file.fieldname + '-' + uniqueSuffix + '.csv');
+    }
+  }),
   fileFilter: (req, file, cb) => {
     // Accept only CSV files
-    if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only CSV files are allowed'));
+    if (file.mimetype !== 'text/csv' && !file.originalname.endsWith('.csv')) {
+      return cb(new Error('Only CSV files are allowed'));
     }
+    cb(null, true);
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB
   }
 });
 
-// Export the middleware for route setup
-export const uploadCSV = upload.single('file');
+// Middleware for handling file upload
+export const uploadCSV = csvUpload.single('csv');
 
-/**
- * @desc    Import transactions from CSV file
- */
-export const importCSV = async (req: Request, res: Response) => {
+// Controller for processing CSV import
+export const importTransactionsFromCSV = async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.file) {
-      return res.status(400).json({
-        message: 'No file uploaded',
-        code: 'MISSING_FILE'
-      });
+      return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    const userId = (req as any).user.id;
-    
-    // Read the CSV file
-    const csvData = fs.readFileSync(req.file.path, 'utf8');
-    
-    // Import transactions from the CSV
-    const result = await storage.importTransactionsFromCSV(userId, csvData);
-    
-    // Delete the temporary file
-    fs.unlinkSync(req.file.path);
-    
-    res.json({
-      message: `Successfully imported ${result.imported} transactions (${result.duplicates} potential duplicates detected)`,
-      importedCount: result.imported,
-      duplicatesCount: result.duplicates
-    });
-  } catch (error: any) {
-    console.error('Error importing CSV:', error);
-    
-    // Clean up temporary file if it exists
-    if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
+    // Get user ID from authenticated session
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: 'User not authenticated' });
     }
     
-    res.status(500).json({
-      message: error.message || 'Error importing transactions from CSV',
-      code: 'IMPORT_ERROR'
+    // Convert userId to number if it's a string (which it often is from auth)
+    const userId = typeof req.user.id === 'string' ? parseInt(req.user.id, 10) : req.user.id;
+    
+    console.log(`Importing CSV transactions for authenticated user ID: ${userId}`);
+    
+    // Read file content
+    const filePath = req.file.path;
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
+    
+    // Import transactions with explicit user ID verification
+    const result = await storage.importTransactionsFromCSV(userId, fileContent);
+    
+    // Delete temporary file
+    fs.unlinkSync(filePath);
+    
+    return res.status(200).json({
+      message: 'CSV import completed',
+      imported: result.imported,
+      duplicates: result.duplicates
+    });
+  } catch (error) {
+    console.error('CSV import error:', error);
+    return res.status(500).json({ 
+      message: error instanceof Error ? error.message : 'Failed to import transactions from CSV' 
     });
   }
 };
 
-/**
- * @desc    Handle errors from multer middleware
- */
-export const handleMulterError = (err: any, req: Request, res: Response, next: Function) => {
-  if (err instanceof multer.MulterError) {
-    // A Multer error occurred when uploading
-    if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({
-        message: 'File is too large. Maximum size is 2MB',
-        code: 'FILE_TOO_LARGE'
-      });
-    }
-    
-    return res.status(400).json({
-      message: `Upload error: ${err.message}`,
-      code: 'UPLOAD_ERROR'
-    });
-  } else if (err) {
-    // An unknown error occurred
-    return res.status(500).json({
-      message: err.message || 'An unknown error occurred during upload',
-      code: 'UNKNOWN_ERROR'
-    });
-  }
-  
-  // If no error, continue
-  next();
-};
-
-/**
- * @desc    Import transactions from mapped CSV data
- * Expected request body format:
- * {
- *   transactions: [
- *     { date: '2023-01-01', amount: '100', merchant: 'Store', category: 'Shopping', ... },
- *     ...
- *   ]
- * }
- */
-export const importMappedTransactions = async (req: Request, res: Response) => {
+// Controller for marking a transaction as not a duplicate
+export const markTransactionAsNotDuplicate = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    // Get proper user ID from authenticated session (convert string to number)
-    const userId = parseInt((req as any).user.id, 10);
-    console.log('Importing mapped transactions for user:', userId);
+    const transactionId = parseInt(req.params.id);
     
-    if (!req.body || !req.body.transactions || !Array.isArray(req.body.transactions)) {
-      return res.status(400).json({
-        message: 'Invalid request format. Expected an array of transactions.',
-        code: 'INVALID_FORMAT'
-      });
+    if (isNaN(transactionId)) {
+      return res.status(400).json({ message: 'Invalid transaction ID' });
     }
     
-    const transactions = req.body.transactions;
+    const result = await storage.markTransactionAsNotDuplicate(transactionId);
     
-    if (transactions.length === 0) {
-      return res.status(400).json({
-        message: 'No transactions to import',
-        code: 'EMPTY_DATA'
-      });
+    if (!result) {
+      return res.status(404).json({ message: 'Transaction not found' });
     }
     
-    let importedCount = 0;
-    let duplicateCount = 0;
-    
-    // Process each transaction from the mapped data
-    for (const transaction of transactions) {
-      // Validate required fields
-      if (!transaction.date || !transaction.amount || !transaction.merchant) {
-        continue; // Skip invalid entries
-      }
-      
-      try {
-        // Prepare transaction data
-        let type = transaction.type || 'expense';
-        
-        // If amount is negative, it's an expense, and we need a positive number
-        let amount = transaction.amount.replace(/[^0-9.-]/g, ''); // Remove currency symbols
-        if (amount.startsWith('-')) {
-          type = 'expense';
-          amount = amount.substring(1); // Remove negative sign
-        } else if (type.toLowerCase().includes('income') || 
-                  type.toLowerCase().includes('deposit') ||
-                  type.toLowerCase().includes('credit')) {
-          type = 'income';
-        }
-        
-        // Parse date - try to handle various formats
-        let transactionDate;
-        try {
-          // Try to parse the date (handle both YYYY-MM-DD and MM/DD/YYYY formats)
-          if (transaction.date.includes('/')) {
-            // MM/DD/YYYY format
-            const [month, day, year] = transaction.date.split('/');
-            transactionDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-          } else {
-            // Assume YYYY-MM-DD format
-            transactionDate = new Date(transaction.date);
-          }
-          
-          // Check if date is valid
-          if (isNaN(transactionDate.getTime())) {
-            throw new Error('Invalid date');
-          }
-        } catch (error) {
-          // Default to today if date parsing fails
-          transactionDate = new Date();
-        }
-        
-        // CRITICAL FIX: Handle date without timezone shifting
-        let fixedDate: Date;
-        // If we've already created a Date object
-        if (transactionDate instanceof Date) {
-          // Set time to noon to prevent timezone issues
-          fixedDate = new Date(
-            transactionDate.getFullYear(),
-            transactionDate.getMonth(), 
-            transactionDate.getDate(),
-            12, 0, 0, 0
-          );
-        } else {
-          // Fallback to today at noon
-          const today = new Date();
-          fixedDate = new Date(
-            today.getFullYear(),
-            today.getMonth(),
-            today.getDate(),
-            12, 0, 0, 0
-          );
-        }
-        
-        console.log(`CSV Date: Original=${transaction.date}, Parsed=${fixedDate.toISOString()}`);
-        console.log(`Preparing CSV transaction for user ID: ${userId}`);
-        
-        const transactionData: InsertTransaction = {
-          userId, // Use the authenticated user's ID
-          amount,
-          date: fixedDate,
-          merchant: transaction.merchant,
-          category: transaction.category || 'Uncategorized',
-          subcategory: transaction.subcategory || '',
-          account: transaction.account || 'Imported',
-          type,
-          notes: transaction.notes || '',
-          source: 'csv',
-          isDuplicate: false
-        };
-        
-        // Verify critical fields before submission
-        if (!transactionData.userId || isNaN(Number(transactionData.userId))) {
-          console.error('Invalid user ID for CSV transaction:', transactionData.userId);
-          throw new Error('Invalid user ID for transaction');
-        }
-        
-        console.log('Creating transaction:', {
-          userId: transactionData.userId,
-          amount: transactionData.amount,
-          merchant: transactionData.merchant
-        });
-        
-        // Check for duplicates
-        const isDuplicate = await storage.checkForDuplicateTransactions(transactionData);
-        if (isDuplicate) {
-          duplicateCount++;
-          transactionData.isDuplicate = true;
-        }
-        
-        // CRITICAL FIX: Force CSV transactions to use authenticated user ID
-        try {
-          // Explicitly set userId to ensure it matches the authenticated user
-          transactionData.userId = userId;
-          
-          // Create the transaction with the verified user ID
-          const newTransaction = await storage.createTransaction(transactionData);
-          console.log(`Successfully created CSV transaction ID: ${newTransaction.id} for user ${newTransaction.userId}`);
-          importedCount++;
-        } catch (txError) {
-          console.error('Failed to create transaction in CSV import:', txError);
-          throw txError; // Re-throw to be caught by outer try-catch
-        }
-      } catch (err) {
-        console.error('Error importing mapped transaction:', err);
-        // Continue with next transaction
-      }
-    }
-    
-    // Update user's lastTransactionDate to trigger nudge system
-    if (importedCount > 0) {
-      await storage.updateUser(userId, {
-        lastTransactionDate: new Date()
-      });
-      
-      // Recalculate Rivu score to reflect the new transactions
-      await storage.calculateRivuScore(userId);
-    }
-    
-    // Get the newly imported transactions to verify
-    const allTransactions = await storage.getTransactions(userId);
-    console.log(`After CSV import: User ${userId} now has ${allTransactions.length} transactions total`);
-    
-    // Return the result with detailed information
-    res.json({
-      message: `Successfully imported ${importedCount} transactions (${duplicateCount} potential duplicates detected)`,
-      imported: importedCount,
-      duplicates: duplicateCount,
-      totalTransactions: allTransactions.length
+    return res.status(200).json({ 
+      message: 'Transaction marked as not a duplicate',
+      success: true
     });
-  } catch (error: any) {
-    console.error('Error importing mapped transactions:', error);
-    
-    res.status(500).json({
-      message: error.message || 'Error importing transactions',
-      code: 'IMPORT_ERROR'
+  } catch (error) {
+    console.error('Error marking transaction as not duplicate:', error);
+    return res.status(500).json({ 
+      message: error instanceof Error ? error.message : 'Failed to update transaction'
     });
   }
 };
