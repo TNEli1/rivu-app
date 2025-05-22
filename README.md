@@ -1,64 +1,93 @@
 # Rivu Finance Platform
 
-A modern personal finance platform that combines intelligent financial tracking with advanced user engagement and security features.
+Rivu is an AI-powered personal finance platform that combines intelligent financial tracking with advanced user engagement and security features.
 
-## Migration from Replit to Production
+## Project Structure
 
-This repository has been prepared for migration from Replit to:
-- Frontend → Vercel (https://tryrivu.com)
-- Backend → Render (Node.js + Express)
-- Database → PostgreSQL on Render
+This project is organized for separate deployment:
 
-## Quick Start
+- `/client` - Frontend React application (deployed to Vercel)
+- `/server` - Backend Express API (deployed to Render)
+- `/shared` - Shared TypeScript types and schemas
 
-### Development
-```bash
-# Install dependencies
-npm install
+## Frontend (Vercel Deployment)
 
-# Run in development mode
-npm run dev
-```
+The frontend is a React application built with:
+- TypeScript
+- Tailwind CSS
+- Shadcn UI components
+- React Query
+- Wouter for routing
 
-### Production
-```bash
-# Build for production
-npm run build
+### Deployment Steps
 
-# Start production server
-npm run start
-```
+1. Connect your GitHub repository to Vercel
+2. Configure the build settings:
+   - Framework Preset: Vite
+   - Root Directory: `client`
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+3. Add environment variables in the Vercel dashboard:
+   ```
+   VITE_API_URL=https://api.tryrivu.com
+   ```
+4. Deploy!
 
-## Environment Configuration
+## Backend (Render Deployment)
 
-See `.env.example` for required environment variables.
+The backend is an Express API with:
+- Node.js
+- Express
+- PostgreSQL with Drizzle ORM
+- TypeScript
+- JWT Authentication
+- Plaid API Integration
+- OpenAI Integration
 
-## Database Migration
+### Deployment Steps
 
-The application uses Drizzle ORM with PostgreSQL. To apply database schema changes:
+1. Connect your GitHub repository to Render
+2. Configure the build settings:
+   - Root Directory: `server`
+   - Build Command: `npm install && npm run build`
+   - Start Command: `npm start`
+3. Set the following environment variables:
+   ```
+   NODE_ENV=production
+   PORT=8080
+   DATABASE_URL=postgres://user:password@hostname:port/database
+   JWT_SECRET=your_jwt_secret_here
+   JWT_EXPIRY=7d
+   ALLOWED_ORIGINS=https://tryrivu.com,https://rivu-finance.vercel.app
+   OPENAI_API_KEY=your_openai_api_key_here
+   PLAID_CLIENT_ID=your_plaid_client_id
+   PLAID_SECRET=your_plaid_secret
+   PLAID_ENV=production
+   POSTMARK_API_TOKEN=your_postmark_token_here
+   APP_URL=https://api.tryrivu.com
+   ```
+4. Deploy!
 
-```bash
-# Apply database schema changes
-npm run db:push
-```
+## Database
 
-## Security Features
+The application uses PostgreSQL, accessed via Drizzle ORM. The database connection is managed through the `DATABASE_URL` environment variable, which should point to your PostgreSQL instance.
 
-- JWT authentication with secure HTTP-only cookies
-- Rate limiting on critical endpoints
-- CSRF protection
-- Content Security Policy
-- Structured error logging
-- Health monitoring endpoint
+## Local Development
 
-## Deployment Instructions
+For local development:
 
-For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md)
+1. Start the backend:
+   ```bash
+   cd server
+   npm install
+   npm run dev
+   ```
 
-## Architecture
+2. Start the frontend:
+   ```bash
+   cd client
+   npm install
+   npm run dev
+   ```
 
-- **Frontend**: React with TypeScript, Tailwind CSS, and Shadcn/UI components
-- **Backend**: Express.js with TypeScript
-- **Database**: PostgreSQL with Drizzle ORM
-- **Authentication**: JWT with secure cookie storage
-- **Integrations**: Plaid for bank connectivity, OpenAI for financial insights
+For more detailed instructions, see the README files in the `/client` and `/server` directories.

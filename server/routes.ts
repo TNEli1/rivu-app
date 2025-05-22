@@ -5,7 +5,7 @@ import { z } from "zod";
 import OpenAI from "openai";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
-import { BudgetCategory, Transaction, transactions } from "@shared/schema";
+import { BudgetCategory, Transaction, transactions } from "../shared/schema";
 import { db } from "./db";
 import { eq, sql } from "drizzle-orm";
 import path from "path";
@@ -160,8 +160,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Import CSV controllers for transaction imports
     const {
       uploadCSV,
-      importTransactionsFromCSV,
-      markTransactionAsNotDuplicate
+      importTransactionsFromCSV
     } = await import('./controllers/csvController');
     
     // Import TypeScript CSV controllers for mapped data import
@@ -171,8 +170,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     // Import batch transaction controller
     const {
-      createTransactionsBatch
-    } = await import('./controllers-ts/transactionController');
+      createTransactionsBatch,
+      markTransactionNotDuplicate
+    } = await import('./controllers/transactionController');
+    
+    // Assign to prevent duplicate variable name
+    const markTransactionAsNotDuplicate = markTransactionNotDuplicate;
     
     // CSV upload routes
     app.post(`${apiPath}/transactions/import`, protect, uploadCSV, importTransactionsFromCSV);

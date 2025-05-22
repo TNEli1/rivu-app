@@ -1,6 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-// Removed Vite dependency for Render deployment
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
@@ -10,13 +9,19 @@ import { setCsrfToken, validateCsrfToken } from "./middleware/csrfProtection";
 import { pool } from "./db";
 import { requestLogger, errorLogger } from "./middleware/requestLogger";
 import { logger } from "./utils/logger";
-import path from 'path';
-import fs from 'fs';
+import path from "path";
+import fs from "fs";
 
-// Simple logging function to replace the one from vite
-function log(message, source = "express") {
-  const time = new Date().toLocaleTimeString();
-  console.log(`${time} [${source}] ${message}`);
+// Simple logging function to replace vite's log
+function log(message: string, source = "express") {
+  const formattedTime = new Date().toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+
+  console.log(`${formattedTime} [${source}] ${message}`);
 }
 
 // Load environment variables
@@ -251,24 +256,31 @@ app.use((req, res, next) => {
     }
   });
 
-  // Serve static files in production without Vite
+  // Serve static files in production
   if (app.get("env") === "production") {
-    const publicPath = path.join(process.cwd(), 'dist/public');
-    console.log(`Serving static files from: ${publicPath}`);
-    app.use(express.static(publicPath));
+    const staticPath = path.join(process.cwd(), 'dist/public');
+    log(`Serving static files from: ${staticPath}`);
     
-    // Handle SPA routes
+    app.use(express.static(staticPath));
+    
+    // For SPA routing - handle all routes by serving index.html
     app.get('*', (req, res) => {
       // Skip API routes
       if (req.url.startsWith('/api/')) {
         return res.status(404).json({ error: 'API endpoint not found' });
       }
       
-      const indexPath = path.join(publicPath, 'index.html');
-      if (fs.existsSync(indexPath)) {
-        return res.sendFile(indexPath);
-      } else {
-        return res.status(404).send('Application not found');
+      try {
+        const indexPath = path.join(staticPath, 'index.html');
+        if (fs.existsSync(indexPath)) {
+          return res.sendFile(indexPath);
+        } else {
+          log(`Index file not found at: ${indexPath}`, "error");
+          return res.status(404).send('Application not found');
+        }
+      } catch (error) {
+        log(`Error serving static file: ${error}`, "error");
+        return res.status(500).send('Internal server error');
       }
     });
   }

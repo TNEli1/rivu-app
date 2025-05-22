@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: rivu-api
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8080
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRY
+        value: 7d
+      - key: ALLOWED_ORIGINS
+        value: https://tryrivu.com,https://rivu-finance.vercel.app
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: PLAID_CLIENT_ID
+        sync: false
+      - key: PLAID_SECRET
+        sync: false
+      - key: PLAID_ENV
+        value: production
+      - key: POSTMARK_API_TOKEN
+        sync: false
+      - key: APP_URL
+        value: https://api.tryrivu.com

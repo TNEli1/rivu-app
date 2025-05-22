@@ -1,340 +1,380 @@
-import { Request, Response } from 'express';
 import { storage } from '../storage';
-import { insertCategorySchema, insertSubcategorySchema } from '@shared/schema';
 import { z } from 'zod';
+import { insertCategorySchema, insertSubcategorySchema } from '@shared/schema';
 
-// Custom Request type that includes user property
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: number;
-    [key: string]: any;
-  };
-}
-
-// Get all categories for the authenticated user
-export const getCategories = async (req: AuthenticatedRequest, res: Response) => {
+/**
+ * @desc    Get all categories for the current user
+ */
+export const getCategories = async (req: any, res: any) => {
   try {
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ message: 'User not authenticated' });
-    }
-
-    // Check if a type filter was specified (expense or income)
-    const type = req.query.type as string | undefined;
+    const userId = parseInt(req.user.id, 10);
+    const type = req.query.type; // Optional filter by type (expense/income)
     
-    const categories = await storage.getCategories(req.user.id, type);
-    return res.status(200).json(categories);
-  } catch (error) {
+    const categories = await storage.getCategories(userId, type);
+    
+    res.json(categories);
+  } catch (error: any) {
     console.error('Error fetching categories:', error);
-    return res.status(500).json({ 
-      message: 'Failed to fetch categories'
+    res.status(500).json({ 
+      message: error.message || 'Error fetching categories',
+      code: 'SERVER_ERROR'
     });
   }
 };
 
-// Get a specific category by ID
-export const getCategoryById = async (req: AuthenticatedRequest, res: Response) => {
+/**
+ * @desc    Get a single category by ID
+ */
+export const getCategoryById = async (req: any, res: any) => {
   try {
-    const categoryId = parseInt(req.params.id);
-    
-    if (isNaN(categoryId)) {
-      return res.status(400).json({ message: 'Invalid category ID' });
-    }
+    const categoryId = parseInt(req.params.id, 10);
     
     const category = await storage.getCategory(categoryId);
     
     if (!category) {
-      return res.status(404).json({ message: 'Category not found' });
-    }
-    
-    // Check if this category belongs to the authenticated user
-    if (category.userId !== req.user?.id) {
-      return res.status(403).json({ message: 'Unauthorized access to category' });
-    }
-    
-    return res.status(200).json(category);
-  } catch (error) {
-    console.error('Error fetching category:', error);
-    return res.status(500).json({ 
-      message: 'Failed to fetch category'
-    });
-  }
-};
-
-// Create a new category for the authenticated user
-export const createCategory = async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ message: 'User not authenticated' });
-    }
-    
-    // Validate request body
-    const validationResult = insertCategorySchema.safeParse({
-      ...req.body,
-      userId: req.user.id
-    });
-    
-    if (!validationResult.success) {
-      return res.status(400).json({ 
-        message: 'Invalid category data',
-        errors: validationResult.error.format()
+      return res.status(404).json({ 
+        message: 'Category not found',
+        code: 'CATEGORY_NOT_FOUND'
       });
     }
     
-    // Create the category
-    const category = await storage.createCategory(validationResult.data);
+    // Security check - ensure the category belongs to the current user
+    if (category.userId !== parseInt(req.user.id, 10)) {
+      return res.status(403).json({ 
+        message: 'Not authorized to access this category',
+        code: 'FORBIDDEN'
+      });
+    }
     
-    return res.status(201).json({
-      message: 'Category created successfully',
-      category
+    res.json(category);
+  } catch (error: any) {
+    console.error('Error fetching category:', error);
+    res.status(500).json({ 
+      message: error.message || 'Error fetching category',
+      code: 'SERVER_ERROR'
     });
-  } catch (error) {
+  }
+};
+
+/**
+ * @desc    Create a new category
+ */
+export const createCategory = async (req: any, res: any) => {
+  try {
+    const userId = parseInt(req.user.id, 10);
+    
+    // Validate input
+    const schema = insertCategorySchema.extend({
+      name: z.string().min(1, 'Category name is required'),
+      type: z.string().min(1, 'Category type is required')
+    });
+    
+    const validatedData = schema.parse({
+      ...req.body,
+      userId
+    });
+    
+    const newCategory = await storage.createCategory(validatedData);
+    
+    res.status(201).json(newCategory);
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json({
+        message: 'Validation error',
+        errors: error.errors,
+        code: 'VALIDATION_ERROR'
+      });
+    }
+    
     console.error('Error creating category:', error);
-    return res.status(500).json({ 
-      message: 'Failed to create category'
+    res.status(500).json({ 
+      message: error.message || 'Error creating category',
+      code: 'SERVER_ERROR'
     });
   }
 };
 
-// Update an existing category
-export const updateCategory = async (req: AuthenticatedRequest, res: Response) => {
+/**
+ * @desc    Update a category
+ */
+export const updateCategory = async (req: any, res: any) => {
   try {
-    const categoryId = parseInt(req.params.id);
+    const categoryId = parseInt(req.params.id, 10);
+    const userId = parseInt(req.user.id, 10);
     
-    if (isNaN(categoryId)) {
-      return res.status(400).json({ message: 'Invalid category ID' });
-    }
-    
-    // Fetch the existing category to verify ownership
-    const existingCategory = await storage.getCategory(categoryId);
-    
-    if (!existingCategory) {
-      return res.status(404).json({ message: 'Category not found' });
-    }
-    
-    // Check if this category belongs to the authenticated user
-    if (existingCategory.userId !== req.user?.id) {
-      return res.status(403).json({ message: 'Unauthorized access to category' });
-    }
-    
-    // Update the category
-    const updatedCategory = await storage.updateCategory(categoryId, req.body);
-    
-    if (!updatedCategory) {
-      return res.status(404).json({ message: 'Category not found' });
-    }
-    
-    return res.status(200).json({
-      message: 'Category updated successfully',
-      category: updatedCategory
-    });
-  } catch (error) {
-    console.error('Error updating category:', error);
-    return res.status(500).json({ 
-      message: 'Failed to update category'
-    });
-  }
-};
-
-// Delete a category
-export const deleteCategory = async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const categoryId = parseInt(req.params.id);
-    
-    if (isNaN(categoryId)) {
-      return res.status(400).json({ message: 'Invalid category ID' });
-    }
-    
-    // Fetch the existing category to verify ownership
-    const existingCategory = await storage.getCategory(categoryId);
-    
-    if (!existingCategory) {
-      return res.status(404).json({ message: 'Category not found' });
-    }
-    
-    // Check if this category belongs to the authenticated user
-    if (existingCategory.userId !== req.user?.id) {
-      return res.status(403).json({ message: 'Unauthorized access to category' });
-    }
-    
-    // Delete the category
-    const result = await storage.deleteCategory(categoryId);
-    
-    if (!result) {
-      return res.status(404).json({ message: 'Category not found' });
-    }
-    
-    return res.status(200).json({
-      message: 'Category deleted successfully'
-    });
-  } catch (error) {
-    console.error('Error deleting category:', error);
-    return res.status(500).json({ 
-      message: 'Failed to delete category'
-    });
-  }
-};
-
-// Get all subcategories for a category
-export const getSubcategories = async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const categoryId = parseInt(req.params.categoryId);
-    
-    if (isNaN(categoryId)) {
-      return res.status(400).json({ message: 'Invalid category ID' });
-    }
-    
-    // First verify that the category belongs to the user
+    // First, check if the category exists and belongs to the user
     const category = await storage.getCategory(categoryId);
     
     if (!category) {
-      return res.status(404).json({ message: 'Category not found' });
+      return res.status(404).json({ 
+        message: 'Category not found',
+        code: 'CATEGORY_NOT_FOUND'
+      });
     }
     
-    // Check if this category belongs to the authenticated user
-    if (category.userId !== req.user?.id) {
-      return res.status(403).json({ message: 'Unauthorized access to category' });
+    if (category.userId !== userId) {
+      return res.status(403).json({ 
+        message: 'Not authorized to update this category',
+        code: 'FORBIDDEN'
+      });
+    }
+    
+    // Validate input
+    const validatedData = z.object({
+      name: z.string().optional(),
+      type: z.string().optional()
+    }).parse(req.body);
+    
+    const updatedCategory = await storage.updateCategory(categoryId, validatedData);
+    
+    res.json(updatedCategory);
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json({
+        message: 'Validation error',
+        errors: error.errors,
+        code: 'VALIDATION_ERROR'
+      });
+    }
+    
+    console.error('Error updating category:', error);
+    res.status(500).json({ 
+      message: error.message || 'Error updating category',
+      code: 'SERVER_ERROR'
+    });
+  }
+};
+
+/**
+ * @desc    Delete a category
+ */
+export const deleteCategory = async (req: any, res: any) => {
+  try {
+    const categoryId = parseInt(req.params.id, 10);
+    const userId = parseInt(req.user.id, 10);
+    
+    // First, check if the category exists and belongs to the user
+    const category = await storage.getCategory(categoryId);
+    
+    if (!category) {
+      return res.status(404).json({ 
+        message: 'Category not found',
+        code: 'CATEGORY_NOT_FOUND'
+      });
+    }
+    
+    if (category.userId !== userId) {
+      return res.status(403).json({ 
+        message: 'Not authorized to delete this category',
+        code: 'FORBIDDEN'
+      });
+    }
+    
+    // Don't allow deleting default categories
+    if (category.isDefault) {
+      return res.status(400).json({
+        message: 'Cannot delete default category',
+        code: 'CANNOT_DELETE_DEFAULT'
+      });
+    }
+    
+    await storage.deleteCategory(categoryId);
+    
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('Error deleting category:', error);
+    res.status(500).json({ 
+      message: error.message || 'Error deleting category',
+      code: 'SERVER_ERROR'
+    });
+  }
+};
+
+/**
+ * @desc    Get all subcategories for a category
+ */
+export const getSubcategories = async (req: any, res: any) => {
+  try {
+    const categoryId = parseInt(req.params.categoryId, 10);
+    
+    // First, check if the category exists and belongs to the user
+    const category = await storage.getCategory(categoryId);
+    
+    if (!category) {
+      return res.status(404).json({ 
+        message: 'Category not found',
+        code: 'CATEGORY_NOT_FOUND'
+      });
+    }
+    
+    if (category.userId !== parseInt(req.user.id, 10)) {
+      return res.status(403).json({ 
+        message: 'Not authorized to access subcategories for this category',
+        code: 'FORBIDDEN'
+      });
     }
     
     const subcategories = await storage.getSubcategories(categoryId);
-    return res.status(200).json(subcategories);
-  } catch (error) {
+    
+    res.json(subcategories);
+  } catch (error: any) {
     console.error('Error fetching subcategories:', error);
-    return res.status(500).json({ 
-      message: 'Failed to fetch subcategories'
+    res.status(500).json({ 
+      message: error.message || 'Error fetching subcategories',
+      code: 'SERVER_ERROR'
     });
   }
 };
 
-// Create a new subcategory for a category
-export const createSubcategory = async (req: AuthenticatedRequest, res: Response) => {
+/**
+ * @desc    Create a new subcategory
+ */
+export const createSubcategory = async (req: any, res: any) => {
   try {
-    const categoryId = parseInt(req.params.categoryId);
+    const categoryId = parseInt(req.params.categoryId, 10);
     
-    if (isNaN(categoryId)) {
-      return res.status(400).json({ message: 'Invalid category ID' });
-    }
-    
-    // First verify that the category belongs to the user
+    // First, check if the category exists and belongs to the user
     const category = await storage.getCategory(categoryId);
     
     if (!category) {
-      return res.status(404).json({ message: 'Category not found' });
+      return res.status(404).json({ 
+        message: 'Category not found',
+        code: 'CATEGORY_NOT_FOUND'
+      });
     }
     
-    // Check if this category belongs to the authenticated user
-    if (category.userId !== req.user?.id) {
-      return res.status(403).json({ message: 'Unauthorized access to category' });
+    if (category.userId !== parseInt(req.user.id, 10)) {
+      return res.status(403).json({ 
+        message: 'Not authorized to create subcategories for this category',
+        code: 'FORBIDDEN'
+      });
     }
     
-    // Validate request body
-    const validationResult = insertSubcategorySchema.safeParse({
+    // Validate input
+    const schema = insertSubcategorySchema.extend({
+      name: z.string().min(1, 'Subcategory name is required')
+    });
+    
+    const validatedData = schema.parse({
       ...req.body,
       categoryId
     });
     
-    if (!validationResult.success) {
-      return res.status(400).json({ 
-        message: 'Invalid subcategory data',
-        errors: validationResult.error.format()
+    const newSubcategory = await storage.createSubcategory(validatedData);
+    
+    res.status(201).json(newSubcategory);
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json({
+        message: 'Validation error',
+        errors: error.errors,
+        code: 'VALIDATION_ERROR'
       });
     }
     
-    // Create the subcategory
-    const subcategory = await storage.createSubcategory(validationResult.data);
-    
-    return res.status(201).json({
-      message: 'Subcategory created successfully',
-      subcategory
-    });
-  } catch (error) {
     console.error('Error creating subcategory:', error);
-    return res.status(500).json({ 
-      message: 'Failed to create subcategory'
+    res.status(500).json({ 
+      message: error.message || 'Error creating subcategory',
+      code: 'SERVER_ERROR'
     });
   }
 };
 
-// Update an existing subcategory
-export const updateSubcategory = async (req: AuthenticatedRequest, res: Response) => {
+/**
+ * @desc    Update a subcategory
+ */
+export const updateSubcategory = async (req: any, res: any) => {
   try {
-    const subcategoryId = parseInt(req.params.id);
+    const subcategoryId = parseInt(req.params.id, 10);
     
-    if (isNaN(subcategoryId)) {
-      return res.status(400).json({ message: 'Invalid subcategory ID' });
+    // First, get the subcategory
+    const subcategory = await storage.getSubcategory(subcategoryId);
+    
+    if (!subcategory) {
+      return res.status(404).json({ 
+        message: 'Subcategory not found',
+        code: 'SUBCATEGORY_NOT_FOUND'
+      });
     }
     
-    // Fetch the existing subcategory to get its category ID
-    const existingSubcategory = await storage.getSubcategory(subcategoryId);
+    // Get the parent category to verify ownership
+    const category = await storage.getCategory(subcategory.categoryId);
     
-    if (!existingSubcategory) {
-      return res.status(404).json({ message: 'Subcategory not found' });
+    if (!category || category.userId !== parseInt(req.user.id, 10)) {
+      return res.status(403).json({ 
+        message: 'Not authorized to update this subcategory',
+        code: 'FORBIDDEN'
+      });
     }
     
-    // Get the category to verify ownership
-    const category = await storage.getCategory(existingSubcategory.categoryId);
+    // Validate input
+    const validatedData = z.object({
+      name: z.string().optional()
+    }).parse(req.body);
     
-    // Check if the category belongs to the authenticated user
-    if (!category || category.userId !== req.user?.id) {
-      return res.status(403).json({ message: 'Unauthorized access to subcategory' });
+    const updatedSubcategory = await storage.updateSubcategory(subcategoryId, validatedData);
+    
+    res.json(updatedSubcategory);
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json({
+        message: 'Validation error',
+        errors: error.errors,
+        code: 'VALIDATION_ERROR'
+      });
     }
     
-    // Update the subcategory
-    const updatedSubcategory = await storage.updateSubcategory(subcategoryId, req.body);
-    
-    if (!updatedSubcategory) {
-      return res.status(404).json({ message: 'Subcategory not found' });
-    }
-    
-    return res.status(200).json({
-      message: 'Subcategory updated successfully',
-      subcategory: updatedSubcategory
-    });
-  } catch (error) {
     console.error('Error updating subcategory:', error);
-    return res.status(500).json({ 
-      message: 'Failed to update subcategory'
+    res.status(500).json({ 
+      message: error.message || 'Error updating subcategory',
+      code: 'SERVER_ERROR'
     });
   }
 };
 
-// Delete a subcategory
-export const deleteSubcategory = async (req: AuthenticatedRequest, res: Response) => {
+/**
+ * @desc    Delete a subcategory
+ */
+export const deleteSubcategory = async (req: any, res: any) => {
   try {
-    const subcategoryId = parseInt(req.params.id);
+    const subcategoryId = parseInt(req.params.id, 10);
     
-    if (isNaN(subcategoryId)) {
-      return res.status(400).json({ message: 'Invalid subcategory ID' });
+    // First, get the subcategory
+    const subcategory = await storage.getSubcategory(subcategoryId);
+    
+    if (!subcategory) {
+      return res.status(404).json({ 
+        message: 'Subcategory not found',
+        code: 'SUBCATEGORY_NOT_FOUND'
+      });
     }
     
-    // Fetch the existing subcategory to get its category ID
-    const existingSubcategory = await storage.getSubcategory(subcategoryId);
+    // Get the parent category to verify ownership
+    const category = await storage.getCategory(subcategory.categoryId);
     
-    if (!existingSubcategory) {
-      return res.status(404).json({ message: 'Subcategory not found' });
+    if (!category || category.userId !== parseInt(req.user.id, 10)) {
+      return res.status(403).json({ 
+        message: 'Not authorized to delete this subcategory',
+        code: 'FORBIDDEN'
+      });
     }
     
-    // Get the category to verify ownership
-    const category = await storage.getCategory(existingSubcategory.categoryId);
-    
-    // Check if the category belongs to the authenticated user
-    if (!category || category.userId !== req.user?.id) {
-      return res.status(403).json({ message: 'Unauthorized access to subcategory' });
+    // Don't allow deleting default subcategories
+    if (subcategory.isDefault) {
+      return res.status(400).json({
+        message: 'Cannot delete default subcategory',
+        code: 'CANNOT_DELETE_DEFAULT'
+      });
     }
     
-    // Delete the subcategory
-    const result = await storage.deleteSubcategory(subcategoryId);
+    await storage.deleteSubcategory(subcategoryId);
     
-    if (!result) {
-      return res.status(404).json({ message: 'Subcategory not found' });
-    }
-    
-    return res.status(200).json({
-      message: 'Subcategory deleted successfully'
-    });
-  } catch (error) {
+    res.json({ success: true });
+  } catch (error: any) {
     console.error('Error deleting subcategory:', error);
-    return res.status(500).json({ 
-      message: 'Failed to delete subcategory'
+    res.status(500).json({ 
+      message: error.message || 'Error deleting subcategory',
+      code: 'SERVER_ERROR'
     });
   }
 };
