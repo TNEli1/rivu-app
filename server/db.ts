@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/node-postgres";
-import { Pool, type PoolConfig } from "pg";
-import * as schema from "./shared/schema";
+import pkg from 'pg';
+const { Pool } = pkg;
+import * as schema from "../shared/schema";
 import dotenv from "dotenv";
 
 // Load environment variables
@@ -18,7 +19,7 @@ if (!databaseUrl) {
 }
 
 // Configure the connection pool
-const poolConfig: PoolConfig = {
+const poolConfig = {
   connectionString: databaseUrl,
   max: 20, // Maximum number of clients in the pool
   idleTimeoutMillis: 30000, // How long a client is allowed to remain idle before being closed
