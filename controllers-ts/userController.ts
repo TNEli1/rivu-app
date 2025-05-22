@@ -3,7 +3,9 @@ import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
 import crypto from 'crypto';
 import { storage } from '../storage';
-import { User } from '@shared/schema';
+import { User, users } from '@shared/schema';
+import { db } from '../db';
+import { eq } from 'drizzle-orm';
 import securityLogger, { SecurityEventType } from '../services/securityLogger';
 
 // Enum for user account status
@@ -117,8 +119,14 @@ export const registerUser = async (req: any, res: any) => {
       });
     }
     
-    // Note: We need to add email check in storage interface
-    // For now, assume username uniqueness is sufficient
+    // Check if user exists with this email
+    const existingEmail = await storage.getUserByEmail(email);
+    if (existingEmail) {
+      return res.status(400).json({ 
+        message: 'An account with this email already exists',
+        code: 'EMAIL_EXISTS'
+      });
+    }
     
     // Hash password with bcrypt (salt factor 12)
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -127,7 +135,6 @@ export const registerUser = async (req: any, res: any) => {
     const avatarInitials = (firstName?.[0] || '') + (lastName?.[0] || '');
     
     // Create new user with hashed password and initialize onboarding
-    // Ensuring users start with a clean slate (no preloaded data)
     const user = await storage.createUser({
       username,
       email,
@@ -140,7 +147,7 @@ export const registerUser = async (req: any, res: any) => {
       onboardingCompleted: false,
       accountCreationDate: new Date(),
       loginCount: 1,
-      lastLogin: new Date() // matches schema field name
+      lastLogin: new Date()
     });
     
     if (user) {
@@ -174,7 +181,6 @@ export const registerUser = async (req: any, res: any) => {
         code: 'INVALID_DATA'
       });
     }
-    
   } catch (error: any) {
     console.error('Register error:', error);
     res.status(500).json({ 
@@ -203,14 +209,28 @@ export const loginUser = async (req: any, res: any) => {
 
     // Check if user exists and password matches
     if (user && await bcrypt.compare(password, user.password)) {
+      // Check if account is marked as deleted
+      if (user.status === 'deleted') {
+        return res.status(401).json({
+          message: 'This account has been deleted',
+          code: 'ACCOUNT_DELETED'
+        });
+      }
+      
       // Update login metrics
       const loginCount = (user.loginCount || 0) + 1;
       const lastLogin = new Date();
+      const now = new Date();
       
-      // Update user login statistics
+      // Always set user to active status when they log in
+      const userStatus = 'active';
+      
+      // Update user login statistics and activity date
       await storage.updateUser(user.id, {
         loginCount,
-        lastLogin
+        lastLogin,
+        lastActivityDate: now,
+        status: userStatus
       });
       
       // Log successful login for security auditing
@@ -684,12 +704,20 @@ export const deleteAccount = async (req: any, res: any) => {
     }
 
     // Require password confirmation for account deletion
-    const { password } = req.body;
+    const { password, confirmPassword, permanentDelete } = req.body;
     
     if (!password) {
       return res.status(400).json({ 
         message: 'Password confirmation required',
         code: 'PASSWORD_REQUIRED'
+      });
+    }
+    
+    // If permanent deletion is requested, confirm the passwords match
+    if (permanentDelete && password !== confirmPassword) {
+      return res.status(400).json({
+        message: 'Passwords do not match',
+        code: 'PASSWORD_MISMATCH'
       });
     }
     
@@ -709,11 +737,12 @@ export const deleteAccount = async (req: any, res: any) => {
       details: {
         username: user.username,
         timestamp: new Date().toISOString(),
-        ip: req.ip
+        ip: req.ip,
+        permanentDelete: !!permanentDelete
       }
     });
     
-    // Need to update user status to deleted
+    // Update user status to deleted
     await storage.updateUser(userId, {
       status: UserAccountStatus.DELETED
     });
@@ -770,9 +799,23 @@ export const deleteAccount = async (req: any, res: any) => {
         await storage.dismissNudge(nudge.id);
       }
       
-      // Finally, delete the user account
-      // This would be implemented in storage.ts
-      // For now, we'll return success but note that actual deletion isn't implemented yet
+      // Finally, handle the user account based on request type
+      if (permanentDelete) {
+        // For now, just mark the account as deleted with special status
+        // This ensures compatibility until storage.deleteUserPermanently is fully implemented
+        console.log(`User ${userId} marked for permanent deletion`);
+        
+        // In a future update, this will use the permanent deletion method
+        // For now, we'll use a special status to indicate permanent deletion intent
+        await storage.updateUser(userId, {
+          status: UserAccountStatus.DELETED,
+          email: `deleted_${userId}_${Date.now()}@deleted.example.com`,
+          password: crypto.randomBytes(32).toString('hex') // Replace password with random value
+        });
+      } else {
+        // User is already marked as deleted in status (soft delete)
+        console.log(`User ${userId} marked as deleted (soft delete)`);
+      }
       
       // Clear the token cookie to log the user out
       clearTokenCookie(res);

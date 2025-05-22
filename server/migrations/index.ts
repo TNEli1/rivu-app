@@ -1,5 +1,7 @@
 
 import { runMigration as createScoreHistory } from './add-score-history-fields';
+import { runMigration as addUserStatusFields } from './add-user-status-fields';
+import { checkAndMarkInactiveUsers } from './inactiveUsers';
 
 /**
  * Run all migrations in the correct order
@@ -10,6 +12,12 @@ export async function runMigrations() {
   try {
     // Add new migrations here in sequence
     await createScoreHistory();
+    
+    // Ensure user status fields are in the schema
+    await addUserStatusFields();
+    
+    // Check for users who haven't been active in 90+ days and mark them as inactive
+    await checkAndMarkInactiveUsers();
     
     console.log('All migrations completed successfully');
   } catch (error) {

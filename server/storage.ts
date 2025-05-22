@@ -43,6 +43,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
+  deleteUserPermanently(id: number): Promise<boolean>;
   createPasswordResetToken(email: string, tokenHash: string, expiry: Date): Promise<boolean>;
   verifyPasswordResetToken(tokenHash: string): Promise<User | null>;
   resetPassword(tokenHash: string, newPassword: string): Promise<boolean>;
@@ -189,6 +190,17 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return updatedUser || undefined;
+  }
+  
+  async deleteUserPermanently(id: number): Promise<boolean> {
+    try {
+      // Delete the user record completely from the database
+      await db.delete(users).where(eq(users.id, id));
+      return true;
+    } catch (error) {
+      console.error('Error permanently deleting user:', error);
+      return false;
+    }
   }
   
   async createPasswordResetToken(email: string, tokenHash: string, expiry: Date): Promise<boolean> {
