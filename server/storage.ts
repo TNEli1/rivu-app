@@ -11,7 +11,8 @@ import {
   PlaidItem, InsertPlaidItem,
   PlaidAccount, InsertPlaidAccount,
   PlaidWebhookEvent, InsertPlaidWebhookEvent,
-  PlaidUserIdentity, InsertPlaidUserIdentity
+  PlaidUserIdentity, InsertPlaidUserIdentity,
+  ScoreHistory, InsertScoreHistory
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lt, isNull, sql, or, between } from "drizzle-orm";
@@ -28,7 +29,8 @@ import {
   plaidItems,
   plaidAccounts,
   plaidWebhookEvents,
-  plaidUserIdentities
+  plaidUserIdentities,
+  scoreHistory
 } from "@shared/schema";
 // Import direct database access
 // We'll modify the getSavingsGoals function to handle in-memory goals
@@ -73,6 +75,10 @@ export interface IStorage {
   // Rivu Score operations
   getRivuScore(userId: number): Promise<RivuScore | undefined>;
   createOrUpdateRivuScore(score: InsertRivuScore): Promise<RivuScore>;
+  
+  // Score History operations
+  getScoreHistory(userId: number, limit?: number): Promise<ScoreHistory[]>;
+  addScoreHistoryEntry(entry: InsertScoreHistory): Promise<ScoreHistory>;
   
   // Nudge system operations
   getNudges(userId: number, status?: string): Promise<Nudge[]>;
@@ -994,8 +1000,17 @@ export class DatabaseStorage implements IStorage {
 
   async createOrUpdateRivuScore(scoreData: InsertRivuScore): Promise<RivuScore> {
     const existingScore = await this.getRivuScore(scoreData.userId);
+    const { userId, score } = scoreData;
+    
+    // Prepare for potential history tracking
+    let previousScore: number | null = null;
+    let scoreChanged = false;
+    let result: RivuScore;
     
     if (existingScore) {
+      previousScore = existingScore.score;
+      scoreChanged = existingScore.score !== score;
+      
       const [updatedScore] = await db
         .update(rivuScores)
         .set({
@@ -1004,7 +1019,7 @@ export class DatabaseStorage implements IStorage {
         })
         .where(eq(rivuScores.userId, scoreData.userId))
         .returning();
-      return updatedScore;
+      result = updatedScore;
     } else {
       const [newScore] = await db
         .insert(rivuScores)
@@ -1014,7 +1029,59 @@ export class DatabaseStorage implements IStorage {
           updatedAt: new Date(),
         })
         .returning();
-      return newScore;
+      result = newScore;
+      
+      // For new users, always record first score in history
+      scoreChanged = true;
+    }
+    
+    // Record in history if score changed
+    if (scoreChanged) {
+      await this.addScoreHistoryEntry({
+        userId,
+        score,
+        previousScore,
+        change: previousScore !== null ? score - previousScore : undefined,
+        reason: 'periodic_update',
+        notes: 'Automatic score update'
+      });
+    }
+    
+    return result;
+  }
+  
+  // Score History operations
+  async getScoreHistory(userId: number, limit?: number): Promise<ScoreHistory[]> {
+    try {
+      // Create base query
+      let query = db.select().from(scoreHistory)
+        .where(eq(scoreHistory.userId, userId))
+        .orderBy(desc(scoreHistory.createdAt));
+      
+      // Execute with or without limit
+      if (limit) {
+        return await query.limit(limit);
+      } else {
+        return await query;
+      }
+    } catch (error) {
+      console.error('Error getting score history:', error);
+      return [];
+    }
+  }
+  
+  async addScoreHistoryEntry(entry: InsertScoreHistory): Promise<ScoreHistory> {
+    try {
+      const [result] = await db.insert(scoreHistory)
+        .values({
+          ...entry,
+          createdAt: new Date()
+        })
+        .returning();
+      return result;
+    } catch (error) {
+      console.error('Error adding score history entry:', error);
+      throw error;
     }
   }
 

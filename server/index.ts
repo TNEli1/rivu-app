@@ -13,6 +13,7 @@ import { configureStaticFileServing } from "./static";
 import { configureDevelopmentProxy } from "./dev-proxy";
 import path from 'path';
 import fs from 'fs';
+import { runMigrations } from './migrations';
 
 // Simple logging function to replace the one from vite
 function log(message: string, source = "express") {
@@ -187,6 +188,9 @@ import { ensureDatabaseConnection, setupGracefulDatabaseShutdown } from './utils
   
   // Set up graceful database shutdown
   setupGracefulDatabaseShutdown();
+  
+  // Run database migrations
+  await runMigrations();
   
   // Load API routes using PostgreSQL database
   const server = await registerRoutes(app);

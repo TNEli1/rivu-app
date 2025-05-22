@@ -10,6 +10,7 @@ import { db } from "./db";
 import { eq, sql } from "drizzle-orm";
 import path from "path";
 import fs from "fs";
+import { rivuScoreRoutes } from "./routes/rivu-score-routes";
 
 // Initialize OpenAI client
 const openai = new OpenAI({ 
@@ -1535,6 +1536,30 @@ User profile:
       });
     }
   });
+  
+  // Define rate limiter for score history routes
+  const scoreLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: process.env.NODE_ENV === 'development' ? 100 : 30, // limit each IP to 30 requests per window (more in dev)
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => {
+      // Skip rate limiting in development with special header
+      return process.env.NODE_ENV === 'development' && 
+        req.headers['x-skip-rate-limit'] === 'development';
+    }
+  });
+  
+  // Register Rivu Score routes with authentication
+  app.use('/api/rivu', scoreLimiter, (req, res, next) => {
+    // Verify user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    next();
+  }, rivuScoreRoutes);
+  
+  console.log('✅ Rivu Score routes successfully mounted at /api/rivu');
 
   const httpServer = createServer(app);
   return httpServer;

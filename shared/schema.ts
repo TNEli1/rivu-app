@@ -141,6 +141,29 @@ export const insertRivuScoreSchema = createInsertSchema(rivuScores).pick({
   weeklyActivity: true,
 });
 
+// Rivu Score History - Track changes to scores over time
+export const scoreHistory = pgTable("score_history", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  score: integer("score").notNull(),
+  previousScore: integer("previous_score"),
+  change: integer("change"), // Amount of score change (positive or negative)
+  reason: text("reason"), // Explanation for why the score changed
+  notes: text("notes"), // Additional details about the change
+  changeFactors: text("change_factors"), // JSON string of factors that affected the score
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertScoreHistorySchema = createInsertSchema(scoreHistory).pick({
+  userId: true,
+  score: true,
+  previousScore: true,
+  change: true,
+  reason: true,
+  notes: true,
+  changeFactors: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -156,6 +179,9 @@ export type InsertSavingsGoal = z.infer<typeof insertSavingsGoalSchema>;
 
 export type RivuScore = typeof rivuScores.$inferSelect;
 export type InsertRivuScore = z.infer<typeof insertRivuScoreSchema>;
+
+export type ScoreHistory = typeof scoreHistory.$inferSelect;
+export type InsertScoreHistory = z.infer<typeof insertScoreHistorySchema>;
 
 // Nudge System
 export const nudges = pgTable("nudges", {
