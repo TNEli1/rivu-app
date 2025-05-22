@@ -95,7 +95,7 @@ export const createLinkToken = async (req: Request, res: Response) => {
       user: {
         client_user_id: userId.toString(), // Unique user ID from our system
       },
-      client_name: 'Rivu Finance',
+      client_name: 'Rivu', // Must match exactly what's registered in Plaid dashboard
       products: ['transactions', 'balance', 'identity'] as Products[], // Request all required products
       language: 'en',
       country_codes: ['US'] as CountryCode[],
@@ -107,8 +107,8 @@ export const createLinkToken = async (req: Request, res: Response) => {
     
     console.log('Creating link token with config:', JSON.stringify({
       client_user_id: userId.toString(),
-      client_name: 'Rivu Finance',
-      products: ['transactions'],
+      client_name: 'Rivu',
+      products: ['transactions', 'balance', 'identity'],
       language: 'en',
       country_codes: ['US'],
       ...(process.env.PLAID_REDIRECT_REGISTERED === 'true' ? { redirect_uri: redirectUri } : {})
