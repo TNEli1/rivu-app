@@ -18,13 +18,14 @@ async function throwIfResNotOk(res: Response) {
 export const getApiBaseUrl = (): string => {
   // Use environment variable if available, otherwise determine based on environment
   // For Render unified deployment, we should use relative URLs since backend and frontend are served from the same domain
+  // For Replit development, use the actual backend port
   return import.meta.env.VITE_API_URL || 
     (window.location.hostname === 'tryrivu.com' || 
      window.location.hostname.endsWith('.vercel.app') || 
      window.location.hostname.endsWith('.render.com') || 
      window.location.hostname.endsWith('.replit.app')
       ? '' // Use relative URLs for all production deployments
-      : ''); // Use relative URLs for development too (same domain)
+      : 'http://localhost:8080'); // Use backend server URL for local development
 };
 
 export async function apiRequest(

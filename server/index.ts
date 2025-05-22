@@ -63,7 +63,7 @@ if (process.env.NODE_ENV === 'production') {
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
     ? process.env.ALLOWED_ORIGINS?.split(',') || 'https://tryrivu.com' // Production: specific origins
-    : true, // Development: allow all origins but maintain credentials
+    : ['http://localhost:5000', 'https://localhost:5000', 'http://localhost:5173', 'https://localhost:5173', 'https://' + process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co'], // Development: allow specific origins but maintain credentials
   credentials: true, // Allow cookies
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: [
@@ -286,6 +286,8 @@ import { ensureDatabaseConnection, setupGracefulDatabaseShutdown } from './utils
     // In development, we still configure static serving for testing
     // but show a warning that the frontend should be started separately
     configureStaticFileServing(app);
+    // Set up the development proxy to connect to Vite dev server
+    configureDevelopmentProxy(app);
     console.log('⚠️ Development mode: Frontend must be served separately via "cd client && npm run dev"');
     console.log('   However, static files will be served if they exist in dist/public');
   }

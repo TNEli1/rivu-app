@@ -350,3 +350,54 @@ Multiple issues:
   ```
 
 **Date of Fix:** May 22, 2025
+
+### Registration failed – failed to fetch
+
+**Error Message/Behavior:**  
+Users received "Registration failed: failed to fetch" error when attempting to sign up on the Rivu app.
+
+**Cause:**  
+1. Frontend API configuration wasn't correctly set up to connect to the backend server
+2. CORS settings in the backend were too restrictive and blocked requests from the frontend
+3. Development environment was running backend and frontend separately without proper proxying
+4. The API base URL in the frontend was not correctly configured for the development environment
+
+**Fix:**  
+1. Updated the API base URL configuration in queryClient.ts to properly connect to the backend server
+2. Enhanced CORS configuration in the backend to accept requests from frontend origins
+3. Enabled the development proxy to better connect the frontend with the backend
+4. Added proper environment detection for development vs. production API URLs
+
+**Files/Lines Modified:**
+- `/client/src/lib/queryClient.ts` - Updated getApiBaseUrl function to use the correct backend URL in development:
+  ```typescript
+  export const getApiBaseUrl = (): string => {
+    return import.meta.env.VITE_API_URL || 
+      (window.location.hostname === 'tryrivu.com' || 
+       window.location.hostname.endsWith('.vercel.app') || 
+       window.location.hostname.endsWith('.render.com') || 
+       window.location.hostname.endsWith('.replit.app')
+        ? '' // Use relative URLs for all production deployments
+        : 'http://localhost:8080'); // Use backend server URL for local development
+  };
+  ```
+- `/server/index.ts` - Updated CORS configuration to accept requests from frontend origins:
+  ```typescript
+  const corsOptions = {
+    origin: process.env.NODE_ENV === 'production' 
+      ? process.env.ALLOWED_ORIGINS?.split(',') || 'https://tryrivu.com' 
+      : ['http://localhost:5000', 'https://localhost:5000', 'http://localhost:5173', 
+         'https://localhost:5173', 'https://' + process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co'],
+    credentials: true,
+    // ... other CORS settings
+  };
+  ```
+- `/server/index.ts` - Enabled the development proxy for better frontend/backend connection:
+  ```typescript
+  // In development mode
+  configureStaticFileServing(app);
+  // Set up the development proxy to connect to Vite dev server
+  configureDevelopmentProxy(app);
+  ```
+
+**Date of Fix:** May 22, 2025
