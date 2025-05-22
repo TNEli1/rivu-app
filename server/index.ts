@@ -32,7 +32,7 @@ const app = express();
 // Basic security - hide Express fingerprint
 app.disable('x-powered-by');
 
-// Trust proxy - needed for rate limiting to work properly in Replit environment
+// Trust proxy - needed for rate limiting to work properly
 app.set('trust proxy', 1);
 
 // Global rate limiter to prevent abuse
@@ -59,8 +59,6 @@ if (process.env.NODE_ENV === 'production') {
   console.log('⚠️ Development rate limiting enabled (relaxed limits)');
   console.log('   To bypass: Include X-Skip-Rate-Limit: development header');
 }
-
-// Remove the explicit import since we'll use registerRoutes to handle this
 
 // Configure CORS with proper security settings
 const corsOptions = {
@@ -94,9 +92,6 @@ app.use(helmet({
 // Add request logging middleware for production monitoring
 app.use(requestLogger);
 
-// Serve static files from the public directory
-app.use(express.static('public'));
-
 // Parse JSON request body with size limit
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: false }));
@@ -124,16 +119,18 @@ app.use((req, res, next) => {
     
     // Content Security Policy for production
     // Allow connections to trusted sources only
+    const frontendOrigin = process.env.ALLOWED_ORIGINS?.split(',')[0] || 'https://tryrivu.com';
+    
     res.setHeader(
       'Content-Security-Policy',
-      "default-src 'self'; " +
-      "script-src 'self' https://cdn.plaid.com https://*.vercel.app 'unsafe-inline'; " +
-      "style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; " +
-      "font-src 'self' https://fonts.gstatic.com; " +
-      "img-src 'self' data: https:; " +
-      "connect-src 'self' https://api.tryrivu.com https://*.render.com https://cdn.plaid.com https://production.plaid.com; " +
-      "frame-src 'self' https://cdn.plaid.com; " +
-      "object-src 'none';"
+      `default-src 'self'; ` +
+      `script-src 'self' https://cdn.plaid.com ${frontendOrigin} 'unsafe-inline'; ` +
+      `style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; ` +
+      `font-src 'self' https://fonts.gstatic.com; ` +
+      `img-src 'self' data: https:; ` +
+      `connect-src 'self' ${frontendOrigin} https://cdn.plaid.com https://production.plaid.com; ` +
+      `frame-src 'self' https://cdn.plaid.com; ` +
+      `object-src 'none';`
     );
   }
   
@@ -171,157 +168,126 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Load API routes using PostgreSQL database
-  const server = await registerRoutes(app);
+  try {
+    // Load API routes
+    const server = await registerRoutes(app);
 
-  // Enhanced health check endpoint for monitoring with DB connectivity check
-  app.get('/health', async (req, res) => {
-    try {
-      // Check database connectivity
-      const dbConnected = await pool.query('SELECT 1');
-      const dbStatus = dbConnected ? 'connected' : 'disconnected';
-      
-      // Calculate server uptime
-      const uptime = process.uptime();
-      const uptimeFormatted = `${Math.floor(uptime)}s`;
-      
-      res.status(200).json({
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV || 'development',
-        version: process.env.APP_VERSION || '1.0.0',
-        uptime: uptimeFormatted,
-        db: dbStatus
-      });
-    } catch (error) {
-      // Log error but don't expose details
-      console.error('Health check database error:', error);
-      res.status(500).json({
-        status: 'error',
-        timestamp: new Date().toISOString(),
-        db: 'disconnected'
-      });
-    }
-  });
-
-  // 404 handler for API routes (must come after API routes are registered)
-  app.all('/api/*', (req, res) => {
-    res.status(404).json({
-      message: 'API endpoint not found',
-      code: 'NOT_FOUND',
-    });
-  });
-  
-  // Add error logging middleware
-  app.use(errorLogger);
-  
-  // Global error handler with improved error responses and production security
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const isProduction = process.env.NODE_ENV === 'production';
-    
-    // Use the error ID from the error logger or generate a new one
-    const errorId = err.errorId || `err_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
-    
-    // Get status code from error or default to 500
-    const status = err.status || err.statusCode || 500;
-    
-    // In production, avoid exposing detailed error messages
-    const message = isProduction ? 
-      (status === 500 ? "An unexpected error occurred" : err.message || "Error processing request") : 
-      (err.message || "Internal Server Error");
-    
-    // Create standardized error response
-    const errorResponse = {
-      message,
-      code: err.code || 'SERVER_ERROR',
-      errorId, // Always include the error ID so users can reference it in support requests
-      
-      // Only include detailed error information in development
-      ...(process.env.NODE_ENV === 'development' && {
-        stack: err.stack,
-        details: err.details || err.errors
-      })
-    };
-
-    // Log to structured logger in addition to middleware logging
-    if (status >= 500) {
-      logger.error(`Server error: ${message}`, { errorId, status, code: err.code });
-    }
-
-    res.status(status).json(errorResponse);
-    
-    // Only rethrow in development for better debugging
-    if (process.env.NODE_ENV === 'development') {
-      throw err;
-    }
-  });
-
-  // Serve static files in production
-  if (app.get("env") === "production") {
-    const staticPath = path.join(process.cwd(), 'dist/public');
-    log(`Serving static files from: ${staticPath}`);
-    
-    app.use(express.static(staticPath));
-    
-    // For SPA routing - handle all routes by serving index.html
-    app.get('*', (req, res) => {
-      // Skip API routes
-      if (req.url.startsWith('/api/')) {
-        return res.status(404).json({ error: 'API endpoint not found' });
-      }
-      
+    // Enhanced health check endpoint for monitoring with DB connectivity check
+    app.get('/health', async (req, res) => {
       try {
-        const indexPath = path.join(staticPath, 'index.html');
-        if (fs.existsSync(indexPath)) {
-          return res.sendFile(indexPath);
-        } else {
-          log(`Index file not found at: ${indexPath}`, "error");
-          return res.status(404).send('Application not found');
-        }
+        // Check database connectivity
+        const dbConnected = await pool.query('SELECT 1');
+        const dbStatus = dbConnected ? 'connected' : 'disconnected';
+        
+        // Calculate server uptime
+        const uptime = process.uptime();
+        const uptimeFormatted = `${Math.floor(uptime)}s`;
+        
+        res.status(200).json({
+          status: 'ok',
+          timestamp: new Date().toISOString(),
+          environment: process.env.NODE_ENV || 'development',
+          version: process.env.APP_VERSION || '1.0.0',
+          uptime: uptimeFormatted,
+          db: dbStatus
+        });
       } catch (error) {
-        log(`Error serving static file: ${error}`, "error");
-        return res.status(500).send('Internal server error');
+        // Log error but don't expose details
+        console.error('Health check database error:', error);
+        res.status(500).json({
+          status: 'error',
+          timestamp: new Date().toISOString(),
+          db: 'disconnected'
+        });
       }
     });
-  }
 
-  // Use PORT environment variable with fallback for Render's dynamic port allocation
-  // Default to 5000 for Replit and local development
-  const port = process.env.PORT || 8080;
-  const serverInstance = server.listen({
-    port: Number(port),
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
-  
-  // Implement graceful shutdown logic for Render reboots
-  const gracefulShutdown = async (signal: string) => {
-    log(`${signal} received. Shutting down gracefully...`);
-    
-    // Close server first, stop accepting new connections
-    serverInstance.close(() => {
-      log('HTTP server closed');
-      
-      // Close database connections
-      pool.end().then(() => {
-        log('Database connections closed');
-        process.exit(0);
-      }).catch((error: Error) => {
-        console.error('Error closing database connections:', error);
-        process.exit(1);
+    // 404 handler for API routes (must come after API routes are registered)
+    app.all('/api/*', (req, res) => {
+      res.status(404).json({
+        message: 'API endpoint not found',
+        code: 'NOT_FOUND',
       });
-      
-      // Force exit after 10 seconds
-      setTimeout(() => {
-        console.error('Forcing shutdown after timeout');
-        process.exit(1);
-      }, 10000);
     });
-  };
-  
-  // Listen for termination signals
-  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+    
+    // Add error logging middleware
+    app.use(errorLogger);
+    
+    // Global error handler with improved error responses and production security
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      const isProduction = process.env.NODE_ENV === 'production';
+      
+      // Use the error ID from the error logger or generate a new one
+      const errorId = err.errorId || `err_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+      
+      // Get status code from error or default to 500
+      const status = err.status || err.statusCode || 500;
+      
+      // In production, avoid exposing detailed error messages
+      const message = isProduction ? 
+        (status === 500 ? "An unexpected error occurred" : err.message || "Error processing request") : 
+        (err.message || "Internal Server Error");
+      
+      // Create standardized error response
+      const errorResponse = {
+        message,
+        code: err.code || 'SERVER_ERROR',
+        errorId, // Always include the error ID so users can reference it in support requests
+        
+        // Only include detailed error information in development
+        ...(process.env.NODE_ENV === 'development' && {
+          stack: err.stack,
+          details: err.details || err.errors
+        })
+      };
+
+      // Log to structured logger in addition to middleware logging
+      if (status >= 500) {
+        logger.error(`Server error: ${message}`, { errorId, status, code: err.code });
+      }
+
+      res.status(status).json(errorResponse);
+    });
+
+    // Use PORT environment variable with fallback
+    const port = process.env.PORT || 8080;
+    const serverInstance = server.listen({
+      port: Number(port),
+      host: "0.0.0.0",
+    }, () => {
+      log(`serving on port ${port}`);
+    });
+    
+    // Implement graceful shutdown logic
+    const gracefulShutdown = async (signal: string) => {
+      log(`${signal} received. Shutting down gracefully...`);
+      
+      // Close server first, stop accepting new connections
+      serverInstance.close(() => {
+        log('HTTP server closed');
+        
+        // Close database connections
+        pool.end().then(() => {
+          log('Database connections closed');
+          process.exit(0);
+        }).catch((error: Error) => {
+          console.error('Error closing database connections:', error);
+          process.exit(1);
+        });
+        
+        // Force exit after 10 seconds
+        setTimeout(() => {
+          console.error('Forcing shutdown after timeout');
+          process.exit(1);
+        }, 10000);
+      });
+    };
+    
+    // Listen for termination signals
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
 })();
