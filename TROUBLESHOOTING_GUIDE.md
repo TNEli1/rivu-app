@@ -1,6 +1,6 @@
 # Rivu App Troubleshooting Guide
 
-## Registration failures due to Content Security Policy violations
+## Registration failures due to Content Security Policy violations (Updated May 22, 2025)
 
 **Error Message/Behavior:**  
 Users on the production site were unable to register due to Content Security Policy (CSP) violations when trying to connect to the backend at https://rivu-app.onrender.com.
@@ -17,13 +17,51 @@ Refused to connect to https://rivu-app.onrender.com/api/register because it viol
 
 **Fix:**  
 1. Added appropriate CSP meta tag in the client/index.html to allow connections to the production backend
-2. Updated the CSP policy to include `connect-src 'self' https://rivu-app.onrender.com`
+2. Updated the CSP policy to include all required external domains:
+   ```
+   connect-src 'self' https://rivu-app.onrender.com https://api.tryrivu.com https://cdn.plaid.com https://production.plaid.com https://posthog.com
+   script-src 'self' https://cdn.plaid.com https://posthog.com https://replit.app https://render.com https://replit.com 'unsafe-inline'
+   ```
 3. Added SEO-related meta tags to improve indexing and search visibility
 4. Ensured proper CORS configuration in the backend to accept requests from the frontend domain
+5. Added server-side CSP header with comprehensive permissions for all production services
 
 **Files/Lines Modified:**
-- `client/index.html` - Added CSP meta tag with appropriate connect-src directive
+- `client/index.html` - Updated CSP meta tag with comprehensive connect-src directive
+- `server/index.ts` - Enhanced server-side CSP header for production environments
 - `server/controllers-ts/userController.ts` - Updated to properly handle email opt-in field
+
+**Date Applied:** May 22, 2025
+
+## PostHog API Key Missing in Production (Fixed May 22, 2025)
+
+**Error Message/Behavior:**  
+Browser logs showed:
+```
+PostHog API key is missing. Analytics will not be tracked.
+```
+
+**Cause:**  
+1. The PostHog API key environment variable wasn't being properly accessed in the production environment
+2. Lack of fallback mechanism and proper debugging information when the key is missing
+
+**Fix:**  
+1. Updated PostHog initialization in the analytics module to provide better fallback:
+   ```javascript
+   const posthogKey = apiKey || import.meta.env.VITE_POSTHOG_API_KEY;
+   ```
+2. Added enhanced logging to diagnose issues with environment variables:
+   ```javascript
+   console.log('Available environment variables:', Object.keys(import.meta.env).filter(...));
+   ```
+3. Used the same initialization mechanism across all code paths, ensuring consistent API key handling
+4. Added logging that indicates when PostHog is successfully initialized
+
+**Files/Lines Modified:**
+- `client/src/main.tsx` - Added enhanced environment variable debugging and logging
+- `client/src/lib/analytics.ts` - Improved API key handling with fallback mechanism
+
+**Note:** Ensure VITE_POSTHOG_API_KEY environment variable is set in both Replit and Render deployment environments.
 
 **Date Applied:** May 22, 2025
 

@@ -7,14 +7,17 @@ import posthog from 'posthog-js';
  * @returns - Whether initialization was successful
  */
 export function initializeAnalytics(apiKey: string): boolean {
-  if (!apiKey) {
+  // Try to use the provided key first, then fall back to env variable if needed
+  const posthogKey = apiKey || import.meta.env.VITE_POSTHOG_API_KEY;
+  
+  if (!posthogKey) {
     console.warn('PostHog API key is missing. Analytics will not be tracked.');
     return false;
   }
 
   try {
     // Configure PostHog with privacy-first settings for a financial app
-    posthog.init(apiKey, {
+    posthog.init(posthogKey, {
       api_host: import.meta.env.VITE_POSTHOG_HOST || 'https://app.posthog.com',
       capture_pageview: true,
       capture_pageleave: true,

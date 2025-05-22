@@ -9,7 +9,18 @@ document.documentElement.classList.add("dark");
 
 // Initialize PostHog with direct integration as requested
 const apiKey = import.meta.env.VITE_POSTHOG_API_KEY as string;
-console.log('Initializing PostHog with key:', apiKey);
+
+// Add debugging to help identify environment variable issues
+if (!apiKey) {
+  console.warn('VITE_POSTHOG_API_KEY environment variable is not set. Please ensure it is set in your production environment.');
+  console.log('Available environment variables:', 
+    Object.keys(import.meta.env)
+      .filter(key => !key.includes('PASSWORD') && !key.includes('SECRET') && !key.includes('KEY'))
+      .join(', ')
+  );
+} else {
+  console.log('PostHog API key found with length:', apiKey.length);
+}
 
 // Initialize PostHog with privacy-focused settings for a financial app
 initializeAnalytics(apiKey);
