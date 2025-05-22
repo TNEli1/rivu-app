@@ -1,67 +1,37 @@
-# Troubleshooting Guide
+# Rivu App Troubleshooting Guide
 
-This document contains solutions for common issues encountered in the Rivu Finance application.
+This document contains solutions to common issues encountered in the Rivu application, along with their resolutions.
 
-## Database Migration Issues
+## Registration Issues
 
-### Missing last_login column + inactive user tracking
+### Load failed – Frontend used relative URL in production
 
-**Issue**: The inactive user checking process was referencing a `last_login` column that didn't exist in the users table, causing migration errors during application startup.
+**Error Message/Behavior:**  
+Users on the production site (tryrivu.com) were unable to register and received "Registration failed: Load failed" errors because the API URL was incorrectly configured.
 
-**Fix Implemented**:
-1. Added a migration to create the `last_login` column on the users table
-2. Modified the inactive user check to be resilient to missing columns
-3. Ensured the login process properly updates both `last_login` and `last_activity_date` fields
+**Date:** May 22, 2025
 
-**Implementation Details**:
-- Added dynamic column checking that safely handles varying database schemas
-- Implemented fallback logic using available date fields when specific columns aren't present
-- Added proper updating of login timestamps when users successfully authenticate
+**Cause:**  
+1. The `getApiBaseUrl()` function in the deployed build returned an empty string (`''`) for production domains
+2. This caused the frontend to use relative URLs for API requests
+3. Since the backend is hosted on a different domain (rivu-app.onrender.com), these relative URL requests failed
+4. The development and production code had different implementations of this function
 
-**Affected Files**:
-- `/server/migrations/inactiveUsers.ts` - Added column existence check and fallback query
-- `/server/migrations/add-last-login-column.ts` - New migration to add the last_login column
-- `/server/migrations/index.ts` - Updated to include the new last_login column migration
-- `/server/controllers-ts/userController.ts` - Already properly updates login timestamps
+**Fix:**  
+1. Updated `getApiBaseUrl()` to consistently return the absolute backend URL for production environments
+2. Fixed the logic to properly detect production domains (tryrivu.com and subdomains)
+3. Enhanced error handling and retry logic in API request functions
+4. Added CORS mode explicitly to all API requests
+5. Improved error messages and logging for easier debugging
 
-**Date of Fix**: May 22, 2025
+**Files Modified:**
+- `deploy/client/src/lib/queryClient.ts` - Updated URL handling and error recovery
+- Specifically updated the production URL to consistently point to `https://rivu-app.onrender.com`
 
-## User Registration and Login Flow
+**Status:** ✅ Confirmed working on tryrivu.com
 
-### User Registration Process
+## Authentication Issues
 
-**Verification Checks**:
-- Registration succeeds on tryrivu.com
-- Password confirmation field is properly validated with visual feedback
-- Proper error handling for existing accounts
-- No account duplication when the same email is used multiple times
+## Performance Issues
 
-**Implementation Details**:
-- Frontend form validation displays immediate feedback to users
-- Backend validation prevents duplicate accounts using the same username or email
-- Comprehensive error codes provide granular feedback for different registration issues
-- User data is properly sanitized and stored in PostgreSQL
-
-## Inactive User Handling
-
-**Feature Implementation**:
-- Users who haven't logged in for 90+ days are automatically flagged as inactive
-- The system checks for inactive users during application startup
-- User status is tracked through the status field ('active', 'inactive', 'deleted')
-- Last login timestamp and activity date are properly tracked
-
-## Recent Fixes and Improvements
-
-### Database Migration Reliability
-- Improved migration system with proper sequence and dependency handling
-- Added column existence checks to prevent errors on schema variations
-- Better error handling that allows the application to start despite minor migration issues
-
-### Security Enhancements
-- Improved login tracking with comprehensive activity timestamps
-- Account status tracking for improved security and management
-- Automated cleanup of inactive accounts
-
-### Performance Updates
-- Optimized database queries for user activity tracking
-- Improved migration performance with streamlined checks
+## Database Issues
