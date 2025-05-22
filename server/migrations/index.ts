@@ -7,10 +7,10 @@
 
 import { logger } from '../utils/logger';
 import { pool } from '../db';
-import { runUserStatusMigration } from './user-status-migration';
-import { runLastLoginMigration } from './last-login-migration';
-import { runScoreHistoryMigration } from './score-history-migration';
-import { runPrivacyComplianceMigration } from './privacy-compliance-migration';
+import { runMigration as runUserStatusMigration } from './add-user-status-fields';
+import { runMigration as runLastLoginMigration } from './add-last-login-column';
+import { runMigration as runScoreHistoryMigration } from './add-score-history-fields';
+import { runMigration as runPrivacyComplianceMigration } from './privacy-compliance-migration';
 import { runEmailOptInMigration } from './email-opt-in-migration';
 
 /**

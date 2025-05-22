@@ -14,7 +14,7 @@ import { configureDevelopmentProxy } from "./dev-proxy";
 import { activityTracker } from "./middleware/activityTracker";
 import path from 'path';
 import fs from 'fs';
-import { runMigrations } from './migrations';
+import { runMigrations } from './db-migrations';
 
 // Simple logging function to replace the one from vite
 function log(message: string, source = "express") {
