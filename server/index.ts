@@ -128,11 +128,11 @@ app.use((req, res, next) => {
     res.setHeader(
       'Content-Security-Policy',
       "default-src 'self'; " +
-      "script-src 'self' https://cdn.plaid.com https://*.posthog.com https://*.tryrivu.com https://*.render.com 'unsafe-inline'; " +
+      "script-src 'self' https://cdn.plaid.com https://*.posthog.com https://*.tryrivu.com https://*.render.com https://*.replit.app 'unsafe-inline'; " +
       "style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; " +
       "font-src 'self' https://fonts.gstatic.com; " +
       "img-src 'self' data: https:; " +
-      "connect-src 'self' https://api.tryrivu.com https://*.render.com https://cdn.plaid.com https://production.plaid.com https://*.posthog.com; " +
+      "connect-src 'self' https://api.tryrivu.com https://*.render.com https://*.replit.app https://cdn.plaid.com https://production.plaid.com https://*.posthog.com; " +
       "frame-src 'self' https://cdn.plaid.com; " +
       "object-src 'none';" + 
       "form-action 'self';"

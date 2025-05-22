@@ -2,7 +2,7 @@
 import { sql } from 'drizzle-orm';
 import { db, pool } from './db';
 import * as schema from '@shared/schema';
-import { QueryResult } from '@neondatabase/serverless';
+import { QueryResult } from 'pg';
 
 /**
  * Production-ready database migration script
