@@ -424,6 +424,31 @@ Multiple issues:
 
 ## Additional Fixes
 
+### Wrong database (NeonDB) was being used in Replit
+
+**Error Message/Behavior:**  
+- User registration failing in production
+- Database-related errors in application logs
+- Schema migration issues with errors like "relation users does not exist"
+
+**Cause:**  
+- DATABASE_URL was pointing to an unused test NeonDB instance
+- The application was configured to use the wrong database for connections
+- Schema migration was never properly applied to the correct Render DB
+
+**Fix:**  
+- Updated DATABASE_URL to point to the correct Render PostgreSQL database
+- Re-applied all database migrations to create the schema in the correct database
+- Ensured application correctly uses only the DATABASE_URL from Replit Secrets
+- Fixed SSL connection configuration for Render PostgreSQL
+
+**Files/Lines Modified:**
+- No code changes required; the fix involved updating the DATABASE_URL environment variable in Replit Secrets and running migrations with the correct database connection string
+- Applied migrations using `npx drizzle-kit push` with proper SSL configuration
+- Verified all required tables were created in the correct database
+
+**Date of Fix:** May 22, 2025
+
 ### PostgreSQL Connection Pool Configuration
 
 **Error Message/Behavior:**  
