@@ -255,7 +255,11 @@ export default function RivuScore() {
         </h4>
         <div className="space-y-2 text-left">
           {data.improvementAreas.map((area, index) => (
-            <div key={index} className="bg-gray-50 dark:bg-gray-800 p-2 rounded-md">
+            <div 
+              key={index} 
+              className="bg-gray-50 dark:bg-gray-800 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              onClick={() => trackDashboardEngagement('rivu_score_tip_clicked', area.factor)}
+            >
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">{area.factor}</span>
                 <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded-full">
@@ -454,6 +458,7 @@ export default function RivuScore() {
         <Link 
           to="/rivu-score-info" 
           className={`text-xs underline ${theme === 'dark' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'}`}
+          onClick={() => trackDashboardEngagement('rivu_score_learn_more')}
         >
           How your Rivu Score works
         </Link>

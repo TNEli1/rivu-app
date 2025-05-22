@@ -122,7 +122,7 @@ const CATEGORY_SUGGESTIONS: Record<string, string[]> = {
 };
 
 export default function TransactionsPage() {
-  const { trackTransactionAdded } = useAnalytics();
+  const { trackTransactionAdded, trackDashboardEngagement } = useAnalytics();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCSVUploadOpen, setIsCSVUploadOpen] = useState(false);
@@ -873,7 +873,13 @@ export default function TransactionsPage() {
                 placeholder="Search transactions..."
                 className="pl-8"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  const newValue = e.target.value;
+                  setSearchTerm(newValue);
+                  if (newValue.length > 2) {
+                    trackDashboardEngagement('transaction_search', 'text_search');
+                  }
+                }}
               />
             </div>
             
@@ -885,10 +891,16 @@ export default function TransactionsPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setTypeFilter('expense')}>
+                  <DropdownMenuItem onClick={() => {
+                    setTypeFilter('expense');
+                    trackDashboardEngagement('transaction_filter', 'type_expense');
+                  }}>
                     Expense
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setTypeFilter('income')}>
+                  <DropdownMenuItem onClick={() => {
+                    setTypeFilter('income');
+                    trackDashboardEngagement('transaction_filter', 'type_income');
+                  }}>
                     Income
                   </DropdownMenuItem>
                 </DropdownMenuContent>
