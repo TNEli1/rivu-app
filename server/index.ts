@@ -1,6 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-// Removed Vite dependency for Render deployment
+import { setupVite, serveStatic, log } from "./vite";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
@@ -10,14 +10,6 @@ import { setCsrfToken, validateCsrfToken } from "./middleware/csrfProtection";
 import { pool } from "./db";
 import { requestLogger, errorLogger } from "./middleware/requestLogger";
 import { logger } from "./utils/logger";
-import path from 'path';
-import fs from 'fs';
-
-// Simple logging function to replace the one from vite
-function log(message, source = "express") {
-  const time = new Date().toLocaleTimeString();
-  console.log(`${time} [${source}] ${message}`);
-}
 
 // Load environment variables
 dotenv.config();
@@ -251,26 +243,13 @@ app.use((req, res, next) => {
     }
   });
 
-  // Serve static files in production without Vite
-  if (app.get("env") === "production") {
-    const publicPath = path.join(process.cwd(), 'dist/public');
-    console.log(`Serving static files from: ${publicPath}`);
-    app.use(express.static(publicPath));
-    
-    // Handle SPA routes
-    app.get('*', (req, res) => {
-      // Skip API routes
-      if (req.url.startsWith('/api/')) {
-        return res.status(404).json({ error: 'API endpoint not found' });
-      }
-      
-      const indexPath = path.join(publicPath, 'index.html');
-      if (fs.existsSync(indexPath)) {
-        return res.sendFile(indexPath);
-      } else {
-        return res.status(404).send('Application not found');
-      }
-    });
+  // importantly only setup vite in development and after
+  // setting up all the other routes so the catch-all route
+  // doesn't interfere with the other routes
+  if (app.get("env") === "development") {
+    await setupVite(app, server);
+  } else {
+    serveStatic(app);
   }
 
   // Use PORT environment variable with fallback for Render's dynamic port allocation

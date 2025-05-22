@@ -1,5 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
+import { setupVite, serveStatic, log } from "./vite";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
@@ -9,20 +10,6 @@ import { setCsrfToken, validateCsrfToken } from "./middleware/csrfProtection";
 import { pool } from "./db";
 import { requestLogger, errorLogger } from "./middleware/requestLogger";
 import { logger } from "./utils/logger";
-import path from "path";
-import fs from "fs";
-
-// Simple logging function to replace vite's log
-function log(message: string, source = "express") {
-  const formattedTime = new Date().toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
-
-  console.log(`${formattedTime} [${source}] ${message}`);
-}
 
 // Load environment variables
 dotenv.config();
@@ -256,33 +243,13 @@ app.use((req, res, next) => {
     }
   });
 
-  // Serve static files in production
-  if (app.get("env") === "production") {
-    const staticPath = path.join(process.cwd(), 'dist/public');
-    log(`Serving static files from: ${staticPath}`);
-    
-    app.use(express.static(staticPath));
-    
-    // For SPA routing - handle all routes by serving index.html
-    app.get('*', (req, res) => {
-      // Skip API routes
-      if (req.url.startsWith('/api/')) {
-        return res.status(404).json({ error: 'API endpoint not found' });
-      }
-      
-      try {
-        const indexPath = path.join(staticPath, 'index.html');
-        if (fs.existsSync(indexPath)) {
-          return res.sendFile(indexPath);
-        } else {
-          log(`Index file not found at: ${indexPath}`, "error");
-          return res.status(404).send('Application not found');
-        }
-      } catch (error) {
-        log(`Error serving static file: ${error}`, "error");
-        return res.status(500).send('Internal server error');
-      }
-    });
+  // importantly only setup vite in development and after
+  // setting up all the other routes so the catch-all route
+  // doesn't interfere with the other routes
+  if (app.get("env") === "development") {
+    await setupVite(app, server);
+  } else {
+    serveStatic(app);
   }
 
   // Use PORT environment variable with fallback for Render's dynamic port allocation
