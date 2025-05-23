@@ -27,7 +27,7 @@ const app = express();
 // Basic security - hide Express fingerprint
 app.disable('x-powered-by');
 
-// Trust proxy - needed for rate limiting to work properly in Replit environment
+// Trust proxy - needed for rate limiting to work properly in production environment
 app.set('trust proxy', 1);
 
 // Global rate limiter to prevent abuse

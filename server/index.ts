@@ -30,7 +30,7 @@ const app = express();
 // Basic security - hide Express fingerprint
 app.disable('x-powered-by');
 
-// Trust proxy - needed for rate limiting to work properly in Replit environment
+// Trust proxy - needed for rate limiting to work properly in production environment
 app.set('trust proxy', 1);
 
 // Global rate limiter to prevent abuse
@@ -150,7 +150,7 @@ app.use((req, res, next) => {
     res.setHeader(
       'Content-Security-Policy',
       "default-src 'self'; " +
-      "script-src 'self' https://cdn.plaid.com https://app.posthog.com https://replit.com 'unsafe-inline'; " +
+      "script-src 'self' https://cdn.plaid.com https://app.posthog.com 'unsafe-inline'; " +
       "style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; " +
       "font-src 'self' https://fonts.gstatic.com; " +
       "img-src 'self' data: https:; " +
