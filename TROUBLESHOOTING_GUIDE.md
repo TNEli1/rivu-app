@@ -22,7 +22,7 @@ Refused to connect to https://rivu-app.onrender.com/api/register because it viol
 2. Updated server-side CSP header in server/index.ts with comprehensive allowances:
    ```
    default-src 'self'; 
-   script-src 'self' 'unsafe-inline' https://cdn.plaid.com https://app.posthog.com https://replit.com https://replit.app https://render.com; 
+   script-src 'self' 'unsafe-inline' https://cdn.plaid.com https://app.posthog.com https://render.com; 
    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; 
    font-src 'self' https://fonts.gstatic.com; 
    img-src 'self' data: https:; 
@@ -87,7 +87,7 @@ Refused to connect to 'https://app.posthog.com/...' because it violates the docu
 - `client/src/lib/analytics.ts` - Improved API key handling with fallback mechanism
 - `server/index.ts` - Updated CSP to include correct PostHog domain (app.posthog.com)
 
-**Note:** Ensure VITE_POSTHOG_API_KEY environment variable is set in both Replit and Render deployment environments.
+**Note:** Ensure VITE_POSTHOG_API_KEY environment variable is set in the Render deployment environment.
 
 **Date Applied:** May 22, 2025
 
@@ -124,6 +124,30 @@ Added email opt-in checkbox to registration form to collect user consent for mar
 - `client/index.html` - Added SEO and mobile optimization meta tags
 
 **Date Applied:** May 22, 2025
+
+## Development Environment Cleanup (Updated May 23, 2025)
+
+**Changes Made:**
+1. Removed all Replit-specific code and references from the codebase:
+   - Removed Replit development script from HTML files
+   - Removed Replit domain references from hostname detection
+   - Updated Content Security Policy to remove Replit domains
+   - Updated port configuration comments and references
+   - Cleaned up trust proxy configuration comments
+
+**Files/Lines Modified:**
+- `client/index.html` - Removed Replit development script
+- `deploy/client/index.html` - Removed Replit development script
+- `client/src/lib/queryClient.ts` - Removed Replit domain (.replit.app) from hostname detection
+- `server/index.ts` - Updated CSP headers and comments about proxy/port configuration
+- `render-backend/index.ts` - Updated comments about trust proxy configuration
+- `render-backend-deploy/index.ts` - Updated comments about trust proxy configuration
+- `apply-migrations.js` - Updated comments about environment variables
+
+**Reason for Change:**
+Preparing the codebase for production deployment by removing all development-environment specific code related to Replit. This ensures a cleaner, more maintainable codebase focused on the production Render deployment environment.
+
+**Date Applied:** May 23, 2025
 
 ## Recommendations for future improvement
 

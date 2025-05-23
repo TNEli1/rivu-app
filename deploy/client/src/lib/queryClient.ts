@@ -27,7 +27,7 @@ export const getApiBaseUrl = (): string => {
     window.location.hostname.includes('tryrivu.com') || // Include subdomains
     window.location.hostname.endsWith('.vercel.app') || 
     window.location.hostname.endsWith('.render.com') || 
-    window.location.hostname.endsWith('.replit.app');
+    false; // Removed Replit reference
 
   // Determine the appropriate base URL based on environment
   if (isProduction) {

@@ -62,7 +62,7 @@ if (process.env.NODE_ENV === 'production') {
 
 // Configure CORS with proper security settings
 const corsOptions = {
-  origin: function(origin, callback) {
+  origin: function(origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) {
       return callback(null, true);
@@ -314,7 +314,7 @@ import { ensureDatabaseConnection, setupGracefulDatabaseShutdown } from './utils
   }
 
   // Use PORT environment variable with fallback for Render's dynamic port allocation
-  // Default to 5000 for Replit and local development
+  // Default to 8080 for local development
   const port = process.env.PORT || 8080;
   const serverInstance = server.listen({
     port: Number(port),

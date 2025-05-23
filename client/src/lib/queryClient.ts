@@ -29,8 +29,7 @@ export const getApiBaseUrl = (): string => {
     hostname === 'tryrivu.com' || 
     hostname.includes('tryrivu.com') || // Include subdomains
     hostname.endsWith('.vercel.app') || 
-    hostname.endsWith('.render.com') || 
-    hostname.endsWith('.replit.app');
+    hostname.endsWith('.render.com');
 
   console.log(`Hostname detected: ${hostname}, isProduction: ${isProduction}`);
 

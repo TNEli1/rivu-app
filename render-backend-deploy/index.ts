@@ -14,7 +14,7 @@ import path from 'path';
 import fs from 'fs';
 
 // Simple logging function to replace the one from vite
-function log(message, source = "express") {
+function log(message: string, source = "express") {
   const time = new Date().toLocaleTimeString();
   console.log(`${time} [${source}] ${message}`);
 }
