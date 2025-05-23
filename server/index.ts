@@ -150,13 +150,13 @@ app.use((req, res, next) => {
     res.setHeader(
       'Content-Security-Policy',
       "default-src 'self'; " +
-      "script-src 'self' 'unsafe-inline' https://cdn.plaid.com https://app.posthog.com https://replit.com https://replit.app https://render.com; " +
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+      "script-src 'self' https://cdn.plaid.com https://app.posthog.com https://replit.com 'unsafe-inline'; " +
+      "style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; " +
       "font-src 'self' https://fonts.gstatic.com; " +
       "img-src 'self' data: https:; " +
-      "connect-src 'self' https://rivu-app.onrender.com https://tryrivu.com https://api.tryrivu.com https://*.render.com https://cdn.plaid.com https://production.plaid.com https://app.posthog.com https://eu.posthog.com; " +
+      "connect-src 'self' https://rivu-app.onrender.com https://api.tryrivu.com https://*.render.com https://cdn.plaid.com https://production.plaid.com https://app.posthog.com; " +
       "frame-src 'self' https://cdn.plaid.com; " +
-      "object-src 'none';"
+      "object-src 'none'"
     );
   }
   
