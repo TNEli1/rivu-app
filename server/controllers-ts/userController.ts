@@ -128,7 +128,7 @@ export const registerUser = async (req: any, res: any) => {
     const user = await storage.createUser({
       username,
       email,
-      password: hashedPassword,
+      password: hashedPassword, // This is the password field in the database schema
       firstName: firstName || '',
       lastName: lastName || '',
       avatarInitials: avatarInitials || username.substring(0, 2).toUpperCase(),
@@ -141,11 +141,21 @@ export const registerUser = async (req: any, res: any) => {
       lastLogin: new Date(), // matches schema field name
       marketingConsentGiven: emailOptIn === true, // Store email opt-in preference
       dataConsentDate: new Date() // Record when consent was given
+    }).catch((createError: any) => {
+      // Log detailed error information for debugging
+      console.error('Error details in createUser:', createError);
+      res.status(500).json({ 
+        message: `Failed to create user: ${createError.message}`,
+        code: 'DB_ERROR'
+      });
+      return null; // Return null to indicate failure
     });
     
-    if (user) {
-      // Generate JWT token
-      const token = generateToken(user.id.toString());
+    // Exit early if user creation failed
+    if (!user) return;
+    
+    // Generate JWT token
+    const token = generateToken(user.id.toString());
       
       // Set token as HTTP-only cookie
       setTokenCookie(res, token);
