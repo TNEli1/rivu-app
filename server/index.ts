@@ -74,7 +74,8 @@ const corsOptions = {
       'https://rivu-app.onrender.com'
     ];
     
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+      return callback(null, true); {
       return callback(null, true);
     } else {
       return callback(new Error('Not allowed by CORS'));

@@ -14,7 +14,7 @@ export function configureDevelopmentProxy(app: Express): void {
   if (process.env.NODE_ENV !== 'production') {
     // In development, forward non-API requests to Vite dev server
     const VITE_PORT = process.env.VITE_PORT || 5173;
-    const VITE_DEV_SERVER = `http://localhost:${VITE_PORT}`;
+    const VITE_DEV_SERVER = process.env.VITE_DEV_SERVER || `http://localhost:${VITE_PORT}`;
     
     console.log(`Setting up development proxy to Vite server at ${VITE_DEV_SERVER}`);
     
