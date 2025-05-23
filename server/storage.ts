@@ -173,19 +173,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values({
-        ...insertUser,
-        loginCount: 0,
-        createdAt: new Date(),
-      })
-      .returning();
-      
-    // Create default categories for the user
-    await this.createDefaultCategoriesForUser(user.id);
+    // Log the fields that are being sent to the database for debugging
+    console.log('Creating user with fields:', Object.keys(insertUser));
     
-    return user;
+    try {
+      const [user] = await db
+        .insert(users)
+        .values({
+          ...insertUser,
+          loginCount: insertUser.loginCount || 0,
+          createdAt: new Date(),
+        })
+        .returning();
+        
+      // Create default categories for the user
+      await this.createDefaultCategoriesForUser(user.id);
+      
+      return user;
+    } catch (error) {
+      console.error('Error in createUser:', error);
+      throw error;
+    }
   }
   
   async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {

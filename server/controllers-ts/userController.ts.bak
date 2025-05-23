@@ -123,12 +123,11 @@ export const registerUser = async (req: any, res: any) => {
     // Create user initials for avatar
     const avatarInitials = (firstName?.[0] || '') + (lastName?.[0] || '');
     
-    // Prepare user data with correct field structure
-    // This is essential: the database column is called 'password' (not password_hash)
+    console.log('Creating user with the following data structure:');
     const userData = {
       username,
       email,
-      password: hashedPassword, // Column name must match database schema
+      password: hashedPassword,
       firstName: firstName || '',
       lastName: lastName || '',
       avatarInitials: avatarInitials || username.substring(0, 2).toUpperCase(),
@@ -143,8 +142,7 @@ export const registerUser = async (req: any, res: any) => {
       dataConsentDate: new Date()
     };
     
-    // Help with debugging by logging the structure - crucial field is 'password'
-    console.log('User data fields being sent to database:', Object.keys(userData).join(', '));
+    console.log('User data keys:', Object.keys(userData));
     
     // Create new user with hashed password
     let user;
