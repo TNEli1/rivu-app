@@ -4,7 +4,6 @@ import { storage } from "./storage";
 import { z } from "zod";
 import OpenAI from "openai";
 import cors from "cors";
-import rateLimit from "express-rate-limit";
 import { BudgetCategory, Transaction, transactions } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql } from "drizzle-orm";
@@ -19,49 +18,6 @@ const openai = new OpenAI({
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup CORS
   app.use(cors());
-  
-  // Add comprehensive health check endpoint for monitoring
-  app.get('/health', async (req, res) => {
-    try {
-      // Check database connection
-      let dbStatus = 'unknown';
-      try {
-        const dbResult = await db.execute(sql`SELECT 1`);
-        dbStatus = dbResult ? 'connected' : 'error';
-      } catch (dbError) {
-        console.error('Health check - Database error:', dbError);
-        dbStatus = 'error';
-      }
-
-      // Build detailed health information for monitoring systems
-      const healthInfo = {
-        status: dbStatus === 'connected' ? 'ok' : 'degraded',
-        timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV || 'development',
-        version: process.env.npm_package_version || '1.0.0',
-        uptime: process.uptime(),
-        services: {
-          database: dbStatus,
-          plaid: process.env.PLAID_CLIENT_ID && process.env.PLAID_SECRET_PRODUCTION ? 'configured' : 'unconfigured'
-        }
-      };
-
-      // Return 200 if everything is ok, 503 if any service is down
-      const statusCode = healthInfo.status === 'ok' ? 200 : 503;
-      res.status(statusCode).json(healthInfo);
-    } catch (error) {
-      // Handle unexpected errors in the health check
-      console.error('Health check error:', error);
-      res.status(500).json({
-        status: 'error',
-        timestamp: new Date().toISOString(),
-        error: 'Health check failed'
-      });
-    }
-  });
-  
-  // We'll apply rate limiting directly from the server/index.ts global settings
-  // Additional endpoint-specific rate limiting can be added once the app is stable
   
   // Set up API routes using PostgreSQL database
   try {
@@ -84,29 +40,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       resetPassword
     } = await import('./controllers-ts/userPasswordController');
 
-    // Create production-ready rate limiters for critical endpoints
-    const authLimiter = rateLimit({
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      max: process.env.NODE_ENV === 'production' ? 5 : 100, // 5 requests per 15 minutes in production
-      message: {
-        message: 'Too many authentication attempts, please try again later',
-        code: 'RATE_LIMITED'
-      }
-    });
-    
-    const apiLimiter = rateLimit({
-      windowMs: 60 * 1000, // 1 minute
-      max: process.env.NODE_ENV === 'production' ? 60 : 1000, // 60 requests per minute in production
-      message: {
-        message: 'Too many requests, please try again later',
-        code: 'RATE_LIMITED'
-      }
-    });
-    
-    // Register auth routes with our TypeScript controller with rate limiting
+    // Register auth routes with our TypeScript controller
     const apiPath = '/api';
-    app.post(`${apiPath}/register`, authLimiter, registerUser);
-    app.post(`${apiPath}/login`, authLimiter, loginUser);
+    app.post(`${apiPath}/register`, registerUser);
+    app.post(`${apiPath}/login`, loginUser);
     app.post(`${apiPath}/logout`, protect, logoutUser);
     app.get(`${apiPath}/user`, protect, getUserProfile);
     app.put(`${apiPath}/user`, protect, updateUserProfile);
@@ -309,29 +246,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       disconnectPlaidItem
     } = await import('./controllers/plaid-items-controller');
     
-    // Create a dedicated rate limiter for Plaid endpoints
-    const plaidLimiter = rateLimit({
-      windowMs: 60 * 1000, // 1 minute
-      max: process.env.NODE_ENV === 'production' ? 10 : 100, // 10 requests per minute in production
-      message: {
-        message: 'Too many bank connection requests, please try again later',
-        code: 'RATE_LIMITED'
-      }
-    });
-    
-    // Create a special rate limiter for Plaid webhooks
-    const webhookLimiter = rateLimit({
-      windowMs: 60 * 1000, // 1 minute
-      max: 120, // Allow more webhook calls (120 per minute)
-      message: {
-        message: 'Too many webhook requests',
-        code: 'RATE_LIMITED'
-      }
-    });
-    
-    // Register Plaid routes with rate limiting
+    // Register Plaid routes
     // Add a route to check Plaid API configuration status
-    app.get(`${apiPath}/plaid/status`, apiLimiter, (req, res) => {
+    app.get(`${apiPath}/plaid/status`, (req, res) => {
       const hasCredentials = process.env.PLAID_CLIENT_ID && process.env.PLAID_SECRET_PRODUCTION;
       if (!hasCredentials) {
         return res.status(503).json({ error: 'Bank connection services not configured' });
@@ -339,21 +256,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(200).json({ status: 'ready' });
     });
     
-    // Apply plaidLimiter to all sensitive Plaid operations
-    app.post(`${apiPath}/plaid/create_link_token`, protect, plaidLimiter, createLinkToken);
-    app.post(`${apiPath}/plaid/exchange_token`, protect, plaidLimiter, exchangeToken);
-    app.post(`${apiPath}/plaid/oauth_callback`, protect, plaidLimiter, handleOAuthCallback);
-    app.post(`${apiPath}/plaid/accounts`, protect, plaidLimiter, getPlaidAccounts);
-    app.post(`${apiPath}/plaid/item/remove`, protect, plaidLimiter, removeItem);
+    app.post(`${apiPath}/plaid/create_link_token`, protect, createLinkToken);
+    app.post(`${apiPath}/plaid/exchange_token`, protect, exchangeToken);
+    app.post(`${apiPath}/plaid/oauth_callback`, protect, handleOAuthCallback);
+    app.post(`${apiPath}/plaid/accounts`, protect, getPlaidAccounts);
+    app.post(`${apiPath}/plaid/item/remove`, protect, removeItem);
+    app.post(`${apiPath}/plaid/webhook`, handleWebhook); // Public webhook route
     
-    // Public webhook route with its own rate limiter
-    app.post(`${apiPath}/plaid/webhook`, webhookLimiter, handleWebhook);
-    
-    // Register Plaid Items routes with rate limiting (for account management and 1033 compliance)
-    app.get(`${apiPath}/plaid/items`, protect, apiLimiter, getPlaidItems);
-    app.get(`${apiPath}/plaid/items/:id`, protect, apiLimiter, getPlaidItemById);
-    app.post(`${apiPath}/plaid/refresh/:id`, protect, plaidLimiter, refreshPlaidItem);
-    app.delete(`${apiPath}/plaid/disconnect/:id`, protect, plaidLimiter, disconnectPlaidItem);
+    // Register Plaid Items routes (for account management and 1033 compliance)
+    app.get(`${apiPath}/plaid/items`, protect, getPlaidItems);
+    app.get(`${apiPath}/plaid/items/:id`, protect, getPlaidItemById);
+    app.post(`${apiPath}/plaid/refresh/:id`, protect, refreshPlaidItem);
+    app.delete(`${apiPath}/plaid/disconnect/:id`, protect, disconnectPlaidItem);
     
     console.log('✅ Auth routes successfully mounted at /api');
     console.log('✅ Plaid routes successfully mounted at /api/plaid');
@@ -1050,7 +964,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     name: string;
     targetAmount: number;
     currentAmount: number;
-    targetDate?: Date | string | null;
+    targetDate?: Date | string;
     progressPercentage: number;
     monthlySavings: Array<{
       month: string; // Format: "YYYY-MM"
@@ -1103,7 +1017,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }));
       
       // Log for debugging
-      console.log(`Found ${dbGoals.length} goals in DB`);
+      console.log(`Found ${dbGoals.length} goals in DB and ${global.appGoals?.length || 0} goals in memory, total: ${dbGoals.length}`);
       
       // Return all goals from database
       res.json(formattedGoals);

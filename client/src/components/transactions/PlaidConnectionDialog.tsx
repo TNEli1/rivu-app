@@ -186,17 +186,14 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
     }
   }, []);
 
-  // Configure the Plaid Link hook with proper configuration for production
+  // Configure the Plaid Link hook with proper configuration
   const config = {
     token: linkToken || '',
     onSuccess,
     onExit,
-    // Add OAuth required options with production-ready URL handling
+    // Add OAuth required options
     receivedRedirectUri: window.location.href,
-    // Ensure callback URL always uses HTTPS in production
-    oauthRedirectUri: process.env.NODE_ENV === 'production' 
-      ? 'https://tryrivu.com/callback'
-      : window.location.origin + '/callback',
+    oauthRedirectUri: window.location.origin + '/callback',
     oauthNonce: Math.floor(Math.random() * 10000000).toString(), // Random nonce for security
   };
   

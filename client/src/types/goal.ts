@@ -1,7 +1,8 @@
 // Types for Savings Goals feature
 
 export type Goal = {
-  id: number;  // PostgreSQL ID format
+  _id?: string; // MongoDB ID format
+  id?: number;  // In-memory ID format
   name: string;
   targetAmount: number;
   currentAmount: number;

@@ -74,34 +74,16 @@ app.use(cookieParser()); // Parse cookies
 app.use(setCsrfToken); // Set CSRF token for all routes
 app.use('/api', validateCsrfToken); // Validate CSRF token for API routes
 
-// Set comprehensive security headers
+// Set security headers
 app.use((req, res, next) => {
-  // Basic security headers
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   
-  // Set enhanced security headers in production
+  // Only set HSTS in production
   if (process.env.NODE_ENV === 'production') {
-    // Strict Transport Security for HTTPS enforcement
     res.setHeader(
       'Strict-Transport-Security', 
-      'max-age=31536000; includeSubDomains; preload'
-    );
-    
-    // Content Security Policy for production
-    // Allow connections to trusted sources only
-    res.setHeader(
-      'Content-Security-Policy',
-      "default-src 'self'; " +
-      "script-src 'self' https://cdn.plaid.com https://*.vercel.app 'unsafe-inline'; " +
-      "style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; " +
-      "font-src 'self' https://fonts.gstatic.com; " +
-      "img-src 'self' data: https:; " +
-      "connect-src 'self' https://api.tryrivu.com https://*.render.com https://cdn.plaid.com https://production.plaid.com; " +
-      "frame-src 'self' https://cdn.plaid.com; " +
-      "object-src 'none';"
+      'max-age=31536000; includeSubDomains'
     );
   }
   
@@ -150,48 +132,20 @@ app.use((req, res, next) => {
     });
   });
   
-  // Global error handler with improved error responses and production security
+  // Global error handler with improved error responses
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const isProduction = process.env.NODE_ENV === 'production';
-    
-    // Add error tracking metadata
-    const errorId = `err_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
-    
-    // In production, log structured error data for monitoring systems
-    if (isProduction) {
-      // Create a sanitized error log that doesn't expose sensitive data
-      const logData = {
-        errorId,
-        timestamp: new Date().toISOString(),
-        statusCode: err.status || err.statusCode || 500,
-        code: err.code || 'SERVER_ERROR',
-        message: err.message || "Internal Server Error",
-        path: _req.path,
-        method: _req.method,
-        // Don't log the full stack trace in structured logs for production
-      };
-      
-      console.error('Production error:', JSON.stringify(logData));
-    } else {
-      // Development: log the full error for debugging
-      console.error('Development error:', err);
-    }
+    // Log error details for debugging
+    console.error('Unhandled error:', err);
     
     // Get status code from error or default to 500
     const status = err.status || err.statusCode || 500;
-    
-    // In production, avoid exposing detailed error messages
-    const message = isProduction ? 
-      (status === 500 ? "An unexpected error occurred" : err.message || "Error processing request") : 
-      (err.message || "Internal Server Error");
+    const message = err.message || "Internal Server Error";
     
     // Create standardized error response
     const errorResponse = {
-      message,
+      message: message,
       code: err.code || 'SERVER_ERROR',
-      errorId, // Always include the error ID so users can reference it in support requests
-      
-      // Only include detailed error information in development
+      // Only include error details in development
       ...(process.env.NODE_ENV === 'development' && {
         stack: err.stack,
         details: err.details || err.errors
