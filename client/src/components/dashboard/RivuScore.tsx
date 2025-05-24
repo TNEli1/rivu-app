@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { RefreshCw, TrendingUp, TrendingDown, Info, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'wouter';
-import { useAnalytics } from '@/lib/AnalyticsContext';
 import { 
   Tooltip,
   TooltipContent,
@@ -78,7 +77,6 @@ export default function RivuScore() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const { trackDashboardEngagement } = useAnalytics();
   const [timeRange, setTimeRange] = useState('3months'); // '1month', '3months', '6months', 'year'
   const [showHistory, setShowHistory] = useState(false);
   
@@ -115,17 +113,11 @@ export default function RivuScore() {
     },
     onMutate: () => {
       setIsRefreshing(true);
-      // Track when a user initiates score refresh
-      trackDashboardEngagement('rivu_score', 'refresh_initiated');
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       // Invalidate and refetch all relevant queries
       queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] });
-      
-      // Track successful score refresh with current score value
-      trackDashboardEngagement('rivu_score', 'refresh_completed');
-      
       toast({
         title: "Rivu Score Refreshed",
         description: "Your financial health score has been recalculated.",
@@ -255,11 +247,7 @@ export default function RivuScore() {
         </h4>
         <div className="space-y-2 text-left">
           {data.improvementAreas.map((area, index) => (
-            <div 
-              key={index} 
-              className="bg-gray-50 dark:bg-gray-800 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              onClick={() => trackDashboardEngagement('rivu_score_tip_clicked', area.factor)}
-            >
+            <div key={index} className="bg-gray-50 dark:bg-gray-800 p-2 rounded-md">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">{area.factor}</span>
                 <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded-full">
@@ -331,16 +319,7 @@ export default function RivuScore() {
             variant="ghost" 
             size="sm" 
             className="h-6 text-xs px-2"
-            onClick={() => {
-              const newState = !showHistory;
-              setShowHistory(newState);
-              
-              // Track when users view their score history details
-              trackDashboardEngagement(
-                'rivu_score_history', 
-                newState ? 'expanded' : 'collapsed'
-              );
-            }}
+            onClick={() => setShowHistory(!showHistory)}
           >
             {showHistory ? 'Hide Details' : 'Show Details'}
           </Button>
@@ -458,7 +437,6 @@ export default function RivuScore() {
         <Link 
           to="/rivu-score-info" 
           className={`text-xs underline ${theme === 'dark' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'}`}
-          onClick={() => trackDashboardEngagement('rivu_score_learn_more')}
         >
           How your Rivu Score works
         </Link>

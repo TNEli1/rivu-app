@@ -15,7 +15,6 @@ import { apiRequest } from "@/lib/queryClient";
 import { formatCurrency } from "@/lib/utils";
 import { useTheme } from "@/hooks/use-theme";
 import { useQuery } from "@tanstack/react-query";
-import { useAnalytics } from "@/lib/AnalyticsContext";
 import { format } from "date-fns";
 
 // Helper functions for goal completion calculation - matches the logic on goals-page.tsx
@@ -186,7 +185,6 @@ export default function Dashboard() {
   const [summaryData, setSummaryData] = useState<DashboardSummary>(initialSummaryData);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [showTutorial, setShowTutorial] = useState(false);
-  const { trackPageView, trackDashboardEngagement } = useAnalytics();
   
   // Fetch goals data for metrics
   const { data: goalsData = [], isLoading: isGoalsLoading } = useQuery<GoalData[]>({
@@ -204,13 +202,6 @@ export default function Dashboard() {
   
   // Fetch data when component mounts
   useEffect(() => {
-    // Track dashboard page view when component mounts
-    trackPageView('dashboard', {
-      has_goals: Boolean(goalsData?.length > 0),
-      monthly_income: summaryData?.monthlyIncome || 0,
-      has_transactions: transactions.length > 0
-    });
-    
     // Fetch dashboard summary
     const fetchSummary = async () => {
       try {
@@ -339,9 +330,6 @@ export default function Dashboard() {
   const handleSubmitPrompt = async () => {
     if (!coachPrompt.trim()) return;
     
-    // Track AI coach usage with PostHog
-    trackDashboardEngagement('financial_coach', 'prompt_submitted');
-    
     setIsLoadingCoachResponse(true);
     
     try {
@@ -354,9 +342,6 @@ export default function Dashboard() {
       
       setCoachResponse(simplifiedMessage);
       setCoachPrompt("");
-      
-      // Track successful response
-      trackDashboardEngagement('financial_coach', 'response_received');
       
       // Scroll to response
       setTimeout(() => {

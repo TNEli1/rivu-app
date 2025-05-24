@@ -23,9 +23,6 @@ async function initializeDatabase() {
         last_name VARCHAR(255) NOT NULL,
         avatar_initials VARCHAR(10) NOT NULL,
         theme_preference VARCHAR(50) DEFAULT 'light',
-        -- Account status fields
-        status VARCHAR(50) DEFAULT 'active',
-        last_activity_date TIMESTAMP,
         -- Demographics fields
         age_range VARCHAR(50),
         income_bracket VARCHAR(50),

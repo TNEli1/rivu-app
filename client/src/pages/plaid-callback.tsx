@@ -5,7 +5,6 @@ import { useAuth } from '@/hooks/use-auth';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
-import { useAnalytics } from '@/lib/AnalyticsContext';
 
 export default function PlaidCallback() {
   const [isProcessing, setIsProcessing] = useState(true);
@@ -16,7 +15,6 @@ export default function PlaidCallback() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
-  const { trackPlaidConnected } = useAnalytics();
 
   // Extract the OAuth state ID from the URL
   useEffect(() => {
@@ -67,12 +65,6 @@ export default function PlaidCallback() {
         if (data.success) {
           setSuccess(true);
           setInstitutionName(data.institution_name || 'your bank');
-          
-          // Track successful bank connection through analytics context
-          trackPlaidConnected(
-            data.institution_name || 'unknown bank',
-            data.accounts?.length || 0
-          );
           
           // Invalidate queries to refresh account data
           queryClient.invalidateQueries({ queryKey: ['/api/plaid/items'] });

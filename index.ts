@@ -32,7 +32,7 @@ const app = express();
 // Basic security - hide Express fingerprint
 app.disable('x-powered-by');
 
-// Trust proxy - needed for rate limiting to work properly in production environment
+// Trust proxy - needed for rate limiting to work properly in Replit environment
 app.set('trust proxy', 1);
 
 // Global rate limiter to prevent abuse
@@ -286,7 +286,7 @@ app.use((req, res, next) => {
   }
 
   // Use PORT environment variable with fallback for Render's dynamic port allocation
-  // Default to 8080 for local development
+  // Default to 5000 for Replit and local development
   const port = process.env.PORT || 8080;
   const serverInstance = server.listen({
     port: Number(port),

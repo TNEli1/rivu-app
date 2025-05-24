@@ -10,9 +10,7 @@ import {
   Subcategory, InsertSubcategory,
   PlaidItem, InsertPlaidItem,
   PlaidAccount, InsertPlaidAccount,
-  PlaidWebhookEvent, InsertPlaidWebhookEvent,
-  PlaidUserIdentity, InsertPlaidUserIdentity,
-  ScoreHistory, InsertScoreHistory
+  PlaidWebhookEvent, InsertPlaidWebhookEvent
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lt, isNull, sql, or, between } from "drizzle-orm";
@@ -28,9 +26,7 @@ import {
   subcategories,
   plaidItems,
   plaidAccounts,
-  plaidWebhookEvents,
-  plaidUserIdentities,
-  scoreHistory
+  plaidWebhookEvents
 } from "@shared/schema";
 // Import direct database access
 // We'll modify the getSavingsGoals function to handle in-memory goals
@@ -43,15 +39,9 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
-  deleteUserPermanently(id: number): Promise<boolean>;
   createPasswordResetToken(email: string, tokenHash: string, expiry: Date): Promise<boolean>;
   verifyPasswordResetToken(tokenHash: string): Promise<User | null>;
   resetPassword(tokenHash: string, newPassword: string): Promise<boolean>;
-  
-  // Email verification methods
-  verifyEmailToken(tokenHash: string, email: string): Promise<User | null>;
-  markEmailAsVerified(userId: number): Promise<boolean>;
-  updateUserVerificationToken(userId: number, token: string, expiry: Date): Promise<boolean>;
   
   // Budget category operations
   getBudgetCategories(userId: number): Promise<BudgetCategory[]>;
@@ -81,10 +71,6 @@ export interface IStorage {
   // Rivu Score operations
   getRivuScore(userId: number): Promise<RivuScore | undefined>;
   createOrUpdateRivuScore(score: InsertRivuScore): Promise<RivuScore>;
-  
-  // Score History operations
-  getScoreHistory(userId: number, limit?: number): Promise<ScoreHistory[]>;
-  addScoreHistoryEntry(entry: InsertScoreHistory): Promise<ScoreHistory>;
   
   // Nudge system operations
   getNudges(userId: number, status?: string): Promise<Nudge[]>;
@@ -139,12 +125,6 @@ export interface IStorage {
   createPlaidWebhookEvent(event: InsertPlaidWebhookEvent): Promise<PlaidWebhookEvent>;
   markPlaidWebhookEventAsProcessed(id: number): Promise<PlaidWebhookEvent | undefined>;
   
-  // Plaid User Identity operations
-  getPlaidUserIdentities(userId: number): Promise<PlaidUserIdentity[]>;
-  getPlaidUserIdentity(id: number): Promise<PlaidUserIdentity | undefined>;
-  createPlaidUserIdentity(identity: InsertPlaidUserIdentity): Promise<PlaidUserIdentity>;
-  updatePlaidUserIdentity(id: number, data: Partial<PlaidUserIdentity>): Promise<PlaidUserIdentity | undefined>;
-  
   // Helper methods
   calculateRivuScore(userId: number): Promise<number>;
   updateOnboardingStage(userId: number, stage: string): Promise<User | undefined>;
@@ -173,27 +153,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    // Log the fields that are being sent to the database for debugging
-    console.log('Creating user with fields:', Object.keys(insertUser));
-    
-    try {
-      const [user] = await db
-        .insert(users)
-        .values({
-          ...insertUser,
-          loginCount: insertUser.loginCount || 0,
-          createdAt: new Date(),
-        })
-        .returning();
-        
-      // Create default categories for the user
-      await this.createDefaultCategoriesForUser(user.id);
+    const [user] = await db
+      .insert(users)
+      .values({
+        ...insertUser,
+        loginCount: 0,
+        createdAt: new Date(),
+      })
+      .returning();
       
-      return user;
-    } catch (error) {
-      console.error('Error in createUser:', error);
-      throw error;
-    }
+    // Create default categories for the user
+    await this.createDefaultCategoriesForUser(user.id);
+    
+    return user;
   }
   
   async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
@@ -203,17 +175,6 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return updatedUser || undefined;
-  }
-  
-  async deleteUserPermanently(id: number): Promise<boolean> {
-    try {
-      // Delete the user record completely from the database
-      await db.delete(users).where(eq(users.id, id));
-      return true;
-    } catch (error) {
-      console.error('Error permanently deleting user:', error);
-      return false;
-    }
   }
   
   async createPasswordResetToken(email: string, tokenHash: string, expiry: Date): Promise<boolean> {
@@ -283,82 +244,6 @@ export class DatabaseStorage implements IStorage {
       return true;
     } catch (error) {
       console.error('Error resetting password:', error);
-      return false;
-    }
-  }
-  
-  /**
-   * Verify an email verification token
-   */
-  async verifyEmailToken(tokenHash: string, email: string): Promise<User | null> {
-    try {
-      // Find user by email
-      const user = await this.getUserByEmail(email);
-      
-      if (!user) {
-        return null;
-      }
-      
-      // Check if token matches
-      if (user.verificationToken !== tokenHash) {
-        return null;
-      }
-      
-      // Check if token is expired
-      if (!user.verificationTokenExpiry || new Date() > new Date(user.verificationTokenExpiry)) {
-        // Clear expired token
-        await db.update(users)
-          .set({
-            verificationToken: null,
-            verificationTokenExpiry: null
-          })
-          .where(eq(users.id, user.id));
-        
-        return null;
-      }
-      
-      return user;
-    } catch (error) {
-      console.error('Error verifying email token:', error);
-      return null;
-    }
-  }
-  
-  /**
-   * Mark a user's email as verified
-   */
-  async markEmailAsVerified(userId: number): Promise<boolean> {
-    try {
-      await db.update(users)
-        .set({ 
-          emailVerified: true,
-          verificationToken: null,
-          verificationTokenExpiry: null
-        })
-        .where(eq(users.id, userId));
-      
-      return true;
-    } catch (error) {
-      console.error('Error marking email as verified:', error);
-      return false;
-    }
-  }
-  
-  /**
-   * Update user's verification token
-   */
-  async updateUserVerificationToken(userId: number, token: string, expiry: Date): Promise<boolean> {
-    try {
-      await db.update(users)
-        .set({
-          verificationToken: token,
-          verificationTokenExpiry: expiry
-        })
-        .where(eq(users.id, userId));
-      
-      return true;
-    } catch (error) {
-      console.error('Error updating verification token:', error);
       return false;
     }
   }
@@ -1101,17 +986,8 @@ export class DatabaseStorage implements IStorage {
 
   async createOrUpdateRivuScore(scoreData: InsertRivuScore): Promise<RivuScore> {
     const existingScore = await this.getRivuScore(scoreData.userId);
-    const { userId, score } = scoreData;
-    
-    // Prepare for potential history tracking
-    let previousScore: number | null = null;
-    let scoreChanged = false;
-    let result: RivuScore;
     
     if (existingScore) {
-      previousScore = existingScore.score;
-      scoreChanged = existingScore.score !== score;
-      
       const [updatedScore] = await db
         .update(rivuScores)
         .set({
@@ -1120,7 +996,7 @@ export class DatabaseStorage implements IStorage {
         })
         .where(eq(rivuScores.userId, scoreData.userId))
         .returning();
-      result = updatedScore;
+      return updatedScore;
     } else {
       const [newScore] = await db
         .insert(rivuScores)
@@ -1130,59 +1006,7 @@ export class DatabaseStorage implements IStorage {
           updatedAt: new Date(),
         })
         .returning();
-      result = newScore;
-      
-      // For new users, always record first score in history
-      scoreChanged = true;
-    }
-    
-    // Record in history if score changed
-    if (scoreChanged) {
-      await this.addScoreHistoryEntry({
-        userId,
-        score,
-        previousScore,
-        change: previousScore !== null ? score - previousScore : undefined,
-        reason: 'periodic_update',
-        notes: 'Automatic score update'
-      });
-    }
-    
-    return result;
-  }
-  
-  // Score History operations
-  async getScoreHistory(userId: number, limit?: number): Promise<ScoreHistory[]> {
-    try {
-      // Create base query
-      let query = db.select().from(scoreHistory)
-        .where(eq(scoreHistory.userId, userId))
-        .orderBy(desc(scoreHistory.createdAt));
-      
-      // Execute with or without limit
-      if (limit) {
-        return await query.limit(limit);
-      } else {
-        return await query;
-      }
-    } catch (error) {
-      console.error('Error getting score history:', error);
-      return [];
-    }
-  }
-  
-  async addScoreHistoryEntry(entry: InsertScoreHistory): Promise<ScoreHistory> {
-    try {
-      const [result] = await db.insert(scoreHistory)
-        .values({
-          ...entry,
-          createdAt: new Date()
-        })
-        .returning();
-      return result;
-    } catch (error) {
-      console.error('Error adding score history entry:', error);
-      throw error;
+      return newScore;
     }
   }
 
@@ -2035,62 +1859,6 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error checking for linked Plaid institution:', error);
       return false;
-    }
-  }
-
-  // Plaid User Identity operations
-  async getPlaidUserIdentities(userId: number): Promise<PlaidUserIdentity[]> {
-    try {
-      return await db.select().from(plaidUserIdentities)
-        .where(eq(plaidUserIdentities.userId, userId))
-        .orderBy(desc(plaidUserIdentities.createdAt));
-    } catch (error) {
-      console.error('Error getting Plaid user identities:', error);
-      return [];
-    }
-  }
-
-  async getPlaidUserIdentity(id: number): Promise<PlaidUserIdentity | undefined> {
-    try {
-      const results = await db.select().from(plaidUserIdentities)
-        .where(eq(plaidUserIdentities.id, id))
-        .limit(1);
-      return results[0];
-    } catch (error) {
-      console.error('Error getting Plaid user identity:', error);
-      return undefined;
-    }
-  }
-
-  async createPlaidUserIdentity(identity: InsertPlaidUserIdentity): Promise<PlaidUserIdentity> {
-    try {
-      const results = await db.insert(plaidUserIdentities)
-        .values({
-          ...identity,
-          lastUpdated: new Date(),
-          createdAt: new Date()
-        })
-        .returning();
-      return results[0];
-    } catch (error) {
-      console.error('Error creating Plaid user identity:', error);
-      throw error;
-    }
-  }
-
-  async updatePlaidUserIdentity(id: number, data: Partial<PlaidUserIdentity>): Promise<PlaidUserIdentity | undefined> {
-    try {
-      const results = await db.update(plaidUserIdentities)
-        .set({
-          ...data,
-          lastUpdated: new Date()
-        })
-        .where(eq(plaidUserIdentities.id, id))
-        .returning();
-      return results[0];
-    } catch (error) {
-      console.error('Error updating Plaid user identity:', error);
-      return undefined;
     }
   }
 }

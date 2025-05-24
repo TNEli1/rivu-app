@@ -16,13 +16,9 @@ export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const [activeTab, setActiveTab] = useState("login");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [passwordsMatch, setPasswordsMatch] = useState(true);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
   const [termsAgreed, setTermsAgreed] = useState(false);
-  const [dataConsent, setDataConsent] = useState(false);
-  const [emailOptIn, setEmailOptIn] = useState(false);
   const [redirectPath, setRedirectPath] = useState("/dashboard");
   
   // Check for signup parameter in URL
@@ -81,11 +77,6 @@ export default function AuthPage() {
       });
       return;
     }
-    
-    // Check if passwords match when either changes
-    if (confirmPassword) {
-      setPasswordsMatch(password === confirmPassword);
-    }
 
     // Check for various password requirements
     const hasMinLength = password.length >= 8;
@@ -127,14 +118,7 @@ export default function AuthPage() {
         hasSpecialChar
       }
     });
-  }, [password, confirmPassword]);
-  
-  // Effect to handle confirm password changes
-  useEffect(() => {
-    if (confirmPassword) {
-      setPasswordsMatch(password === confirmPassword);
-    }
-  }, [confirmPassword, password]);
+  }, [password]);
 
   // Helper to get strength color
   const getStrengthColor = () => {
@@ -283,28 +267,13 @@ export default function AuthPage() {
                   <form 
                     onSubmit={(e) => {
                       e.preventDefault();
-                      
-                      // Verify passwords match before submitting
-                      if (password !== confirmPassword) {
-                        setPasswordsMatch(false);
-                        return; // Prevent form submission
-                      }
-                      
                       const formData = new FormData(e.currentTarget);
                       registerMutation.mutate({
                         username: formData.get('username') as string,
                         email: formData.get('email') as string,
                         password: formData.get('password') as string,
-                        passwordConfirmation: formData.get('confirmPassword') as string,
                         firstName: formData.get('firstName') as string || undefined,
-                        lastName: formData.get('lastName') as string || undefined,
-                        // Privacy consent fields
-                        dataConsentGiven: dataConsent,
-                        marketingConsentGiven: emailOptIn, // Map emailOptIn to marketingConsentGiven
-                        emailOptIn: emailOptIn, // Add the new field
-                        // Capture timestamp of consent
-                        dataConsentDate: new Date(),
-                        lastPrivacyPolicyAccepted: new Date()
+                        lastName: formData.get('lastName') as string || undefined
                       });
                     }}
                     className="space-y-4"
@@ -358,25 +327,6 @@ export default function AuthPage() {
                         onChange={(e) => setPassword(e.target.value)}
                         className={password ? (passwordFeedback.isValid ? "border-green-500" : "border-red-500") : ""}
                       />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="confirm-password">Confirm Password</Label>
-                      <Input 
-                        id="confirm-password" 
-                        name="confirmPassword" 
-                        type="password" 
-                        placeholder="••••••••" 
-                        required
-                        value={confirmPassword}
-                        onChange={(e) => {
-                          setConfirmPassword(e.target.value);
-                          setPasswordsMatch(e.target.value === password);
-                        }}
-                        className={confirmPassword ? (passwordsMatch ? "border-green-500" : "border-red-500") : ""}
-                      />
-                      {confirmPassword && !passwordsMatch && (
-                        <p className="text-red-500 text-xs mt-1">Passwords do not match</p>
-                      )}
                       
                       {/* Password strength meter */}
                       {password && (
@@ -454,75 +404,33 @@ export default function AuthPage() {
                       )}
                     </div>
 
-                    {/* Terms & Data Processing Consent */}
-                    <div className="space-y-3 py-2">
-                      {/* Terms Agreement Checkbox */}
-                      <div className="flex items-start space-x-2">
-                        <Checkbox 
-                          id="terms" 
-                          checked={termsAgreed}
-                          onCheckedChange={(checked) => setTermsAgreed(checked === true)}
-                          required
-                          className="mt-0.5"
-                        />
-                        <Label
-                          htmlFor="terms"
-                          className="text-sm font-normal leading-tight peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          I agree to the{" "}
-                          <Link href="/terms" className="text-primary hover:underline" target="_blank">
-                            Terms of Service
-                          </Link>{" "}
-                          and{" "}
-                          <Link href="/privacy" className="text-primary hover:underline" target="_blank">
-                            Privacy Policy
-                          </Link>
-                        </Label>
-                      </div>
-                      
-                      {/* GDPR Data Processing Consent */}
-                      <div className="flex items-start space-x-2">
-                        <Checkbox 
-                          id="data-consent" 
-                          name="dataConsent"
-                          checked={dataConsent}
-                          onCheckedChange={(checked) => setDataConsent(checked === true)}
-                          required
-                          className="mt-0.5"
-                        />
-                        <Label
-                          htmlFor="data-consent"
-                          className="text-sm font-normal leading-tight peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          I consent to Rivu collecting and processing my personal data as described in the{" "}
-                          <Link href="/privacy" className="text-primary hover:underline" target="_blank">
-                            Privacy Policy
-                          </Link>.
-                        </Label>
-                      </div>
-                      
-                      {/* Email Opt-in */}
-                      <div className="flex items-start space-x-2">
-                        <Checkbox 
-                          id="email-opt-in" 
-                          name="emailOptIn"
-                          checked={emailOptIn}
-                          onCheckedChange={(checked) => setEmailOptIn(checked === true)}
-                          className="mt-0.5"
-                        />
-                        <Label
-                          htmlFor="email-opt-in"
-                          className="text-sm font-normal leading-tight peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          I would like to receive emails from Rivu about updates, products, and services.
-                        </Label>
-                      </div>
+                    {/* Terms Agreement Checkbox */}
+                    <div className="flex items-center space-x-2 py-2">
+                      <Checkbox 
+                        id="terms" 
+                        checked={termsAgreed}
+                        onCheckedChange={(checked) => setTermsAgreed(checked === true)}
+                        required
+                      />
+                      <Label
+                        htmlFor="terms"
+                        className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        I agree to the{" "}
+                        <Link href="/terms" className="text-primary hover:underline" target="_blank">
+                          Terms of Service
+                        </Link>{" "}
+                        and{" "}
+                        <Link href="/privacy" className="text-primary hover:underline" target="_blank">
+                          Privacy Policy
+                        </Link>
+                      </Label>
                     </div>
                     
                     <Button 
                       type="submit" 
                       className="w-full" 
-                      disabled={registerMutation.isPending || (password.length > 0 && !passwordFeedback.isValid) || !termsAgreed || (confirmPassword.length > 0 && !passwordsMatch)}
+                      disabled={registerMutation.isPending || (password.length > 0 && !passwordFeedback.isValid) || !termsAgreed}
                     >
                       {registerMutation.isPending ? (
                         <>

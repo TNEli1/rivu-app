@@ -14,7 +14,7 @@ import path from 'path';
 import fs from 'fs';
 
 // Simple logging function to replace the one from vite
-function log(message: string, source = "express") {
+function log(message, source = "express") {
   const time = new Date().toLocaleTimeString();
   console.log(`${time} [${source}] ${message}`);
 }
@@ -27,7 +27,7 @@ const app = express();
 // Basic security - hide Express fingerprint
 app.disable('x-powered-by');
 
-// Trust proxy - needed for rate limiting to work properly in production environment
+// Trust proxy - needed for rate limiting to work properly in Replit environment
 app.set('trust proxy', 1);
 
 // Global rate limiter to prevent abuse

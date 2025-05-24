@@ -9,7 +9,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useAnalytics } from "@/lib/AnalyticsContext";
 import { formatCurrency, calculatePercentage, getProgressColor } from "@/lib/utils";
 import { Loader2, PlusCircle, Pencil, Trash2, PieChart, DollarSign } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -39,7 +38,6 @@ type BudgetFormData = {
 };
 
 export default function BudgetPage() {
-  const { trackBudgetSet } = useAnalytics();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<BudgetCategory | null>(null);
@@ -82,18 +80,11 @@ export default function BudgetPage() {
       });
       return res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       // Invalidate budget categories and Rivu score
       queryClient.invalidateQueries({ queryKey: ['/api/budget-categories'] });
       queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] });
-      
-      // Track budget category creation with PostHog
-      trackBudgetSet(
-        parseFloat(formData.budgetAmount), 
-        categories.length + 1 // Total categories including the new one
-      );
-      
       setIsAddDialogOpen(false);
       setFormData({ name: "", budgetAmount: "", spentAmount: "0" });
       toast({

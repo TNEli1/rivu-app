@@ -5,7 +5,6 @@ import { formatCurrency } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { useTheme } from '@/hooks/use-theme';
-import { useAnalytics } from '@/lib/AnalyticsContext';
 
 export type BudgetCategory = {
   id: string | number;
@@ -17,7 +16,6 @@ export type BudgetCategory = {
 export default function BudgetSection() {
   // Access theme context
   const { theme } = useTheme();
-  const { trackDashboardEngagement } = useAnalytics();
   
   // Fetch budget categories
   const { data: categories = [], isLoading } = useQuery<BudgetCategory[]>({
@@ -25,12 +23,7 @@ export default function BudgetSection() {
     queryFn: async () => {
       try {
         const res = await apiRequest('GET', '/api/budget-categories');
-        const data = await res.json();
-        // Track successful budget data load
-        if (Array.isArray(data) && data.length > 0) {
-          trackDashboardEngagement('budget_data_loaded');
-        }
-        return data;
+        return await res.json();
       } catch (error) {
         console.error('Error fetching budget categories:', error);
         return [];
@@ -92,10 +85,7 @@ export default function BudgetSection() {
         return (
           <div 
             key={category.id} 
-            className={`p-4 rounded-lg ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'} cursor-pointer hover:shadow-md transition-shadow`}
-            onClick={() => {
-              trackDashboardEngagement('budget_category_detail', category.name);
-            }}
+            className={`p-4 rounded-lg ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'}`}
           >
             <div className="flex justify-between items-center mb-2">
               <h4 className={`font-medium ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>

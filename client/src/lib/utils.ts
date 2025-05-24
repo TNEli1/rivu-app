@@ -1,130 +1,63 @@
-import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
-/**
- * Format a number as currency
- */
-export function formatCurrency(amount: number | string): string {
-  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-  
+export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }).format(numAmount);
+  }).format(amount);
 }
 
-/**
- * Format a date to a readable string
- */
-export function formatDate(date: string | Date): string {
-  if (!date) return '';
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
-  return new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  }).format(dateObj);
+export function formatPercentage(value: number): string {
+  return `${Math.round(value)}%`;
 }
 
-/**
- * Calculate percentage
- */
-export function calculatePercentage(value: number, total: number): number {
-  if (total <= 0) return 0;
-  return Math.min(Math.round((value / total) * 100), 100);
+export function calculatePercentage(spent: number, budget: number): number {
+  if (budget <= 0) return 0;
+  return (spent / budget) * 100;
 }
 
-/**
- * Get color based on progress percentage
- */
+export function getStatusColor(percentage: number): string {
+  if (percentage > 100) return 'text-red';
+  if (percentage > 80) return 'text-lime';
+  return 'text-text-secondary';
+}
+
 export function getProgressColor(percentage: number): string {
-  if (percentage >= 100) return 'bg-red-500';
-  if (percentage >= 80) return 'bg-yellow-500';
-  return 'bg-green-500';
+  if (percentage > 100) return 'bg-[#FF4D4F]';
+  if (percentage > 80) return 'bg-[#D0F500]';
+  return 'bg-[#00C2A8]';
 }
 
-/**
- * Get appropriate icon and color for transaction category
- */
-export function getCategoryIconAndColor(category: string): { icon: string, color: string } {
-  // Default icon and color
-  let icon = 'ri-shopping-bag-line';
-  let color = 'bg-blue-500 text-white';
+export function formatDate(date: Date): string {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  }).format(date);
+}
 
-  // Map category to icon and color
-  switch (category.toLowerCase()) {
-    case 'food & dining':
-    case 'food':
-    case 'dining':
-    case 'restaurants':
-      icon = 'ri-restaurant-line';
-      color = 'bg-orange-500 text-white';
-      break;
-    case 'shopping':
-    case 'retail':
-      icon = 'ri-shopping-bag-line';
-      color = 'bg-pink-500 text-white';
-      break;
-    case 'housing':
-    case 'rent':
-    case 'mortgage':
-      icon = 'ri-home-4-line';
-      color = 'bg-indigo-500 text-white';
-      break;
-    case 'transportation':
-    case 'gas':
-    case 'car':
-    case 'auto':
-      icon = 'ri-car-line';
-      color = 'bg-cyan-500 text-white';
-      break;
-    case 'utilities':
-    case 'bills':
-      icon = 'ri-flashlight-line';
-      color = 'bg-yellow-500 text-white';
-      break;
-    case 'health':
-    case 'healthcare':
-    case 'medical':
-      icon = 'ri-heart-pulse-line';
-      color = 'bg-red-500 text-white';
-      break;
-    case 'entertainment':
-    case 'recreation':
-      icon = 'ri-film-line';
-      color = 'bg-purple-500 text-white';
-      break;
-    case 'personal':
-    case 'personal care':
-      icon = 'ri-user-line';
-      color = 'bg-teal-500 text-white';
-      break;
-    case 'travel':
-    case 'vacation':
-      icon = 'ri-plane-line';
-      color = 'bg-blue-500 text-white';
-      break;
-    case 'education':
-    case 'school':
-      icon = 'ri-book-open-line';
-      color = 'bg-green-500 text-white';
-      break;
-    case 'income':
-    case 'salary':
-    case 'wages':
-      icon = 'ri-money-dollar-circle-line';
-      color = 'bg-emerald-500 text-white';
-      break;
-    default:
-      // Default already set
-      break;
-  }
+// Category Icons mapping
+export const CATEGORY_ICONS: Record<string, { icon: string; color: string }> = {
+  'Food & Dining': { icon: 'ri-restaurant-line', color: 'bg-[#D0F500]/10 text-[#D0F500]' },
+  'Rent/Mortgage': { icon: 'ri-home-4-line', color: 'bg-[#2F80ED]/10 text-[#2F80ED]' },
+  'Transportation': { icon: 'ri-car-line', color: 'bg-[#00C2A8]/10 text-[#00C2A8]' },
+  'Entertainment': { icon: 'ri-film-line', color: 'bg-[#FF4D4F]/10 text-[#FF4D4F]' },
+  'Shopping': { icon: 'ri-shopping-bag-line', color: 'bg-[#D0F500]/10 text-[#D0F500]' },
+  'Income': { icon: 'ri-bank-line', color: 'bg-[#2F80ED]/10 text-[#2F80ED]' },
+  'Coffee': { icon: 'ri-coffee-line', color: 'bg-[#D0F500]/10 text-[#D0F500]' },
+  'Uber': { icon: 'ri-taxi-line', color: 'bg-[#00C2A8]/10 text-[#00C2A8]' },
+};
 
-  return { icon, color };
+export const DEFAULT_ICON = { icon: 'ri-money-dollar-circle-line', color: 'bg-[#00C2A8]/10 text-[#00C2A8]' };
+
+// Get icon and color based on category or merchant name
+export function getCategoryIconAndColor(category: string): { icon: string; color: string } {
+  return CATEGORY_ICONS[category] || DEFAULT_ICON;
 }

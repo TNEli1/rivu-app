@@ -12,7 +12,6 @@ import {
   DialogFooter, 
   DialogDescription 
 } from "@/components/ui/dialog";
-import { useAnalytics } from "@/lib/AnalyticsContext";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, invalidateRelatedQueries } from "@/lib/queryClient";
@@ -39,7 +38,6 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function GoalsPage() {
-  const { posthog, trackGoalCreated } = useAnalytics();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isContributeDialogOpen, setIsContributeDialogOpen] = useState(false);
@@ -95,20 +93,13 @@ export default function GoalsPage() {
       const res = await apiRequest('POST', '/api/goals', payloadData);
       return res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       // Use helper function to invalidate all related queries
       invalidateRelatedQueries('goal');
       
       // Also invalidate Rivu score to ensure it updates
       queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] });
-      
-      // Track goal creation event with PostHog
-      trackGoalCreated(
-        data.name || 'savings',
-        parseFloat(data.targetAmount?.toString() || '0'),
-        !!data.targetDate
-      );
       
       toast({
         title: "Goal created",

@@ -6,19 +6,12 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
-  password: text("password").notNull(), // This is where password hashes are stored
+  password: text("password").notNull(),
   email: text("email").notNull(),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   avatarInitials: text("avatar_initials").notNull(),
   themePreference: text("theme_preference").default("dark"),
-  // Account status fields
-  status: text("status").default("active"), // 'active', 'inactive', 'deleted'
-  lastActivityDate: timestamp("last_activity_date"), // Track last activity for inactive status
-  // Email verification fields
-  emailVerified: boolean("email_verified").default(false),
-  verificationToken: text("verification_token"),
-  verificationTokenExpiry: timestamp("verification_token_expiry"),
   // Password reset fields
   resetToken: text("reset_token"),
   resetTokenExpiry: timestamp("reset_token_expiry"),
@@ -30,12 +23,6 @@ export const users = pgTable("users", {
   experienceLevel: text("experience_level"),
   demographicsCompleted: boolean("demographics_completed").default(false),
   skipDemographics: boolean("skip_demographics").default(false),
-  // Privacy and compliance fields
-  countryCode: text("country_code"), // For regional detection
-  dataConsentGiven: boolean("data_consent_given").default(false), // GDPR consent tracking
-  dataConsentDate: timestamp("data_consent_date"), // When consent was given
-  marketingConsentGiven: boolean("marketing_consent_given").default(false), // Optional marketing consent
-  lastPrivacyPolicyAccepted: timestamp("last_privacy_policy_accepted"), // When user last accepted privacy policy
   // Metrics
   loginCount: integer("login_count").default(0),
   lastLogin: timestamp("last_login"),
@@ -58,22 +45,11 @@ export const insertUserSchema = createInsertSchema(users).pick({
   lastName: true,
   avatarInitials: true,
   themePreference: true,
-  status: true,
-  lastActivityDate: true,
-  emailVerified: true,
-  verificationToken: true,
-  verificationTokenExpiry: true,
   onboardingStage: true,
   onboardingCompleted: true,
   accountCreationDate: true,
   loginCount: true,
   lastLogin: true,
-  // Privacy and compliance fields
-  countryCode: true,
-  dataConsentGiven: true,
-  dataConsentDate: true, 
-  marketingConsentGiven: true,
-  lastPrivacyPolicyAccepted: true,
 });
 
 // Budget Categories
@@ -165,29 +141,6 @@ export const insertRivuScoreSchema = createInsertSchema(rivuScores).pick({
   weeklyActivity: true,
 });
 
-// Rivu Score History - Track changes to scores over time
-export const scoreHistory = pgTable("score_history", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  score: integer("score").notNull(),
-  previousScore: integer("previous_score"),
-  change: integer("change"), // Amount of score change (positive or negative)
-  reason: text("reason"), // Explanation for why the score changed
-  notes: text("notes"), // Additional details about the change
-  changeFactors: text("change_factors"), // JSON string of factors that affected the score
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertScoreHistorySchema = createInsertSchema(scoreHistory).pick({
-  userId: true,
-  score: true,
-  previousScore: true,
-  change: true,
-  reason: true,
-  notes: true,
-  changeFactors: true,
-});
-
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -203,9 +156,6 @@ export type InsertSavingsGoal = z.infer<typeof insertSavingsGoalSchema>;
 
 export type RivuScore = typeof rivuScores.$inferSelect;
 export type InsertRivuScore = z.infer<typeof insertRivuScoreSchema>;
-
-export type ScoreHistory = typeof scoreHistory.$inferSelect;
-export type InsertScoreHistory = z.infer<typeof insertScoreHistorySchema>;
 
 // Nudge System
 export const nudges = pgTable("nudges", {
@@ -390,54 +340,3 @@ export type InsertPlaidAccount = z.infer<typeof insertPlaidAccountSchema>;
 
 export type PlaidWebhookEvent = typeof plaidWebhookEvents.$inferSelect;
 export type InsertPlaidWebhookEvent = z.infer<typeof insertPlaidWebhookEventSchema>;
-
-// Plaid User Identity
-export const plaidUserIdentities = pgTable("plaid_user_identities", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  plaidItemId: integer("plaid_item_id").notNull(),
-  names: text("names"), // JSON array of names
-  emails: text("emails"), // JSON array of emails
-  phoneNumbers: text("phone_numbers"), // JSON array of phone numbers
-  addresses: text("addresses"), // JSON array of addresses
-  rawData: text("raw_data"), // Full JSON response
-  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertPlaidUserIdentitySchema = createInsertSchema(plaidUserIdentities).pick({
-  userId: true,
-  plaidItemId: true,
-  names: true,
-  emails: true,
-  phoneNumbers: true,
-  addresses: true,
-  rawData: true,
-});
-
-export type PlaidUserIdentity = typeof plaidUserIdentities.$inferSelect;
-export type InsertPlaidUserIdentity = z.infer<typeof insertPlaidUserIdentitySchema>;
-
-// User Consent Logs - Track all consent-related events for compliance
-export const userConsents = pgTable("user_consents", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  consentType: text("consent_type").notNull(), // 'data_processing', 'marketing', 'privacy_policy_acceptance', etc.
-  ipAddress: text("ip_address"), // IP address when consent was given
-  userAgent: text("user_agent"), // Browser/device info
-  consentValue: boolean("consent_value").default(true), // Whether consent was given or withdrawn
-  consentVersion: text("consent_version"), // Version of policy/terms agreed to
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertUserConsentSchema = createInsertSchema(userConsents).pick({
-  userId: true,
-  consentType: true,
-  ipAddress: true,
-  userAgent: true,
-  consentValue: true,
-  consentVersion: true,
-});
-
-export type UserConsent = typeof userConsents.$inferSelect;
-export type InsertUserConsent = z.infer<typeof insertUserConsentSchema>;

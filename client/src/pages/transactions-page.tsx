@@ -5,7 +5,6 @@ import Sidebar from "@/components/layout/Sidebar";
 import MobileNav from "@/components/layout/MobileNav";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useAnalytics } from "@/lib/AnalyticsContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -122,7 +121,6 @@ const CATEGORY_SUGGESTIONS: Record<string, string[]> = {
 };
 
 export default function TransactionsPage() {
-  const { trackTransactionAdded, trackDashboardEngagement } = useAnalytics();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCSVUploadOpen, setIsCSVUploadOpen] = useState(false);
@@ -320,13 +318,6 @@ export default function TransactionsPage() {
       // Also invalidate Rivu score to ensure it updates
       queryClient.invalidateQueries({ queryKey: ['/api/rivu-score'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] });
-      
-      // Track transaction creation in PostHog
-      trackTransactionAdded(
-        'manual', 
-        1, 
-        [formData.category || 'Uncategorized']
-      );
       
       setIsAddDialogOpen(false);
       resetForm();
@@ -873,13 +864,7 @@ export default function TransactionsPage() {
                 placeholder="Search transactions..."
                 className="pl-8"
                 value={searchTerm}
-                onChange={(e) => {
-                  const newValue = e.target.value;
-                  setSearchTerm(newValue);
-                  if (newValue.length > 2) {
-                    trackDashboardEngagement('transaction_search', 'text_search');
-                  }
-                }}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             
@@ -891,16 +876,10 @@ export default function TransactionsPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => {
-                    setTypeFilter('expense');
-                    trackDashboardEngagement('transaction_filter', 'type_expense');
-                  }}>
+                  <DropdownMenuItem onClick={() => setTypeFilter('expense')}>
                     Expense
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {
-                    setTypeFilter('income');
-                    trackDashboardEngagement('transaction_filter', 'type_income');
-                  }}>
+                  <DropdownMenuItem onClick={() => setTypeFilter('income')}>
                     Income
                   </DropdownMenuItem>
                 </DropdownMenuContent>

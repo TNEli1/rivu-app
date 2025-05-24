@@ -1,54 +1,64 @@
-# Rivu Finance App
+# Rivu Finance Platform
 
-An AI-powered personal finance platform that combines intelligent financial tracking with advanced user engagement and security features.
+A modern personal finance platform that combines intelligent financial tracking with advanced user engagement and security features.
 
-## Deployment to Render
+## Migration from Replit to Production
 
-### Setup Instructions
+This repository has been prepared for migration from Replit to:
+- Frontend → Vercel (https://tryrivu.com)
+- Backend → Render (Node.js + Express)
+- Database → PostgreSQL on Render
 
-1. Create a new Web Service in your Render Dashboard
-2. Connect your repository
-3. Configure the following settings:
-   - **Name**: rivu-finance-app
-   - **Environment**: Node
-   - **Build Command**: `chmod +x ./build.sh && ./build.sh`
-   - **Start Command**: `NODE_ENV=production node dist/index.js`
+## Quick Start
 
-### Environment Variables
+### Development
+```bash
+# Install dependencies
+npm install
 
-Set the following environment variables in your Render Dashboard:
-
-- `NODE_ENV`: production
-- `DATABASE_URL`: (provided by your Render PostgreSQL service)
-- `PLAID_CLIENT_ID`: Your Plaid client ID
-- `PLAID_SECRET`: Your Plaid secret key
-- `PLAID_ENV`: production
-- `JWT_SECRET`: A secure secret for JWT tokens
-- `POSTHOG_API_KEY`: Your PostHog API key (for analytics)
-
-## Local Development
-
-1. Install dependencies: `npm install`
-2. Start the backend server: `npm run dev`
-3. In a separate terminal, start the frontend development server:
-   ```
-   cd client
-   npm install
-   npm run dev
-   ```
-
-## Project Structure
-
-- `/client`: React frontend
-- `/server`: Express backend
-- `/shared`: Shared types and schemas
-- `/dist`: Production build (generated)
-
-## Database
-
-The application uses PostgreSQL with Drizzle ORM. The database schema is defined in `/shared/schema.ts`.
-
-To update the database schema:
+# Run in development mode
+npm run dev
 ```
+
+### Production
+```bash
+# Build for production
+npm run build
+
+# Start production server
+npm run start
+```
+
+## Environment Configuration
+
+See `.env.example` for required environment variables.
+
+## Database Migration
+
+The application uses Drizzle ORM with PostgreSQL. To apply database schema changes:
+
+```bash
+# Apply database schema changes
 npm run db:push
 ```
+
+## Security Features
+
+- JWT authentication with secure HTTP-only cookies
+- Rate limiting on critical endpoints
+- CSRF protection
+- Content Security Policy
+- Structured error logging
+- Health monitoring endpoint
+
+## Deployment Instructions
+
+For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+## Architecture
+
+- **Frontend**: React with TypeScript, Tailwind CSS, and Shadcn/UI components
+- **Backend**: Express.js with TypeScript
+- **Database**: PostgreSQL with Drizzle ORM
+- **Authentication**: JWT with secure cookie storage
+- **Integrations**: Plaid for bank connectivity, OpenAI for financial insights

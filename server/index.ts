@@ -1,5 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
+// Removed Vite dependency for Render deployment
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
@@ -9,15 +10,11 @@ import { setCsrfToken, validateCsrfToken } from "./middleware/csrfProtection";
 import { pool } from "./db";
 import { requestLogger, errorLogger } from "./middleware/requestLogger";
 import { logger } from "./utils/logger";
-import { configureStaticFileServing } from "./static";
-import { configureDevelopmentProxy } from "./dev-proxy";
-import { activityTracker } from "./middleware/activityTracker";
 import path from 'path';
 import fs from 'fs';
-import { runMigrations } from './db-migrations';
 
 // Simple logging function to replace the one from vite
-function log(message: string, source = "express") {
+function log(message, source = "express") {
   const time = new Date().toLocaleTimeString();
   console.log(`${time} [${source}] ${message}`);
 }
@@ -30,7 +27,7 @@ const app = express();
 // Basic security - hide Express fingerprint
 app.disable('x-powered-by');
 
-// Trust proxy - needed for rate limiting to work properly in production environment
+// Trust proxy - needed for rate limiting to work properly in Replit environment
 app.set('trust proxy', 1);
 
 // Global rate limiter to prevent abuse
@@ -62,35 +59,18 @@ if (process.env.NODE_ENV === 'production') {
 
 // Configure CORS with proper security settings
 const corsOptions = {
-  origin: function(origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) {
-      return callback(null, true);
-    }
-    
-    const allowedOrigins = [
-      'https://tryrivu.com',
-      'https://www.tryrivu.com',
-      'https://rivu-app.onrender.com'
-    ];
-    
-    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
-      return callback(null, true);
-    } else {
-      return callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.ALLOWED_ORIGINS?.split(',') || 'https://tryrivu.com' // Production: specific origins
+    : true, // Development: allow all origins but maintain credentials
+  credentials: true, // Allow cookies
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: [
-    'Content-Type',
-    'Authorization',
+    'Content-Type', 
+    'Authorization', 
     'X-Requested-With',
     'CSRF-Token',
-    'X-CSRF-Token',
-    'X-Skip-Rate-Limit'
-  ],
-  exposedHeaders: ['Set-Cookie']
+    'X-CSRF-Token'
+  ]
 };
 app.use(cors(corsOptions));
 
@@ -117,17 +97,9 @@ app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser()); // Parse cookies
 
-// Add input sanitization for all API routes
-import { sanitizeInputs } from './middleware/sanitize';
-app.use('/api', sanitizeInputs);
-
 // Apply CSRF protection
 app.use(setCsrfToken); // Set CSRF token for all routes
 app.use('/api', validateCsrfToken); // Validate CSRF token for API routes
-
-// Track user activity for all authenticated API requests
-// This updates the last_activity_date field for user inactivity tracking
-app.use('/api', activityTracker);
 
 // Set comprehensive security headers
 app.use((req, res, next) => {
@@ -150,13 +122,13 @@ app.use((req, res, next) => {
     res.setHeader(
       'Content-Security-Policy',
       "default-src 'self'; " +
-      "script-src 'self' https://cdn.plaid.com https://app.posthog.com 'unsafe-inline'; " +
+      "script-src 'self' https://cdn.plaid.com https://*.vercel.app 'unsafe-inline'; " +
       "style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; " +
       "font-src 'self' https://fonts.gstatic.com; " +
       "img-src 'self' data: https:; " +
-      "connect-src 'self' https://rivu-app.onrender.com https://api.tryrivu.com https://*.render.com https://cdn.plaid.com https://production.plaid.com https://app.posthog.com; " +
+      "connect-src 'self' https://api.tryrivu.com https://*.render.com https://cdn.plaid.com https://production.plaid.com; " +
       "frame-src 'self' https://cdn.plaid.com; " +
-      "object-src 'none'"
+      "object-src 'none';"
     );
   }
   
@@ -193,26 +165,7 @@ app.use((req, res, next) => {
   next();
 });
 
-import { ensureDatabaseConnection, setupGracefulDatabaseShutdown } from './utils/db-connector';
-
 (async () => {
-  // Ensure database connection is established (with retries)
-  // This is especially important for deployment environments
-  if (process.env.NODE_ENV === 'production') {
-    const connected = await ensureDatabaseConnection();
-    if (!connected) {
-      console.error('Failed to connect to database after maximum retries');
-      // Continue startup, but API will likely not work properly
-      // This allows the server to at least serve static files
-    }
-  }
-  
-  // Set up graceful database shutdown
-  setupGracefulDatabaseShutdown();
-  
-  // Run database migrations
-  await runMigrations();
-  
   // Load API routes using PostgreSQL database
   const server = await registerRoutes(app);
 
@@ -298,23 +251,30 @@ import { ensureDatabaseConnection, setupGracefulDatabaseShutdown } from './utils
     }
   });
 
-  // In production, serve static files for the frontend
-  if (process.env.NODE_ENV === 'production') {
-    configureStaticFileServing(app);
-    console.log('✅ Production mode: Serving frontend from static build');
-    console.log('✅ Visit the app at: https://tryrivu.com');
-  } else {
-    // In development, we still configure static serving for testing
-    // but show a warning that the frontend should be started separately
-    configureStaticFileServing(app);
-    // Set up the development proxy to connect to Vite dev server
-    configureDevelopmentProxy(app);
-    console.log('⚠️ Development mode: Frontend must be served separately via "cd client && npm run dev"');
-    console.log('   However, static files will be served if they exist in dist/public');
+  // Serve static files in production without Vite
+  if (app.get("env") === "production") {
+    const publicPath = path.join(process.cwd(), 'dist/public');
+    console.log(`Serving static files from: ${publicPath}`);
+    app.use(express.static(publicPath));
+    
+    // Handle SPA routes
+    app.get('*', (req, res) => {
+      // Skip API routes
+      if (req.url.startsWith('/api/')) {
+        return res.status(404).json({ error: 'API endpoint not found' });
+      }
+      
+      const indexPath = path.join(publicPath, 'index.html');
+      if (fs.existsSync(indexPath)) {
+        return res.sendFile(indexPath);
+      } else {
+        return res.status(404).send('Application not found');
+      }
+    });
   }
 
   // Use PORT environment variable with fallback for Render's dynamic port allocation
-  // Default to 8080 for local development
+  // Default to 5000 for Replit and local development
   const port = process.env.PORT || 8080;
   const serverInstance = server.listen({
     port: Number(port),

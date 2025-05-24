@@ -10,7 +10,6 @@ import { db } from "./db";
 import { eq, sql } from "drizzle-orm";
 import path from "path";
 import fs from "fs";
-import { rivuScoreRoutes } from "./routes/rivu-score-routes";
 
 // Initialize OpenAI client
 const openai = new OpenAI({ 
@@ -20,24 +19,6 @@ const openai = new OpenAI({
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup CORS
   app.use(cors());
-  
-  // Temporary debug endpoint to check database tables
-  app.get('/debug/schema', async (req, res) => {
-    try {
-      const tablesResult = await db.execute(sql`
-        SELECT table_name FROM information_schema.tables 
-        WHERE table_schema = 'public'
-      `);
-      
-      return res.json({
-        tables: tablesResult.rows,
-        message: 'Database tables query completed'
-      });
-    } catch (error) {
-      console.error('Error checking database tables:', error);
-      return res.status(500).json({ error: 'Failed to query database tables' });
-    }
-  });
   
   // Add comprehensive health check endpoint for monitoring
   app.get('/health', async (req, res) => {
@@ -125,12 +106,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
     
-    // Import email verification controllers
-    const {
-      verifyEmail,
-      resendVerificationEmail
-    } = await import('./controllers-ts/userVerificationController');
-    
     // Register auth routes with our TypeScript controller with rate limiting
     const apiPath = '/api';
     app.post(`${apiPath}/register`, authLimiter, registerUser);
@@ -141,32 +116,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.put(`${apiPath}/user/demographics`, protect, updateDemographics);
     app.post(`${apiPath}/user/login-metric`, protect, updateLoginMetrics);
     
-    // Email verification routes
-    app.get(`${apiPath}/verify-email`, verifyEmail);
-    app.post(`${apiPath}/send-verification`, authLimiter, resendVerificationEmail);
-    
     // Import theme preference controller
     const { updateThemePreference } = await import('./controllers-ts/userController');
     app.put(`${apiPath}/user/theme-preference`, protect, updateThemePreference);
     app.post(`${apiPath}/forgot-password`, forgotPassword);
     app.get(`${apiPath}/verify-reset-token/:token`, verifyResetToken);
     app.post(`${apiPath}/reset-password/:token`, resetPassword);
-    
-    // Import privacy controller for GDPR compliance
-    const {
-      exportUserData,
-      exportUserDataCSV,
-      deleteUserAccount,
-      logPrivacyConsent,
-      detectCountry
-    } = await import('./controllers-ts/privacyController');
-    
-    // Privacy compliance routes
-    app.get(`${apiPath}/privacy/export-data`, protect, exportUserData);
-    app.get(`${apiPath}/privacy/export-data/csv`, protect, exportUserDataCSV);
-    app.delete(`${apiPath}/privacy/delete-account`, protect, deleteUserAccount);
-    app.post(`${apiPath}/privacy/consent`, protect, logPrivacyConsent);
-    app.post(`${apiPath}/privacy/detect-country`, protect, detectCountry);
     
     // Import transaction account controller
     const {
@@ -346,10 +301,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       getAccounts: getPlaidAccounts,
       handleWebhook,
       removeItem,
-      handleOAuthCallback,
-      fetchIdentity,
-      getBalance,
-      fetchTransactions
+      handleOAuthCallback
     } = await import('./controllers/plaid-controller');
     
     // Import Plaid Items controllers
@@ -393,11 +345,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Apply plaidLimiter to all sensitive Plaid operations
     app.post(`${apiPath}/plaid/create_link_token`, protect, plaidLimiter, createLinkToken);
     app.post(`${apiPath}/plaid/exchange_token`, protect, plaidLimiter, exchangeToken);
-    
-    // Add routes for fetching Plaid data
-    app.get(`${apiPath}/user/identity/:itemId`, protect, fetchIdentity);
-    app.get(`${apiPath}/user/balance/:itemId`, protect, getBalance);
-    app.get(`${apiPath}/user/transactions/:itemId`, protect, fetchTransactions);
     app.post(`${apiPath}/plaid/oauth_callback`, protect, plaidLimiter, handleOAuthCallback);
     app.post(`${apiPath}/plaid/accounts`, protect, plaidLimiter, getPlaidAccounts);
     app.post(`${apiPath}/plaid/item/remove`, protect, plaidLimiter, removeItem);
@@ -1580,30 +1527,6 @@ User profile:
       });
     }
   });
-  
-  // Define rate limiter for score history routes
-  const scoreLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: process.env.NODE_ENV === 'development' ? 100 : 30, // limit each IP to 30 requests per window (more in dev)
-    standardHeaders: true,
-    legacyHeaders: false,
-    skip: (req) => {
-      // Skip rate limiting in development with special header
-      return process.env.NODE_ENV === 'development' && 
-        req.headers['x-skip-rate-limit'] === 'development';
-    }
-  });
-  
-  // Register Rivu Score routes with authentication
-  app.use('/api/rivu', scoreLimiter, (req, res, next) => {
-    // Verify user is authenticated
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-    next();
-  }, rivuScoreRoutes);
-  
-  console.log('✅ Rivu Score routes successfully mounted at /api/rivu');
 
   const httpServer = createServer(app);
   return httpServer;
