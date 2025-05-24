@@ -88,15 +88,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const authLimiter = rateLimit({
       windowMs: 15 * 60 * 1000, // 15 minutes
       max: process.env.NODE_ENV === 'production' ? 5 : 100, // 5 requests per 15 minutes in production
-      standardHeaders: true,
-      legacyHeaders: false,
       message: {
         message: 'Too many authentication attempts, please try again later',
         code: 'RATE_LIMITED'
       }
     });
     
-    // Create rate limiter for API endpoints
     const apiLimiter = rateLimit({
       windowMs: 60 * 1000, // 1 minute
       max: process.env.NODE_ENV === 'production' ? 60 : 1000, // 60 requests per minute in production

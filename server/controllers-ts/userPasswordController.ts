@@ -3,7 +3,7 @@ import { storage } from '../storage';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import { sendPasswordResetEmail } from '../services/emailService';
-import securityLogger, { SecurityEventType } from '../services/securityLogger';
+import { logSecurityEvent, SecurityEventType } from '../services/securityLogger';
 
 /**
  * @desc    Request a password reset
@@ -54,16 +54,13 @@ export const forgotPassword = async (req: Request, res: Response) => {
     }
     
     // Log password reset request for security monitoring
-    securityLogger.logSecurityEvent({
-      type: SecurityEventType.PASSWORD_RESET_REQUEST,
-      userId: user.id,
-      details: { 
-        username: user.username,
-        email: user.email, 
-        timestamp: new Date().toISOString(),
-        ip: req.ip
-      }
-    });
+    await logSecurityEvent(
+      SecurityEventType.PASSWORD_RESET_REQUEST,
+      user.id,
+      user.username,
+      req,
+      { email: user.email, timestamp: new Date().toISOString() }
+    );
     
     // CRITICAL FIX: Always generate proper URLs that work in Replit environment
     // Get the app host from environment or request
@@ -208,16 +205,13 @@ export const resetPassword = async (req: Request, res: Response) => {
     const user = await storage.verifyPasswordResetToken(tokenHash);
     if (user) {
       // Log successful password reset for security monitoring
-      securityLogger.logSecurityEvent({
-        type: SecurityEventType.PASSWORD_RESET_SUCCESS,
-        userId: user.id,
-        details: {
-          username: user.username,
-          email: user.email,
-          timestamp: new Date().toISOString(),
-          ip: req.ip
-        }
-      });
+      await logSecurityEvent(
+        SecurityEventType.PASSWORD_RESET_SUCCESS,
+        user.id,
+        user.username,
+        req,
+        { email: user.email, timestamp: new Date().toISOString() }
+      );
     }
     
     return res.status(200).json({

@@ -1,23 +1,11 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-// Removed Vite dependency for Render deployment
+import { setupVite, serveStatic, log } from "./vite";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
-import helmet from "helmet";
 import { setCsrfToken, validateCsrfToken } from "./middleware/csrfProtection";
-import { pool } from "./db";
-import { requestLogger, errorLogger } from "./middleware/requestLogger";
-import { logger } from "./utils/logger";
-import path from 'path';
-import fs from 'fs';
-
-// Simple logging function to replace the one from vite
-function log(message, source = "express") {
-  const time = new Date().toLocaleTimeString();
-  console.log(`${time} [${source}] ${message}`);
-}
 
 // Load environment variables
 dotenv.config();
@@ -73,21 +61,6 @@ const corsOptions = {
   ]
 };
 app.use(cors(corsOptions));
-
-// Apply Helmet middleware for enhanced security headers
-app.use(helmet({
-  // Enable Cross-Origin-Embedder-Policy
-  crossOriginEmbedderPolicy: true,
-  // Enable Cross-Origin-Opener-Policy
-  crossOriginOpenerPolicy: true,
-  // Enable Origin-Agent-Cluster header
-  originAgentCluster: true,
-  // Content Security Policy is handled separately below for more granular control
-  contentSecurityPolicy: false
-}));
-
-// Add request logging middleware for production monitoring
-app.use(requestLogger);
 
 // Serve static files from the public directory
 app.use(express.static('public'));
@@ -169,36 +142,6 @@ app.use((req, res, next) => {
   // Load API routes using PostgreSQL database
   const server = await registerRoutes(app);
 
-  // Enhanced health check endpoint for monitoring with DB connectivity check
-  app.get('/health', async (req, res) => {
-    try {
-      // Check database connectivity
-      const dbConnected = await pool.query('SELECT 1');
-      const dbStatus = dbConnected ? 'connected' : 'disconnected';
-      
-      // Calculate server uptime
-      const uptime = process.uptime();
-      const uptimeFormatted = `${Math.floor(uptime)}s`;
-      
-      res.status(200).json({
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV || 'development',
-        version: process.env.APP_VERSION || '1.0.0',
-        uptime: uptimeFormatted,
-        db: dbStatus
-      });
-    } catch (error) {
-      // Log error but don't expose details
-      console.error('Health check database error:', error);
-      res.status(500).json({
-        status: 'error',
-        timestamp: new Date().toISOString(),
-        db: 'disconnected'
-      });
-    }
-  });
-
   // 404 handler for API routes (must come after API routes are registered)
   app.all('/api/*', (req, res) => {
     res.status(404).json({
@@ -207,15 +150,32 @@ app.use((req, res, next) => {
     });
   });
   
-  // Add error logging middleware
-  app.use(errorLogger);
-  
   // Global error handler with improved error responses and production security
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const isProduction = process.env.NODE_ENV === 'production';
     
-    // Use the error ID from the error logger or generate a new one
-    const errorId = err.errorId || `err_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+    // Add error tracking metadata
+    const errorId = `err_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+    
+    // In production, log structured error data for monitoring systems
+    if (isProduction) {
+      // Create a sanitized error log that doesn't expose sensitive data
+      const logData = {
+        errorId,
+        timestamp: new Date().toISOString(),
+        statusCode: err.status || err.statusCode || 500,
+        code: err.code || 'SERVER_ERROR',
+        message: err.message || "Internal Server Error",
+        path: _req.path,
+        method: _req.method,
+        // Don't log the full stack trace in structured logs for production
+      };
+      
+      console.error('Production error:', JSON.stringify(logData));
+    } else {
+      // Development: log the full error for debugging
+      console.error('Development error:', err);
+    }
     
     // Get status code from error or default to 500
     const status = err.status || err.statusCode || 500;
@@ -238,11 +198,6 @@ app.use((req, res, next) => {
       })
     };
 
-    // Log to structured logger in addition to middleware logging
-    if (status >= 500) {
-      logger.error(`Server error: ${message}`, { errorId, status, code: err.code });
-    }
-
     res.status(status).json(errorResponse);
     
     // Only rethrow in development for better debugging
@@ -251,65 +206,24 @@ app.use((req, res, next) => {
     }
   });
 
-  // Serve static files in production without Vite
-  if (app.get("env") === "production") {
-    const publicPath = path.join(process.cwd(), 'dist/public');
-    console.log(`Serving static files from: ${publicPath}`);
-    app.use(express.static(publicPath));
-    
-    // Handle SPA routes
-    app.get('*', (req, res) => {
-      // Skip API routes
-      if (req.url.startsWith('/api/')) {
-        return res.status(404).json({ error: 'API endpoint not found' });
-      }
-      
-      const indexPath = path.join(publicPath, 'index.html');
-      if (fs.existsSync(indexPath)) {
-        return res.sendFile(indexPath);
-      } else {
-        return res.status(404).send('Application not found');
-      }
-    });
+  // importantly only setup vite in development and after
+  // setting up all the other routes so the catch-all route
+  // doesn't interfere with the other routes
+  if (app.get("env") === "development") {
+    await setupVite(app, server);
+  } else {
+    serveStatic(app);
   }
 
-  // Use PORT environment variable with fallback for Render's dynamic port allocation
-  // Default to 5000 for Replit and local development
-  const port = process.env.PORT || 8080;
-  const serverInstance = server.listen({
-    port: Number(port),
+  // ALWAYS serve the app on port 5000
+  // this serves both the API and the client.
+  // It is the only port that is not firewalled.
+  const port = 5000;
+  server.listen({
+    port,
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
   });
-  
-  // Implement graceful shutdown logic for Render reboots
-  const gracefulShutdown = async (signal: string) => {
-    log(`${signal} received. Shutting down gracefully...`);
-    
-    // Close server first, stop accepting new connections
-    serverInstance.close(() => {
-      log('HTTP server closed');
-      
-      // Close database connections
-      pool.end().then(() => {
-        log('Database connections closed');
-        process.exit(0);
-      }).catch((error: Error) => {
-        console.error('Error closing database connections:', error);
-        process.exit(1);
-      });
-      
-      // Force exit after 10 seconds
-      setTimeout(() => {
-        console.error('Forcing shutdown after timeout');
-        process.exit(1);
-      }, 10000);
-    });
-  };
-  
-  // Listen for termination signals
-  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 })();
