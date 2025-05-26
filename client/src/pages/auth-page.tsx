@@ -9,13 +9,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect } from "react";
 import { Redirect, Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2, AlertCircle, CheckCircle2, XCircle, Sun, Moon } from "lucide-react";
 
 
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("login");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordsMatch, setPasswordsMatch] = useState(true);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
   const [termsAgreed, setTermsAgreed] = useState(false);
@@ -119,6 +123,15 @@ export default function AuthPage() {
       }
     });
   }, [password]);
+
+  // Check if passwords match when confirm password changes
+  useEffect(() => {
+    if (confirmPassword) {
+      setPasswordsMatch(password === confirmPassword);
+    } else {
+      setPasswordsMatch(true);
+    }
+  }, [confirmPassword, password]);
 
   // Helper to get strength color
   const getStrengthColor = () => {
@@ -267,6 +280,27 @@ export default function AuthPage() {
                   <form 
                     onSubmit={(e) => {
                       e.preventDefault();
+                      
+                      // Validate passwords match
+                      if (!passwordsMatch) {
+                        toast({
+                          title: "Passwords don't match",
+                          description: "Please make sure both password fields match.",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      
+                      // Validate password strength
+                      if (!passwordFeedback.isValid) {
+                        toast({
+                          title: "Password too weak",
+                          description: "Please choose a stronger password that meets all requirements.",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      
                       const formData = new FormData(e.currentTarget);
                       registerMutation.mutate({
                         username: formData.get('username') as string,
@@ -403,6 +437,38 @@ export default function AuthPage() {
                         </div>
                       )}
                     </div>
+                    
+                    {/* Confirm Password Field */}
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm-password">Confirm Password</Label>
+                      <Input 
+                        id="confirm-password" 
+                        name="confirmPassword" 
+                        type="password" 
+                        placeholder="••••••••" 
+                        required
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className={confirmPassword ? (passwordsMatch ? "border-green-500" : "border-red-500") : ""}
+                      />
+                      
+                      {/* Password match indicator */}
+                      {confirmPassword && (
+                        <div className="flex items-center text-xs mt-1">
+                          {passwordsMatch ? (
+                            <>
+                              <CheckCircle2 className="h-3.5 w-3.5 text-green-500 mr-1.5" />
+                              <span className="text-green-500">Passwords match</span>
+                            </>
+                          ) : (
+                            <>
+                              <XCircle className="h-3.5 w-3.5 text-red-500 mr-1.5" />
+                              <span className="text-red-500">Passwords don't match</span>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
 
                     {/* Terms Agreement Checkbox */}
                     <div className="flex items-center space-x-2 py-2">
@@ -430,7 +496,7 @@ export default function AuthPage() {
                     <Button 
                       type="submit" 
                       className="w-full" 
-                      disabled={registerMutation.isPending || (password.length > 0 && !passwordFeedback.isValid) || !termsAgreed}
+                      disabled={registerMutation.isPending || (password.length > 0 && !passwordFeedback.isValid) || !passwordsMatch || !termsAgreed}
                     >
                       {registerMutation.isPending ? (
                         <>
