@@ -1,0 +1,77 @@
+This is the last step before Rivu goes live. Execute every item below — no regressions, no oversights. Lock this down like a real fintech company.
+
+⸻
+
+✅ 1. Fix Google OAuth Redirect (404 Error)
+	•	Investigate why /auth/google/callback triggers a 404
+	•	Confirm:
+	•	The route exists and is registered
+	•	Passport middleware is applied
+	•	A valid redirect is set (e.g. to /dashboard)
+	•	On success: redirect to logged-in experience
+	•	On failure: redirect to /login?error=oauth_failed
+
+⸻
+
+✅ 2. Create and Wire Airtight Privacy Policy and Terms of Service
+
+/legal/privacy
+	•	Include:
+	•	We use Plaid to connect U.S.-based financial accounts only
+	•	We do not sell or share user data with third parties
+	•	All data is encrypted, and used solely for personalized financial analysis
+	•	Users may request data deletion or account closure at any time
+	•	Sessions are stored securely, and data is never shared without consent
+
+/legal/terms
+	•	Include:
+	•	Rivu is not a Registered Investment Advisor (RIA)
+“The information provided by Rivu is for educational and behavioral guidance purposes only. It does not constitute financial, investment, legal, or tax advice.”
+	•	Use of Rivu does not create a fiduciary relationship
+	•	Rivu is not responsible for decisions made based on in-app suggestions
+	•	Users must be 18+ and U.S. residents
+	•	Rivu relies on third-party APIs (OpenAI, Plaid, Postmark) and is not liable for outages or inaccuracies
+	•	All usage is governed by U.S. law, jurisdiction in California
+
+⸻
+
+✅ 3. Enforce Legal Acceptance in App
+	•	On signup (or before dashboard access), enforce:
+	•	Checkbox:
+“I have read and agree to the Terms of Service and Privacy Policy. I understand this is not financial advice.”
+	•	Block access unless this is checked
+	•	Log TOS acceptance in the DB (tosAcceptedAt)
+	•	If not accepted, redirect to /legal and display modal
+
+⸻
+
+✅ 4. Push Updated Database Schema
+	•	Make sure schema includes:
+	•	emailVerified: boolean
+	•	authMethod: 'google' | 'password'
+	•	tosAcceptedAt: timestamp
+	•	Then run:
+
+npx drizzle-kit push:pg
+
+5. Scan for App-Crashing or Legal Risk Issues
+	•	All try/catch blocks in place for async functions
+	•	Login flow cannot bypass TOS or email verification
+	•	Signup cannot proceed without all required fields
+	•	No hardcoded values or secret exposure
+	•	Any AI-generated advice must show disclaimer:
+“This is not financial advice. For personalized guidance, consult a licensed advisor.”
+
+⸻
+
+✅ 6. Deploy-Ready QA
+	•	Google OAuth login works
+	•	Email/password signup + email verification works
+	•	CSV upload, OpenAI prompts, Plaid connections, Postmark emails all work
+	•	/health route returns 200 OK
+	•	App deploys cleanly on Railway and loads at https://www.tryrivu.com
+
+⸻
+
+Do not reintroduce any Replit logic, dev-only hacks, or unstable code paths.
+We are launching a real, compliant fintech product. Secure it — legally, technically, and functionally.
