@@ -78,7 +78,7 @@ export const createLinkToken = async (req: Request, res: Response) => {
         client_user_id: userId.toString(), // Unique user ID from our system
       },
       client_name: 'Rivu Finance',
-      products: ['transactions'] as Products[], // Only request transactions product
+      products: ['auth', 'transactions'] as Products[], // Request auth and transactions
       language: 'en',
       country_codes: ['US'] as CountryCode[],
       redirect_uri: redirectUri, // OAuth redirect URI
@@ -87,7 +87,7 @@ export const createLinkToken = async (req: Request, res: Response) => {
     console.log('Creating link token with config:', JSON.stringify({
       client_user_id: userId.toString(),
       client_name: 'Rivu Finance',
-      products: ['transactions'],
+      products: ['auth', 'transactions'],
       language: 'en',
       country_codes: ['US'],
       redirect_uri: redirectUri
