@@ -245,20 +245,81 @@ export default function SettingsPage() {
                 <div>
                   <h3 className="text-lg font-medium mb-2">Data Deletion</h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    You can request complete deletion of your account and all associated data at any time.
+                    You may request permanent deletion of your data at any time by emailing support@tryrivu.com or using the in-app "Delete My Data" feature below.
                   </p>
-                  <a 
-                    href="mailto:support@tryrivu.com?subject=Data%20Deletion%20Request&body=I%20would%20like%20to%20request%20deletion%20of%20my%20Rivu%20account%20and%20all%20associated%20data.%20My%20email%20address%20associated%20with%20the%20account%20is%3A%20%5BYOUR%20EMAIL%5D"
-                    className="inline-block"
-                  >
-                    <Button variant="outline" className="text-destructive">
-                      Request Data Deletion
-                    </Button>
-                  </a>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Email support@tryrivu.com with "Data Deletion Request" as the subject.
-                    We'll process your request within 30 days as required by applicable privacy laws.
-                  </p>
+                  
+                  <div className="space-y-3">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" className="w-full">
+                          Delete My Data
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete All Your Data</AlertDialogTitle>
+                          <AlertDialogDescription className="space-y-2">
+                            <p>This action will permanently delete:</p>
+                            <ul className="list-disc list-inside text-sm space-y-1 ml-2">
+                              <li>Your account and profile information</li>
+                              <li>All transaction data and bank connections</li>
+                              <li>Budget categories and spending history</li>
+                              <li>Savings goals and progress</li>
+                              <li>Rivu Score history and insights</li>
+                              <li>All AI coaching interactions</li>
+                            </ul>
+                            <p className="text-red-600 font-medium mt-3">
+                              This action cannot be undone. Are you absolutely sure?
+                            </p>
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction 
+                            className="bg-red-600 hover:bg-red-700"
+                            onClick={async () => {
+                              try {
+                                const response = await fetch('/api/user/delete', {
+                                  method: 'POST',
+                                  credentials: 'include',
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                  },
+                                });
+                                
+                                if (response.ok) {
+                                  toast({
+                                    title: "Data Deletion Initiated",
+                                    description: "Your data deletion request has been processed. You will be logged out shortly.",
+                                  });
+                                  
+                                  // Log out user after successful deletion
+                                  setTimeout(() => {
+                                    logoutMutation.mutate();
+                                  }, 2000);
+                                } else {
+                                  throw new Error('Failed to delete data');
+                                }
+                              } catch (error) {
+                                toast({
+                                  title: "Error",
+                                  description: "Failed to delete data. Please contact support@tryrivu.com",
+                                  variant: "destructive",
+                                });
+                              }
+                            }}
+                          >
+                            Yes, Delete Everything
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                    
+                    <p className="text-xs text-muted-foreground">
+                      Alternatively, email support@tryrivu.com with "Data Deletion Request" as the subject.
+                      We'll process your request within 30 days as required by CCPA and applicable privacy laws.
+                    </p>
+                  </div>
                 </div>
                 
                 <div className="border-t pt-4 mt-4">

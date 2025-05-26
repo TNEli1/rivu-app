@@ -531,13 +531,13 @@ export default function AuthPage() {
                         className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                       >
                         I agree to the{" "}
-                        <Link href="/terms" className="text-primary hover:underline" target="_blank">
+                        <Link href="/legal/terms" className="text-primary hover:underline" target="_blank">
                           Terms of Service
                         </Link>{" "}
                         and{" "}
-                        <Link href="/privacy" className="text-primary hover:underline" target="_blank">
+                        <Link href="/legal/privacy" className="text-primary hover:underline" target="_blank">
                           Privacy Policy
-                        </Link>
+                        </Link>. I understand this is not financial advice.
                       </Label>
                     </div>
                     

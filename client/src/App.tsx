@@ -38,6 +38,8 @@ function Router() {
       <Route path="/reset-password/:token" component={ResetPasswordPage} />
       <Route path="/privacy" component={PrivacyPolicyPage} />
       <Route path="/terms" component={TermsOfServicePage} />
+      <Route path="/legal/privacy" component={PrivacyPolicyPage} />
+      <Route path="/legal/terms" component={TermsOfServicePage} />
       <Route path="/callback" component={PlaidCallback} />
       
       {/* Protected Routes */}

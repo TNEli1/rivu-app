@@ -239,6 +239,75 @@ export default function LandingPage() {
         </div>
       </section>
       
+      {/* iOS Waitlist Section */}
+      <section className={`py-20 ${theme === 'dark' ? 'bg-gradient-to-r from-purple-900 to-blue-900' : 'bg-gradient-to-r from-purple-600 to-blue-600'} text-white`}>
+        <div className="container mx-auto px-6 text-center">
+          <h2 className="text-3xl font-bold mb-4">📱 iOS App Coming Soon!</h2>
+          <p className="text-xl mb-8 max-w-2xl mx-auto opacity-90">
+            Be the first to experience Rivu on your iPhone. Join our exclusive early access list and get notified when the iOS app launches.
+          </p>
+          
+          <div className="max-w-md mx-auto">
+            <form 
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                const email = formData.get('email') as string;
+                const name = formData.get('name') as string;
+                
+                try {
+                  const response = await fetch('/api/ios-waitlist', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, name }),
+                  });
+                  
+                  if (response.ok) {
+                    alert("Thanks! We'll notify you when the iOS app is ready.");
+                    e.currentTarget.reset();
+                  } else {
+                    throw new Error('Failed to join waitlist');
+                  }
+                } catch (error) {
+                  alert('Something went wrong. Please try again.');
+                }
+              }}
+              className="space-y-4"
+            >
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="Your name (optional)"
+                  className="flex-1 px-4 py-3 rounded-lg text-gray-900 bg-white/90 focus:bg-white outline-none focus:ring-2 focus:ring-white/50"
+                />
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="Your email address"
+                  required
+                  className="flex-1 px-4 py-3 rounded-lg text-gray-900 bg-white/90 focus:bg-white outline-none focus:ring-2 focus:ring-white/50"
+                />
+              </div>
+              <Button 
+                type="submit"
+                size="lg" 
+                className="w-full bg-white text-purple-600 hover:bg-gray-100 font-semibold"
+              >
+                Join iOS Early Access
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </form>
+          </div>
+          
+          <p className="text-sm mt-4 opacity-75">
+            Currently supports U.S. bank accounts only via Plaid.
+          </p>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className={`py-20 ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50'}`}>
         <div className="container mx-auto px-6 text-center">

@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { z } from "zod";
 import OpenAI from "openai";
 import cors from "cors";
-import { BudgetCategory, Transaction, transactions } from "@shared/schema";
+import { BudgetCategory, Transaction, transactions, users, budgetCategories, savingsGoals, rivuScores, nudges, transactionAccounts, categories, plaidAccounts, plaidItems } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql } from "drizzle-orm";
 import path from "path";
@@ -66,6 +66,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error('TOS acceptance error:', error);
         res.status(500).json({ message: 'Failed to accept Terms of Service' });
+      }
+    });
+
+    // CCPA Data Deletion endpoint
+    app.post(`${apiPath}/user/delete`, protect, async (req: any, res) => {
+      try {
+        const userId = req.user.id;
+        
+        // Delete all user data across all tables
+        await Promise.all([
+          // Delete user's transactions
+          db.delete(transactions).where(eq(transactions.userId, userId)),
+          // Delete user's budget categories
+          db.delete(budgetCategories).where(eq(budgetCategories.userId, userId)),
+          // Delete user's savings goals
+          db.delete(savingsGoals).where(eq(savingsGoals.userId, userId)),
+          // Delete user's Rivu scores
+          db.delete(rivuScores).where(eq(rivuScores.userId, userId)),
+          // Delete user's nudges
+          db.delete(nudges).where(eq(nudges.userId, userId)),
+          // Delete user's transaction accounts
+          db.delete(transactionAccounts).where(eq(transactionAccounts.userId, userId)),
+          // Delete user's categories and subcategories
+          db.delete(categories).where(eq(categories.userId, userId)),
+          // Delete user's Plaid items and accounts
+          db.delete(plaidAccounts).where(eq(plaidAccounts.userId, userId)),
+          db.delete(plaidItems).where(eq(plaidItems.userId, userId))
+        ]);
+        
+        // Finally delete the user account
+        await db.delete(users).where(eq(users.id, userId));
+        
+        // Clear the user's session cookie
+        res.clearCookie('rivu_token');
+        
+        res.json({ 
+          message: 'All user data has been permanently deleted',
+          deletedAt: new Date().toISOString()
+        });
+      } catch (error) {
+        console.error('Data deletion error:', error);
+        res.status(500).json({ message: 'Failed to delete user data' });
       }
     });
     
@@ -1427,6 +1469,57 @@ User profile:
       res.status(500).json({ 
         message: "I'm having trouble analyzing your finances right now. Please try again later."
       });
+    }
+  });
+
+  // iOS Waitlist endpoint with Postmark integration
+  app.post(`${apiPath}/ios-waitlist`, async (req, res) => {
+    try {
+      const { email, name } = req.body;
+      
+      // Validate email
+      if (!email || !email.includes('@')) {
+        return res.status(400).json({ message: 'Valid email address is required' });
+      }
+      
+      // Check if POSTMARK_API_KEY is available
+      if (!process.env.POSTMARK_API_KEY) {
+        console.error('POSTMARK_API_KEY not found in environment variables');
+        return res.status(500).json({ message: 'Email service not configured' });
+      }
+      
+      // Send notification email to support team
+      try {
+        const { Client } = await import('postmark');
+        const client = new Client(process.env.POSTMARK_API_KEY);
+        
+        await client.sendEmail({
+          From: 'support@tryrivu.com',
+          To: 'support@tryrivu.com', 
+          Subject: 'New iOS Waitlist Signup',
+          HtmlBody: `
+            <h2>New iOS Waitlist Signup</h2>
+            <p><strong>Email:</strong> ${email}</p>
+            <p><strong>Name:</strong> ${name || 'N/A'}</p>
+            <p><strong>Signup Date:</strong> ${new Date().toLocaleString()}</p>
+            <hr>
+            <p>This user is interested in early access to the iOS app.</p>
+          `
+        });
+        
+        res.json({ 
+          message: 'Successfully joined iOS waitlist',
+          email: email
+        });
+        
+      } catch (postmarkError) {
+        console.error('Postmark email error:', postmarkError);
+        res.status(500).json({ message: 'Failed to send notification email' });
+      }
+      
+    } catch (error) {
+      console.error('iOS waitlist error:', error);
+      res.status(500).json({ message: 'Failed to process waitlist signup' });
     }
   });
 
