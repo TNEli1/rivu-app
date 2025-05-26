@@ -1310,10 +1310,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Financial advice API using OpenAI
+  // Financial advice API using OpenAI - SECURE GPT TOKEN USAGE CONTROL
   app.post("/api/advice", async (req, res) => {
     try {
       const userId = getCurrentUserId();
+      
+      // CRITICAL: Enforce explicit user consent for GPT usage
+      // GPT must ONLY be called when user explicitly requests coaching
+      const { userPrompt, nudgeConfirmed } = req.body;
+      
+      // Validate that this is an explicit user request for AI coaching
+      if (!userPrompt || typeof userPrompt !== 'string' || userPrompt.trim().length === 0) {
+        return res.status(400).json({ 
+          error: "INVALID_REQUEST",
+          message: "AI coaching requires an explicit user prompt. GPT usage is restricted to user-initiated coaching requests only." 
+        });
+      }
+      
+      // Additional validation for nudge-triggered requests
+      if (req.body.nudgeConfirmed !== undefined && !nudgeConfirmed) {
+        return res.status(400).json({ 
+          error: "CONSENT_REQUIRED",
+          message: "User consent required for AI coaching. GPT usage only permitted with explicit user confirmation." 
+        });
+      }
+      
       const transactions = await storage.getTransactions(userId);
       const categories = await storage.getBudgetCategories(userId);
       const rivuScore = await storage.getRivuScore(userId);
@@ -1346,7 +1367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }))
       };
       
-      const userPrompt = req.body.prompt || '';
+      // Use the validated userPrompt from the security check above
       
       // Create formatted budget categories string
       const budgetCategoriesText = financialContext.budgetCategories.map(cat => 
@@ -1387,8 +1408,8 @@ User profile:
 - Activity level: ${activityLevel}`;
       
       // Add user question if provided
-      if (userPrompt) {
-        prompt += `\n\nUser's question: ${userPrompt}`;
+      if (userPrompt && userPrompt.trim()) {
+        prompt += `\n\nUser's question: ${userPrompt.trim()}`;
       }
       
       prompt += `\n\nReturn 2-3 sentences of personalized advice using this data. Do not generalize. Reference specifics from spending and savings trends. Tailor your recommendations to the user's specific demographics including age range, income bracket, risk tolerance, and financial experience level.`;
