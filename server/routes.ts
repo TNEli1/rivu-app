@@ -62,6 +62,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.get('/auth/google', googleAuth);
     app.get('/auth/google/callback', googleCallback);
     
+    // Email verification routes
+    const { sendVerificationEmail, verifyEmail } = await import('./controllers-ts/emailVerificationController');
+    app.post(`${apiPath}/send-verification-email`, sendVerificationEmail);
+    app.get('/verify-email/:token', verifyEmail);
+    
     // Import transaction account controller
     const {
       getAccounts,

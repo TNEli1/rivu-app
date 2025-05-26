@@ -72,12 +72,20 @@ const clearTokenCookie = (res: any) => {
  */
 export const registerUser = async (req: any, res: any) => {
   try {
-    const { username, email, password, firstName, lastName } = req.body;
+    const { username, email, password, confirmPassword, firstName, lastName } = req.body;
     
-    if (!username || !email || !password) {
+    if (!username || !email || !password || !confirmPassword) {
       return res.status(400).json({ 
-        message: 'Please provide username, email and password',
+        message: 'Please provide username, email, password and confirm password',
         code: 'VALIDATION_ERROR'
+      });
+    }
+
+    // Server-side password confirmation validation
+    if (password !== confirmPassword) {
+      return res.status(400).json({
+        message: 'Passwords do not match',
+        code: 'PASSWORD_MISMATCH'
       });
     }
     
