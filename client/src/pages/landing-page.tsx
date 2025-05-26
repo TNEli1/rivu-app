@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
-import { ArrowRight, PieChart, Target, TrendingUp, BarChart2, Shield, FileSpreadsheet, Lock, Edit3 } from 'lucide-react';
+import { ArrowRight, PieChart, Target, TrendingUp, BarChart2, Shield, FileSpreadsheet, Lock, Edit3, Brain, DollarSign, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/hooks/use-auth';
+import { motion } from 'framer-motion';
 
 export default function LandingPage() {
   const { theme } = useTheme();
@@ -40,98 +41,251 @@ export default function LandingPage() {
         </div>
       </nav>
       
-      {/* Hero Section */}
+      {/* Hero Section with Animations */}
       <section className="container mx-auto px-6 py-10 md:py-20 flex flex-col md:flex-row items-center">
-        <div className="md:w-1/2 md:pr-10">
-          <h1 className="text-3xl md:text-5xl font-bold leading-tight mb-6">
+        <motion.div 
+          className="md:w-1/2 md:pr-10"
+          initial={{ opacity: 0, x: -50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+        >
+          <motion.h1 
+            className="text-3xl md:text-5xl font-bold leading-tight mb-6 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+          >
             Build better financial habits with Rivu
-          </h1>
-          <p className="text-lg md:text-xl mb-8 text-gray-600 dark:text-gray-300">
+          </motion.h1>
+          <motion.p 
+            className="text-lg md:text-xl mb-8 text-gray-600 dark:text-gray-300"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+          >
             The AI-powered personal finance platform that understands your behavior and helps you achieve your financial goals.
-          </p>
-          <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+          </motion.p>
+          <motion.div 
+            className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+          >
             <a href="/auth?signup=true&redirect=/dashboard">
-              <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
-                Sign up for free
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg">
+                  Sign up for free
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </motion.div>
             </a>
             <a href="#features">
-              <Button variant="outline" size="lg">
-                See how it works
-              </Button>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Button variant="outline" size="lg" className="shadow-lg">
+                  See how it works
+                </Button>
+              </motion.div>
             </a>
-          </div>
-        </div>
-        <div className="md:w-1/2 mt-10 md:mt-0 flex items-center justify-center">
-          <div className="p-8 rounded-2xl bg-gradient-to-br from-teal-400 to-blue-500 shadow-xl text-center text-white">
-            <h2 className="text-3xl font-bold mb-3">Smart. Simple. Secure.</h2>
-            <p className="text-xl mb-2">Your journey to financial wellness starts here</p>
-            <p className="text-lg italic mt-4">Take control of your finances with AI-powered insights</p>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
+        <motion.div 
+          className="md:w-1/2 mt-10 md:mt-0 flex items-center justify-center"
+          initial={{ opacity: 0, x: 50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+        >
+          <motion.div 
+            className="p-8 rounded-2xl bg-gradient-to-br from-teal-400 to-blue-500 shadow-2xl text-center text-white"
+            animate={{ 
+              y: [0, -10, 0],
+              rotate: [0, 1, -1, 0]
+            }}
+            transition={{ 
+              duration: 6,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            whileHover={{ scale: 1.05 }}
+          >
+            <motion.h2 
+              className="text-3xl font-bold mb-3"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1 }}
+            >
+              Smart. Simple. Secure.
+            </motion.h2>
+            <motion.p 
+              className="text-xl mb-2"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.2 }}
+            >
+              Your journey to financial wellness starts here
+            </motion.p>
+            <motion.p 
+              className="text-lg italic mt-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.4 }}
+            >
+              Take control of your finances with AI-powered insights
+            </motion.p>
+          </motion.div>
+        </motion.div>
       </section>
       
-      {/* Features Section */}
+      {/* Features Section with Premium Animations */}
       <section id="features" className={`py-20 ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50'}`}>
         <div className="container mx-auto px-6">
-          <h2 className="text-3xl font-bold text-center mb-16">How Rivu helps you succeed</h2>
+          <motion.h2 
+            className="text-3xl font-bold text-center mb-16"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            How Rivu helps you succeed
+          </motion.h2>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Feature 1 */}
-            <div className={`p-6 rounded-xl ${theme === 'dark' ? 'bg-gray-700' : 'bg-white'} shadow-md`}>
-              <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 mb-4">
-                <BarChart2 className="h-6 w-6" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Smart Budgeting</h3>
-              <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-                Create personalized budgets that adapt to your spending habits and lifestyle, making it easier to stay on track.
-              </p>
-            </div>
-            
-            {/* Feature 2 */}
-            <div className={`p-6 rounded-xl ${theme === 'dark' ? 'bg-gray-700' : 'bg-white'} shadow-md`}>
-              <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center text-purple-600 dark:text-purple-300 mb-4">
-                <Target className="h-6 w-6" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Goal Tracking</h3>
-              <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-                Set and track your financial goals with real-time progress updates and smart recommendations to reach them faster.
-              </p>
-            </div>
-            
-            {/* Feature 3 */}
-            <div className={`p-6 rounded-xl ${theme === 'dark' ? 'bg-gray-700' : 'bg-white'} shadow-md`}>
-              <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center text-green-600 dark:text-green-300 mb-4">
-                <TrendingUp className="h-6 w-6" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Financial Coaching</h3>
+            {/* AI Coach Feature */}
+            <motion.div 
+              className={`p-6 rounded-xl ${theme === 'dark' ? 'bg-gray-700' : 'bg-white'} shadow-lg hover:shadow-2xl transition-all duration-300`}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              viewport={{ once: true }}
+              whileHover={{ scale: 1.05, y: -5 }}
+            >
+              <motion.div 
+                className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white mb-4"
+                whileHover={{ rotate: 360 }}
+                transition={{ duration: 0.5 }}
+              >
+                <Brain className="h-6 w-6" />
+              </motion.div>
+              <h3 className="text-xl font-semibold mb-3">AI Coach</h3>
               <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
                 Get personalized advice from our AI financial coach that learns from your habits and helps you make better decisions.
               </p>
-            </div>
+            </motion.div>
             
-            {/* Feature 4 */}
-            <div className={`p-6 rounded-xl ${theme === 'dark' ? 'bg-gray-700' : 'bg-white'} shadow-md`}>
-              <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center text-red-600 dark:text-red-300 mb-4">
+            {/* Rivu Score Feature */}
+            <motion.div 
+              className={`p-6 rounded-xl ${theme === 'dark' ? 'bg-gray-700' : 'bg-white'} shadow-lg hover:shadow-2xl transition-all duration-300`}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              viewport={{ once: true }}
+              whileHover={{ scale: 1.05, y: -5 }}
+            >
+              <motion.div 
+                className="w-12 h-12 rounded-full bg-gradient-to-r from-green-500 to-teal-600 flex items-center justify-center text-white mb-4"
+                whileHover={{ rotate: 360 }}
+                transition={{ duration: 0.5 }}
+              >
                 <PieChart className="h-6 w-6" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Rivu Score™</h3>
+              </motion.div>
+              <h3 className="text-xl font-semibold mb-3">Rivu Score</h3>
               <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-                Track your financial health with our proprietary Rivu Score™ that measures and helps improve your overall financial wellbeing.
+                Track your financial health with our proprietary score that measures and helps improve your overall financial wellbeing.
               </p>
-            </div>
+            </motion.div>
             
-            {/* Feature 5 */}
-            <div className={`p-6 rounded-xl ${theme === 'dark' ? 'bg-gray-700' : 'bg-white'} shadow-md`}>
-              <div className="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center text-yellow-600 dark:text-yellow-300 mb-4">
-                <Shield className="h-6 w-6" />
-              </div>
+            {/* Budget & Goals Dashboard */}
+            <motion.div 
+              className={`p-6 rounded-xl ${theme === 'dark' ? 'bg-gray-700' : 'bg-white'} shadow-lg hover:shadow-2xl transition-all duration-300`}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              viewport={{ once: true }}
+              whileHover={{ scale: 1.05, y: -5 }}
+            >
+              <motion.div 
+                className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-pink-600 flex items-center justify-center text-white mb-4"
+                whileHover={{ rotate: 360 }}
+                transition={{ duration: 0.5 }}
+              >
+                <Target className="h-6 w-6" />
+              </motion.div>
+              <h3 className="text-xl font-semibold mb-3">Budget & Goals Dashboard</h3>
+              <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                Set and track your financial goals with real-time progress updates and smart recommendations to reach them faster.
+              </p>
+            </motion.div>
+            
+            {/* Transaction Management */}
+            <motion.div 
+              className={`p-6 rounded-xl ${theme === 'dark' ? 'bg-gray-700' : 'bg-white'} shadow-lg hover:shadow-2xl transition-all duration-300`}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              viewport={{ once: true }}
+              whileHover={{ scale: 1.05, y: -5 }}
+            >
+              <motion.div 
+                className="w-12 h-12 rounded-full bg-gradient-to-r from-orange-500 to-red-600 flex items-center justify-center text-white mb-4"
+                whileHover={{ rotate: 360 }}
+                transition={{ duration: 0.5 }}
+              >
+                <BarChart2 className="h-6 w-6" />
+              </motion.div>
+              <h3 className="text-xl font-semibold mb-3">Transaction Management</h3>
+              <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                Automatically categorize and track your spending with intelligent transaction analysis and insights.
+              </p>
+            </motion.div>
+            
+            {/* Bank Connection via Plaid */}
+            <motion.div 
+              className={`p-6 rounded-xl ${theme === 'dark' ? 'bg-gray-700' : 'bg-white'} shadow-lg hover:shadow-2xl transition-all duration-300`}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              viewport={{ once: true }}
+              whileHover={{ scale: 1.05, y: -5 }}
+            >
+              <motion.div 
+                className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-500 to-blue-600 flex items-center justify-center text-white mb-4"
+                whileHover={{ rotate: 360 }}
+                transition={{ duration: 0.5 }}
+              >
+                <Lock className="h-6 w-6" />
+              </motion.div>
+              <h3 className="text-xl font-semibold mb-3">Bank Connection via Plaid</h3>
+              <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                Securely connect your bank accounts with industry-leading encryption and trusted Plaid integration.
+              </p>
+            </motion.div>
+
+            {/* Behavioral Insights */}
+            <motion.div 
+              className={`p-6 rounded-xl ${theme === 'dark' ? 'bg-gray-700' : 'bg-white'} shadow-lg hover:shadow-2xl transition-all duration-300`}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+              viewport={{ once: true }}
+              whileHover={{ scale: 1.05, y: -5 }}
+            >
+              <motion.div 
+                className="w-12 h-12 rounded-full bg-gradient-to-r from-yellow-500 to-orange-600 flex items-center justify-center text-white mb-4"
+                whileHover={{ rotate: 360 }}
+                transition={{ duration: 0.5 }}
+              >
+                <TrendingUp className="h-6 w-6" />
+              </motion.div>
               <h3 className="text-xl font-semibold mb-3">Behavioral Insights</h3>
               <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
                 Understand your spending patterns with AI-powered insights that help you build positive financial habits.
               </p>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
