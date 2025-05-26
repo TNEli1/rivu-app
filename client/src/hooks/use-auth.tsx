@@ -41,6 +41,7 @@ export type User = {
   lastLogin?: string;
   loginCount?: number;
   demographics?: Demographics;
+  tosAcceptedAt?: string;
 };
 
 // Auth context type
