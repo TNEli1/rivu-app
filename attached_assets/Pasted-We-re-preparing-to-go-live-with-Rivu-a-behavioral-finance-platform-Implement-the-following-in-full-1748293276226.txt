@@ -1,0 +1,184 @@
+We’re preparing to go live with Rivu, a behavioral finance platform. Implement the following in full, and do not reintroduce any Replit-specific logic, localhost references, or removed plugins. Execute this in order:
+
+⸻
+
+✅ 1. Fix Google OAuth 404
+	•	Ensure the /auth/google and /auth/google/callback routes exist and are functional
+	•	On successful login, redirect users to /dashboard or the appropriate logged-in view
+	•	On failure, redirect to /login?error=oauth_failed
+
+⸻
+
+✅ 2. Implement and Enforce Legal Pages
+
+Create the following views:
+
+/legal/privacy
+	•	State that Rivu only supports U.S.-based bank accounts via Plaid
+	•	Data is encrypted, used only for coaching and budgeting
+	•	No data is sold or shared without consent
+	•	Users may request account deletion at any time
+	•	Rivu complies with CCPA and stores data in U.S. servers
+
+/legal/terms
+	•	Clearly state:
+	•	Rivu is not a Registered Investment Advisor (RIA)
+	•	Rivu does not provide financial, legal, or tax advice
+	•	All insights are educational and AI-generated
+	•	Rivu is not liable for financial outcomes or API errors
+	•	Use of Rivu constitutes agreement to these terms
+	•	Users must be 18+ and U.S. residents
+
+⸻
+
+✅ 3. TOS/Privacy Agreement Enforcement
+	•	Add a checkbox during signup:
+“I agree to the Terms of Service and Privacy Policy. I understand this is not financial advice.”
+	•	Block registration unless checked
+	•	Store a tosAcceptedAt timestamp in the database
+
+⸻
+
+✅ 4. Database Finalization
+	•	Ensure schema includes:
+	•	emailVerified: boolean
+	•	authMethod: string
+	•	tosAcceptedAt: timestamp
+	•	Push schema to Railway:
+
+npx drizzle-kit push:pg
+
+5. Scan and Fix Common Crash Vectors
+	•	Any route missing try/catch
+	•	Any async call without proper await
+	•	Any .env variable access without fallback error
+	•	Any route that could respond twice (double res.send)
+
+⸻
+
+✅ 6. Security and Compliance Enhancements
+	•	Confirm secure, httpOnly, sameSite: "strict" cookies for sessions
+	•	Add rate limiting middleware to all auth routes
+	•	Confirm OpenAI and Postmark APIs use real keys and return expected responses
+	•	All AI prompts include disclaimer:
+“AI-generated insight. Not financial advice.”
+
+⸻
+
+✅ 7. Final Testing
+	•	CSV upload/export works on Transactions page
+	•	Plaid “Connect Bank” integration functions and logs data
+	•	Postmark email triggers on signup and verification
+	•	Coaching prompts function using OpenAI API
+	•	/health route responds 200 OK on Railway
+	•	App loads at https://tryrivu.com and https://www.tryrivu.com
+
+1. Clarify We Are Not a Financial Institution or Advisor
+
+In /legal/terms and the footer of the app:
+	•	Add:
+“Rivu is not a bank or a Registered Investment Advisor. Banking data is securely accessed using Plaid, a third-party data aggregator. Rivu provides educational and behavioral finance tools only — not investment, legal, or tax advice.”
+	•	Do not use language like “manage your money” or “financial advisor” unless it is clearly prefaced with disclaimers.
+
+⸻
+
+✅ 2. Data Use & Privacy (CCPA + FTC Compliant)
+
+In /legal/privacy:
+	•	Add:
+“All data is encrypted at rest and stored in Railway-hosted PostgreSQL infrastructure located in the United States. Data is processed solely for app functionality and personalized insights. We do not sell user data.”
+	•	Add:
+“You may request permanent deletion of your data at any time by emailing support@tryrivu.com or using the in-app ‘Delete My Data’ feature.”
+	•	Create a backend-safe DELETE /api/user or POST /api/user/delete endpoint
+	•	Add a button in account/settings labeled: Delete My Data
+
+⸻
+
+✅ 3. AI-Specific Disclaimers (OpenAI)
+
+On any screen where GPT is used for financial insight:
+	•	Show this explicit disclaimer:
+“This insight is AI-generated and is not financial advice. Always consult a licensed advisor before making financial decisions.”
+
+Optional:
+	•	Add a first-time acknowledgment toggle before accessing the AI coach:
+“I understand Rivu’s AI guidance is educational only.”
+
+⸻
+
+✅ 4. Update Landing Page Copy
+
+On tryrivu.com or your homepage (in footer or hero section):
+	•	Add small text or banner:
+“Currently supports U.S. bank accounts only via Plaid.”
+	•	Add a footer or announcement bar:
+“iOS app coming soon — sign up to get early access.”
+
+⸻
+
+✅ 5. Final QA Reminder
+	•	Make sure /legal/privacy and /legal/terms routes exist and are visible
+	•	Link TOS + Privacy from footer and all signup forms
+	•	Enforce checkbox agreement before account creation or access
+
+
+Add a waitlist sign-up form to the Rivu landing page and wire it to Postmark to send submissions to support@tryrivu.com. This is for users who want early access to the upcoming iOS app.
+
+⸻
+
+✅ 1. Frontend: Add a Signup Form
+	•	Place it prominently on tryrivu.com landing page — either:
+	•	In the hero section
+	•	As a modal
+	•	Or near the footer
+
+Form should include:
+	•	Email address field
+	•	Optional: Name field
+	•	CTA button: “Join iOS Early Access”
+
+Validate:
+	•	Must be a valid email
+	•	Should prevent spam (rate limit or invisible captcha if needed)
+
+⸻
+
+✅ 2. Backend: Create API Route
+
+POST /api/ios-waitlist
+
+Expected payload:
+
+{
+  "email": "user@example.com",
+  "name": "Optional Name"
+}
+
+On submission:
+	•	Send email via Postmark to support@tryrivu.com with:
+	•	Subject: New iOS Waitlist Signup
+	•	Body: Name: [name]  Email: [email]
+
+⸻
+
+✅ 3. Postmark Usage
+
+Use the existing POSTMARK_API_KEY from env. Example payload:
+
+import { sendEmail } from "@postmark/client";
+
+const client = new Postmark.Client(process.env.POSTMARK_API_KEY);
+
+await client.sendEmail({
+  From: "support@tryrivu.com",
+  To: "support@tryrivu.com",
+  Subject: "New iOS Waitlist Signup",
+  HtmlBody: `<p><b>Email:</b> ${email}<br/><b>Name:</b> ${name ?? "N/A"}</p>`
+});
+4. Success Handling
+	•	Show toast or confirmation message:
+“Thanks! We’ll notify you when the iOS app is ready.”
+
+Optional:
+	•	Add user to a waitlist_signups table for future CRM import
+	•	Send confirmation to the user (only if needed — currently we just alert internal team)
