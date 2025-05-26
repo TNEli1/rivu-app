@@ -3,12 +3,15 @@ import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
 import * as schema from "@shared/schema";
 
-// Configure WebSocket for Railway deployment
-neonConfig.webSocketConstructor = ws;
-// Disable WebSocket pooling in production to avoid certificate issues
+// Configure for Railway deployment - disable WebSocket in production to avoid certificate issues
 if (process.env.NODE_ENV === 'production') {
-  neonConfig.useSecureWebSocket = true;
+  // Use HTTP mode in production for Railway compatibility
+  neonConfig.fetchConnectionCache = true;
+  neonConfig.useSecureWebSocket = false; // Disable WebSocket in production
   neonConfig.pipelineConnect = false;
+} else {
+  // Use WebSocket in development
+  neonConfig.webSocketConstructor = ws;
 }
 
 if (!process.env.DATABASE_URL) {
@@ -17,5 +20,9 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+export const pool = new Pool({ 
+  connectionString: process.env.DATABASE_URL,
+  // Additional Railway-specific configuration
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined
+});
 export const db = drizzle({ client: pool, schema });

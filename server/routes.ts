@@ -91,30 +91,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.put(`${apiPath}/nudges/:id/complete`, protect, completeNudge);
     app.put(`${apiPath}/onboarding-stage`, protect, updateOnboardingStage);
     
-    // Import CSV controllers for transaction imports
-    const {
-      uploadCSV,
-      importTransactionsFromCSV,
-      markTransactionAsNotDuplicate
-    } = await import('./controllers/csvController');
-    
-    // Import TypeScript CSV controllers for mapped data import
-    const {
-      importMappedTransactions
-    } = await import('./controllers-ts/csvController');
-    
-    // Import batch transaction controller
-    const {
-      createTransactionsBatch
-    } = await import('./controllers-ts/transactionController');
-    
-    // CSV upload routes
-    app.post(`${apiPath}/transactions/import`, protect, uploadCSV, importTransactionsFromCSV);
-    app.post(`${apiPath}/transactions/import-mapped`, protect, importMappedTransactions);
-    
-    // New batch transaction endpoint for CSV data
-    app.post(`${apiPath}/transactions/batch`, protect, createTransactionsBatch);
-    app.put(`${apiPath}/transactions/:id/not-duplicate`, protect, markTransactionAsNotDuplicate);
+    // CSV import functionality temporarily disabled for Railway deployment
+    // TODO: Re-enable CSV imports after deployment stabilization
     
     // Delete all transactions route
     app.delete(`${apiPath}/transactions/all`, protect, async (req: any, res) => {
