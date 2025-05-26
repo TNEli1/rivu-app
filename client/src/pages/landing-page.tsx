@@ -343,8 +343,14 @@ export default function LandingPage() {
               </a>
             </div>
           </div>
-          <div className={`text-center mt-8 text-sm ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
-            &copy; {new Date().getFullYear()} Rivu Inc. All rights reserved.
+          <div className={`text-center mt-8 text-sm ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'} space-y-2`}>
+            <p className="text-xs max-w-4xl mx-auto">
+              Rivu is not a bank or a Registered Investment Advisor. Banking data is securely accessed using Plaid, a third-party data aggregator. Rivu provides educational and behavioral finance tools only — not investment, legal, or tax advice.
+            </p>
+            <p className="text-xs">
+              Currently supports U.S. bank accounts only via Plaid. iOS app coming soon — sign up to get early access.
+            </p>
+            <p>&copy; {new Date().getFullYear()} Rivu Inc. All rights reserved.</p>
           </div>
         </div>
       </footer>

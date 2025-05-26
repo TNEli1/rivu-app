@@ -121,7 +121,10 @@ export const registerUser = async (req: any, res: any) => {
       onboardingCompleted: false,
       accountCreationDate: new Date(),
       loginCount: 1,
-      lastLogin: new Date() // matches schema field name
+      lastLogin: new Date(), // matches schema field name
+      tosAcceptedAt: new Date(), // Track TOS acceptance on registration
+      authMethod: 'password',
+      emailVerified: false
     });
     
     if (user) {

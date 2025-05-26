@@ -240,6 +240,14 @@ export default function InsightsPage() {
           <TabsContent value="advice">
             <Card className="p-6">
               <h2 className="text-xl font-semibold mb-4">AI Financial Coach</h2>
+              
+              {/* AI Disclaimer */}
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800 font-medium">
+                  ⚠️ <strong>AI Disclaimer:</strong> This insight is AI-generated and is not financial advice. Always consult a licensed advisor before making financial decisions.
+                </p>
+              </div>
+              
               <p className="text-muted-foreground mb-6">
                 Get personalized financial advice based on your spending habits, budget adherence, and financial goals.
               </p>

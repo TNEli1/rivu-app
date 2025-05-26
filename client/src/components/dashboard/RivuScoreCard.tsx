@@ -200,14 +200,17 @@ export default function RivuScoreCard() {
               ))
             ) : hasNoRealData ? (
               <div className="text-center py-4">
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground mb-3">
                   Your Rivu Score is calculated based on your spending habits, budget adherence, and financial activity.
                 </p>
+                <div className="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+                  AI-generated insight. Not financial advice.
+                </div>
                 <Link href="/transactions?action=add">
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="mt-3"
+                    className="mt-2"
                   >
                     <Plus className="h-4 w-4 mr-1" />
                     Add Transaction
