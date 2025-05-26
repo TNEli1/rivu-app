@@ -9,6 +9,7 @@ import { db } from "./db";
 import { eq, sql } from "drizzle-orm";
 import path from "path";
 import fs from "fs";
+import { categorizeTransaction, generateSpendingInsights, getCategoryIcon, getCategoryColor } from "./utils/transactionCategorizer";
 
 // Initialize OpenAI client
 const openai = new OpenAI({ 
@@ -652,11 +653,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Transactions API
+  // Transactions API with enhanced categorization
   app.get("/api/transactions", async (req, res) => {
     const userId = getCurrentUserId();
     const transactions = await storage.getTransactions(userId);
-    res.json(transactions);
+    
+    // Enhance transactions with automatic categorization
+    const enhancedTransactions = transactions.map(transaction => {
+      const { category: autoCategory, icon, color } = categorizeTransaction(
+        transaction.categoryId ? [transaction.categoryId] : null,
+        transaction.merchant,
+        parseFloat(transaction.amount.toString())
+      );
+      
+      return {
+        ...transaction,
+        autoCategory,
+        categoryIcon: icon,
+        categoryColor: color
+      };
+    });
+    
+    res.json(enhancedTransactions);
+  });
+
+  // New spending insights endpoint with automatic categorization
+  app.get("/api/transactions/insights", async (req, res) => {
+    const userId = getCurrentUserId();
+    const transactions = await storage.getTransactions(userId);
+    
+    // Convert to format expected by insights generator
+    const formattedTransactions = transactions.map(t => ({
+      ...t,
+      amount: parseFloat(t.amount.toString()),
+      categoryId: t.categoryId
+    }));
+    
+    const insights = generateSpendingInsights(formattedTransactions);
+    res.json(insights);
   });
 
   app.post("/api/transactions", async (req, res) => {
