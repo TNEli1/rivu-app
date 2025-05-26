@@ -1,0 +1,45 @@
+We are now completing migration to Railway and need you to finalize and clean up the project for production.
+
+Do the following immediately:
+
+✅ 1. Use Correct Environment Variables
+	•	Make sure process.env.BASE_URL is used instead of any hardcoded localhost URLs
+	•	Confirm all secrets (DATABASE_URL, JWT_SECRET, SESSION_SECRET, POSTMARK_API_KEY, PLAID_*, etc.) are being read from process.env
+	•	Ensure there are no hardcoded API keys, tokens, or localhost references
+
+✅ 2. Remove All Replit-Specific Code
+	•	Remove @replit/vite-plugin-* packages from package.json
+	•	Clean up vite.config.ts and remove any process.env.REPL_ID logic
+	•	Remove any logic or plugins that exist only for Replit’s preview or proxy systems
+	•	Kill anything relying on Replit’s default PostgreSQL (Neon)
+
+✅ 3. Validate PostgreSQL Migration
+	•	Confirm all Drizzle schema tables exist in the Railway PostgreSQL DB
+	•	Run npx drizzle-kit push using the Railway DATABASE_URL
+	•	Ensure tables like users, sessions, transactions, goals, etc. are properly deployed
+
+✅ 4. Check for Syntax Bugs and Routing Issues
+	•	Scan for missing imports, typos, and route mismatches
+	•	Confirm all API routes are valid, error-handled, and mounted correctly
+	•	Ensure Express middleware runs in the proper order (auth, CORS, redirects, etc.)
+
+✅ 5. Lock Down Redirect Logic
+
+Add this middleware to redirect all root domain traffic to www.tryrivu.com:
+
+app.use((req, res, next) => {
+  const host = req.headers.host;
+  if (host === 'tryrivu.com') {
+    return res.redirect(301, 'https://www.tryrivu.com' + req.originalUrl);
+  }
+  next();
+});
+
+✅ 6. Clean Build for Railway
+	•	Make sure the start script builds and runs both frontend and backend correctly
+	•	Validate all routes load (static assets, API, React pages)
+	•	Confirm PORT is dynamically assigned from process.env.PORT
+
+⸻
+
+This is a full production push-off. Finalize the app, clean the codebase, and confirm everything is using Railway-compatible logic. No preview logic, no dev-only scripts, no broken routes. Get it clean and functional.
