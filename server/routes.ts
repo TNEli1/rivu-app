@@ -57,6 +57,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.get(`${apiPath}/verify-reset-token/:token`, verifyResetToken);
     app.post(`${apiPath}/reset-password/:token`, resetPassword);
     
+    // Google OAuth routes
+    const { googleAuth, googleCallback } = await import('./controllers-ts/googleAuthController');
+    app.get('/auth/google', googleAuth);
+    app.get('/auth/google/callback', googleCallback);
+    
     // Import transaction account controller
     const {
       getAccounts,

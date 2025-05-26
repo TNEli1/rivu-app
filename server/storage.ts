@@ -154,6 +154,69 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
+  async getUserById(id: number): Promise<User | undefined> {
+    return this.getUser(id);
+  }
+
+  async getUserByGoogleId(googleId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.googleId, googleId));
+    return user || undefined;
+  }
+
+  async createGoogleUser(userData: {
+    googleId: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    profilePic?: string;
+    authMethod: string;
+    emailVerified: boolean;
+  }): Promise<User> {
+    // Generate username from email
+    const username = userData.email.split('@')[0] + '_' + Math.random().toString(36).substring(7);
+    
+    // Generate avatar initials
+    const avatarInitials = (userData.firstName.charAt(0) + userData.lastName.charAt(0)).toUpperCase();
+    
+    const [user] = await db
+      .insert(users)
+      .values({
+        username,
+        password: null, // No password for Google users
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        avatarInitials,
+        googleId: userData.googleId,
+        authMethod: userData.authMethod,
+        emailVerified: userData.emailVerified,
+        profilePic: userData.profilePic,
+        loginCount: 0,
+        createdAt: new Date(),
+      })
+      .returning();
+      
+    // Create default categories for the user
+    await this.createDefaultCategoriesForUser(user.id);
+    
+    return user;
+  }
+
+  async linkGoogleAccount(userId: number, googleId: string, profilePic?: string): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        googleId,
+        authMethod: 'google',
+        emailVerified: true,
+        profilePic
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    return updatedUser;
+  }
+
   async getUserByUsername(username: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.username, username));
     return user || undefined;

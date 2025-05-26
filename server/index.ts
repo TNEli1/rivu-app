@@ -6,6 +6,8 @@ import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
 import { setCsrfToken, validateCsrfToken } from "./middleware/csrfProtection";
+import session from "express-session";
+import passport from "./passport";
 
 // Load environment variables
 dotenv.config();
@@ -90,6 +92,22 @@ app.use(express.static('public'));
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser()); // Parse cookies
+
+// Session configuration for Google OAuth
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'rivu_session_secret_dev',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 1000 * 60 * 60 * 24 // 24 hours
+  }
+}));
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Apply CSRF protection
 app.use(setCsrfToken); // Set CSRF token for all routes
