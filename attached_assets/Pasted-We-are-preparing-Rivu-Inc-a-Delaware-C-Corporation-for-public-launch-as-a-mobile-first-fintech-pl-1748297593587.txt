@@ -1,0 +1,114 @@
+We are preparing Rivu Inc., a Delaware C Corporation, for public launch as a mobile-first fintech platform. The application is hosted on Railway with PostgreSQL and available at https://tryrivu.com. All legal, design, infrastructure, and compliance requirements must now be met.
+
+No regressions, no Replit dependencies, no fallback code.
+
+⸻
+
+1. LEGAL, PRIVACY, AND COMPLIANCE HARDENING
+
+Update Terms of Service and Privacy Policy to include:
+
+Corporate Jurisdiction
+	•	“Rivu Inc. is a Delaware C Corporation governed by the laws of the State of Delaware.”
+
+Dispute Resolution
+	•	Add arbitration clause:
+“All disputes shall be resolved by binding arbitration administered by the American Arbitration Association (AAA). Users waive the right to a jury trial and to participate in any class action.”
+
+Age + Residency
+	•	“Users must be 18+ and U.S. residents.”
+
+No Financial Advice
+	•	“Rivu does not offer financial, investment, tax, or legal advice. All information is provided for educational purposes only.”
+
+Data Retention & Consent
+	•	“Data is retained only as long as necessary and encrypted at rest. Users may request deletion at any time.”
+
+Email + Behavioral Consent
+	•	Require checkbox at signup:
+“I agree to the Terms of Service and Privacy Policy. I understand this app uses behavioral data and AI for educational guidance only.”
+
+GDPR Readiness
+	•	“EEA users have the right to access, rectify, or delete their personal data under GDPR.”
+
+CCPA/CPRA
+	•	“California residents may opt out of data sharing and request deletion under the CCPA and CPRA. Rivu does not sell user data.”
+
+New York SHIELD Act
+	•	“Rivu maintains reasonable data protection protocols in accordance with the New York SHIELD Act.”
+
+Third-Party Disclaimer
+	•	“Rivu integrates with Plaid, OpenAI, and Postmark. We disclaim liability for third-party services or outages.”
+
+⸻
+
+2. DATABASE + BACKEND FIXES
+	•	Use Railway PostgreSQL only
+	•	Push latest schema using:
+
+npx drizzle-kit push:pg
+
+•	Remove any Replit or Neon DB fallback logic
+	•	Ensure full support for:
+	•	Google OAuth
+	•	Email/password login
+	•	Email verification via Postmark
+	•	CSV upload and storage
+	•	Plaid account linking
+
+⸻
+
+3. LANDING PAGE REDESIGN (MOTION + FEATURES)
+
+Using Framer or a modern animation library (e.g. Framer Motion, GSAP):
+	•	Rebuild the landing page to reflect premium fintech UX
+	•	Add animated cards or sections for:
+	•	AI Coach
+	•	Rivu Score
+	•	Budget & Goals Dashboard
+	•	Transaction Management
+	•	Bank Connection via Plaid
+	•	Add motion in hero section and smooth scroll
+	•	Add banner:
+“iOS App Coming Soon — Join the Waitlist”
+	•	Waitlist form should email to: support@tryrivu.com via Postmark
+
+⸻
+
+4. SEO, MOBILE, ACCESSIBILITY
+	•	Add:
+	•	<title>, <meta name="description">, Open Graph tags
+	•	apple-touch-icon, viewport, robots.txt, sitemap.xml
+	•	Ensure 100% responsiveness across mobile breakpoints
+	•	Lighthouse score for mobile should be 90+
+
+⸻
+
+5. SECURITY + INFRASTRUCTURE
+	•	Sanitize all logs (never log user data, tokens, sessions)
+	•	Secure session cookies:
+httpOnly, secure, sameSite: 'strict'
+	•	Use rate-limiting middleware on all auth routes
+	•	Use Helmet middleware for header hardening
+	•	Store and load all secrets via environment variables
+
+⸻
+
+6. TEST + DEPLOYMENT
+	•	Test all flows:
+	•	Sign up + verify
+	•	Login (Google + email)
+	•	Consent capture
+	•	Plaid bank link
+	•	AI prompt
+	•	CSV import/export
+	•	Delete account
+	•	Fix /auth/google/callback 404 in Replit preview by testing on Railway
+	•	Ensure /health passes for Railway deployment
+	•	Ensure base URL is set to https://tryrivu.com
+
+⸻
+
+Once completed, commit and push to GitHub and deploy to Railway.
+
+Rivu must now be legally compliant, security hardened, UI-polished, mobile-ready, and investor-safe.
