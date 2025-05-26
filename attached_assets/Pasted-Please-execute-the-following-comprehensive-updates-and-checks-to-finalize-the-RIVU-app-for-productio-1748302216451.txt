@@ -1,0 +1,104 @@
+Please execute the following comprehensive updates and checks to finalize the RIVU app for production deployment via Railway:
+
+⸻
+
+1. Fix Current Deployment Error
+	•	Resolve the error:
+TypeError [ERR_INVALID_ARG_TYPE]: The "paths[0]" argument must be of type string. Received undefined
+	•	This is likely from a path.resolve() call receiving undefined in vite.config.ts or related build config.
+	•	Ensure any path array elements or root values are explicitly defined.
+	•	Validate that environment-based logic isn’t returning undefined paths.
+	•	For example:
+
+root: path.resolve(import.meta.dirname, 'client'),
+build: {
+  outDir: path.resolve(import.meta.dirname, 'dist/public'),
+  emptyOutDir: true
+}
+
+2. Push All Latest Database Schema Changes
+	•	Use the schema to push latest updates to Railway’s PostgreSQL instance.
+	•	Make sure tables for:
+	•	users
+	•	budgets
+	•	transactions
+	•	goals
+	•	RivuScore
+	•	Plaid account linkage
+	•	early access signups
+…are synced with the latest code.
+
+⸻
+
+3. Security & Data Isolation
+	•	Ensure users cannot access data belonging to other accounts (e.g., Eli seeing Eli33’s data).
+	•	Enforce tenant-level isolation in every DB query and API route using userId or session.user.id.
+
+⸻
+
+4. Google OAuth + Waitlist
+	•	Ensure Google OAuth login works and no longer redirects to a 404.
+	•	Use .env secrets for GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.
+	•	Waitlist form on landing page should trigger Postmark email to support@tryrivu.com.
+
+⸻
+
+5. Coach / GPT Usage
+	•	Only invoke GPT when:
+	•	A user explicitly prompts via the Coach screen
+	•	A behavioral “nudge” is triggered
+	•	Prevent GPT API usage from triggering unnecessarily (preserve tokens).
+
+⸻
+
+6. Transaction Categorization Engine
+	•	Enable automatic categorization of Plaid transactions using plaid.transaction.category.
+	•	Add logic to map transactions into core categories: groceries, rent, travel, food, etc.
+	•	Display proper icons for each category (e.g., vegetable emoji for groceries).
+	•	Include insights: monthly category totals, trending increases, overspending warnings.
+
+⸻
+
+7. Terms of Service & Privacy Policy
+	•	Fix 404 links on /terms and /privacy.
+	•	Update language to reflect:
+	•	RIVU Inc. is a Delaware C Corporation governed under Delaware law.
+	•	“We are not a financial advisor. This is not financial advice.”
+	•	Data accessed via Plaid for U.S. banks only.
+	•	Arbitration clause:
+“By agreeing to our Terms of Service and Privacy Policy, you consent to resolve all disputes via binding arbitration or mediation in accordance with AAA rules, and waive class-action rights.”
+
+⸻
+
+8. Compliance Checklist
+	•	Include email verification step before users can log in.
+	•	Add “Delete My Data” flow (button or email trigger).
+	•	Document how user data is:
+	•	Stored (e.g. encrypted at rest in PostgreSQL via Railway)
+	•	Processed (you are a processor, not a controller under CCPA/GDPR).
+	•	Ensure Plaid and Postmark API integrations follow vendor usage policies.
+
+⸻
+
+9. Landing Page Enhancements
+	•	Improve / with Framer (or CSS animations) to add:
+	•	Motion/scroll-based animations
+	•	App screenshots with motion
+	•	Waitlist form
+	•	Optimize for SEO and mobile (responsive layout, meta tags, robots.txt)
+
+⸻
+
+10. Final Checks
+	•	Confirm all environment variables are working:
+	•	Postmark (email)
+	•	GPT (coaching)
+	•	Plaid (bank connections)
+	•	Google OAuth (auth)
+	•	Remove deprecated code, unused plugins, localhost references.
+	•	Ensure HTTPS works and all domains are correctly resolved (www.tryrivu.com and root).
+
+⸻
+
+End of prompt.
+Once these are complete, confirm in logs and test live app at https://www.tryrivu.com.
