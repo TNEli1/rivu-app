@@ -62,11 +62,8 @@ export const forgotPassword = async (req: Request, res: Response) => {
       { email: user.email, timestamp: new Date().toISOString() }
     );
     
-    // CRITICAL FIX: Always generate proper URLs that work in Replit environment
-    // Get the app host from environment or request
-    const appHost = process.env.REPL_SLUG && process.env.REPL_OWNER
-      ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
-      : `${req.protocol}://${req.get('host')}`;
+    // Generate proper URLs using BASE_URL environment variable or request host
+    const appHost = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
       
     const resetUrl = `${appHost}/reset-password/${resetToken}`;
     console.log(`Generated password reset URL: ${resetUrl}`);
