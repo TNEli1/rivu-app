@@ -1,0 +1,321 @@
+Rivu Inc. is preparing to launch publicly as a U.S.-based, Delaware C Corporation providing behavioral finance tools through AI and API integrations. The app is hosted on Railway with PostgreSQL, and the production domain is https://tryrivu.com. Implement the following with zero regressions or reintroductions of removed features.
+
+⸻
+
+1. LEGAL & PRIVACY LOCKDOWN (U.S. + Global Readiness)
+
+Update the Terms of Service and Privacy Policy with the following:
+
+✅ Corporate Entity & Jurisdiction
+	•	“Rivu Inc. is a Delaware C Corporation governed under the laws of the State of Delaware.”
+
+✅ Arbitration & Class Action Waiver
+	•	All disputes must be resolved by binding arbitration (AAA), no jury trials or class actions.
+
+✅ Data Rights & Privacy (for U.S. and international laws)
+	•	CCPA/CPRA (California): Data access, deletion, opt-out rights.
+	•	GDPR (EEA): Right to access, rectify, and erase personal data.
+	•	NY SHIELD Act: Reasonable security practices acknowledged.
+
+✅ Disclaimers
+	•	“Rivu is not a financial advisor, fiduciary, or bank. All AI outputs are educational only.”
+	•	“Bank connections use Plaid. Rivu does not store bank credentials.”
+
+✅ Age Restriction
+	•	Users must be 18+ and U.S. residents.
+
+✅ Consent Enforcement
+	•	Checkbox at signup required:
+“I agree to the Terms of Service and Privacy Policy. I understand this app uses AI and personal financial data for educational guidance only.”
+
+✅ “Delete My Data” Feature
+	•	Email-based request or dashboard toggle for full user data deletion.
+
+⸻
+
+2. GPT TOKEN USAGE CONTROL
+
+✅ GPT usage must only occur:
+	•	When a user explicitly clicks a “Coach” prompt
+	•	Or responds to a behavioral nudge with consent
+
+❌ GPT usage must not trigger:
+	•	On dashboard load
+	•	During data imports (CSV, Plaid)
+	•	During budget or goal creation
+
+✅ Backend must enforce:
+	•	Only process GPT calls with:
+
+{ "userPrompt": "...", "nudgeConfirmed": true }
+
+•	Return 400 error otherwise
+
+⸻
+
+3. TRANSACTION CATEGORIZATION + INSIGHT ENGINE
+
+Build and enable intelligent categorization and behavior analysis:
+
+✅ Ingest from Plaid:
+	•	Store: category, subcategory, merchant_name, amount, date, account_id, user_id
+	•	Leverage Plaid’s category_id and category array
+
+✅ CSV + Manual Transactions:
+	•	Use regex or keyword matching for basic classification
+	•	(Future upgrade: use GPT for description-based classification)
+
+✅ Insights Engine:
+	•	Group transactions by month & category
+	•	Show:
+	•	Top 3 categories by spend
+	•	% change from previous month
+	•	Behavioral flags (e.g. “Dining up 45%”)
+
+✅ Frontend Dashboard:
+	•	Show pie or bar charts
+	•	Show AI nudge triggers for spikes (user must opt-in before GPT)
+
+⸻
+
+4. DATABASE + BACKEND HARDENING
+	•	Use Railway PostgreSQL exclusively
+	•	Run:
+
+npx drizzle-kit push:pg
+
+	•	Remove all Replit, Neon, or localhost logic
+	•	Ensure schema includes:
+	•	category, subcategory, merchant_name, source, authMethod, tosAcceptedAt, emailVerified
+	•	Secure session and JWT logic
+
+⸻
+
+5. LANDING PAGE FINAL BUILD (Framer or Motion.js)
+
+Use Framer or equivalent to:
+	•	Add animated hero section
+	•	Motion cards for:
+	•	AI Coach
+	•	Budget dashboard
+	•	Rivu Score
+	•	Plaid bank linking
+	•	CSV upload
+	•	iOS App Coming Soon banner
+	•	Waitlist form (via Postmark to support@tryrivu.com)
+	•	Footer: links to /terms, /privacy, legal entity text
+
+⸻
+
+6. SEO, MOBILE, PERFORMANCE
+	•	Add <title>, <meta name="description">, Open Graph, and Twitter Card tags
+	•	Add robots.txt, sitemap.xml, apple-touch-icon
+	•	Ensure full responsiveness across all mobile views
+	•	Lighthouse score >90 on mobile
+	•	Remove unused CSS/JS
+
+⸻
+
+7. INFRASTRUCTURE, SECURITY, AND TESTING
+	•	Secure all environment variables:
+	•	OPENAI_API_KEY, POSTMARK_API_KEY, PLAID_CLIENT_ID, PLAID_SECRET_PRODUCTION, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, JWT_SECRET, SESSION_SECRET, BASE_URL
+	•	Session cookies:
+	•	secure: true, httpOnly: true, sameSite: 'strict'
+	•	Use Helmet and rate-limiting middleware
+	•	Sanitize logs (never log tokens or PII)
+	•	Add /health route and ensure it passes on Railway
+	•	Test all flows:
+	•	Email signup + verification
+	•	Google OAuth login
+	•	Waitlist form
+	•	Transaction imports
+	•	AI coaching trigger
+	•	CSV upload
+	•	Account deletion
+
+⸻
+
+Once complete, push changes to GitHub and trigger full production deploy via Railway.
+
+We’ve previously experienced a critical issue where one user (e.g. Eli) was able to view data from another user (e.g. Eli33). This must be permanently fixed and protected against at all layers.
+
+⸻
+
+1. ABSOLUTE DATA ISOLATION REQUIREMENT
+
+Every database query or API response that deals with user-specific content must be scoped by user_id or equivalent authenticated session ID.
+
+✅ Example Fix:
+
+const transactions = await db.select().from(transactions).where(eq(transactions.userId, req.user.id));
+
+❌ NEVER allow unscoped queries like:
+
+SELECT * FROM transactions
+
+or:
+
+db.select().from(transactions)
+
+Without a where userId = ? clause tied to the current authenticated user.
+
+⸻
+
+2. BACKEND SAFEGUARDS (EXPRESS / API MIDDLEWARE)
+
+✅ Add middleware to verify identity on all private routes:
+
+if (!req.user || req.user.id !== req.body.userId) {
+  return res.status(403).json({ error: "Unauthorized access." });
+}
+
+Apply this to:
+	•	Transactions API
+	•	Goals
+	•	Budgets
+	•	AI Coach prompts
+	•	Plaid-linked accounts
+	•	CSV uploads
+	•	Any insights/dashboard summary endpoint
+
+⸻
+
+3. DATABASE LEVEL SCOPING
+
+If possible, enforce row-level permissions in queries (Postgres views or Drizzle logic) that always return:
+
+WHERE user_id = $current_user_id
+
+Or add wrapper utilities like:
+
+function getUserData(table, userId) {
+  return db.select().from(table).where(eq(table.userId, userId));
+}
+
+4. FRONTEND GUARDRAILS
+	•	Never allow userId to be passed manually from frontend to backend
+	•	Derive userId server-side from the JWT/session only
+
+⸻
+
+5. ACCOUNT SWITCH PROTECTION
+	•	If using cookies or session-based auth, clear sessions fully on logout
+	•	Prevent cross-session data caching
+	•	Add a backend route test:
+
+GET /api/me → returns userId
+GET /api/transactions → must return only that user’s data
+
+Test this flow for session bleeding.
+
+⸻
+
+6. OTHER SECURITY HARDENING TO ADD
+	•	Use UUIDs or hashed IDs for user references (avoid predictable user.id = 1)
+	•	Add logs for suspicious access:
+	•	E.g., User A requests user B’s data (500/403 events)
+	•	Add session expiration logic (e.g., auto-logout after 24h)
+	•	Enforce HTTPS-only cookies
+
+Final Summary
+Feature	Enforced?
+All queries scoped by user	✅ Must be
+Auth middleware on API routes	✅ Required
+Session isolation and cleanup	✅ Required
+No raw userId from frontend	✅ Required
+Logged suspicious access	✅ Optional now, recommended later
+
+Once complete, push changes to GitHub and trigger a secure deployment to Railway.
+Notify when done, and I’ll provide a privacy assurance statement for investors and partners.
+
+We are confirming full implementation of Rivu’s transaction tracker feature — a core product requirement. This must be complete, stable, and production-ready.
+
+⸻
+
+✅ 1. Transaction Ingestion
+
+From Plaid:
+	•	Extract and store:
+	•	amount
+	•	date
+	•	merchant_name
+	•	category (primary)
+	•	subcategory (if available)
+	•	category_id
+	•	account_id
+	•	source = 'plaid'
+	•	user_id (required to scope all records)
+
+From CSV Upload:
+	•	Parse each row and attempt categorization by:
+	•	Keyword match on description or merchant_name
+	•	Fallback to "Uncategorized"
+
+⸻
+
+✅ 2. Categorization + Icons
+
+For each transaction, display a category icon based on the assigned type. Example mappings:
+Category	Icon Name / Type
+Groceries	🥦 vegetable or grocery bag icon
+Dining/Restaurants	🍽️ fork & knife
+Transportation	🚗 or bus icon
+Subscriptions	💳 recurring charge icon
+Entertainment	🎬 ticket or controller
+Utilities	💡 light bulb or plug
+Health	⚕️ medical cross
+Uncategorized	❓ question mark
+
+Use system emojis or SVG icons from a library like Heroicons, Feather, or Font Awesome.
+	•	Icons should render next to category name in the transaction table or feed.
+
+⸻
+
+✅ 3. Monthly Insights Engine
+
+System must:
+	•	Group transactions by:
+	•	user_id
+	•	category
+	•	month
+	•	Return insights per user:
+	•	Total per category this month
+	•	% change from last month
+	•	Flag spikes (e.g. “Dining up 60%”)
+
+⸻
+
+✅ 4. Frontend Display
+
+Transaction dashboard must:
+	•	Show list/table of transactions with:
+	•	Amount
+	•	Date
+	•	Merchant Name
+	•	Category
+	•	Icon
+	•	Optionally allow:
+	•	Filtering by category or month
+	•	Toggle for Plaid vs CSV vs All sources
+
+⸻
+
+✅ 5. Privacy, Scope, and GPT Efficiency
+	•	All data must be scoped by user_id — no shared data leaks
+	•	GPT should not be triggered automatically when importing or viewing data
+	•	AI advice should only run when:
+	•	User clicks “Ask Coach”
+	•	User accepts a behavior nudge
+
+⸻
+
+❗ This is a critical product feature.
+
+Please confirm:
+	•	It is working end-to-end
+	•	Categorization is accurate
+	•	Icons render correctly
+	•	Insights are calculated and returned
+	•	No user can see another user’s transactions
+
+Once confirmed, push changes to GitHub and deploy to Railway. This feature must be stable, secure, visually polished, and performant.
