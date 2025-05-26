@@ -50,6 +50,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.put(`${apiPath}/user/demographics`, protect, updateDemographics);
     app.post(`${apiPath}/user/login-metric`, protect, updateLoginMetrics);
     
+    // TOS acceptance endpoint
+    app.post(`${apiPath}/user/accept-tos`, protect, async (req: any, res) => {
+      try {
+        const userId = req.user.id;
+        const tosAcceptedAt = new Date();
+        
+        // Update user's TOS acceptance timestamp
+        await storage.updateUser(userId, { tosAcceptedAt });
+        
+        res.json({ 
+          message: 'Terms of Service accepted successfully',
+          tosAcceptedAt: tosAcceptedAt.toISOString()
+        });
+      } catch (error) {
+        console.error('TOS acceptance error:', error);
+        res.status(500).json({ message: 'Failed to accept Terms of Service' });
+      }
+    });
+    
     // Import theme preference controller
     const { updateThemePreference } = await import('./controllers-ts/userController');
     app.put(`${apiPath}/user/theme-preference`, protect, updateThemePreference);

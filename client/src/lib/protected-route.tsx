@@ -1,6 +1,8 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { Redirect, Route } from "wouter";
+import { useState } from "react";
+import TosAcceptanceModal from "@/components/legal/tos-acceptance-modal";
 
 export function ProtectedRoute({
   path,
@@ -10,6 +12,7 @@ export function ProtectedRoute({
   component: () => React.JSX.Element;
 }) {
   const { user, isLoading, isTokenExpired } = useAuth();
+  const [showTosModal, setShowTosModal] = useState(false);
 
   // Show loading spinner while checking authentication
   if (isLoading) {
@@ -31,6 +34,32 @@ export function ProtectedRoute({
     );
   }
 
+  // Critical: Check TOS acceptance before any other checks
+  const needsTosAcceptance = user && !user.tosAcceptedAt;
+  
+  if (needsTosAcceptance) {
+    return (
+      <Route path={path}>
+        <div className="min-h-screen bg-gray-50">
+          <TosAcceptanceModal 
+            open={true} 
+            onAccept={() => {
+              setShowTosModal(false);
+              // Force refresh user data after TOS acceptance
+              window.location.reload();
+            }} 
+          />
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="text-center">
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Legal Compliance Required</h2>
+              <p className="text-gray-600">Please accept our Terms of Service to continue.</p>
+            </div>
+          </div>
+        </div>
+      </Route>
+    );
+  }
+
   // If user has not completed onboarding and is trying to access a page other than onboarding
   // redirect to onboarding page, but only if they haven't chosen to skip permanently
   if (
@@ -46,6 +75,6 @@ export function ProtectedRoute({
     );
   }
 
-  // User is authenticated, render the component
+  // User is authenticated and compliant, render the component
   return <Route path={path} component={Component} />
 }
