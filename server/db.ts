@@ -3,7 +3,13 @@ import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
 import * as schema from "@shared/schema";
 
+// Configure WebSocket for Railway deployment
 neonConfig.webSocketConstructor = ws;
+// Disable WebSocket pooling in production to avoid certificate issues
+if (process.env.NODE_ENV === 'production') {
+  neonConfig.useSecureWebSocket = true;
+  neonConfig.pipelineConnect = false;
+}
 
 if (!process.env.DATABASE_URL) {
   throw new Error(

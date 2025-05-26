@@ -18,14 +18,17 @@ app.disable('x-powered-by');
 // Trust proxy - needed for rate limiting to work properly behind reverse proxies
 app.set('trust proxy', 1);
 
-// Redirect apex domain to www subdomain
-app.use((req, res, next) => {
-  const host = req.headers.host;
-  if (host === 'tryrivu.com') {
-    return res.redirect(301, 'https://www.tryrivu.com' + req.originalUrl);
-  }
-  next();
-});
+// Skip domain redirects in production - Railway handles this
+if (process.env.NODE_ENV !== 'production') {
+  // Only redirect in development if needed
+  app.use((req, res, next) => {
+    const host = req.headers.host;
+    if (host === 'tryrivu.com') {
+      return res.redirect(301, 'https://www.tryrivu.com' + req.originalUrl);
+    }
+    next();
+  });
+}
 
 // Global rate limiter to prevent abuse
 const globalRateLimit = rateLimit({
@@ -54,11 +57,20 @@ if (process.env.NODE_ENV === 'production') {
 
 // Remove the explicit import since we'll use registerRoutes to handle this
 
-// Configure CORS with proper security settings
+// Configure CORS with proper security settings for Railway
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? process.env.ALLOWED_ORIGINS?.split(',') || 'https://tryrivu.com' // Production: specific origins
-    : true, // Development: allow all origins but maintain credentials
+    ? function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        // Allow Railway domains and configured origins
+        const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
+        if (origin.includes('.railway.app') || allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        return callback(new Error('Not allowed by CORS'));
+      }
+    : true, // Development: allow all origins
   credentials: true, // Allow cookies
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: [
@@ -130,6 +142,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Add health endpoint for Railway healthcheck
+  app.get("/health", (req, res) => res.status(200).send("OK"));
+
   // Load API routes using PostgreSQL database
   const server = await registerRoutes(app);
 
@@ -178,14 +193,14 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Use PORT environment variable for deployment platforms like Railway
-  // Falls back to 5000 for local development
-  const port = process.env.PORT || 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
+  // Use PORT environment variable for Railway deployment
+  const PORT = process.env.PORT || 5000;
+  
+  server.listen(PORT, "0.0.0.0", () => {
+    console.log(`✅ Server running on port ${PORT}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    if (process.env.NODE_ENV === 'production') {
+      console.log('🚀 Production server ready for Railway deployment');
+    }
   });
 })();
