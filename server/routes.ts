@@ -1087,7 +1087,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }));
       
       // Log for debugging
-      console.log(`Found ${dbGoals.length} goals in DB and ${global.appGoals?.length || 0} goals in memory, total: ${dbGoals.length}`);
+      console.log(`Found ${dbGoals.length} goals in DB and ${(globalThis as any).appGoals?.length || 0} goals in memory, total: ${dbGoals.length}`);
       
       // Return all goals from database
       res.json(formattedGoals);
