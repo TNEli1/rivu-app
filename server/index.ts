@@ -18,6 +18,15 @@ app.disable('x-powered-by');
 // Trust proxy - needed for rate limiting to work properly behind reverse proxies
 app.set('trust proxy', 1);
 
+// Redirect apex domain to www subdomain
+app.use((req, res, next) => {
+  const host = req.headers.host;
+  if (host === 'tryrivu.com') {
+    return res.redirect(301, 'https://www.tryrivu.com' + req.originalUrl);
+  }
+  next();
+});
+
 // Global rate limiter to prevent abuse
 const globalRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
