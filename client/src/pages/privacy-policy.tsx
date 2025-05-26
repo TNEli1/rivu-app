@@ -14,11 +14,16 @@ export default function PrivacyPolicy() {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">Introduction</h2>
               <p className="text-gray-700 mb-4">
-                Rivu ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our personal finance platform.
+                RIVU Inc., a Delaware C Corporation ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our personal finance platform.
               </p>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                 <p className="text-blue-800 font-medium">
                   <strong>U.S. Only:</strong> Rivu currently supports U.S.-based bank accounts only via Plaid integration.
+                </p>
+              </div>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                <p className="text-yellow-800 font-medium">
+                  <strong>Financial Disclaimer:</strong> This is not financial advice. Rivu is not a bank or financial advisor. Banking data is securely accessed via Plaid, a third-party API provider.
                 </p>
               </div>
             </section>
@@ -109,6 +114,25 @@ export default function PrivacyPolicy() {
               <p className="text-gray-700">
                 Our platform integrates with trusted third-party services including Plaid (for bank connectivity), OpenAI (for financial insights), and Postmark (for email communications). Each service has its own privacy policy governing their data practices.
               </p>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Your Rights</h2>
+              <p className="text-gray-700 mb-4">
+                You have the following rights regarding your personal data:
+              </p>
+              <ul className="list-disc list-inside text-gray-700 space-y-2 mb-4">
+                <li>Access your personal information</li>
+                <li>Correct inaccurate data</li>
+                <li>Request deletion of your data</li>
+                <li>Export your data</li>
+                <li>Withdraw consent for data processing</li>
+              </ul>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-red-800 font-medium">
+                  <strong>Delete My Data:</strong> To request complete deletion of your account and all associated data, contact us at privacy@tryrivu.com with "Data Deletion Request" in the subject line.
+                </p>
+              </div>
             </section>
 
             <section className="mb-8">

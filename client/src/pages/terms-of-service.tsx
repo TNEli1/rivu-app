@@ -101,9 +101,30 @@ export default function TermsOfService() {
             </section>
 
             <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Company Information</h2>
+              <p className="text-gray-700 mb-4">
+                Rivu is operated by RIVU Inc., a Delaware C Corporation. These services are provided by RIVU Inc. and governed under Delaware law.
+              </p>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Financial Disclaimers</h2>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                <p className="text-yellow-800 font-medium">
+                  <strong>Important:</strong> This is not financial advice. Rivu provides educational insights and analysis tools but is not a bank, financial advisor, or investment service.
+                </p>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <p className="text-blue-800 font-medium">
+                  <strong>Banking Integration:</strong> Banking data is securely accessed via Plaid, a third-party API provider. Rivu currently supports U.S. bank accounts only.
+                </p>
+              </div>
+            </section>
+
+            <section className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">Governing Law</h2>
               <p className="text-gray-700">
-                These terms are governed by the laws of the State of California, United States. Any disputes shall be resolved in the courts of California.
+                These terms are governed by the laws of the State of Delaware, United States. Any disputes shall be resolved in the courts of Delaware.
               </p>
             </section>
 

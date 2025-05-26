@@ -25,7 +25,11 @@ export default function LandingPage() {
           <div className="flex items-center">
             <img src="/images/rivu-logo.png" alt="Rivu Logo" className="h-32 w-auto" />
           </div>
-          <div className="space-x-1 md:space-x-4">
+          <div className="flex items-center space-x-1 md:space-x-4">
+            {/* iOS App Coming Soon Badge */}
+            <div className="hidden sm:flex items-center bg-gradient-to-r from-purple-500 to-blue-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+              📱 iOS App Coming Soon
+            </div>
             <Link href="/auth?redirect=/dashboard">
               <Button variant="ghost" size="sm">Log in</Button>
             </Link>
