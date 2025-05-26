@@ -183,7 +183,15 @@ export const loginUser = async (req: any, res: any) => {
     const user = await storage.getUserByUsername(username);
 
     // Check if user exists and password matches
-    if (user && await bcrypt.compare(password, user.password)) {
+    if (user && user.password && await bcrypt.compare(password, user.password)) {
+      // Block login until email is verified (unless using Google OAuth)
+      if (user.authMethod === 'password' && !user.emailVerified) {
+        return res.status(403).json({
+          message: 'Please verify your email address before logging in',
+          code: 'EMAIL_NOT_VERIFIED',
+          email: user.email
+        });
+      }
       // Update login metrics
       const loginCount = (user.loginCount || 0) + 1;
       const lastLogin = new Date();
