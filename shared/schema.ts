@@ -17,6 +17,8 @@ export const users = pgTable("users", {
   authMethod: text("auth_method").default("password").notNull(), // 'password' or 'google'
   emailVerified: boolean("email_verified").default(false).notNull(),
   profilePic: text("profile_pic"),
+  // Legal compliance
+  tosAcceptedAt: timestamp("tos_accepted_at"),
   // Password reset fields
   resetToken: text("reset_token"),
   resetTokenExpiry: timestamp("reset_token_expiry"),

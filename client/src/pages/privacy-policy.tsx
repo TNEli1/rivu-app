@@ -1,110 +1,107 @@
-import React from 'react';
-import { Link } from 'wouter';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { Link } from "wouter";
 
-export default function PrivacyPolicyPage() {
+export default function PrivacyPolicy() {
   return (
-    <div className="container mx-auto py-8 px-4 max-w-4xl">
-      <div className="mb-8">
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/" className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
-          </Link>
-        </Button>
-      </div>
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-white shadow-lg rounded-lg p-8">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">Privacy Policy</h1>
+            <p className="text-gray-600">Last updated: {new Date().toLocaleDateString()}</p>
+          </div>
 
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Privacy Policy – Rivu Inc.</h1>
-        <p className="text-sm text-muted-foreground">Last Updated: May 19, 2025</p>
+          <div className="prose max-w-none">
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Introduction</h2>
+              <p className="text-gray-700 mb-4">
+                Rivu ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our personal finance platform.
+              </p>
+            </section>
 
-        <div className="prose dark:prose-invert max-w-none">
-          <p>
-            Rivu Inc. ("Rivu", "we", "our") is committed to protecting your privacy. 
-            This Privacy Policy explains how we collect, use, and protect your personal information.
-          </p>
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Information We Collect</h2>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Personal Information</h3>
+                  <p className="text-gray-700">
+                    We collect information you provide directly, including name, email address, and account credentials.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Financial Data</h3>
+                  <p className="text-gray-700">
+                    We use Plaid to connect U.S.-based financial accounts only. This includes transaction data, account balances, and institution information necessary for our services.
+                  </p>
+                </div>
+              </div>
+            </section>
 
-          <p>
-            We use Plaid Inc. to securely access your financial account information. 
-            Rivu does not store your banking credentials. All connections to financial 
-            institutions are handled securely through Plaid's encrypted interface.
-          </p>
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">How We Use Your Information</h2>
+              <ul className="list-disc list-inside text-gray-700 space-y-2">
+                <li>Provide personalized financial analysis and insights</li>
+                <li>Generate AI-powered recommendations for your financial goals</li>
+                <li>Maintain and improve our services</li>
+                <li>Communicate with you about your account and our services</li>
+                <li>Ensure security and prevent fraud</li>
+              </ul>
+            </section>
 
-          <h2>Data We Collect</h2>
-          <p>Data we may collect includes:</p>
-          <ul>
-            <li>Account balances and transactions</li>
-            <li>Budget goals and activity logs</li>
-            <li>Coaching feedback and performance</li>
-          </ul>
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Data Sharing</h2>
+              <p className="text-gray-700 mb-4">
+                <strong>We do not sell or share your personal data with third parties.</strong> Your financial information is used solely for providing personalized financial analysis within our platform.
+              </p>
+              <p className="text-gray-700">
+                We may share information only in the following limited circumstances:
+              </p>
+              <ul className="list-disc list-inside text-gray-700 space-y-1 mt-2">
+                <li>With service providers who assist in operating our platform (Plaid, OpenAI, Postmark)</li>
+                <li>When required by law or to protect our rights</li>
+                <li>With your explicit consent</li>
+              </ul>
+            </section>
 
-          <p>
-            We store your data using secure, encrypted infrastructure and never share it 
-            with third parties without your explicit consent. You may request deletion of 
-            your data at any time by emailing <a href="mailto:support@tryrivu.com">support@tryrivu.com</a>.
-          </p>
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Data Security</h2>
+              <p className="text-gray-700 mb-4">
+                All data is encrypted in transit and at rest. We implement industry-standard security measures to protect your information. Sessions are stored securely, and data is never shared without your consent.
+              </p>
+            </section>
 
-          <p>
-            View our full data rights policy, deletion procedure, and Plaid terms at: 
-            <a href="https://plaid.com/legal" target="_blank" rel="noopener noreferrer">
-              https://plaid.com/legal
-            </a>
-          </p>
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Your Rights</h2>
+              <p className="text-gray-700 mb-4">
+                You have the right to:
+              </p>
+              <ul className="list-disc list-inside text-gray-700 space-y-1">
+                <li>Access your personal information</li>
+                <li>Correct inaccurate information</li>
+                <li>Request deletion of your data</li>
+                <li>Close your account at any time</li>
+                <li>Withdraw consent for data processing</li>
+              </ul>
+            </section>
 
-          <h2>How We Use Your Information</h2>
-          <p>
-            We use the information we collect to provide, maintain, and improve our services. 
-            This includes:
-          </p>
-          <ul>
-            <li>Processing and analyzing your financial transactions</li>
-            <li>Creating personalized budgets and financial insights</li>
-            <li>Monitoring your progress toward financial goals</li>
-            <li>Communicating with you about your account</li>
-            <li>Improving our services and developing new features</li>
-          </ul>
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Third-Party Services</h2>
+              <p className="text-gray-700">
+                Our platform integrates with trusted third-party services including Plaid (for bank connectivity), OpenAI (for financial insights), and Postmark (for email communications). Each service has its own privacy policy governing their data practices.
+              </p>
+            </section>
 
-          <h2>Your Rights and Choices</h2>
-          <p>
-            You have certain rights regarding your personal information:
-          </p>
-          <ul>
-            <li>Access your personal information</li>
-            <li>Correct inaccurate information</li>
-            <li>Delete your account and associated data</li>
-            <li>Export your data</li>
-            <li>Opt-out of certain data collection</li>
-          </ul>
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Contact Us</h2>
+              <p className="text-gray-700">
+                If you have questions about this Privacy Policy or wish to exercise your rights, please contact us at: <strong>privacy@tryrivu.com</strong>
+              </p>
+            </section>
+          </div>
 
-          <h2>Security</h2>
-          <p>
-            We implement appropriate technical and organizational measures to protect your 
-            personal information against unauthorized or unlawful processing, accidental loss, 
-            destruction, or damage.
-          </p>
-
-          <h2>Changes to This Privacy Policy</h2>
-          <p>
-            We may update this Privacy Policy from time to time. We will notify you of any 
-            changes by posting the new Privacy Policy on this page and updating the "Last Updated" date.
-          </p>
-
-          <h2>Contact Us</h2>
-          <p>
-            If you have any questions about this Privacy Policy, please contact us at 
-            <a href="mailto:support@tryrivu.com"> support@tryrivu.com</a>.
-          </p>
-
-          <hr className="my-8" />
-          
-          <div className="text-sm text-muted-foreground mt-8">
-            <p>
-              Rivu Inc. is a Delaware corporation. These terms are governed by the laws of the State of Delaware.
-              By using Rivu, you consent to data processing in accordance with U.S. law. 
-              All trademarks and logos belong to their respective owners. 
-              For questions, email <a href="mailto:support@tryrivu.com">support@tryrivu.com</a>.
-            </p>
+          <div className="text-center mt-8 pt-8 border-t border-gray-200">
+            <Link href="/auth" className="text-blue-600 hover:text-blue-700 font-medium">
+              ← Back to Rivu
+            </Link>
           </div>
         </div>
       </div>

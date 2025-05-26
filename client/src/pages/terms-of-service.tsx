@@ -1,133 +1,131 @@
-import React from 'react';
-import { Link } from 'wouter';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { Link } from "wouter";
 
-export default function TermsOfServicePage() {
+export default function TermsOfService() {
   return (
-    <div className="container mx-auto py-8 px-4 max-w-4xl">
-      <div className="mb-8">
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/" className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
-          </Link>
-        </Button>
-      </div>
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-white shadow-lg rounded-lg p-8">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">Terms of Service</h1>
+            <p className="text-gray-600">Last updated: {new Date().toLocaleDateString()}</p>
+          </div>
 
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Terms of Service – Rivu Inc.</h1>
-        <p className="text-sm text-muted-foreground">Last Updated: May 19, 2025</p>
-
-        <div className="prose dark:prose-invert max-w-none">
-          <p>
-            By creating an account with Rivu Inc., you agree to the following:
-          </p>
-
-          <ol>
-            <li>
-              <p>
-                <strong>Educational Purposes Only:</strong> Rivu provides personal finance insights 
-                for informational purposes only. Rivu is not a registered financial advisor and does 
-                not provide investment, legal, or tax advice.
+          <div className="prose max-w-none">
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Agreement to Terms</h2>
+              <p className="text-gray-700 mb-4">
+                By accessing and using Rivu, you accept and agree to be bound by the terms and provision of this agreement.
               </p>
-            </li>
-            
-            <li>
-              <p>
-                <strong>Your Responsibility:</strong> You are responsible for your own financial 
-                decisions. We recommend speaking with a licensed professional before taking 
-                financial action.
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Eligibility</h2>
+              <ul className="list-disc list-inside text-gray-700 space-y-2">
+                <li>You must be at least 18 years of age</li>
+                <li>You must be a U.S. resident</li>
+                <li>You must provide accurate and complete information</li>
+                <li>You are responsible for maintaining the security of your account</li>
+              </ul>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Not Financial Advice</h2>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                <p className="text-yellow-800 font-medium">
+                  <strong>IMPORTANT DISCLAIMER:</strong> Rivu is not a Registered Investment Advisor (RIA).
+                </p>
+              </div>
+              <p className="text-gray-700 mb-4">
+                The information provided by Rivu is for educational and behavioral guidance purposes only. It does not constitute financial, investment, legal, or tax advice.
               </p>
-            </li>
-            
-            <li>
-              <p>
-                <strong>Age Requirement:</strong> You must be at least 18 years old to use this 
-                service.
+              <ul className="list-disc list-inside text-gray-700 space-y-2">
+                <li>Use of Rivu does not create a fiduciary relationship</li>
+                <li>Rivu is not responsible for decisions made based on in-app suggestions</li>
+                <li>All financial decisions remain your sole responsibility</li>
+                <li>For personalized financial advice, consult a licensed financial advisor</li>
+              </ul>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Service Description</h2>
+              <p className="text-gray-700 mb-4">
+                Rivu provides personal finance management tools including:
               </p>
-            </li>
-            
-            <li>
-              <p>
-                <strong>Data Security:</strong> All financial data is handled securely using best 
-                practices and encrypted storage.
+              <ul className="list-disc list-inside text-gray-700 space-y-1">
+                <li>Transaction tracking and categorization</li>
+                <li>Budget management and monitoring</li>
+                <li>Savings goal tracking</li>
+                <li>AI-powered financial insights and recommendations</li>
+                <li>Financial behavior analysis</li>
+              </ul>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Third-Party Services</h2>
+              <p className="text-gray-700 mb-4">
+                Rivu relies on third-party APIs and services including:
               </p>
-            </li>
-            
-            <li>
-              <p>
-                <strong>Account Deletion:</strong> You may request deletion of your account and data 
-                by contacting <a href="mailto:support@tryrivu.com">support@tryrivu.com</a>.
+              <ul className="list-disc list-inside text-gray-700 space-y-1">
+                <li><strong>Plaid</strong> - For secure bank account connectivity</li>
+                <li><strong>OpenAI</strong> - For AI-powered financial insights</li>
+                <li><strong>Postmark</strong> - For email communications</li>
+              </ul>
+              <p className="text-gray-700 mt-4">
+                Rivu is not liable for outages, inaccuracies, or issues with these third-party services.
               </p>
-            </li>
-            
-            <li>
-              <p>
-                <strong>Terms Updates:</strong> We may update these terms periodically. Continued 
-                use of Rivu means you accept the revised terms.
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">User Responsibilities</h2>
+              <ul className="list-disc list-inside text-gray-700 space-y-2">
+                <li>Provide accurate and truthful information</li>
+                <li>Keep your account credentials secure</li>
+                <li>Use the service in compliance with applicable laws</li>
+                <li>Do not attempt to reverse engineer or hack the platform</li>
+                <li>Report any security vulnerabilities responsibly</li>
+              </ul>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Limitation of Liability</h2>
+              <p className="text-gray-700 mb-4">
+                To the maximum extent permitted by law, Rivu shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the service.
               </p>
-            </li>
-          </ol>
+            </section>
 
-          <h2>Account Creation and Security</h2>
-          <p>
-            When you create an account with Rivu, you are responsible for:
-          </p>
-          <ul>
-            <li>Providing accurate and complete information</li>
-            <li>Maintaining the security of your account credentials</li>
-            <li>All activities that occur under your account</li>
-            <li>Notifying us immediately of any unauthorized access</li>
-          </ul>
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Governing Law</h2>
+              <p className="text-gray-700">
+                These terms are governed by the laws of the State of California, United States. Any disputes shall be resolved in the courts of California.
+              </p>
+            </section>
 
-          <h2>Acceptable Use</h2>
-          <p>
-            You agree not to:
-          </p>
-          <ul>
-            <li>Use the service for any illegal purpose</li>
-            <li>Attempt to gain unauthorized access to any portion of the service</li>
-            <li>Interfere with or disrupt the service or servers</li>
-            <li>Scrape, data mine, or copy any content without permission</li>
-            <li>Use the service to transmit harmful code or content</li>
-          </ul>
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Account Termination</h2>
+              <p className="text-gray-700">
+                You may terminate your account at any time. We reserve the right to suspend or terminate accounts that violate these terms.
+              </p>
+            </section>
 
-          <h2>Limitation of Liability</h2>
-          <p>
-            To the maximum extent permitted by law, Rivu Inc. shall not be liable for any indirect, 
-            incidental, special, consequential, or punitive damages resulting from your use of or 
-            inability to use the service.
-          </p>
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Changes to Terms</h2>
+              <p className="text-gray-700">
+                We may update these terms from time to time. Continued use of the service constitutes acceptance of the updated terms.
+              </p>
+            </section>
 
-          <h2>Termination</h2>
-          <p>
-            We reserve the right to suspend or terminate your access to the service for any reason, 
-            including violation of these Terms. Upon termination, your right to use the service will 
-            immediately cease.
-          </p>
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Contact Information</h2>
+              <p className="text-gray-700">
+                For questions about these Terms of Service, contact us at: <strong>legal@tryrivu.com</strong>
+              </p>
+            </section>
+          </div>
 
-          <h2>Governing Law</h2>
-          <p>
-            These Terms shall be governed by the laws of the State of Delaware, without regard to 
-            its conflict of law provisions.
-          </p>
-
-          <h2>Contact Information</h2>
-          <p>
-            If you have any questions about these Terms, please contact us at 
-            <a href="mailto:support@tryrivu.com"> support@tryrivu.com</a>.
-          </p>
-
-          <hr className="my-8" />
-          
-          <div className="text-sm text-muted-foreground mt-8">
-            <p>
-              Rivu Inc. is a Delaware corporation. These terms are governed by the laws of the State of Delaware.
-              By using Rivu, you consent to data processing in accordance with U.S. law. 
-              All trademarks and logos belong to their respective owners. 
-              For questions, email <a href="mailto:support@tryrivu.com">support@tryrivu.com</a>.
-            </p>
+          <div className="text-center mt-8 pt-8 border-t border-gray-200">
+            <Link href="/auth" className="text-blue-600 hover:text-blue-700 font-medium">
+              ← Back to Rivu
+            </Link>
           </div>
         </div>
       </div>
