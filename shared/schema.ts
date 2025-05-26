@@ -81,9 +81,12 @@ export const transactions = pgTable("transactions", {
   userId: integer("user_id").notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   merchant: text("merchant").notNull(),
+  merchantName: text("merchant_name"), // Enhanced merchant name from Plaid
   category: text("category").notNull(),
   subcategory: text("subcategory"),
+  categoryId: text("category_id"), // Plaid category ID
   account: text("account").notNull(),
+  accountId: text("account_id"), // Plaid account ID
   date: timestamp("date").defaultNow().notNull(),
   type: text("type").notNull().default("expense"), // 'income' or 'expense'
   notes: text("notes"),
@@ -96,9 +99,12 @@ export const insertTransactionSchema = createInsertSchema(transactions).pick({
   userId: true,
   amount: true,
   merchant: true,
+  merchantName: true,
   category: true,
   subcategory: true,
+  categoryId: true,
   account: true,
+  accountId: true,
   type: true,
   date: true,
   notes: true,

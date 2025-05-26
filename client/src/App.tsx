@@ -19,8 +19,8 @@ import ConnectPage from "@/pages/connect-page";
 import PlaidCallback from "@/pages/plaid-callback";
 import ForgotPasswordPage from "@/pages/forgot-password";
 import ResetPasswordPage from "@/pages/reset-password";
-import PrivacyPolicyPage from "@/pages/privacy-policy";
-import TermsOfServicePage from "@/pages/terms-of-service";
+import PrivacyPage from "@/pages/privacy-page";
+import TermsPage from "@/pages/terms-page";
 import RivuScoreInfoPage from "@/pages/rivu-score-info-page";
 import LandingPage from "@/pages/landing-page";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -36,10 +36,10 @@ function Router() {
       <Route path="/login" component={AuthPage} />
       <Route path="/forgot-password" component={ForgotPasswordPage} />
       <Route path="/reset-password/:token" component={ResetPasswordPage} />
-      <Route path="/privacy" component={PrivacyPolicyPage} />
-      <Route path="/terms" component={TermsOfServicePage} />
-      <Route path="/legal/privacy" component={PrivacyPolicyPage} />
-      <Route path="/legal/terms" component={TermsOfServicePage} />
+      <Route path="/privacy" component={PrivacyPage} />
+      <Route path="/terms" component={TermsPage} />
+      <Route path="/legal/privacy" component={PrivacyPage} />
+      <Route path="/legal/terms" component={TermsPage} />
       <Route path="/callback" component={PlaidCallback} />
       
       {/* Protected Routes */}
