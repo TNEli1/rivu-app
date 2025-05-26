@@ -73,18 +73,92 @@ export default function PrivacyPolicy() {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Data Security & Storage</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Data Retention & Consent</h2>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <p className="text-blue-800 font-medium">
+                  <strong>DATA RETENTION:</strong> Data is retained only as long as necessary and encrypted at rest. Users may request deletion at any time.
+                </p>
+              </div>
               <p className="text-gray-700 mb-4">
                 All data is encrypted at rest and stored in Railway-hosted PostgreSQL infrastructure located in the United States. Data is processed solely for app functionality and personalized insights. We do not sell user data.
               </p>
               <p className="text-gray-700 mb-4">
                 All data transmission is encrypted using industry-standard security measures. Sessions are stored securely, and data is never shared without your consent.
               </p>
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-green-800 font-medium">
-                  <strong>CCPA Compliance:</strong> Rivu complies with the California Consumer Privacy Act and stores all data on U.S. servers.
+              <p className="text-gray-700 mb-4">
+                <strong>Data Retention Policy:</strong> We retain your personal information only for as long as necessary to provide our services, comply with legal obligations, resolve disputes, and enforce our agreements. You may request deletion of your data at any time.
+              </p>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">GDPR Readiness</h2>
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+                <p className="text-purple-800 font-medium">
+                  <strong>EEA USERS:</strong> EEA users have the right to access, rectify, or delete their personal data under GDPR.
                 </p>
               </div>
+              <p className="text-gray-700 mb-4">
+                If you are located in the European Economic Area (EEA), you have the following rights under the General Data Protection Regulation (GDPR):
+              </p>
+              <ul className="list-disc list-inside text-gray-700 space-y-2">
+                <li><strong>Right of Access:</strong> You have the right to request copies of your personal data</li>
+                <li><strong>Right to Rectification:</strong> You have the right to request correction of inaccurate personal data</li>
+                <li><strong>Right to Erasure:</strong> You have the right to request deletion of your personal data</li>
+                <li><strong>Right to Restrict Processing:</strong> You have the right to request restriction of processing</li>
+                <li><strong>Right to Data Portability:</strong> You have the right to receive your data in a structured format</li>
+                <li><strong>Right to Object:</strong> You have the right to object to our processing of your personal data</li>
+              </ul>
+              <p className="text-gray-700 mt-4">
+                To exercise these rights, contact us at <strong>privacy@tryrivu.com</strong> with "GDPR Request" in the subject line.
+              </p>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">CCPA/CPRA Compliance</h2>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                <p className="text-green-800 font-medium">
+                  <strong>CALIFORNIA RESIDENTS:</strong> California residents may opt out of data sharing and request deletion under the CCPA and CPRA. Rivu does not sell user data.
+                </p>
+              </div>
+              <p className="text-gray-700 mb-4">
+                If you are a California resident, the California Consumer Privacy Act (CCPA) and California Privacy Rights Act (CPRA) provide you with specific rights regarding your personal information:
+              </p>
+              <ul className="list-disc list-inside text-gray-700 space-y-2">
+                <li><strong>Right to Know:</strong> You have the right to request information about personal data we collect, use, disclose, and sell</li>
+                <li><strong>Right to Delete:</strong> You have the right to request deletion of personal information we have collected</li>
+                <li><strong>Right to Opt-Out:</strong> You have the right to opt out of the sale of your personal information</li>
+                <li><strong>Right to Non-Discrimination:</strong> You have the right not to receive discriminatory treatment for exercising your privacy rights</li>
+                <li><strong>Right to Correct:</strong> You have the right to request correction of inaccurate personal information</li>
+              </ul>
+              <p className="text-gray-700 mt-4">
+                <strong>Important:</strong> Rivu does not sell, rent, or share personal information with third parties for monetary or other valuable consideration.
+              </p>
+              <p className="text-gray-700 mt-4">
+                To exercise your California privacy rights, contact us at <strong>privacy@tryrivu.com</strong> with "CCPA Request" in the subject line.
+              </p>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">New York SHIELD Act</h2>
+              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-4">
+                <p className="text-indigo-800 font-medium">
+                  <strong>DATA PROTECTION:</strong> Rivu maintains reasonable data protection protocols in accordance with the New York SHIELD Act.
+                </p>
+              </div>
+              <p className="text-gray-700 mb-4">
+                In compliance with the New York Stop Hacks and Improve Electronic Data Security (SHIELD) Act, we implement and maintain reasonable security measures to protect private information, including:
+              </p>
+              <ul className="list-disc list-inside text-gray-700 space-y-2">
+                <li>Encryption of personal information at rest and in transit</li>
+                <li>Secure authentication and access controls</li>
+                <li>Regular security assessments and monitoring</li>
+                <li>Employee training on data security practices</li>
+                <li>Incident response procedures for data breaches</li>
+                <li>Vendor management and third-party security requirements</li>
+              </ul>
+              <p className="text-gray-700 mt-4">
+                In the event of a data breach affecting New York residents, we will provide notification in accordance with SHIELD Act requirements.
+              </p>
             </section>
 
             <section className="mb-8">

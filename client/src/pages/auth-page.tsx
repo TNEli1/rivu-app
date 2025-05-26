@@ -518,26 +518,27 @@ export default function AuthPage() {
                       )}
                     </div>
 
-                    {/* Terms Agreement Checkbox */}
-                    <div className="flex items-center space-x-2 py-2">
+                    {/* Enhanced Terms Agreement Checkbox with Behavioral Consent */}
+                    <div className="flex items-start space-x-2 py-3">
                       <Checkbox 
                         id="terms" 
                         checked={termsAgreed}
                         onCheckedChange={(checked) => setTermsAgreed(checked === true)}
                         required
+                        className="mt-1"
                       />
                       <Label
                         htmlFor="terms"
-                        className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        className="text-sm font-normal leading-5 peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                       >
                         I agree to the{" "}
-                        <Link href="/legal/terms" className="text-primary hover:underline" target="_blank">
+                        <Link href="/terms-of-service" className="text-primary hover:underline" target="_blank">
                           Terms of Service
                         </Link>{" "}
                         and{" "}
-                        <Link href="/legal/privacy" className="text-primary hover:underline" target="_blank">
+                        <Link href="/privacy-policy" className="text-primary hover:underline" target="_blank">
                           Privacy Policy
-                        </Link>. I understand this is not financial advice.
+                        </Link>. I understand this app uses behavioral data and AI for educational guidance only.
                       </Label>
                     </div>
                     
