@@ -339,6 +339,16 @@ export default function AuthPage() {
                         return;
                       }
                       
+                      // Validate TOS agreement
+                      if (!termsAgreed) {
+                        toast({
+                          title: "Terms Agreement Required",
+                          description: "You must agree to the Terms of Service and Privacy Policy to create an account.",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      
                       const formData = new FormData(e.currentTarget);
                       registerMutation.mutate({
                         username: formData.get('username') as string,

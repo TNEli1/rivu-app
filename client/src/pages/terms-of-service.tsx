@@ -29,18 +29,25 @@ export default function TermsOfService() {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Not Financial Advice</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Not a Financial Institution or Advisor</h2>
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
                 <p className="text-yellow-800 font-medium">
-                  <strong>IMPORTANT DISCLAIMER:</strong> Rivu is not a Registered Investment Advisor (RIA).
+                  <strong>IMPORTANT DISCLAIMER:</strong> Rivu is not a bank or a Registered Investment Advisor.
                 </p>
               </div>
+              <p className="text-gray-700 mb-4">
+                Rivu is not a bank or a Registered Investment Advisor. Banking data is securely accessed using Plaid, a third-party data aggregator. Rivu provides educational and behavioral finance tools only — not investment, legal, or tax advice.
+              </p>
               <p className="text-gray-700 mb-4">
                 The information provided by Rivu is for educational and behavioral guidance purposes only. It does not constitute financial, investment, legal, or tax advice.
               </p>
               <ul className="list-disc list-inside text-gray-700 space-y-2">
+                <li>Rivu is not a Registered Investment Advisor (RIA)</li>
+                <li>Rivu does not provide financial, legal, or tax advice</li>
+                <li>All insights are educational and AI-generated</li>
+                <li>Rivu is not liable for financial outcomes or API errors</li>
+                <li>Use of Rivu constitutes agreement to these terms</li>
                 <li>Use of Rivu does not create a fiduciary relationship</li>
-                <li>Rivu is not responsible for decisions made based on in-app suggestions</li>
                 <li>All financial decisions remain your sole responsibility</li>
                 <li>For personalized financial advice, consult a licensed financial advisor</li>
               </ul>

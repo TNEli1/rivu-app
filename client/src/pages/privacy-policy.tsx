@@ -16,6 +16,11 @@ export default function PrivacyPolicy() {
               <p className="text-gray-700 mb-4">
                 Rivu ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our personal finance platform.
               </p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <p className="text-blue-800 font-medium">
+                  <strong>U.S. Only:</strong> Rivu currently supports U.S.-based bank accounts only via Plaid integration.
+                </p>
+              </div>
             </section>
 
             <section className="mb-8">
@@ -63,24 +68,40 @@ export default function PrivacyPolicy() {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Data Security</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Data Security & Storage</h2>
               <p className="text-gray-700 mb-4">
-                All data is encrypted in transit and at rest. We implement industry-standard security measures to protect your information. Sessions are stored securely, and data is never shared without your consent.
+                All data is encrypted at rest and stored in Railway-hosted PostgreSQL infrastructure located in the United States. Data is processed solely for app functionality and personalized insights. We do not sell user data.
               </p>
+              <p className="text-gray-700 mb-4">
+                All data transmission is encrypted using industry-standard security measures. Sessions are stored securely, and data is never shared without your consent.
+              </p>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p className="text-green-800 font-medium">
+                  <strong>CCPA Compliance:</strong> Rivu complies with the California Consumer Privacy Act and stores all data on U.S. servers.
+                </p>
+              </div>
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Your Rights</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Your Rights & Data Deletion</h2>
               <p className="text-gray-700 mb-4">
                 You have the right to:
               </p>
-              <ul className="list-disc list-inside text-gray-700 space-y-1">
+              <ul className="list-disc list-inside text-gray-700 space-y-1 mb-4">
                 <li>Access your personal information</li>
                 <li>Correct inaccurate information</li>
                 <li>Request deletion of your data</li>
                 <li>Close your account at any time</li>
                 <li>Withdraw consent for data processing</li>
               </ul>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-red-800 font-medium mb-2">
+                  <strong>Data Deletion:</strong>
+                </p>
+                <p className="text-red-700">
+                  You may request permanent deletion of your data at any time by emailing support@tryrivu.com or using the in-app "Delete My Data" feature in your account settings.
+                </p>
+              </div>
             </section>
 
             <section className="mb-8">
