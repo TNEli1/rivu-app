@@ -1000,7 +1000,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     name: string;
     targetAmount: number;
     currentAmount: number;
-    targetDate?: Date | string;
+    targetDate?: Date | string | null;
     progressPercentage: number;
     monthlySavings: Array<{
       month: string; // Format: "YYYY-MM"
@@ -1023,7 +1023,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       targetAmount: parseFloat(String(g.targetAmount)),
       currentAmount: parseFloat(String(g.currentAmount)),
       progressPercentage: parseFloat(String(g.progressPercentage)),
-      targetDate: g.targetDate,
+      targetDate: g.targetDate || undefined,
       monthlySavings: g.monthlySavings ? JSON.parse(g.monthlySavings) : [],
       createdAt: g.createdAt,
       updatedAt: g.updatedAt
