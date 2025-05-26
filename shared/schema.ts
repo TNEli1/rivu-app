@@ -6,12 +6,17 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  email: text("email").notNull(),
+  password: text("password"),
+  email: text("email").notNull().unique(),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   avatarInitials: text("avatar_initials").notNull(),
   themePreference: text("theme_preference").default("dark"),
+  // Google OAuth fields
+  googleId: text("google_id"),
+  authMethod: text("auth_method").default("password").notNull(), // 'password' or 'google'
+  emailVerified: boolean("email_verified").default(false).notNull(),
+  profilePic: text("profile_pic"),
   // Password reset fields
   resetToken: text("reset_token"),
   resetTokenExpiry: timestamp("reset_token_expiry"),

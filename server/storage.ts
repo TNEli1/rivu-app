@@ -35,9 +35,21 @@ import {
 export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
+  getUserById(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByGoogleId(googleId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  createGoogleUser(userData: {
+    googleId: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    profilePic?: string;
+    authMethod: string;
+    emailVerified: boolean;
+  }): Promise<User>;
+  linkGoogleAccount(userId: number, googleId: string, profilePic?: string): Promise<User>;
   updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
   createPasswordResetToken(email: string, tokenHash: string, expiry: Date): Promise<boolean>;
   verifyPasswordResetToken(tokenHash: string): Promise<User | null>;
