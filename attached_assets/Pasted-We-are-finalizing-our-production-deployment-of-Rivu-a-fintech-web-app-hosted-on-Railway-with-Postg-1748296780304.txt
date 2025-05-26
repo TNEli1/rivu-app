@@ -1,0 +1,73 @@
+We are finalizing our production deployment of Rivu — a fintech web app hosted on Railway with PostgreSQL and domain routing via Squarespace (https://tryrivu.com). Please complete the following checklist without reverting any prior fixes:
+
+⸻
+
+1. LEGAL + COMPLIANCE
+	•	Update any mention of “California” to reflect the correct entity:
+RIVU Inc., a Delaware C Corporation governed under Delaware law.
+	•	Ensure Terms of Service, Privacy Policy, and all user-facing disclaimers reflect this.
+	•	Verify:
+	•	“This is not financial advice” disclaimer is displayed near AI-generated outputs.
+	•	“Rivu is not a bank or financial advisor. Banking data is securely accessed via Plaid, a third-party API provider” is present in the TOS and Plaid consent.
+	•	App states it currently only supports U.S. bank accounts via Plaid.
+	•	Ensure a checkbox at signup or onboarding explicitly confirms user consent to:
+	•	Terms of Service
+	•	Privacy Policy
+	•	Use of behavioral AI and financial data
+	•	Ensure a “Delete My Data” option or request mechanism exists.
+	•	Verify Postmark is used for all outbound emails (e.g., email verification, newsletter, iOS interest form).
+	•	Verify Plaid’s developer policy is respected:
+	•	Proper attribution
+	•	Clear disclosure of data usage
+	•	No storing of access tokens in logs or insecure formats
+
+⸻
+
+2. SECURITY + DATA PROTECTION
+	•	Ensure email verification is required before login.
+	•	Ensure duplicate or mismatched passwords are rejected at signup.
+	•	Confirm all API keys and secrets are pulled from environment variables and not hardcoded.
+	•	Confirm the app uses HTTPS only and does not expose user data in logs or console.
+	•	Confirm Railway PostgreSQL is being used exclusively and schema is synced.
+
+⸻
+
+3. FUNCTIONALITY CHECK
+
+Verify these core features are fully operational:
+	•	Google OAuth login (ensure callback URL works on Railway, not Replit preview)
+	•	CSV import/export feature on the transactions page
+	•	AI Coaching is hitting the OpenAI API with user-specific prompts
+	•	“Connect your bank” button uses the Plaid key correctly and initiates OAuth with proper environment
+	•	Postmark sends email on user signup, email verification, and iOS waitlist signup
+	•	User registration flow:
+	•	Fields: Name, email, password, confirm password
+	•	Email verification required before login
+	•	Confirm there are no open CORS issues, database sync errors, or 500s during account creation, login, or dashboard load
+
+⸻
+
+4. DESIGN + PERFORMANCE
+	•	Optimize for mobile-first design: check responsiveness across iOS Safari and Chrome.
+	•	Add:
+	•	<title>, <meta name="description">, and appropriate <meta property="og:*"> tags for SEO
+	•	Mobile app tags like apple-touch-icon and viewport settings
+	•	Add a small badge or line on the landing page:
+“iOS App Coming Soon — Sign up for early access”
+	•	Use Postmark to email these signups to support@tryrivu.com
+
+⸻
+
+5. CLEANUP + FINALIZATION
+	•	Remove all:
+	•	Replit-only plugins and logic
+	•	localhost references
+	•	commented Replit code fragments
+	•	Reconfirm:
+	•	Production database URL is correct
+	•	BASE_URL points to https://tryrivu.com
+	•	Run database push again to ensure latest schema is active
+
+⸻
+
+Respond only with changes made, unresolved blockers, or security/logic issues that need human input.
