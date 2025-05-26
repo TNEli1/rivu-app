@@ -1,0 +1,68 @@
+
+We are finalizing Rivu’s production launch on Railway. Follow these steps exactly. No regressions, no reintroductions of removed code.
+
+⸻
+
+✅ 1. Implement Google OAuth Login (Fully)
+	•	Add Passport strategy using passport-google-oauth20
+	•	Read GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET from process.env
+	•	Create /auth/google and /auth/google/callback routes
+	•	On successful login:
+	•	Extract email, name, and optionally profilePic
+	•	If user exists in DB, log them in
+	•	If not, create new user with emailVerified: true, authMethod: "google"
+	•	Use sessions or JWT as with password logins
+
+Frontend:
+	•	Add a “Login with Google” button linking to /auth/google
+
+⸻
+
+✅ 2. Fix and Push the Database Schema
+	•	Update schema if needed to support Google users:
+	•	Add optional fields like googleId, authMethod, emailVerified
+	•	Confirm drizzle.config.ts is using process.env.DATABASE_URL
+	•	Push schema to Railway with:
+
+npx drizzle-kit push:pg
+
+
+3. Verify and Enforce Environment Variables
+	•	Make sure these are used in code:
+	•	DATABASE_URL
+	•	GOOGLE_CLIENT_ID
+	•	GOOGLE_CLIENT_SECRET
+	•	OPENAI_API_KEY (used for coaching prompts)
+	•	POSTMARK_API_KEY (used for verification/welcome emails)
+	•	PLAID_CLIENT_ID, PLAID_SECRET_PRODUCTION, PLAID_ENV
+	•	SESSION_SECRET, JWT_SECRET
+	•	BASE_URL
+
+⸻
+
+✅ 4. Security Requirements
+	•	Add “Confirm Password” field to signup; validate match server-side
+	•	Block login until email is verified (unless using Google)
+	•	Create /verify-email route and logic
+	•	Send verification email via Postmark using POSTMARK_API_KEY
+	•	Add rate limiting on login and signup routes
+	•	Use helmet, express-rate-limit, and secure cookie/session flags
+
+⸻
+
+✅ 5. Frontend Testing
+	•	Login with password and Google both work
+	•	Coaching prompts generate via OpenAI
+	•	CSV export/import works on transactions page
+	•	Bank connection flow works with Plaid
+	•	Emails send and receive via Postmark
+	•	App loads via tryrivu.com and www.tryrivu.com
+
+⸻
+
+✅ 6. Final Build + Deploy Prep
+	•	Confirm vite.config.ts is clean and production-safe
+	•	Run:
+
+npm run build
+npm run start
