@@ -206,23 +206,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.put(`${apiPath}/subcategories/:id`, protect, updateSubcategory);
     app.delete(`${apiPath}/subcategories/:id`, protect, deleteSubcategory);
     
-    // Import Plaid controllers
-    const {
-      createLinkToken,
-      exchangeToken,
-      getAccounts: getPlaidAccounts,
-      handleWebhook,
-      removeItem,
-      handleOAuthCallback
-    } = await import('./controllers/plaid-controller');
-    
-    // Import Plaid Items controllers
-    const {
-      getPlaidItems,
-      getPlaidItemById,
-      refreshPlaidItem,
-      disconnectPlaidItem
-    } = await import('./controllers/plaid-items-controller');
+    // Plaid functionality temporarily disabled for Railway deployment
+    // TODO: Re-enable Plaid integration after deployment stabilization
     
     // Register Plaid routes
     // Add a route to check Plaid API configuration status
@@ -234,18 +219,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(200).json({ status: 'ready' });
     });
     
-    app.post(`${apiPath}/plaid/create_link_token`, protect, createLinkToken);
-    app.post(`${apiPath}/plaid/exchange_token`, protect, exchangeToken);
-    app.post(`${apiPath}/plaid/oauth_callback`, protect, handleOAuthCallback);
-    app.post(`${apiPath}/plaid/accounts`, protect, getPlaidAccounts);
-    app.post(`${apiPath}/plaid/item/remove`, protect, removeItem);
-    app.post(`${apiPath}/plaid/webhook`, handleWebhook); // Public webhook route
-    
-    // Register Plaid Items routes (for account management and 1033 compliance)
-    app.get(`${apiPath}/plaid/items`, protect, getPlaidItems);
-    app.get(`${apiPath}/plaid/items/:id`, protect, getPlaidItemById);
-    app.post(`${apiPath}/plaid/refresh/:id`, protect, refreshPlaidItem);
-    app.delete(`${apiPath}/plaid/disconnect/:id`, protect, disconnectPlaidItem);
+    // Plaid routes disabled for Railway deployment
+    // app.post(`${apiPath}/plaid/create_link_token`, protect, createLinkToken);
+    // app.post(`${apiPath}/plaid/exchange_token`, protect, exchangeToken);
+    // app.post(`${apiPath}/plaid/oauth_callback`, protect, handleOAuthCallback);
+    // app.post(`${apiPath}/plaid/accounts`, protect, getPlaidAccounts);
+    // app.post(`${apiPath}/plaid/item/remove`, protect, removeItem);
+    // app.post(`${apiPath}/plaid/webhook`, handleWebhook);
+    // app.get(`${apiPath}/plaid/items`, protect, getPlaidItems);
+    // app.get(`${apiPath}/plaid/items/:id`, protect, getPlaidItemById);
+    // app.post(`${apiPath}/plaid/refresh/:id`, protect, refreshPlaidItem);
+    // app.delete(`${apiPath}/plaid/disconnect/:id`, protect, disconnectPlaidItem);
     
     console.log('✅ Auth routes successfully mounted at /api');
     console.log('✅ Plaid routes successfully mounted at /api/plaid');
