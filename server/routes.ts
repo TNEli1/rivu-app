@@ -40,10 +40,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       resetPassword
     } = await import('./controllers-ts/userPasswordController');
 
-    // Register auth routes with our TypeScript controller
+    // Import rate limiter for auth routes
+    const { loginLimiter } = await import('./controllers-ts/userController');
+    
+    // Register auth routes with our TypeScript controller and rate limiting
     const apiPath = '/api';
-    app.post(`${apiPath}/register`, registerUser);
-    app.post(`${apiPath}/login`, loginUser);
+    app.post(`${apiPath}/register`, loginLimiter, registerUser);
+    app.post(`${apiPath}/login`, loginLimiter, loginUser);
     app.post(`${apiPath}/logout`, protect, logoutUser);
     app.get(`${apiPath}/user`, protect, getUserProfile);
     app.put(`${apiPath}/user`, protect, updateUserProfile);
@@ -1453,15 +1456,18 @@ User profile:
           max_tokens: 300,
         });
         
-        const message = response.choices[0].message.content || 
+        const aiMessage = response.choices[0].message.content || 
           "I notice some trends in your spending. Consider reviewing your budget categories and adjust as needed to improve your financial health.";
+        
+        // Add AI disclaimer to all AI-generated responses
+        const message = `${aiMessage}\n\n⚠️ AI-generated insight. Not financial advice. Always consult a licensed advisor before making financial decisions.`;
         
         res.json({ message });
       } catch (error) {
         console.error("OpenAI API error:", error);
         // Fallback message if API fails
         res.json({ 
-          message: "You're doing great — keep it up! Continue tracking your expenses to improve your financial health."
+          message: "You're doing great — keep it up! Continue tracking your expenses to improve your financial health.\n\n⚠️ AI-generated insight. Not financial advice. Always consult a licensed advisor before making financial decisions."
         });
       }
     } catch (error) {
@@ -1473,7 +1479,7 @@ User profile:
   });
 
   // iOS Waitlist endpoint with Postmark integration
-  app.post(`${apiPath}/ios-waitlist`, async (req, res) => {
+  app.post(`/api/ios-waitlist`, async (req, res) => {
     try {
       const { email, name } = req.body;
       
