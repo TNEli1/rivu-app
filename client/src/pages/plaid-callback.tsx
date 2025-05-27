@@ -30,7 +30,6 @@ export default function PlaidCallback() {
           return;
         }
 
-        // Log the oauth state for debugging
         console.log('OAuth callback received with state ID:', oauthStateId);
 
         // Wait for the auth check to complete
@@ -100,9 +99,6 @@ export default function PlaidCallback() {
           // We have link token - recreate Plaid Link with OAuth state
           console.log('Found stored link token, recreating Plaid Link flow');
           
-          // Import Plaid Link dynamically
-          const { usePlaidLink } = await import('react-plaid-link');
-          
           // This will handle the OAuth callback automatically
           setError('Completing bank connection...');
           setTimeout(() => {
@@ -114,43 +110,17 @@ export default function PlaidCallback() {
           throw new Error('No stored connection data found. Please try connecting your bank again.');
         }
 
-        const data = await response.json();
+      } catch (error: any) {
+        console.error('OAuth callback handling error:', error);
+        setError(error.message || 'Failed to complete bank connection');
+        setIsProcessing(false);
         
-        if (data.success) {
-          setSuccess(true);
-          setInstitutionName(data.institution_name || 'your bank');
-          
-          // Invalidate queries to refresh account data
-          queryClient.invalidateQueries({ queryKey: ['/api/plaid/items'] });
-          queryClient.invalidateQueries({ queryKey: ['/api/accounts'] });
-          queryClient.invalidateQueries({ queryKey: ['/api/dashboard/summary'] });
-          
-          toast({
-            title: "Success!",
-            description: `Connected to ${data.institution_name || 'your bank'}`
-          });
-          
-          // Redirect after a short delay to allow success state to be seen
-          setTimeout(() => {
-            setIsProcessing(false);
-          }, 2000);
-        } else {
-          setError(data.error || 'Failed to complete bank connection');
-          toast({
-            title: "Connection Failed",
-            description: data.error || 'Failed to complete bank connection',
-            variant: "destructive"
-          });
-          setIsProcessing(false);
-        }
-      } catch (err: any) {
-        console.error('Error handling OAuth callback:', err);
-        setError(err.message || 'An error occurred while connecting your bank');
         toast({
-          title: "Connection Error",
-          description: err.message || 'An error occurred while connecting your bank',
+          title: "Connection Failed",
+          description: error.message || "Unable to complete bank connection. Please try again.",
           variant: "destructive"
         });
+      } finally {
         setIsProcessing(false);
       }
     };
@@ -159,46 +129,46 @@ export default function PlaidCallback() {
   }, [user, isLoading, toast, queryClient, setLocation]);
 
   // Redirect to dashboard when done processing (successful or not)
-  if (!isProcessing) {
-    return <Redirect to="/transactions" />;
+  if (!isProcessing && !error && success) {
+    return <Redirect to="/dashboard" />;
   }
 
-  // Show loading or success/error state while processing
+  if (!isProcessing && error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="max-w-md w-full mx-4 p-6 bg-card rounded-lg border shadow-lg text-center">
+          <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Connection Failed</h2>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <button
+            onClick={() => setLocation('/connect')}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50 dark:bg-gray-900">
-      <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md w-full max-w-md text-center">
+    <div className="flex items-center justify-center min-h-screen bg-background">
+      <div className="max-w-md w-full mx-4 p-6 bg-card rounded-lg border shadow-lg text-center">
         {success ? (
           <>
-            <CheckCircle className="h-16 w-16 text-green-500 mb-4 mx-auto" />
-            <h1 className="text-2xl font-bold mb-2">Connection Successful!</h1>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Your account with {institutionName} has been successfully connected. 
-              Redirecting you to your transactions...
+            <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Bank Connected!</h2>
+            <p className="text-muted-foreground mb-4">
+              {institutionName} has been successfully connected to your account.
             </p>
-          </>
-        ) : error ? (
-          <>
-            <AlertCircle className="h-16 w-16 text-red-500 mb-4 mx-auto" />
-            <h1 className="text-2xl font-bold mb-2">Connection Error</h1>
-            <p className="text-gray-600 dark:text-gray-400 mb-2">
-              There was a problem connecting your bank account:
-            </p>
-            <div className="mt-2 p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md">
-              {error}
-            </div>
-            <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
-              You'll be redirected to your transactions shortly. You can try connecting again later.
-            </p>
+            <p className="text-sm text-muted-foreground">Redirecting to dashboard...</p>
           </>
         ) : (
           <>
-            <Loader2 className="h-16 w-16 text-primary animate-spin mb-4 mx-auto" />
-            <h1 className="text-2xl font-bold mb-2">Completing Bank Connection</h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Please wait while we securely connect your bank account...
-            </p>
-            <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
-              This may take a few moments to verify your credentials and retrieve your account information.
+            <Loader2 className="w-12 h-12 text-primary mx-auto mb-4 animate-spin" />
+            <h2 className="text-xl font-semibold mb-2">Completing Bank Connection</h2>
+            <p className="text-muted-foreground">
+              Please wait while we finalize your bank connection...
             </p>
           </>
         )}
