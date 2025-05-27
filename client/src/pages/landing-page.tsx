@@ -432,15 +432,48 @@ export default function LandingPage() {
                     const data = await response.json();
                     
                     if (response.ok && data.success) {
-                      alert(data.message || "Thanks! We'll notify you when the iOS app is ready.");
+                      // Show success message without alert
+                      const successDiv = document.createElement('div');
+                      successDiv.className = 'mt-4 p-4 bg-green-100 text-green-800 rounded-lg text-center';
+                      successDiv.textContent = data.message || "Thanks! We'll notify you when the iOS app is ready.";
+                      e.currentTarget.appendChild(successDiv);
                       e.currentTarget.reset();
+                      
+                      // Remove success message after 5 seconds
+                      setTimeout(() => {
+                        if (successDiv.parentNode) {
+                          successDiv.parentNode.removeChild(successDiv);
+                        }
+                      }, 5000);
                     } else {
                       console.error('Waitlist API error:', data);
-                      alert(data.message || 'Failed to join waitlist. Please try again.');
+                      // Show error message without alert
+                      const errorDiv = document.createElement('div');
+                      errorDiv.className = 'mt-4 p-4 bg-red-100 text-red-800 rounded-lg text-center';
+                      errorDiv.textContent = data.message || 'Failed to join waitlist. Please try again.';
+                      e.currentTarget.appendChild(errorDiv);
+                      
+                      // Remove error message after 5 seconds
+                      setTimeout(() => {
+                        if (errorDiv.parentNode) {
+                          errorDiv.parentNode.removeChild(errorDiv);
+                        }
+                      }, 5000);
                     }
                   } catch (error) {
                     console.error('Waitlist error:', error);
-                    alert('Something went wrong. Please try again later.');
+                    // Show error message without alert
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'mt-4 p-4 bg-red-100 text-red-800 rounded-lg text-center';
+                    errorDiv.textContent = 'Something went wrong. Please try again later.';
+                    e.currentTarget.appendChild(errorDiv);
+                    
+                    // Remove error message after 5 seconds
+                    setTimeout(() => {
+                      if (errorDiv.parentNode) {
+                        errorDiv.parentNode.removeChild(errorDiv);
+                      }
+                    }, 5000);
                   } finally {
                     // Reset button state
                     submitButton.disabled = false;

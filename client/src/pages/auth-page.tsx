@@ -229,17 +229,7 @@ export default function AuthPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="login-password">Password</Label>
-                        <Button 
-                          variant="link" 
-                          className="p-0 h-auto text-xs"
-                          type="button"
-                          onClick={() => window.location.href = '/forgot-password'}
-                        >
-                          Forgot password?
-                        </Button>
-                      </div>
+                      <Label htmlFor="login-password">Password</Label>
                       <Input 
                         id="login-password" 
                         name="password" 
@@ -247,6 +237,15 @@ export default function AuthPage() {
                         placeholder="••••••••" 
                         required 
                       />
+                      <div className="text-right">
+                        <button 
+                          type="button"
+                          className="text-xs text-primary hover:underline"
+                          onClick={() => window.location.href = '/forgot-password'}
+                        >
+                          Forgot password?
+                        </button>
+                      </div>
                     </div>
                     <Button 
                       type="submit" 
