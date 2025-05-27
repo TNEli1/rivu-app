@@ -22,30 +22,25 @@ setInterval(() => {
   });
 }, 60 * 1000); // Run every minute
 
-// Consolidated secret management
-const plaidSecret = process.env.PLAID_ENV === 'production'
-  ? process.env.PLAID_SECRET_PRODUCTION
-  : process.env.PLAID_SECRET_SANDBOX || process.env.PLAID_SECRET;
-
-// Initialize Plaid client once with proper configuration
+// Initialize Plaid client with proper configuration
 const configuration = new Configuration({
-  basePath: process.env.PLAID_ENV === 'production' 
-    ? PlaidEnvironments.production 
-    : PlaidEnvironments.sandbox,
+  basePath: process.env.PLAID_ENV === 'production' ? PlaidEnvironments.production : PlaidEnvironments.sandbox,
   baseOptions: {
     headers: {
       'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
-      'PLAID-SECRET': plaidSecret,
+      'PLAID-SECRET': process.env.PLAID_ENV === 'production' 
+        ? process.env.PLAID_SECRET_PRODUCTION 
+        : process.env.PLAID_SECRET_SANDBOX || process.env.PLAID_SECRET,
     },
   },
 });
 
 export const plaidClient = new PlaidApi(configuration);
 
-// Create Link Token for Plaid Link initialization
+// Create Link Token for Plaid Link initialization with proper OAuth handling
 export const createLinkToken = async (req: Request, res: Response) => {
   try {
-    console.log('Creating Plaid link token for user:', req.user?.id);
+    console.log('Creating Plaid link token for user:', (req.user as any)?.id);
     
     // Validate environment variables
     if (!process.env.PLAID_CLIENT_ID) {
@@ -53,10 +48,12 @@ export const createLinkToken = async (req: Request, res: Response) => {
       return res.status(500).json({ error: 'Bank connection not configured - missing client ID' });
     }
     
-    const plaidSecret = process.env.PLAID_SECRET_PRODUCTION;
+    const plaidSecret = process.env.PLAID_ENV === 'production' 
+      ? process.env.PLAID_SECRET_PRODUCTION 
+      : process.env.PLAID_SECRET_SANDBOX || process.env.PLAID_SECRET;
       
     if (!plaidSecret) {
-      console.error('Plaid production secret is missing');
+      console.error('Plaid secret is missing');
       return res.status(500).json({ error: 'Bank connection not configured - missing secret' });
     }
 
@@ -65,25 +62,28 @@ export const createLinkToken = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
+    // Generate OAuth state for this session
+    const oauthStateId = crypto.randomUUID();
+    
     // Use webhook URL for transaction updates
     const webhook = process.env.NODE_ENV === 'production'
       ? 'https://www.tryrivu.com/api/plaid/webhook'
       : 'http://localhost:5000/api/plaid/webhook';
 
-    console.log('PLAID_TOKEN_CREATE: Starting link token creation:', {
-      userId,
-      webhook,
-      environment: process.env.PLAID_ENV
-    });
-
-    // OAuth redirect URI - only include when needed
+    // OAuth redirect URI - CRITICAL for OAuth banks like Chase
     const redirectUri = process.env.NODE_ENV === 'production'
       ? 'https://www.tryrivu.com/api/plaid/oauth_redirect'
       : 'http://localhost:5000/api/plaid/oauth_redirect';
 
-    // Check if OAuth is needed (you can add institution-specific logic here)
-    const needsOAuth = req.body.institution_id && ['ins_3'] || false; // Chase example
+    console.log('PLAID_TOKEN_CREATE: Starting link token creation:', {
+      userId,
+      webhook,
+      redirectUri,
+      oauthStateId,
+      environment: process.env.PLAID_ENV
+    });
 
+    // Create link token with OAuth support
     const request = {
       user: {
         client_user_id: userId.toString(),
@@ -93,8 +93,8 @@ export const createLinkToken = async (req: Request, res: Response) => {
       country_codes: [CountryCode.Us],
       language: 'en',
       webhook: webhook,
-      // Only include redirect_uri when needed to avoid forcing OAuth mode
-      ...(needsOAuth ? { redirect_uri: redirectUri } : {})
+      // CRITICAL: Include redirect_uri for OAuth banks
+      redirect_uri: redirectUri,
     };
 
     console.log('PLAID_TOKEN_REQUEST: Link token request payload:', { 
@@ -368,212 +368,5 @@ export const disconnectAccount = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Disconnect account error:', error.message);
     return res.status(500).json({ error: 'Failed to disconnect bank account' });
-  }
-};
-
-// ===== PRODUCTION-READY WEBHOOK SECURITY & TRANSACTION HANDLING =====
-
-// Verify Plaid webhook signature for security
-const verifyPlaidSignature = (req: Request): boolean => {
-  try {
-    const plaidSignature = req.headers['plaid-verification'] as string;
-    const webhookSecret = process.env.PLAID_WEBHOOK_SECRET;
-    
-    if (!webhookSecret || !plaidSignature) {
-      console.error('Missing webhook signature or secret');
-      return false;
-    }
-
-    const crypto = require('crypto');
-    const expectedSignature = crypto
-      .createHmac('sha256', webhookSecret)
-      .update(req.body)
-      .digest('hex');
-    
-    return crypto.timingSafeEqual(
-      Buffer.from(plaidSignature, 'hex'),
-      Buffer.from(expectedSignature, 'hex')
-    );
-  } catch (error: any) {
-    console.error('Signature verification error:', error.message);
-    console.error('Stack:', error.stack);
-    return false;
-  }
-};
-
-// Sync transactions for a specific item with deduplication
-const syncTransactionsForItem = async (itemId: string, accessToken: string) => {
-  try {
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - 30); // Last 30 days
-    const endDate = new Date();
-
-    const response = await plaidClient.transactionsGet({
-      access_token: accessToken,
-      start_date: startDate.toISOString().split('T')[0],
-      end_date: endDate.toISOString().split('T')[0],
-      count: 500
-    });
-
-    const transactions = response.data.transactions;
-    console.log(`Syncing ${transactions.length} transactions for item ${itemId}`);
-
-    // Get existing transaction IDs to avoid duplicates
-    const existingTransactions = await storage.getTransactionsByItemId?.(itemId) || [];
-    const existingIds = new Set(existingTransactions.map((t: any) => t.plaidTransactionId));
-
-    let savedCount = 0;
-    for (const transaction of transactions) {
-      // Skip if transaction already exists
-      if (existingIds.has(transaction.transaction_id)) {
-        continue;
-      }
-
-      // Save new transaction using storage.saveTransactions()
-      await storage.saveTransactions([{
-        plaidTransactionId: transaction.transaction_id,
-        itemId: itemId,
-        accountId: transaction.account_id,
-        amount: Math.abs(transaction.amount).toString(),
-        type: transaction.amount < 0 ? 'expense' : 'income',
-        description: transaction.name,
-        merchant: transaction.merchant_name || transaction.name,
-        category: transaction.category?.[0] || 'Other',
-        date: new Date(transaction.date),
-        pending: transaction.pending
-      }]);
-      savedCount++;
-    }
-
-    console.log(`Saved ${savedCount} new transactions for item ${itemId}`);
-    return savedCount;
-
-  } catch (error: any) {
-    console.error('Transaction sync error:', error.message);
-    console.error('Stack:', error.stack);
-    throw error;
-  }
-};
-
-// Enhanced webhook handler with security and proper transaction handling
-export const handleWebhook = async (req: Request, res: Response) => {
-  try {
-    // Verify webhook signature for security
-    if (!verifyPlaidSignature(req)) {
-      console.error('Invalid webhook signature');
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const body = JSON.parse(req.body.toString());
-    const { webhook_type, webhook_code, item_id, error } = body;
-    
-    console.log('Plaid webhook received:', {
-      webhook_type,
-      webhook_code,
-      item_id,
-      timestamp: new Date().toISOString()
-    });
-
-    // Log webhook event for internal analytics
-    await storage.logPlaidMetric?.('webhook_received', {
-      type: webhook_type,
-      code: webhook_code,
-      item_id: item_id
-    });
-
-    // Handle different webhook types
-    switch (webhook_type) {
-      case 'TRANSACTIONS':
-        await handleTransactionWebhook(body);
-        break;
-        
-      case 'ITEM':
-        await handleItemWebhook(body);
-        break;
-        
-      default:
-        console.log('Unhandled webhook type:', webhook_type);
-    }
-
-    res.json({ acknowledged: true });
-
-  } catch (error: any) {
-    console.error('Webhook error:', error.message);
-    console.error('Stack:', error.stack);
-    res.status(500).json({ error: 'Webhook processing failed' });
-  }
-};
-
-// Handle transaction-specific webhooks
-const handleTransactionWebhook = async (body: any) => {
-  const { webhook_code, item_id, new_transactions, removed_transactions } = body;
-  
-  try {
-    // Get the Plaid item and access token
-    const plaidItem = await storage.getPlaidItemByItemId?.(item_id);
-    if (!plaidItem) {
-      console.error('Plaid item not found:', item_id);
-      return;
-    }
-
-    switch (webhook_code) {
-      case 'DEFAULT_UPDATE':
-        console.log('Processing transaction updates for item:', item_id);
-        await syncTransactionsForItem(item_id, plaidItem.accessToken);
-        break;
-        
-      case 'INITIAL_UPDATE':
-        console.log('Processing initial transaction sync for item:', item_id);
-        await syncTransactionsForItem(item_id, plaidItem.accessToken);
-        break;
-        
-      case 'HISTORICAL_UPDATE':
-        console.log('Processing historical transaction update for item:', item_id);
-        await syncTransactionsForItem(item_id, plaidItem.accessToken);
-        break;
-        
-      case 'TRANSACTIONS_REMOVED':
-        if (removed_transactions && removed_transactions.length > 0) {
-          console.log(`Removing ${removed_transactions.length} transactions`);
-          await storage.deleteTransactionsByPlaidIds?.(removed_transactions);
-        }
-        break;
-        
-      default:
-        console.log('Unhandled transaction webhook code:', webhook_code);
-    }
-  } catch (error: any) {
-    console.error('Transaction webhook error:', error.message);
-    console.error('Stack:', error.stack);
-  }
-};
-
-// Handle item-specific webhooks
-const handleItemWebhook = async (body: any) => {
-  const { webhook_code, item_id, error } = body;
-  
-  try {
-    switch (webhook_code) {
-      case 'ERROR':
-        console.log('Item error for:', item_id, error);
-        await storage.updatePlaidItem?.(item_id, { status: 'error' });
-        break;
-        
-      case 'PENDING_EXPIRATION':
-        console.log('Item pending expiration:', item_id);
-        await storage.updatePlaidItem?.(item_id, { status: 'pending_expiration' });
-        break;
-        
-      case 'USER_PERMISSION_REVOKED':
-        console.log('User permission revoked for item:', item_id);
-        await storage.updatePlaidItem?.(item_id, { status: 'revoked' });
-        break;
-        
-      default:
-        console.log('Unhandled item webhook code:', webhook_code);
-    }
-  } catch (error: any) {
-    console.error('Item webhook error:', error.message);
-    console.error('Stack:', error.stack);
   }
 };

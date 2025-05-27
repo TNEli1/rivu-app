@@ -102,9 +102,6 @@ app.use(cors(corsOptions));
 // Serve static files from the public directory
 app.use(express.static('public'));
 
-// Special middleware for Plaid webhook to preserve raw body for signature verification
-app.use('/api/plaid/webhook', express.raw({ type: 'application/json' }));
-
 // Parse JSON request body with size limit
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: false }));
