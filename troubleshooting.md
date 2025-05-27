@@ -4,9 +4,9 @@ This file tracks all known bugs, symptoms, root causes, and fixes for the Rivu p
 
 ## Issue: Clear All Transactions - 500 Error
 - **Symptom:** Pressing "Clear All" button returns 500 internal server error
-- **Root Cause:** Likely trying to delete transactions after user/session is revoked
-- **Fix:** Updated transaction deletion order and error handling
-- **Status:** 🔄 In Progress - 2025-05-27
+- **Root Cause:** Trying to delete transactions after user/session is revoked
+- **Fix:** ✅ Fixed transaction deletion order with proper DB transactions and validation
+- **Status:** ✅ Fixed - 2025-05-27
 
 ## Issue: Plaid Connection Initialization Error
 - **Symptom:** Plaid Connect button fails with initialization error
@@ -17,14 +17,14 @@ This file tracks all known bugs, symptoms, root causes, and fixes for the Rivu p
 ## Issue: CSV Upload - No Data Saved
 - **Symptom:** Upload UI shows success but no transactions appear in DB
 - **Root Cause:** Backend not properly saving parsed CSV rows
-- **Fix:** Enhanced CSV batch upload endpoint with proper error handling
-- **Status:** 🔄 In Progress - 2025-05-27
+- **Fix:** ✅ Enhanced CSV batch upload with explicit user ID mapping and error logging
+- **Status:** ✅ Fixed - 2025-05-27
 
 ## Issue: Account Deletion - Data Remains
 - **Symptom:** Account deletion triggers logout but user data persists
 - **Root Cause:** Wrong deletion order - user deleted before related data
-- **Fix:** Fixed deletion sequence and added proper transaction handling
-- **Status:** 🔄 In Progress - 2025-05-27
+- **Fix:** ✅ Fixed deletion sequence with proper transaction handling and verification
+- **Status:** ✅ Fixed - 2025-05-27
 
 ## Issue: Tutorial Not Showing for New Users
 - **Symptom:** New accounts skip onboarding/tutorial

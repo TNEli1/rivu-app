@@ -39,6 +39,7 @@ export const users = pgTable("users", {
   lastBudgetReviewDate: timestamp("last_budget_review_date"), // Track when user last reviewed budget
   onboardingStage: text("onboarding_stage").default("new"), // 'new', 'budget_created', 'transaction_added', 'goal_created', 'completed'
   onboardingCompleted: boolean("onboarding_completed").default(false),
+  tutorialCompleted: boolean("tutorial_completed").default(false), // Track if user has seen the tutorial
   accountCreationDate: timestamp("account_creation_date").defaultNow().notNull(),
   nudgeSettings: text("nudge_settings").default("{}"), // JSON string with nudge preferences
   createdAt: timestamp("created_at").defaultNow().notNull(),

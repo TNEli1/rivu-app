@@ -49,16 +49,66 @@ export const sendVerificationEmail = async (req: Request, res: Response) => {
     // Send verification email via Postmark
     const verificationUrl = `${process.env.BASE_URL || 'http://localhost:5000'}/verify-email/${verificationToken}`;
     
-    await postmark.sendEmailWithTemplate({
-      From: 'noreply@tryrivu.com',
-      To: email,
-      TemplateAlias: 'email-verification',
-      TemplateModel: {
-        name: user.firstName,
-        verification_url: verificationUrl,
-        support_email: 'support@tryrivu.com'
+    console.log(`Email Verification: Sending verification email to ${email}`);
+    console.log(`Email Verification: Using verification URL: ${verificationUrl}`);
+    
+    try {
+      // Use the emailService for consistent email sending
+      const { sendEmail } = await import('../services/emailService');
+      
+      const emailSent = await sendEmail({
+        to: email,
+        subject: 'Verify Your Email - Rivu',
+        text: `Hi ${user.firstName || 'there'},\n\nPlease verify your email address by clicking the link below:\n\n${verificationUrl}\n\nIf you didn't create an account with Rivu, please ignore this email.\n\nBest regards,\nThe Rivu Team\nsupport@tryrivu.com`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .btn { background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; margin: 20px 0; }
+              .footer { margin-top: 30px; font-size: 12px; color: #666; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h2>Verify Your Email Address</h2>
+              <p>Hi ${user.firstName || 'there'},</p>
+              <p>Welcome to Rivu! Please verify your email address by clicking the button below:</p>
+              <a href="${verificationUrl}" class="btn">Verify Email Address</a>
+              <p>Or copy and paste this link into your browser:</p>
+              <p><a href="${verificationUrl}">${verificationUrl}</a></p>
+              <p>If you didn't create an account with Rivu, please ignore this email.</p>
+              <div class="footer">
+                <p>Best regards,<br>The Rivu Team<br>support@tryrivu.com</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `
+      });
+      
+      if (!emailSent) {
+        throw new Error('Email service returned false');
       }
-    });
+      
+      console.log(`Email Verification: Successfully sent verification email to ${email}`);
+      
+      // Log success to troubleshooting
+      const timestamp = new Date().toISOString();
+      console.log(`TROUBLESHOOTING LOG ${timestamp}: Email verification sent successfully to ${email}`);
+      
+    } catch (emailError) {
+      console.error('Email Verification ERROR:', emailError);
+      console.error('Email Verification ERROR Stack:', emailError instanceof Error ? emailError.stack : 'No stack trace');
+      
+      // Log to troubleshooting
+      const timestamp = new Date().toISOString();
+      console.log(`TROUBLESHOOTING LOG ${timestamp}: Email verification failed for ${email} - ${emailError instanceof Error ? emailError.message : 'Unknown error'}`);
+      
+      throw emailError; // Re-throw to be caught by outer try-catch
+    }
 
     res.status(200).json({
       message: 'Verification email sent successfully',
@@ -99,17 +149,59 @@ export const verifyEmail = async (req: Request, res: Response) => {
     // Mark email as verified
     await storage.markEmailAsVerified(user.id);
 
-    // Send welcome email
-    await postmark.sendEmailWithTemplate({
-      From: 'welcome@tryrivu.com',
-      To: user.email,
-      TemplateAlias: 'welcome',
-      TemplateModel: {
-        name: user.firstName,
-        dashboard_url: `${process.env.BASE_URL || 'http://localhost:5000'}/dashboard`,
-        support_email: 'support@tryrivu.com'
-      }
-    });
+    // Send welcome email using the emailService
+    try {
+      const { sendEmail } = await import('../services/emailService');
+      
+      const dashboardUrl = `${process.env.BASE_URL || 'http://localhost:5000'}/dashboard`;
+      
+      await sendEmail({
+        to: user.email,
+        subject: 'Welcome to Rivu - Your Financial Journey Starts Now!',
+        text: `Hi ${user.firstName || 'there'},\n\nWelcome to Rivu! Your email has been verified successfully.\n\nYou can now access your dashboard at: ${dashboardUrl}\n\nWe're excited to help you on your financial journey!\n\nBest regards,\nThe Rivu Team\nsupport@tryrivu.com`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .btn { background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; margin: 20px 0; }
+              .footer { margin-top: 30px; font-size: 12px; color: #666; }
+              .header { text-align: center; margin-bottom: 30px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>Welcome to Rivu!</h1>
+              </div>
+              <p>Hi ${user.firstName || 'there'},</p>
+              <p>Congratulations! Your email has been verified successfully and your Rivu account is now active.</p>
+              <p>You're all set to start your financial journey with Rivu's AI-powered insights and tools.</p>
+              <a href="${dashboardUrl}" class="btn">Go to Dashboard</a>
+              <p>What's next?</p>
+              <ul>
+                <li>Complete your onboarding to personalize your experience</li>
+                <li>Connect your bank accounts or upload transaction data</li>
+                <li>Set up your savings goals and budget</li>
+                <li>Explore your Rivu Score and get AI insights</li>
+              </ul>
+              <p>If you have any questions, our support team is here to help at support@tryrivu.com</p>
+              <div class="footer">
+                <p>Best regards,<br>The Rivu Team<br>support@tryrivu.com</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `
+      });
+      
+      console.log(`Email Verification: Welcome email sent to ${user.email}`);
+    } catch (emailError) {
+      console.error('Welcome email error (non-critical):', emailError);
+      // Don't fail the verification process if welcome email fails
+    }
 
     // Redirect to success page
     res.redirect('/auth?verified=true');
