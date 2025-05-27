@@ -232,8 +232,8 @@ export const loginUser = async (req: any, res: any) => {
       if (user.authMethod === 'password' && !user.emailVerified) {
         return res.status(403).json({
           message: 'Please verify your email address before logging in',
-          code: 'EMAIL_NOT_VERIFIED',
-          email: user.email
+          code: 'EMAIL_NOT_VERIFIED'
+          // SECURITY: No user data exposed for unverified accounts
         });
       }
       // Update login metrics
