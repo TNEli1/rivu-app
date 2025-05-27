@@ -28,6 +28,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       updateUserProfile,
       updateDemographics,
       updateLoginMetrics,
+      protect,
       protect
     } = await import('./controllers-ts/userController');
     
@@ -436,16 +437,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const DEMO_USER_ID = 7;  // Updated to match Eli's user ID in the database
   
   // Helper function to get the authenticated user ID from the request 
-  const getCurrentUserId = (): number => {
-    // Return the authenticated user ID from the database
-    return DEMO_USER_ID;
+  const getCurrentUserId = (req: any): number => {
+    // SECURITY FIX: Get authenticated user ID from request object
+    if (!req.user || !req.user.id) {
+      throw new Error('User not authenticated - req.user.id is missing');
+    }
+    return req.user.id;
   };
   
   // Dashboard summary API
   app.get("/api/dashboard/summary", async (req, res) => {
     try {
       // Get current user ID
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       
       // Get all transactions for this user
       const transactions = await storage.getTransactions(userId);
@@ -645,7 +649,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/transactions/recent", async (req, res) => {
     try {
       // Get current user ID
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       
       // Get limit parameter (default to 3)
       const limit = parseInt(req.query.limit as string) || 3;
@@ -675,7 +679,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Budget Categories API
   app.get("/api/budget-categories", async (req, res) => {
     // Get current user ID (using the compatibility function for now)
-    const userId = getCurrentUserId();
+    const userId = getCurrentUserId(req);
     
     try {
       const categories = await storage.getBudgetCategories(userId);
@@ -694,7 +698,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const validated = schema.parse(req.body);
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       
       const newCategory = await storage.createBudgetCategory({
         userId,
@@ -722,7 +726,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const validated = schema.parse(req.body);
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       
       const category = await storage.getBudgetCategory(id);
       if (!category || category.userId !== userId) {
@@ -757,7 +761,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ message: "Invalid ID" });
     }
     
-    const userId = getCurrentUserId();
+    const userId = getCurrentUserId(req);
     const category = await storage.getBudgetCategory(id);
     
     if (!category || category.userId !== userId) {
@@ -773,8 +777,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Transactions API with enhanced categorization
-  app.get("/api/transactions", async (req, res) => {
-    const userId = getCurrentUserId();
+  app.get("/api/transactions", protect, async (req, res) => {
+    const userId = getCurrentUserId(req);
     const transactions = await storage.getTransactions(userId);
     
     // Enhance transactions with automatic categorization
@@ -798,7 +802,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // New spending insights endpoint with automatic categorization
   app.get("/api/transactions/insights", async (req, res) => {
-    const userId = getCurrentUserId();
+    const userId = getCurrentUserId(req);
     const transactions = await storage.getTransactions(userId);
     
     // Convert to format expected by insights generator
@@ -825,7 +829,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const validated = schema.parse(req.body);
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       
       const newTransaction = await storage.createTransaction({
         userId,
@@ -861,7 +865,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const validated = schema.parse(req.body);
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       
       const transaction = await storage.getTransaction(id);
       if (!transaction || transaction.userId !== userId) {
@@ -913,7 +917,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ message: "Invalid ID" });
     }
     
-    const userId = getCurrentUserId();
+    const userId = getCurrentUserId(req);
     const transaction = await storage.getTransaction(id);
     
     if (!transaction || transaction.userId !== userId) {
@@ -930,7 +934,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Rivu Score API
   app.get("/api/rivu-score", async (req, res) => {
-    const userId = getCurrentUserId();
+    const userId = getCurrentUserId(req);
     const rivuScore = await storage.getRivuScore(userId);
     
     if (!rivuScore) {
@@ -991,7 +995,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Recalculate Rivu Score endpoint
   app.post("/api/rivu-score/recalculate", async (req, res) => {
     try {
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       
       // Explicitly force a full recalculation
       const newScore = await storage.calculateRivuScore(userId);
@@ -1048,7 +1052,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/transactions/summary", async (req, res) => {
     try {
       // Get user ID - using demo user for now
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       console.log(`Fetching transaction summary for user: ${userId}`);
       
       // Get transactions for this user
@@ -1186,7 +1190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all goals for a user
   app.get("/api/goals", async (req, res) => {
     try {
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       
       // Get goals from PostgreSQL database
       const dbGoals = await storage.getSavingsGoals(userId);
@@ -1224,7 +1228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid goal ID" });
       }
       
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       const goal = await storage.getSavingsGoal(id);
       
       if (!goal || goal.userId !== userId) {
@@ -1260,7 +1264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       const { name, targetAmount, currentAmount = 0, targetDate } = validation.data;
       
       console.log('Creating goal with data:', {
@@ -1325,7 +1329,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid goal ID" });
       }
       
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       
       // Get existing goal from database
       const existingGoal = await storage.getSavingsGoal(id);
@@ -1418,7 +1422,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid goal ID" });
       }
       
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       
       // Get existing goal from database
       const existingGoal = await storage.getSavingsGoal(id);
@@ -1466,7 +1470,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Financial advice API using OpenAI - SECURE GPT TOKEN USAGE CONTROL
   app.post("/api/advice", async (req, res) => {
     try {
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       
       // CRITICAL: Enforce explicit user consent for GPT usage
       // GPT must ONLY be called when user explicitly requests coaching
