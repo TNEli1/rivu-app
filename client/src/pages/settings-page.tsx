@@ -279,8 +279,8 @@ export default function SettingsPage() {
                             className="bg-red-600 hover:bg-red-700"
                             onClick={async () => {
                               try {
-                                const response = await fetch('/api/user/delete', {
-                                  method: 'POST',
+                                const response = await fetch('/api/user/data/all', {
+                                  method: 'DELETE',
                                   credentials: 'include',
                                   headers: {
                                     'Content-Type': 'application/json',

@@ -431,7 +431,7 @@ export default function LandingPage() {
                     
                     const data = await response.json();
                     
-                    if (response.ok && data.success) {
+                    if (response.ok) {
                       // Show success message without alert
                       const successDiv = document.createElement('div');
                       successDiv.className = 'mt-4 p-4 bg-green-100 text-green-800 rounded-lg text-center';
