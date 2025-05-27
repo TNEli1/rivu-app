@@ -128,29 +128,25 @@ export const registerUser = async (req: any, res: any) => {
     });
     
     if (user) {
-      // Generate JWT token
-      const token = generateToken(user.id.toString());
+      // SECURITY FIX: Do NOT auto-login after registration
+      // User must verify email before being able to log in
       
-      // Set token as HTTP-only cookie
-      setTokenCookie(res, token);
-      
-      // Check for initial nudges to create for the new user
+      // Send verification email
       try {
-        await storage.checkAndCreateNudges(user.id);
-      } catch (nudgeError) {
-        console.warn('Error creating initial nudges for new user:', nudgeError);
-        // Don't fail registration if nudge creation fails
+        await sendUserVerificationEmail(user.id, user.email);
+        console.log(`Verification email sent to ${user.email} for user ${user.id}`);
+      } catch (emailError) {
+        console.error('Failed to send verification email:', emailError);
+        // Log to troubleshooting but don't fail registration
+        const timestamp = new Date().toISOString();
+        console.log(`TROUBLESHOOTING LOG ${timestamp}: Email verification failed for user ${user.id} - ${emailError}`);
       }
       
-      // Return user info without password and token
-      // Token is already set in HTTP-only cookie for security
+      // Return success without auto-login or token
       res.status(201).json({
-        _id: user.id,
-        username: user.username,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        onboardingStage: user.onboardingStage
+        message: 'Account created successfully. Please check your email to verify your account before logging in.',
+        requiresVerification: true,
+        email: user.email
       });
     } else {
       res.status(400).json({ 
@@ -770,13 +766,14 @@ export const resetPassword = async (req: any, res: any) => {
   }
 };
 
-// Authentication middleware
+// SECURITY ENHANCED: Authentication middleware with strict user isolation
 export const protect = async (req: any, res: any, next: any) => {
   try {
     // Get token from cookie
     const token = req.cookies[TOKEN_COOKIE_NAME];
     
     if (!token) {
+      console.warn(`SECURITY: Unauthorized access attempt to ${req.path} - no token`);
       return res.status(401).json({ 
         message: 'Not authorized, no token',
         code: 'AUTH_REQUIRED'
@@ -789,19 +786,42 @@ export const protect = async (req: any, res: any, next: any) => {
     // Get user ID and convert to number for PostgreSQL
     const userId = parseInt(decoded.id.toString(), 10);
     
-    // Verify user exists in database
+    // CRITICAL SECURITY FIX: Verify user exists and is still valid
     const user = await storage.getUser(userId);
     if (!user) {
+      console.error(`SECURITY: Invalid session detected - user ${userId} not found in database`);
       return res.status(401).json({
         message: 'User not found or session invalid',
         code: 'INVALID_SESSION'
       });
     }
     
-    // Set user ID in request
-    req.user = { id: userId };
+    // SECURITY FIX: Ensure email is verified for password-based auth
+    if (user.authMethod === 'password' && !user.emailVerified) {
+      console.warn(`SECURITY: Unverified user ${userId} attempted access to ${req.path}`);
+      return res.status(401).json({
+        message: 'Email verification required',
+        code: 'EMAIL_NOT_VERIFIED'
+      });
+    }
+    
+    // CRITICAL: Set user data with strict isolation
+    req.user = { 
+      id: userId,
+      email: user.email,
+      verified: user.emailVerified,
+      authMethod: user.authMethod
+    };
+    
+    // Security log for sensitive operations
+    if (req.method !== 'GET') {
+      console.log(`SECURITY LOG: User ${userId} (${user.email}) accessing ${req.method} ${req.path} at ${new Date().toISOString()}`);
+    }
+    
     next();
   } catch (error: any) {
+    console.error(`SECURITY: Authentication error for ${req.path}:`, error.message);
+    
     // Check if token expired
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({ 
