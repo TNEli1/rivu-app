@@ -94,6 +94,7 @@ export const transactions = pgTable("transactions", {
   notes: text("notes"),
   source: text("source").notNull().default("manual"), // 'manual', 'csv', or 'plaid'
   isDuplicate: boolean("is_duplicate").default(false),
+  transactionId: text("transaction_id"), // Plaid transaction ID for deduplication
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -112,6 +113,7 @@ export const insertTransactionSchema = createInsertSchema(transactions).pick({
   notes: true,
   source: true,
   isDuplicate: true,
+  transactionId: true,
 });
 
 // Savings Goals

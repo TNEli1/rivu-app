@@ -506,6 +506,21 @@ export const createTransactionsBatch = async (req: any, res: any) => {
         
         console.log(`CSV Batch Upload: Processing transaction ${i} - Amount: ${amount}, Merchant: ${txData.merchant}, Date: ${transactionDate.toISOString()}`);
         
+        // Check for existing transaction to prevent duplicates
+        const potentialDuplicate = await storage.findDuplicateTransaction(
+          userId,
+          amount,
+          transactionDate,
+          txData.merchant || 'Unknown',
+          txData.account || 'Imported'
+        );
+        
+        if (potentialDuplicate) {
+          console.log(`CSV Batch Upload: Duplicate transaction detected for user ${userId}, skipping...`);
+          duplicateCount++;
+          continue;
+        }
+        
         // Create transaction data with explicit user ID and default category
         const transactionData: InsertTransaction = {
           userId: userId, // CRITICAL: Explicitly set to authenticated user

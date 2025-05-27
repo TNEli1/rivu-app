@@ -1500,6 +1500,39 @@ export class DatabaseStorage implements IStorage {
       return false; // Safely default to false in case of error
     }
   }
+
+  async findDuplicateTransaction(
+    userId: number,
+    amount: string,
+    date: Date,
+    merchant: string,
+    account: string
+  ): Promise<Transaction | null> {
+    try {
+      // Look for transactions with the same amount, merchant, and date within a 2-day window
+      const dateStart = new Date(date);
+      dateStart.setHours(0, 0, 0, 0);
+      const dateEnd = new Date(date);
+      dateEnd.setDate(dateEnd.getDate() + 2);
+      dateEnd.setHours(23, 59, 59, 999);
+
+      const existingTransactions = await db.select()
+        .from(transactions)
+        .where(and(
+          eq(transactions.userId, userId),
+          eq(transactions.amount, amount),
+          eq(transactions.merchant, merchant),
+          gte(transactions.date, dateStart),
+          lte(transactions.date, dateEnd)
+        ))
+        .limit(1);
+
+      return existingTransactions.length > 0 ? existingTransactions[0] : null;
+    } catch (error) {
+      console.error('Error checking for duplicate transactions:', error);
+      return null; // Safely return null if check fails
+    }
+  }
   
   async updateNudgeStatus(id: number, status: string): Promise<Nudge | undefined> {
     try {
@@ -1606,7 +1639,7 @@ export class DatabaseStorage implements IStorage {
           const nudge = await this.createNudge({
             userId,
             type: 'budget_suggestion',
-            message: 'Try setting a monthly budget to take control of your spending.',
+            message: 'Setting up a budget is your first step to financial success! Start with just 3 categories to track your spending.',
             status: 'active',
             triggerCondition: JSON.stringify({ 
               type: 'empty_budget',
