@@ -44,10 +44,10 @@ export const googleCallback = [
         lastLogin: new Date()
       });
 
-      // Generate JWT token - use 'id' field to match authentication middleware
+      // Generate JWT token - use string ID to match authentication middleware exactly
       const token = jwt.sign(
         { 
-          id: user.id, 
+          id: user.id.toString(), // Convert to string to match middleware expectations
           email: user.email,
           authMethod: user.authMethod || 'google'
         },
@@ -55,7 +55,7 @@ export const googleCallback = [
         { expiresIn: JWT_EXPIRY }
       );
 
-      // Set secure cookie for production domain
+      // Set secure cookie with correct name that middleware expects
       res.cookie(TOKEN_COOKIE_NAME, token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -63,6 +63,8 @@ export const googleCallback = [
         maxAge: JWT_EXPIRY * 1000,
         domain: process.env.NODE_ENV === 'production' ? '.tryrivu.com' : undefined
       });
+
+      console.log('Google OAuth: JWT token generated and cookie set for user ID:', user.id);
 
       console.log('Google OAuth: Session created, redirecting to dashboard');
       
