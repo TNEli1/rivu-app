@@ -99,12 +99,14 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
           const data = await response.json();
           
           if (data && data.link_token) {
-            console.log('Successfully received link token');
+            console.log('Successfully received link token with OAuth state:', data.oauth_state_id);
             setLinkToken(data.link_token);
-            // Store link token in localStorage for OAuth redirects (more persistent than sessionStorage)
+            // Store link token and OAuth state in localStorage for OAuth redirects
             localStorage.setItem('plaid_link_token', data.link_token);
+            localStorage.setItem('plaid_oauth_state_id', data.oauth_state_id);
             localStorage.setItem('plaid_link_config', JSON.stringify({
               link_token: data.link_token,
+              oauth_state_id: data.oauth_state_id,
               expiration: data.expiration,
               request_id: data.request_id,
               timestamp: Date.now()
@@ -142,19 +144,23 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
       
       // Store success data with OAuth state handling in localStorage
       const linkConfig = localStorage.getItem('plaid_link_config');
+      const oauthStateId = localStorage.getItem('plaid_oauth_state_id');
+      
       const successData = {
         public_token,
         metadata,
+        oauth_state_id: oauthStateId,
         timestamp: Date.now(),
         link_config: linkConfig ? JSON.parse(linkConfig) : null
       };
       
       localStorage.setItem('plaid_link_success', JSON.stringify(successData));
       
-      // Exchange the public token for an access token
+      // Exchange the public token for an access token with OAuth state validation
       const response = await apiRequest('POST', '/api/plaid/exchange_token', {
         public_token,
-        metadata
+        metadata,
+        oauth_state_id: oauthStateId
       });
       
       const data = await response.json();

@@ -8,11 +8,17 @@ const oauthStateStore = new Map<string, { userId: number; timestamp: number; lin
 // Clean up expired states (older than 10 minutes)
 setInterval(() => {
   const now = Date.now();
-  for (const [stateId, data] of oauthStateStore.entries()) {
+  const expiredStates: string[] = [];
+  
+  oauthStateStore.forEach((data, stateId) => {
     if (now - data.timestamp > 10 * 60 * 1000) { // 10 minutes
-      oauthStateStore.delete(stateId);
+      expiredStates.push(stateId);
     }
-  }
+  });
+  
+  expiredStates.forEach(stateId => {
+    oauthStateStore.delete(stateId);
+  });
 }, 60 * 1000); // Run every minute
 
 // Initialize Plaid client
@@ -90,11 +96,24 @@ export const createLinkToken = async (req: Request, res: Response) => {
 
     const response = await plaidClient.linkTokenCreate(request);
     
-    console.log('Plaid link token created successfully');
+    // Generate secure OAuth state ID for this session
+    const oauthStateId = crypto.randomBytes(32).toString('hex');
+    
+    // Store the OAuth state with user and link token for validation
+    oauthStateStore.set(oauthStateId, {
+      userId: userId,
+      timestamp: Date.now(),
+      linkToken: response.data.link_token
+    });
+    
+    console.log('Plaid link token created successfully with OAuth state:', oauthStateId);
+    console.log('Stored OAuth state for user:', userId);
+    
     return res.json({ 
       link_token: response.data.link_token,
       expiration: response.data.expiration,
-      request_id: response.data.request_id
+      request_id: response.data.request_id,
+      oauth_state_id: oauthStateId // Send state ID to frontend
     });
 
   } catch (error: any) {
@@ -119,7 +138,7 @@ export const createLinkToken = async (req: Request, res: Response) => {
 export const exchangePublicToken = async (req: Request, res: Response) => {
   try {
     const { public_token, metadata, oauth_state_id } = req.body;
-    const userId = req.user?.id;
+    const userId = (req.user as any)?.id;
 
     if (!public_token) {
       return res.status(400).json({ error: 'Public token is required' });
@@ -131,9 +150,25 @@ export const exchangePublicToken = async (req: Request, res: Response) => {
 
     console.log('Exchanging public token for user:', userId, 'institution:', metadata?.institution?.name);
     
-    // Log OAuth state if present for debugging
+    // CRITICAL: Validate OAuth state if provided
     if (oauth_state_id) {
-      console.log('OAuth state ID provided:', oauth_state_id);
+      console.log('Validating OAuth state ID:', oauth_state_id);
+      
+      const storedState = oauthStateStore.get(oauth_state_id);
+      if (!storedState) {
+        console.error('Invalid or expired OAuth state ID:', oauth_state_id);
+        return res.status(400).json({ error: 'Invalid or expired OAuth state' });
+      }
+      
+      if (storedState.userId !== userId) {
+        console.error('OAuth state user mismatch. Expected:', storedState.userId, 'Got:', userId);
+        return res.status(400).json({ error: 'OAuth state user mismatch' });
+      }
+      
+      console.log('OAuth state validated successfully for user:', userId);
+      
+      // Clean up the used state
+      oauthStateStore.delete(oauth_state_id);
     }
 
     const response = await plaidClient.itemPublicTokenExchange({
