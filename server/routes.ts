@@ -440,7 +440,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.put(`${apiPath}/subcategories/:id`, protect, updateSubcategory);
     app.delete(`${apiPath}/subcategories/:id`, protect, deleteSubcategory);
     
-    // Register Plaid status route (Plaid controller will be re-enabled after deployment)
+    // Register Plaid status route
     app.get(`${apiPath}/plaid/status`, (req, res) => {
       const hasCredentials = process.env.PLAID_CLIENT_ID && process.env.PLAID_SECRET_PRODUCTION;
       if (!hasCredentials) {
@@ -449,8 +449,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(200).json({ status: 'ready' });
     });
     
-    // Plaid routes temporarily disabled - controller file needs to be created
-    // TODO: Create plaidController.ts and re-enable these routes
+    // Import and register Plaid routes
+    const {
+      createLinkToken,
+      exchangePublicToken,
+      getConnectedAccounts,
+      refreshAccountData,
+      disconnectAccount
+    } = await import('./controllers-ts/plaidController');
+    
+    // Plaid Integration Routes
+    app.post(`${apiPath}/plaid/create_link_token`, protect, createLinkToken);
+    app.post(`${apiPath}/plaid/exchange_public_token`, protect, exchangePublicToken);
+    app.post(`${apiPath}/plaid/exchange_token`, protect, exchangePublicToken);
+    app.get(`${apiPath}/plaid/accounts`, protect, getConnectedAccounts);
+    app.post(`${apiPath}/plaid/accounts`, protect, getConnectedAccounts);
+    app.post(`${apiPath}/plaid/refresh/:id`, protect, refreshAccountData);
+    app.delete(`${apiPath}/plaid/disconnect/:id`, protect, disconnectAccount);
     
     console.log('✅ Auth routes successfully mounted at /api');
     console.log('✅ Plaid routes successfully mounted at /api/plaid');
