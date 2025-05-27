@@ -104,7 +104,7 @@ export const createLinkToken = async (req: Request, res: Response) => {
 // Exchange Public Token for Access Token
 export const exchangePublicToken = async (req: Request, res: Response) => {
   try {
-    const { public_token, metadata } = req.body;
+    const { public_token, metadata, oauth_state_id } = req.body;
     const userId = req.user?.id;
 
     if (!public_token) {

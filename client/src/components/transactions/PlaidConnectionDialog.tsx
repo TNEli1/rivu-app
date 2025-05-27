@@ -140,12 +140,16 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
         }) : 'No metadata'
       );
       
-      // Store success data in case we need it for OAuth flow
-      sessionStorage.setItem('plaid_link_success', JSON.stringify({
+      // Store success data with OAuth state handling
+      const linkConfig = sessionStorage.getItem('plaidLinkConfig');
+      const successData = {
         public_token,
         metadata,
-        timestamp: Date.now()
-      }));
+        timestamp: Date.now(),
+        link_config: linkConfig ? JSON.parse(linkConfig) : null
+      };
+      
+      sessionStorage.setItem('plaid_link_success', JSON.stringify(successData));
       
       // Exchange the public token for an access token
       const response = await apiRequest('POST', '/api/plaid/exchange_token', {
