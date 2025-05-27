@@ -70,8 +70,9 @@ export interface IStorage {
   getTransaction(id: number): Promise<Transaction | undefined>;
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   updateTransaction(id: number, data: Partial<Transaction>): Promise<Transaction | undefined>;
-  deleteTransaction(id: number): Promise<boolean>;
+  deleteTransaction(id: number, userId?: number): Promise<boolean>;
   deleteAllTransactions(userId: number): Promise<boolean>;
+  deleteAllUserData(userId: number): Promise<boolean>; // Comprehensive cascade delete
   importTransactionsFromCSV(userId: number, csvData: string): Promise<{imported: number, duplicates: number}>;
   checkForDuplicateTransactions(transaction: InsertTransaction): Promise<boolean>;
   markTransactionAsNotDuplicate(id: number): Promise<boolean>;
@@ -683,6 +684,70 @@ export class DatabaseStorage implements IStorage {
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('Error deleting all transactions:', errorMessage);
+      return false;
+    }
+  }
+
+  async deleteAllUserData(userId: number): Promise<boolean> {
+    try {
+      console.log(`Starting comprehensive data deletion for user ID: ${userId}`);
+      
+      // Use database transaction to ensure atomicity
+      await db.transaction(async (tx) => {
+        // Delete in order to respect foreign key constraints
+        
+        // 1. Delete Plaid webhook events (if any)
+        await tx.delete(plaidWebhookEvents).where(
+          sql`${plaidWebhookEvents.plaidItemId} IN (
+            SELECT ${plaidItems.id} FROM ${plaidItems} WHERE ${plaidItems.userId} = ${userId}
+          )`
+        );
+        
+        // 2. Delete Plaid accounts
+        await tx.delete(plaidAccounts).where(
+          sql`${plaidAccounts.plaidItemId} IN (
+            SELECT ${plaidItems.id} FROM ${plaidItems} WHERE ${plaidItems.userId} = ${userId}
+          )`
+        );
+        
+        // 3. Delete Plaid items
+        await tx.delete(plaidItems).where(eq(plaidItems.userId, userId));
+        
+        // 4. Delete subcategories
+        await tx.delete(subcategories).where(
+          sql`${subcategories.categoryId} IN (
+            SELECT ${categories.id} FROM ${categories} WHERE ${categories.userId} = ${userId}
+          )`
+        );
+        
+        // 5. Delete categories
+        await tx.delete(categories).where(eq(categories.userId, userId));
+        
+        // 6. Delete transaction accounts
+        await tx.delete(transactionAccounts).where(eq(transactionAccounts.userId, userId));
+        
+        // 7. Delete nudges
+        await tx.delete(nudges).where(eq(nudges.userId, userId));
+        
+        // 8. Delete Rivu scores
+        await tx.delete(rivuScores).where(eq(rivuScores.userId, userId));
+        
+        // 9. Delete savings goals
+        await tx.delete(savingsGoals).where(eq(savingsGoals.userId, userId));
+        
+        // 10. Delete budget categories
+        await tx.delete(budgetCategories).where(eq(budgetCategories.userId, userId));
+        
+        // 11. Delete transactions (including manual, CSV, and Plaid sources)
+        await tx.delete(transactions).where(eq(transactions.userId, userId));
+        
+        console.log(`Successfully deleted all data for user ${userId}`);
+      });
+      
+      return true;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Error deleting all user data:', errorMessage);
       return false;
     }
   }

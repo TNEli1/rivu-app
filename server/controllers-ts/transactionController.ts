@@ -486,13 +486,13 @@ export const createTransactionsBatch = async (req: any, res: any) => {
         
         console.log(`CSV Batch Upload: Processing transaction ${i} - Amount: ${amount}, Merchant: ${txData.merchant}, Date: ${transactionDate.toISOString()}`);
         
-        // Create transaction data with explicit user ID
+        // Create transaction data with explicit user ID and default category
         const transactionData: InsertTransaction = {
           userId: userId, // CRITICAL: Explicitly set to authenticated user
           amount,
           date: transactionDate,
           merchant: txData.merchant || 'Unknown',
-          category: txData.category || 'Uncategorized',
+          category: txData.category || 'Uncategorized', // Always provide default category
           account: txData.account || 'Imported',
           type: txData.type || 'expense',
           notes: txData.notes || '',

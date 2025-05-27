@@ -203,7 +203,7 @@ export const importMappedTransactions = async (req: Request, res: Response) => {
           amount,
           date: fixedDate,
           merchant: transaction.merchant,
-          category: transaction.category || 'Uncategorized',
+          category: transaction.category || 'Uncategorized', // Always provide default category
           subcategory: transaction.subcategory || '',
           account: transaction.account || 'Imported',
           type,
