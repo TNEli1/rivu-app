@@ -47,14 +47,14 @@ export const createLinkToken = async (req: Request, res: Response) => {
 
     const request = {
       user: {
-        client_user_id: userId,
+        client_user_id: userId.toString(),
       },
       client_name: 'Rivu',
       products: [Products.Transactions],
       country_codes: [CountryCode.Us],
       language: 'en',
       // Use the correct redirect URI for your domain
-      redirect_uri: process.env.PLAID_REDIRECT_URI || 'https://tryrivu.com/plaid-callback',
+      redirect_uri: process.env.PLAID_REDIRECT_URI || `${req.protocol}://${req.get('host')}/plaid-callback`,
     };
 
     console.log('Plaid link token request:', { 

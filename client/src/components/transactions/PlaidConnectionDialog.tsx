@@ -200,7 +200,7 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
     onExit,
     // OAuth configuration for production banks like Chase
     receivedRedirectUri: window.location.href,
-    oauthRedirectUri: 'https://tryrivu.com/plaid-callback',
+    oauthRedirectUri: `${window.location.origin}/plaid-callback`,
     oauthNonce: Math.floor(Math.random() * 10000000).toString(),
   };
   
