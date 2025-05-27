@@ -806,10 +806,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     // Enhance transactions with automatic categorization
     const enhancedTransactions = transactions.map(transaction => {
+      // For CSV uploads, respect the transaction type instead of using raw amount
+      const isIncomeTransaction = transaction.type === 'income';
+      const effectiveAmount = isIncomeTransaction ? 
+        parseFloat(transaction.amount.toString()) : 
+        -parseFloat(transaction.amount.toString());
+        
       const { category: autoCategory, icon, color } = categorizeTransaction(
         transaction.categoryId ? [transaction.categoryId] : null,
         transaction.merchant,
-        parseFloat(transaction.amount.toString())
+        effectiveAmount
       );
       
       return {
