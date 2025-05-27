@@ -458,6 +458,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       disconnectAccount
     } = await import('./controllers-ts/plaidController');
     
+    // Import Plaid webhook handler
+    const { handlePlaidWebhook } = await import('./controllers-ts/plaidWebhookController');
+    
+    // Plaid Webhook Route (no authentication required for Plaid webhooks)
+    app.post(`${apiPath}/plaid/webhook`, handlePlaidWebhook);
+    
     // Plaid Integration Routes
     app.post(`${apiPath}/plaid/create_link_token`, protect, createLinkToken);
     app.post(`${apiPath}/plaid/exchange_public_token`, protect, exchangePublicToken);

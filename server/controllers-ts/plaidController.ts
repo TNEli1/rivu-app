@@ -18,7 +18,7 @@ const plaidConfig = new Configuration({
   },
 });
 
-const plaidClient = new PlaidApi(plaidConfig);
+export const plaidClient = new PlaidApi(plaidConfig);
 
 // Create Link Token for Plaid Link initialization
 export const createLinkToken = async (req: Request, res: Response) => {
@@ -50,7 +50,13 @@ export const createLinkToken = async (req: Request, res: Response) => {
       ? 'https://tryrivu.com/plaid-callback'
       : `${req.protocol}://${req.get('host')}/plaid-callback`;
 
+    // Set webhook URL dynamically based on environment
+    const webhook = process.env.NODE_ENV === 'production'
+      ? 'https://tryrivu.com/api/plaid/webhook'
+      : `${req.protocol}://${req.get('host')}/api/plaid/webhook`;
+
     console.log('Creating Plaid link token with redirect URI:', redirectUri);
+    console.log('Creating Plaid link token with webhook URL:', webhook);
 
     const request = {
       user: {
@@ -61,6 +67,7 @@ export const createLinkToken = async (req: Request, res: Response) => {
       country_codes: [CountryCode.Us],
       language: 'en',
       redirect_uri: redirectUri,
+      webhook: webhook,
     };
 
     console.log('Plaid link token request:', { 
