@@ -56,11 +56,13 @@ export default function PlaidCallback() {
 
         // Check if we have stored Plaid Link success data from before OAuth redirect
         const storedSuccess = sessionStorage.getItem('plaid_link_success');
+        let response;
+        
         if (storedSuccess) {
           const { public_token, metadata } = JSON.parse(storedSuccess);
           
           // Complete the token exchange with the stored data
-          const response = await apiRequest('POST', '/api/plaid/exchange_token', {
+          response = await apiRequest('POST', '/api/plaid/exchange_token', {
             public_token,
             metadata,
             oauth_state_id: oauthStateId
@@ -69,7 +71,7 @@ export default function PlaidCallback() {
           sessionStorage.removeItem('plaid_link_success');
         } else {
           // Handle the OAuth callback by sending the oauth_state_id to our backend
-          const response = await apiRequest('POST', '/api/plaid/oauth_callback', {
+          response = await apiRequest('POST', '/api/plaid/oauth_callback', {
             oauth_state_id: oauthStateId
           });
         }

@@ -40,7 +40,7 @@ export const createLinkToken = async (req: Request, res: Response) => {
       return res.status(500).json({ error: 'Bank connection not configured - missing secret' });
     }
 
-    const userId = req.user?.id?.toString();
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
