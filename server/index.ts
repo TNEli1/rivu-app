@@ -65,11 +65,22 @@ if (process.env.NODE_ENV === 'production') {
 const allowedOrigins = [
   'https://tryrivu.com',
   'https://www.tryrivu.com',
-  'https://rivu-core-production.up.railway.app'
+  'https://rivu-core-production.up.railway.app',
+  // Development origins
+  'http://localhost:5000',
+  'http://127.0.0.1:5000',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
 ];
 
 const corsOptions = {
   origin: (origin: any, callback: any) => {
+    // In development, be more permissive
+    if (process.env.NODE_ENV !== 'production') {
+      callback(null, true);
+      return;
+    }
+    
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {

@@ -507,7 +507,7 @@ export default function LandingPage() {
             <div className="flex items-center mb-6 md:mb-0">
               <img src="/images/rivu-logo.png" alt="Rivu Logo" className="h-24 w-auto" />
             </div>
-            <div className="flex space-x-6">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-6">
               <a href="/privacy">
                 <span className={`text-sm ${theme === 'dark' ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'}`}>Privacy</span>
               </a>
