@@ -1,0 +1,93 @@
+I need you to handle this like a senior engineer with 20+ years of production experience.
+
+⸻
+
+The Problem:
+	•	Google successfully redirects to:
+
+https://www.tryrivu.com/auth/google/callback
+
+•	But:
+	•	No session is created
+	•	No token is returned
+	•	User lands unauthenticated
+	•	This is production, and it’s killing activation
+
+⸻
+
+Fix It Like a Pro:
+
+A 20-year engineer knows this flow cold. Here’s what it should be:
+	1.	Google returns with code to /auth/google/callback
+	2.	Backend:
+	•	Exchanges code for access token
+	•	Retrieves Google user info
+	•	Creates or finds the user in DB
+	•	Flags verified: true
+	•	Generates session/JWT
+	•	Sets it in an HTTP-only secure cookie or returns it to frontend
+	3.	Redirects user to /dashboard or /onboarding
+
+None of this is happening.
+
+⸻
+
+Directive:
+	•	Add full logging to the callback route
+	•	If using Passport, ensure req.login(user) is being called
+	•	If using JWT:
+	•	Sign the token
+	•	Attach it to a cookie (res.cookie()) or return it to frontend
+	•	Trigger frontend login state
+	•	Google users should never hit a blank state
+	•	Redirect must be app-aware, not defaulting to static pages or unmounted views
+
+⸻
+
+This isn’t a junior task. Fix it like the user experience depends on it — because it does. Own the full auth lifecycle and push a verified fix.
+
+The Plaid OAuth flow breaks at the bank redirect with the error:
+
+oauth uri does not contain a valid oauth_state_id query parameter
+
+This is a foundational fintech feature. You need to fix this like a senior engineer with 20 years of production experience in a regulated, user-critical environment.
+
+⸻
+
+The Problem:
+	•	OAuth-based banks (e.g. Chase, Capital One) redirect back to:
+
+https://tryrivu.com/plaid-callback
+
+•	But:
+	•	oauth_state_id is missing or lost
+	•	link_token is either expired, overwritten, or not rehydrated properly
+	•	Users see connection failure and cannot link their bank
+
+⸻
+
+The Fix — What a Veteran Would Do:
+	1.	Before redirect:
+	•	Generate link_token
+	•	Save oauth_state_id and link_token to sessionStorage
+	•	Example:
+
+sessionStorage.setItem('plaid_oauth_state_id', oauthStateId);
+sessionStorage.setItem('plaid_link_token', linkToken);
+
+2.	After redirect (in /plaid-callback):
+	•	Read from window.location.search for oauth_state_id
+	•	If it’s missing, recover from sessionStorage
+	•	Use the saved link_token to resume Plaid.create(...)
+	3.	Validate:
+	•	Your frontend is using:
+
+oauthRedirectUri: 'https://tryrivu.com/plaid-callback'
+
+Your backend is creating the token with:
+
+redirect_uri: 'https://tryrivu.com/plaid-callback'
+
+Own It Like a Veteran:
+
+This is not a UI bug. This is a core banking integration failing silently. Treat it like you’re wiring production infrastructure for a live bank. Patch every edge case. Log aggressively. Recover state. Confirm the flow from token create to bank return to token exchange.
