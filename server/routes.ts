@@ -1724,35 +1724,37 @@ User profile:
       // Always return success to user, even if email notification fails
       // This ensures a good user experience while we log issues internally
       
-      // Attempt to send notification email to support team (optional)
-      if (process.env.POSTMARK_API_KEY && process.env.EMAIL_FROM) {
-        try {
-          const { Client } = await import('postmark');
-          const client = new Client(process.env.POSTMARK_API_KEY);
-          
-          await client.sendEmail({
-            From: process.env.EMAIL_FROM,
-            To: 'support@tryrivu.com', // Send to support team
-            Subject: 'New iOS Waitlist Signup - Rivu',
-            HtmlBody: `
-              <h2>New iOS Waitlist Signup</h2>
+      // Send notification email to support team using centralized email service
+      try {
+        const { sendEmail } = await import('./services/emailService');
+        
+        const emailSent = await sendEmail({
+          to: 'support@tryrivu.com',
+          subject: 'New iOS Waitlist Signup - Rivu',
+          text: `New iOS Waitlist Signup\n\nEmail: ${email}\nName: ${name || 'N/A'}\nSignup Date: ${new Date().toLocaleString()}\n\nThis user is interested in early access to the iOS app.`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
+              <h2 style="color: #00C2A8; margin-top: 0;">New iOS Waitlist Signup</h2>
               <p><strong>Email:</strong> ${email}</p>
               <p><strong>Name:</strong> ${name || 'N/A'}</p>
               <p><strong>Signup Date:</strong> ${new Date().toLocaleString()}</p>
-              <hr>
+              <hr style="border: 1px solid #eee; margin: 20px 0;">
               <p>This user is interested in early access to the iOS app.</p>
-            `,
-            TextBody: `New iOS Waitlist Signup\n\nEmail: ${email}\nName: ${name || 'N/A'}\nSignup Date: ${new Date().toLocaleString()}\n\nThis user is interested in early access to the iOS app.`
-          });
-          
+              <p style="color: #666; font-size: 14px; margin-top: 20px;">
+                Follow up with iOS app launch updates and early access invitations.
+              </p>
+            </div>
+          `
+        });
+        
+        if (emailSent) {
           console.log(`iOS Waitlist: Successfully sent notification email for ${email}`);
-          
-        } catch (emailError) {
-          // Log the error but don't fail the request
-          console.error('iOS Waitlist: Email notification failed (non-critical):', emailError);
+        } else {
+          console.error(`iOS Waitlist: Failed to send notification email for ${email}`);
         }
-      } else {
-        console.log('iOS Waitlist: Email notification skipped (credentials not configured)');
+        
+      } catch (emailError) {
+        console.error('iOS Waitlist: Email notification failed:', emailError);
       }
       
       // Always return success to provide good user experience
