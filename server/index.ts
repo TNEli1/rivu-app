@@ -116,23 +116,17 @@ app.use(session({
     pool: pool,
     tableName: 'user_sessions',
     createTableIfMissing: true,
-    pruneSessionInterval: 86400, // clean up expired sessions daily (24 hours in seconds)
-    // Error handling for session store
-    errorLog: (err) => {
-      console.error('Session store error:', err);
-    }
+    pruneSessionInterval: 86400 // clean up expired sessions daily (24 hours in seconds)
   }),
   secret: process.env.SESSION_SECRET || 'rivu_session_secret_dev',
   resave: false,
   saveUninitialized: false,
-  rolling: true, // Extend session on activity
-  name: 'rivu.sid', // Custom session name
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // More secure for production
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Allow cross-site cookies in production
     maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-    domain: process.env.NODE_ENV === 'production' ? '.tryrivu.com' : undefined
+    domain: process.env.NODE_ENV === 'production' ? '.tryrivu.com' : undefined // Share cookies across subdomains
   }
 }));
 

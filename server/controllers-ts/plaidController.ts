@@ -1,30 +1,13 @@
 import { Request, Response } from 'express';
 import { Configuration, PlaidApi, PlaidEnvironments, Products, CountryCode } from 'plaid';
-import crypto from 'crypto';
-import { storage } from '../storage';
 
-// In-memory store for OAuth state validation (use Redis in production)
-const oauthStateStore = new Map<string, { userId: number; timestamp: number; linkToken: string }>();
-
-// Clean up expired states (older than 10 minutes)
-setInterval(() => {
-  const now = Date.now();
-  const expiredStates: string[] = [];
-  
-  oauthStateStore.forEach((data, stateId) => {
-    if (now - data.timestamp > 10 * 60 * 1000) { // 10 minutes
-      expiredStates.push(stateId);
-    }
-  });
-  
-  expiredStates.forEach(stateId => {
-    oauthStateStore.delete(stateId);
-  });
-}, 60 * 1000); // Run every minute
-
-// Initialize Plaid client with proper configuration
-const configuration = new Configuration({
-  basePath: process.env.PLAID_ENV === 'production' ? PlaidEnvironments.production : PlaidEnvironments.sandbox,
+// Initialize Plaid client
+const plaidConfig = new Configuration({
+  basePath: process.env.PLAID_ENV === 'production' 
+    ? PlaidEnvironments.production 
+    : process.env.PLAID_ENV === 'sandbox'
+    ? PlaidEnvironments.sandbox
+    : PlaidEnvironments.development,
   baseOptions: {
     headers: {
       'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
@@ -35,12 +18,12 @@ const configuration = new Configuration({
   },
 });
 
-export const plaidClient = new PlaidApi(configuration);
+export const plaidClient = new PlaidApi(plaidConfig);
 
-// Create Link Token for Plaid Link initialization with proper OAuth handling
+// Create Link Token for Plaid Link initialization
 export const createLinkToken = async (req: Request, res: Response) => {
   try {
-    console.log('Creating Plaid link token for user:', (req.user as any)?.id);
+    console.log('Creating Plaid link token for user:', req.user?.id);
     
     // Validate environment variables
     if (!process.env.PLAID_CLIENT_ID) {
@@ -48,12 +31,10 @@ export const createLinkToken = async (req: Request, res: Response) => {
       return res.status(500).json({ error: 'Bank connection not configured - missing client ID' });
     }
     
-    const plaidSecret = process.env.PLAID_ENV === 'production' 
-      ? process.env.PLAID_SECRET_PRODUCTION 
-      : process.env.PLAID_SECRET_SANDBOX || process.env.PLAID_SECRET;
+    const plaidSecret = process.env.PLAID_SECRET_PRODUCTION;
       
     if (!plaidSecret) {
-      console.error('Plaid secret is missing');
+      console.error('Plaid production secret is missing');
       return res.status(500).json({ error: 'Bank connection not configured - missing secret' });
     }
 
@@ -62,28 +43,19 @@ export const createLinkToken = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    // Generate OAuth state for this session
-    const oauthStateId = crypto.randomUUID();
-    
-    // Use webhook URL for transaction updates
+    // CRITICAL: Set proper redirect URI for production OAuth banks that matches your Plaid dashboard
+    const redirectUri = process.env.NODE_ENV === 'production' 
+      ? 'https://tryrivu.com/plaid-callback'  // Must match exactly what's configured in Plaid dashboard
+      : 'http://localhost:5000/plaid-callback';
+
+    // Use correct production webhook URL
     const webhook = process.env.NODE_ENV === 'production'
-      ? 'https://www.tryrivu.com/api/plaid/webhook'
+      ? 'https://www.tryrivu.com/api/plaid/webhook'  // Use www subdomain for production
       : 'http://localhost:5000/api/plaid/webhook';
 
-    // OAuth redirect URI - CRITICAL for OAuth banks like Chase
-    const redirectUri = process.env.NODE_ENV === 'production'
-      ? 'https://www.tryrivu.com/api/plaid/oauth_redirect'
-      : 'http://localhost:5000/api/plaid/oauth_redirect';
+    console.log('Creating Plaid link token with redirect URI:', redirectUri);
+    console.log('Creating Plaid link token with webhook URL:', webhook);
 
-    console.log('PLAID_TOKEN_CREATE: Starting link token creation:', {
-      userId,
-      webhook,
-      redirectUri,
-      oauthStateId,
-      environment: process.env.PLAID_ENV
-    });
-
-    // Create link token with OAuth support
     const request = {
       user: {
         client_user_id: userId.toString(),
@@ -92,44 +64,23 @@ export const createLinkToken = async (req: Request, res: Response) => {
       products: [Products.Transactions],
       country_codes: [CountryCode.Us],
       language: 'en',
-      webhook: webhook,
-      // CRITICAL: Include redirect_uri for OAuth banks
       redirect_uri: redirectUri,
+      webhook: webhook,
     };
 
-    console.log('PLAID_TOKEN_REQUEST: Link token request payload:', { 
+    console.log('Plaid link token request:', { 
       ...request, 
       client_id: process.env.PLAID_CLIENT_ID,
-      environment: process.env.PLAID_ENV,
-      hasRedirectUri: false,
-      hasInstitutionId: false
+      environment: process.env.PLAID_ENV 
     });
 
     const response = await plaidClient.linkTokenCreate(request);
     
-    // Generate secure OAuth state ID for this session
-    const oauthStateId = crypto.randomBytes(32).toString('hex');
-    
-    // Store the OAuth state with user and link token for validation
-    oauthStateStore.set(oauthStateId, {
-      userId: userId,
-      timestamp: Date.now(),
-      linkToken: response.data.link_token
-    });
-    
-    console.log('PLAID_TOKEN_SUCCESS: Link token created successfully:', {
-      linkToken: response.data.link_token.substring(0, 20) + '...',
-      oauthStateId,
-      userId,
-      expiration: response.data.expiration,
-      requestId: response.data.request_id
-    });
-    
+    console.log('Plaid link token created successfully');
     return res.json({ 
       link_token: response.data.link_token,
       expiration: response.data.expiration,
-      request_id: response.data.request_id,
-      oauth_state_id: oauthStateId // Send state ID to frontend
+      request_id: response.data.request_id
     });
 
   } catch (error: any) {
@@ -154,7 +105,7 @@ export const createLinkToken = async (req: Request, res: Response) => {
 export const exchangePublicToken = async (req: Request, res: Response) => {
   try {
     const { public_token, metadata, oauth_state_id } = req.body;
-    const userId = (req.user as any)?.id;
+    const userId = req.user?.id;
 
     if (!public_token) {
       return res.status(400).json({ error: 'Public token is required' });
@@ -166,25 +117,9 @@ export const exchangePublicToken = async (req: Request, res: Response) => {
 
     console.log('Exchanging public token for user:', userId, 'institution:', metadata?.institution?.name);
     
-    // CRITICAL: Validate OAuth state if provided
+    // Log OAuth state if present for debugging
     if (oauth_state_id) {
-      console.log('Validating OAuth state ID:', oauth_state_id);
-      
-      const storedState = oauthStateStore.get(oauth_state_id);
-      if (!storedState) {
-        console.error('Invalid or expired OAuth state ID:', oauth_state_id);
-        return res.status(400).json({ error: 'Invalid or expired OAuth state' });
-      }
-      
-      if (storedState.userId !== userId) {
-        console.error('OAuth state user mismatch. Expected:', storedState.userId, 'Got:', userId);
-        return res.status(400).json({ error: 'OAuth state user mismatch' });
-      }
-      
-      console.log('OAuth state validated successfully for user:', userId);
-      
-      // Clean up the used state
-      oauthStateStore.delete(oauth_state_id);
+      console.log('OAuth state ID provided:', oauth_state_id);
     }
 
     const response = await plaidClient.itemPublicTokenExchange({

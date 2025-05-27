@@ -37,12 +37,7 @@ export default function PlaidCallback() {
           console.log('Recovered OAuth state ID from sessionStorage:', oauthStateId);
         }
 
-        console.log('PLAID_CALLBACK_START: OAuth callback initiated:', {
-          oauthStateId,
-          fullUrl: window.location.href,
-          searchParams: window.location.search,
-          timestamp: new Date().toISOString()
-        });
+        console.log('OAuth callback received with state ID:', oauthStateId);
 
         // Wait for the auth check to complete
         if (isLoading) {
@@ -68,14 +63,7 @@ export default function PlaidCallback() {
         // CRITICAL: Check localStorage for stored data (more persistent than sessionStorage)
         const storedSuccess = localStorage.getItem('plaid_link_success');
         const storedLinkToken = localStorage.getItem('plaid_link_token');
-        const storedOAuthState = localStorage.getItem('plaid_oauth_state_id');
         const storedLinkConfig = localStorage.getItem('plaid_link_config');
-        
-        // Validate OAuth state matches what we expect
-        if (storedOAuthState && oauthStateId !== storedOAuthState) {
-          console.error('OAuth state mismatch. URL:', oauthStateId, 'Stored:', storedOAuthState);
-          throw new Error('OAuth state validation failed. Please restart the bank connection process.');
-        }
         
         console.log('OAuth callback storage check:', {
           hasStoredSuccess: !!storedSuccess,
@@ -104,7 +92,6 @@ export default function PlaidCallback() {
             // Clean up stored data
             localStorage.removeItem('plaid_link_success');
             localStorage.removeItem('plaid_link_token');
-            localStorage.removeItem('plaid_oauth_state_id');
             localStorage.removeItem('plaid_link_config');
             
             // Invalidate queries to refresh account data

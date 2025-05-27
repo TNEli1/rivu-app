@@ -26,7 +26,6 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasPlaidKeys, setHasPlaidKeys] = useState(true);
-  const [plaidInitialized, setPlaidInitialized] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -37,12 +36,6 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
       setError(null);
       setSuccess(false);
       setLinkToken(null); // Reset link token to ensure fresh state
-      
-      // CRITICAL: Clear any cached OAuth data that might force OAuth mode
-      localStorage.removeItem('plaid_link_token');
-      localStorage.removeItem('plaid_oauth_state_id');
-      localStorage.removeItem('plaid_link_config');
-      localStorage.removeItem('plaid_link_success');
       
       const fetchLinkToken = async () => {
         try {
@@ -106,14 +99,12 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
           const data = await response.json();
           
           if (data && data.link_token) {
-            console.log('Successfully received link token with OAuth state:', data.oauth_state_id);
+            console.log('Successfully received link token');
             setLinkToken(data.link_token);
-            // Store link token and OAuth state in localStorage for OAuth redirects
+            // Store link token in localStorage for OAuth redirects (more persistent than sessionStorage)
             localStorage.setItem('plaid_link_token', data.link_token);
-            localStorage.setItem('plaid_oauth_state_id', data.oauth_state_id);
             localStorage.setItem('plaid_link_config', JSON.stringify({
               link_token: data.link_token,
-              oauth_state_id: data.oauth_state_id,
               expiration: data.expiration,
               request_id: data.request_id,
               timestamp: Date.now()
@@ -141,35 +132,29 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
   const onSuccess: PlaidLinkOnSuccess = useCallback(async (public_token, metadata) => {
     setLoading(true);
     try {
-      console.log('PLAID_LINK_SUCCESS: Token received successfully:', {
-        hasPublicToken: !!public_token,
-        publicTokenPreview: public_token ? public_token.substring(0, 20) + '...' : 'none',
-        institutionId: metadata?.institution?.institution_id,
-        institutionName: metadata?.institution?.name,
-        linkSessionId: metadata?.link_session_id,
-        accountsConnected: metadata?.accounts?.length || 0,
-        timestamp: new Date().toISOString()
-      });
+      console.log('Plaid Link success with metadata:', 
+        metadata ? JSON.stringify({
+          institution_id: metadata.institution?.institution_id,
+          link_session_id: metadata.link_session_id,
+          accounts_connected: metadata.accounts?.length || 0
+        }) : 'No metadata'
+      );
       
       // Store success data with OAuth state handling in localStorage
       const linkConfig = localStorage.getItem('plaid_link_config');
-      const oauthStateId = localStorage.getItem('plaid_oauth_state_id');
-      
       const successData = {
         public_token,
         metadata,
-        oauth_state_id: oauthStateId,
         timestamp: Date.now(),
         link_config: linkConfig ? JSON.parse(linkConfig) : null
       };
       
       localStorage.setItem('plaid_link_success', JSON.stringify(successData));
       
-      // Exchange the public token for an access token with OAuth state validation
+      // Exchange the public token for an access token
       const response = await apiRequest('POST', '/api/plaid/exchange_token', {
         public_token,
-        metadata,
-        oauth_state_id: oauthStateId
+        metadata
       });
       
       const data = await response.json();
@@ -213,50 +198,36 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
   }, [onClose, queryClient, toast]);
 
   // Handle any errors from Plaid Link
-  const onExit: PlaidLinkOnExit = useCallback((err, metadata) => {
-    console.log('PLAID_LINK_EXIT: User exited Plaid Link:', {
-      hasError: !!err,
-      errorType: err?.error_type,
-      errorCode: err?.error_code,
-      errorMessage: err?.error_message,
-      displayMessage: err?.display_message,
-      institutionId: metadata?.institution?.institution_id,
-      institutionName: metadata?.institution?.name,
-      linkSessionId: metadata?.link_session_id,
-      requestId: metadata?.request_id,
-      status: metadata?.status,
-      timestamp: new Date().toISOString()
-    });
-    
+  const onExit: PlaidLinkOnExit = useCallback((err) => {
     if (err) {
-      console.error('PLAID_LINK_ERROR: Error during bank connection:', err);
-      setError(err.error_message || err.display_message || 'Error connecting to bank');
+      console.error('Plaid Link error:', err);
+      setError(err.error_message || 'Error connecting to bank');
     }
   }, []);
 
-  // CRITICAL: Only initialize Plaid Link when we have a valid token
-  // This prevents multiple initializations and mobile rendering issues
-  const config = linkToken ? {
-    token: linkToken,
+  // Use environment-appropriate redirect URI for OAuth banks
+  const oauthRedirectUri = process.env.NODE_ENV === 'production' 
+    ? 'https://www.tryrivu.com/plaid-callback'
+    : 'http://localhost:5000/plaid-callback';
+
+  // CRITICAL: Do NOT include receivedRedirectUri on initial launch - this causes OAuth state issues
+  // Only include it when resuming after OAuth redirect (handled in plaid-callback page)
+  const config = {
+    token: linkToken || '',
     onSuccess,
     onExit,
-    // DO NOT include oauthRedirectUri, receivedRedirectUri, or any OAuth config here
-    // Let Plaid handle OAuth internally only when user selects an OAuth-required bank
-    
-    // Mobile Safari specific configurations
-    env: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox',
-    clientName: 'Rivu',
-    // Ensure proper mobile rendering
-    selectAccount: false, // Let users select accounts after connection
-  } : null;
+    // Include OAuth redirect URI for banks that require OAuth (like Chase)
+    oauthRedirectUri,
+    // DO NOT include receivedRedirectUri here - it confuses Plaid Link on initial launch
+  };
   
   console.log('Plaid Link config:', { 
+    ...config, 
     hasToken: !!linkToken,
-    tokenPreview: linkToken ? `${linkToken.substring(0, 10)}...` : 'none',
-    configReady: !!config
+    tokenPreview: linkToken ? `${linkToken.substring(0, 10)}...` : 'none' 
   });
   
-  const { open, ready } = usePlaidLink(config || { token: '', onSuccess: () => {}, onExit: () => {} });
+  const { open, ready } = usePlaidLink(config);
 
   // Trigger Plaid Link when button is clicked
   const handlePlaidLinkClick = useCallback(() => {
@@ -273,32 +244,14 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
       return;
     }
     
-    // MOBILE SAFARI FIX: Ensure DOM is stable before opening Plaid
-    // Use requestAnimationFrame to ensure next paint cycle
-    requestAnimationFrame(() => {
-      try {
-        console.log('Opening Plaid Link with token:', linkToken.substring(0, 10) + '...');
-        open();
-      } catch (err) {
-        console.error('Error opening Plaid Link:', err);
-        setError('Failed to open bank connection. Please try again.');
-      }
-    });
+    // Everything is ready, open the Plaid Link
+    console.log('Opening Plaid Link with token:', linkToken.substring(0, 10) + '...');
+    open();
   }, [ready, linkToken, open]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md mx-auto w-[95%] sm:w-[480px] max-h-[90vh] overflow-hidden" 
-        style={{ 
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          zIndex: 9999,
-          // Ensure proper mobile Safari rendering
-          WebkitTransform: 'translate(-50%, -50%)',
-          backgroundColor: 'white'
-        }}>
+      <DialogContent className="sm:max-w-md mx-auto w-[92%] md:w-[480px] max-h-[85vh] flex flex-col">
         <DialogHeader className="px-2">
           <DialogTitle>Connect Bank Account</DialogTitle>
           <DialogDescription className="break-words">

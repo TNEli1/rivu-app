@@ -80,50 +80,17 @@ export const googleCallback = [
       
       console.log('Google OAuth: Session created, redirecting to dashboard with auth token');
       
-      // Set secure cookie with JWT token for immediate authentication
-      res.cookie(TOKEN_COOKIE_NAME, token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-        maxAge: JWT_EXPIRY * 1000, // Convert to milliseconds
-        domain: process.env.NODE_ENV === 'production' ? '.tryrivu.com' : undefined
-      });
-
-      // CRITICAL: Establish Passport session AND set JWT cookie
+      // CRITICAL: Call req.login() to establish Passport session
       req.login(user, (loginError) => {
         if (loginError) {
-          console.error('GOOGLE_OAUTH_ERROR: Failed to establish session:', {
-            error: loginError,
-            userId: user.id,
-            email: user.email,
-            sessionID: req.sessionID
-          });
+          console.error('Google OAuth: Failed to establish session:', loginError);
           return res.redirect('/auth?error=session_error');
         }
         
-        console.log('GOOGLE_OAUTH_SUCCESS: Session established successfully:', {
-          userId: user.id,
-          email: user.email,
-          isAuthenticated: req.isAuthenticated(),
-          sessionID: req.sessionID,
-          jwtSet: true,
-          environment: process.env.NODE_ENV
-        });
+        console.log('Google OAuth: Session established for user ID:', user.id);
         
-        // Save session explicitly before redirect
-        req.session.save((saveError) => {
-          if (saveError) {
-            console.error('Session save error:', saveError);
-          }
-          
-          // Redirect to dashboard after successful authentication
-          const redirectUrl = process.env.NODE_ENV === 'production' 
-            ? 'https://www.tryrivu.com/dashboard'
-            : 'http://localhost:5000/dashboard';
-            
-          console.log('GOOGLE_OAUTH_REDIRECT: Redirecting to:', redirectUrl);
-          res.redirect(redirectUrl);
-        });
+        // Redirect to dashboard with auth token as backup
+        res.redirect(`/dashboard?auth=${authParam}`);
       });
       
     } catch (error) {

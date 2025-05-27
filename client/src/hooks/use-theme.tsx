@@ -22,8 +22,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       return savedTheme;
     }
     
-    // ALWAYS default to light mode - do not check system preference
-    // Users must manually select dark mode
+    // If no saved theme, check system preference
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    
+    // Default to light mode
     return 'light';
   });
 

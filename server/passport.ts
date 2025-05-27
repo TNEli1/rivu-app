@@ -75,29 +75,13 @@ passport.serializeUser((user: any, done) => {
   done(null, user.id);
 });
 
-// Deserialize user from session with proper error handling
+// Deserialize user from session
 passport.deserializeUser(async (id: number, done) => {
   try {
     const user = await storage.getUserById(id);
-    
-    // Handle case where user no longer exists (deleted account, etc.)
-    if (!user) {
-      console.log(`Deserialize user: User ID ${id} not found, clearing session`);
-      return done(null, false); // This will clear the session
-    }
-    
-    // Verify user is still active and verified if required
-    if (!user.emailVerified && user.authMethod !== 'google') {
-      console.log(`Deserialize user: User ID ${id} email not verified, clearing session`);
-      return done(null, false);
-    }
-    
-    console.log(`Deserialize user success: User ID ${id} (${user.email})`);
     done(null, user);
   } catch (error) {
-    console.error(`Deserialize user error for ID ${id}:`, error);
-    // Return false instead of error to clear invalid sessions
-    done(null, false);
+    done(error, null);
   }
 });
 

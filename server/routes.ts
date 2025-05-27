@@ -474,13 +474,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const { oauth_state_id, link_token } = req.query;
         
-        console.log('PLAID_BACKEND_CALLBACK: OAuth callback received:', {
-          oauthStateId: oauth_state_id,
-          linkToken: link_token,
-          fullUrl: req.url,
-          userAgent: req.headers['user-agent'],
-          timestamp: new Date().toISOString()
-        });
+        console.log('Plaid OAuth callback received:', { oauth_state_id, link_token });
         
         if (!oauth_state_id) {
           console.error('Plaid OAuth callback: Missing oauth_state_id, checking for link_token');
