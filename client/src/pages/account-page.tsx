@@ -207,7 +207,7 @@ export default function AccountPage() {
               </div>
               
               {/* Current Password for security verification (only for sensitive changes) */}
-              {user.authMethod !== 'google' && (
+              {(user as any).authMethod !== 'google' && (
                 <div className="space-y-2">
                   <Label htmlFor="currentPassword">Current Password</Label>
                   <Input 
@@ -240,10 +240,10 @@ export default function AccountPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              {user.authMethod === 'google' ? 'Add Fallback Password' : 'Change Password'}
+              {(user as any).authMethod === 'google' ? 'Add Fallback Password' : 'Change Password'}
             </CardTitle>
             <CardDescription>
-              {user.authMethod === 'google' 
+              {(user as any).authMethod === 'google' 
                 ? 'Add a password as backup authentication method. You can continue using Google sign-in.'
                 : 'Update your password'
               }
@@ -251,7 +251,7 @@ export default function AccountPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handlePasswordUpdate} className="space-y-4">
-              {user.authMethod === 'google' && (
+              {(user as any).authMethod === 'google' && (
                 <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
                   <p className="text-sm text-blue-800 dark:text-blue-200">
                     <strong>Note:</strong> Adding a password will enable hybrid authentication. 
@@ -262,7 +262,7 @@ export default function AccountPage() {
               
               <div className="space-y-2">
                 <Label htmlFor="newPassword">
-                  {user.authMethod === 'google' ? 'Create Password' : 'New Password'}
+                  {(user as any).authMethod === 'google' ? 'Create Password' : 'New Password'}
                 </Label>
                 <Input 
                   id="newPassword" 
