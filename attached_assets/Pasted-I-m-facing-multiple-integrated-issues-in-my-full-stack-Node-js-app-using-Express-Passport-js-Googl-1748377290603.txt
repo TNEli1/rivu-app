@@ -1,0 +1,65 @@
+I’m facing multiple integrated issues in my full-stack Node.js app using Express, Passport.js (Google OAuth), and Plaid Link. Please review and provide a comprehensive fix across authentication, session handling, and Plaid OAuth redirect logic.
+
+⸻
+
+1. Passport.js “Failed to deserialize user out of session” error
+
+This shows up on desktop browsers (not incognito). I believe it’s due to an expired or broken session cookie. Here’s the behavior:
+	•	Incognito mode works fine.
+	•	Normal mode fails with this error:
+
+{"message":"Failed to deserialize user out of session","code":"SERVER_ERROR"}
+
+What I need:
+	•	A correct deserializeUser() implementation that safely handles missing users and expired session data.
+	•	Advice on proper session configuration (cookie settings) to ensure it works across browser types and deployments.
+
+⸻
+
+2. Plaid Connect Bank button redirects to phone number screen and nothing is clickable
+
+On both desktop and mobile:
+	•	Clicking “Connect Bank” opens Plaid Link.
+	•	It instantly redirects to a phone number input screen.
+	•	No option to select a bank. UI becomes unresponsive.
+
+I believe this is due to improper handling of Plaid’s OAuth flow.
+
+What I need:
+	•	Confirmation on whether I must pass receivedRedirectUri to Plaid.create() after redirect.
+	•	A complete code sample showing how to correctly handle:
+	•	linkToken generation and usage
+	•	OAuth redirect callback page (Plaid resume flow using receivedRedirectUri)
+	•	Make sure my Plaid flow is resilient across mobile Safari, Chrome, and deep links.
+
+⸻
+
+3. Google OAuth creates the user but does not log them in
+
+After signing in via Google:
+	•	The user gets created in the DB.
+	•	But they are not logged in, and the app returns to the login page.
+
+What I need:
+	•	A validated Passport.js GoogleStrategy implementation that:
+	•	Checks if user exists, creates if not
+	•	Ensures session is correctly attached with req.login() or done()
+	•	A fixed /auth/google/callback route that reliably logs in the user and redirects them to the dashboard.
+
+⸻
+
+Summary
+
+Please give me a production-grade fix for:
+	1.	Session and cookie settings in Express (express-session)
+	2.	Stable serializeUser() / deserializeUser() functions
+	3.	Google OAuth user creation + session login logic
+	4.	Plaid OAuth redirect and Link handling across devices
+	5.	Any required settings in .env, Plaid dashboard (redirect URIs), and Passport config
+
+⸻
+
+Stack: Node.js + Express + Passport.js + Plaid Link + Drizzle ORM + PostgreSQL
+Hosted on: Replit + Railway backend
+Frontend: React / Next.js
+
