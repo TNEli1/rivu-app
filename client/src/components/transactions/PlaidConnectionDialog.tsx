@@ -196,7 +196,9 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
   }, []);
 
   // Configure the Plaid Link hook with proper OAuth configuration
-  const oauthRedirectUri = import.meta.env.NODE_ENV === 'production'
+  // Use production domain when deployed to tryrivu.com, otherwise use current origin
+  const isProductionDomain = window.location.hostname === 'tryrivu.com' || window.location.hostname === 'www.tryrivu.com';
+  const oauthRedirectUri = isProductionDomain
     ? 'https://tryrivu.com/plaid-callback'
     : `${window.location.origin}/plaid-callback`;
     

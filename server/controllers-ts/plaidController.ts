@@ -45,15 +45,17 @@ export const createLinkToken = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    // Set redirect URI dynamically based on environment
-    const redirectUri = process.env.NODE_ENV === 'production'
+    // Set redirect URI dynamically based on domain
+    const host = req.get('host') || '';
+    const isProductionDomain = host === 'tryrivu.com' || host === 'www.tryrivu.com';
+    const redirectUri = isProductionDomain
       ? 'https://tryrivu.com/plaid-callback'
-      : `${req.protocol}://${req.get('host')}/plaid-callback`;
+      : `${req.protocol}://${host}/plaid-callback`;
 
-    // Set webhook URL dynamically based on environment
-    const webhook = process.env.NODE_ENV === 'production'
+    // Set webhook URL dynamically based on domain
+    const webhook = isProductionDomain
       ? 'https://tryrivu.com/api/plaid/webhook'
-      : `${req.protocol}://${req.get('host')}/api/plaid/webhook`;
+      : `${req.protocol}://${host}/api/plaid/webhook`;
 
     console.log('Creating Plaid link token with redirect URI:', redirectUri);
     console.log('Creating Plaid link token with webhook URL:', webhook);
