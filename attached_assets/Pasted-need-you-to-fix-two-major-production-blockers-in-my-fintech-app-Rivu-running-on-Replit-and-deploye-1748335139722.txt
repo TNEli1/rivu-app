@@ -1,0 +1,76 @@
+need you to fix two major production blockers in my fintech app (Rivu) running on Replit and deployed to https://tryrivu.com. These are critical and blocking real users:
+
+⸻
+
+1. Google OAuth Login Bug
+
+Problem:
+	•	Google users are created in the DB, but not logged in automatically.
+	•	They’re assigned a random username, have no password, and must manually go to settings to function.
+
+Required Fixes:
+	•	On successful Google sign-in:
+	•	Check if user with that email exists
+	•	If yes, return a session cookie or JWT immediately
+	•	If no, generate a unique username from email (e.g., john.doe1), store the user, and return session
+	•	Do NOT require a password for Google users
+	•	Mark their provider as 'google' in DB
+	•	Auto-redirect to /dashboard on success
+	•	Allow users to optionally set a password later in settings (changing provider to hybrid)
+
+Backend Fix Code Pattern:
+
+const existingUser = await db.getUserByEmail(email);
+if (!existingUser) {
+  const username = await generateUsernameFromEmail(email.split('@')[0]);
+  user = await db.createUser({ email, username, provider: 'google' });
+}
+const token = await createSession(user.id);
+res.cookie('rivu_session', token, { secure: true, httpOnly: true });
+return res.redirect('/dashboard');
+
+2. Plaid OAuth Redirect Broken in Production
+
+Problem:
+	•	Chase/Capital One and other OAuth banks redirect to https://tryrivu.com, but my app loses the oauth_state_id and crashes.
+	•	In dev, Plaid flow works. In prod, it breaks on redirect.
+
+Cause:
+	•	Link token isn’t persisted across redirect
+	•	Plaid backend redirect_uri is misconfigured (was hardcoded to Replit during dev)
+
+Required Fixes:
+	•	In backend:
+	•	Use this in production:
+
+redirect_uri: 'https://tryrivu.com/plaid-callback'
+
+•	Set it dynamically:
+
+const redirectUri = process.env.NODE_ENV === 'production'
+  ? 'https://tryrivu.com/plaid-callback'
+  : 'https://your-replit-domain.repl.co/plaid-callback';
+
+Ensure this URI is whitelisted in the Plaid dashboard
+
+	•	In frontend:
+	•	Store the link_token in sessionStorage before starting Plaid flow:
+
+sessionStorage.setItem('plaidLinkToken', linkToken);
+
+After redirect from OAuth bank, rehydrate it:
+
+const token = sessionStorage.getItem('plaidLinkToken');
+Plaid.create({ token, onSuccess, onExit });
+
+In Express:
+	•	Update /plaid-callback route to handle redirect cleanly:
+
+app.get('/plaid-callback', (req, res) => {
+  const { oauth_state_id } = req.query;
+  if (!oauth_state_id) return res.status(400).send('Missing oauth_state_id');
+  res.redirect('/connect'); // or wherever the Plaid.create runs
+});
+These two fixes must work on production domain: https://tryrivu.com
+
+Once done, I’ll test Chase + Google sign-in from mobile. These bugs are blocking live adoption and demo flow. Treat it like a priority SLA breach.
