@@ -1,0 +1,65 @@
+1. Email Verification via Postmark
+
+Issue: Users are redirected to the login page after registration but cannot log in without email verification. However, no verification email is sent.
+
+Solution:
+	•	Integrate Postmark API: Utilize Postmark’s API to send verification emails. Ensure that your application is configured to send emails using a verified sender signature.
+	•	API Request Example:
+
+  curl "https://api.postmarkapp.com/email" \
+    -X POST \
+    -H "Accept: application/json" \
+    -H "Content-Type: application/json" \
+    -H "X-Postmark-Server-Token: your-server-token" \
+    -d '{
+      "From": "verified-sender@example.com",
+      "To": "user@example.com",
+      "Subject": "Email Verification",
+      "TextBody": "Please verify your email by clicking the following link: https://yourapp.com/verify?token=unique-token",
+      "MessageStream": "outbound"
+    }'
+
+Replace your-server-token with your actual Postmark server token and verified-sender@example.com with your verified sender email address. 
+	•	Ensure Deliverability: Set up SPF, DKIM, and DMARC records for your domain to improve email deliverability.
+
+⸻
+
+2. CSV Transactions Not Displaying
+
+Issue: CSV transactions are uploaded to the database but do not appear in the transaction log.
+
+Solution:
+	•	Handle Uncategorized Transactions: Ensure that transactions without a specified category are assigned a default value, such as “Uncategorized,” to satisfy database constraints.
+	•	Frontend Display: Modify the transaction log to display transactions with the “Uncategorized” category appropriately.
+
+⸻
+
+3. Data Deletion Sequence
+
+Issue: The “Clear All Account” button deletes the user account before deleting associated data, leading to orphaned records.
+
+Solution:
+	•	Adjust Deletion Order: Modify the deletion logic to first remove all user-associated data (CSV transactions, manual entries, Plaid entries) before deleting the user account.
+	•	Use Transactions: Implement database transactions to ensure that all deletions occur successfully. If any deletion fails, the transaction should be rolled back to maintain data integrity.
+
+⸻
+
+4. User Data Isolation
+
+Issue: Different users are seeing each other’s data, especially when using the same password.
+
+Solution:
+	•	Unique User Identification: Ensure that each user has a unique identifier (e.g., user ID) and that authentication is based on unique credentials like email addresses.
+	•	Session Management: Implement proper session management to maintain user isolation. Each session should be tied to a specific user and should not allow access to other users’ data.
+	•	Data Access Controls: Implement access controls in your database queries to ensure that users can only access their own data.
+
+⸻
+
+5. “Join iOS Early Access” Button Error
+
+Issue: Clicking the “Join iOS Early Access” button displays a thank-you message followed by an error.
+
+Solution:
+	•	Frontend Validation: Ensure that the button’s click event is properly handled and that it triggers the appropriate backend call.
+	•	Backend Endpoint: Verify that the backend endpoint handling the early access request is correctly implemented and returns the expected response.
+	•	Error Handling: Implement error handling to provide users with a clear message if the request fails, and log errors for debugging purposes.
