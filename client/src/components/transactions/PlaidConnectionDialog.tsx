@@ -101,9 +101,9 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
           if (data && data.link_token) {
             console.log('Successfully received link token');
             setLinkToken(data.link_token);
-            // Store link token and metadata in sessionStorage for OAuth redirects
-            sessionStorage.setItem('plaidLinkToken', data.link_token);
-            sessionStorage.setItem('plaidLinkConfig', JSON.stringify({
+            // Store link token in localStorage for OAuth redirects (more persistent than sessionStorage)
+            localStorage.setItem('plaid_link_token', data.link_token);
+            localStorage.setItem('plaid_link_config', JSON.stringify({
               link_token: data.link_token,
               expiration: data.expiration,
               request_id: data.request_id,
@@ -140,8 +140,8 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
         }) : 'No metadata'
       );
       
-      // Store success data with OAuth state handling
-      const linkConfig = sessionStorage.getItem('plaidLinkConfig');
+      // Store success data with OAuth state handling in localStorage
+      const linkConfig = localStorage.getItem('plaid_link_config');
       const successData = {
         public_token,
         metadata,
@@ -149,7 +149,7 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
         link_config: linkConfig ? JSON.parse(linkConfig) : null
       };
       
-      sessionStorage.setItem('plaid_link_success', JSON.stringify(successData));
+      localStorage.setItem('plaid_link_success', JSON.stringify(successData));
       
       // Exchange the public token for an access token
       const response = await apiRequest('POST', '/api/plaid/exchange_token', {
@@ -205,34 +205,21 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
     }
   }, []);
 
-  // Use environment-appropriate redirect URI
+  // Use environment-appropriate redirect URI for OAuth banks
   const oauthRedirectUri = process.env.NODE_ENV === 'production' 
-    ? 'https://tryrivu.com/plaid-callback'
+    ? 'https://www.tryrivu.com/plaid-callback'
     : 'http://localhost:5000/plaid-callback';
-    
-  // Generate and store OAuth state for recovery
-  const oauthStateId = React.useMemo(() => {
-    return Math.floor(Math.random() * 10000000).toString();
-  }, [linkToken]);
 
+  // CRITICAL: Do NOT include receivedRedirectUri on initial launch - this causes OAuth state issues
+  // Only include it when resuming after OAuth redirect (handled in plaid-callback page)
   const config = {
     token: linkToken || '',
     onSuccess,
     onExit,
-    // OAuth configuration for production banks like Chase
-    receivedRedirectUri: window.location.href,
+    // Include OAuth redirect URI for banks that require OAuth (like Chase)
     oauthRedirectUri,
-    oauthNonce: oauthStateId,
+    // DO NOT include receivedRedirectUri here - it confuses Plaid Link on initial launch
   };
-
-  // CRITICAL: Store OAuth state and link token for recovery after redirect
-  React.useEffect(() => {
-    if (linkToken && oauthStateId) {
-      sessionStorage.setItem('plaid_oauth_state_id', oauthStateId);
-      sessionStorage.setItem('plaid_link_token', linkToken);
-      console.log('Stored OAuth state for recovery:', { oauthStateId, linkToken: linkToken.substring(0, 10) + '...' });
-    }
-  }, [linkToken, oauthStateId]);
   
   console.log('Plaid Link config:', { 
     ...config, 
