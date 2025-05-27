@@ -196,13 +196,17 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
   }, []);
 
   // Configure the Plaid Link hook with proper OAuth configuration
+  const oauthRedirectUri = import.meta.env.NODE_ENV === 'production'
+    ? 'https://tryrivu.com/plaid-callback'
+    : `${window.location.origin}/plaid-callback`;
+    
   const config = {
     token: linkToken || '',
     onSuccess,
     onExit,
     // OAuth configuration for production banks like Chase
     receivedRedirectUri: window.location.href,
-    oauthRedirectUri: `${window.location.origin}/plaid-callback`,
+    oauthRedirectUri,
     oauthNonce: Math.floor(Math.random() * 10000000).toString(),
   };
   
