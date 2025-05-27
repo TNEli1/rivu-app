@@ -2,14 +2,14 @@ import { Card } from "@/components/ui/card";
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="min-h-screen py-8 px-4" style={{ backgroundColor: 'white', color: 'black' }}>
+      <div className="container mx-auto max-w-4xl">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Privacy Policy</h1>
-          <p className="text-muted-foreground">Last updated: {new Date().toLocaleDateString()}</p>
+          <h1 className="text-3xl font-bold mb-2" style={{ color: 'black' }}>Privacy Policy</h1>
+          <p style={{ color: '#4a5568' }}>Last updated: {new Date().toLocaleDateString()}</p>
         </div>
 
-        <Card className="p-8">
+        <Card className="p-8" style={{ backgroundColor: 'white', color: 'black' }}>
           <div className="prose prose-sm max-w-none space-y-6">
             <section>
               <h2 className="text-xl font-semibold mb-4">1. Corporate Entity & Data Controller</h2>
