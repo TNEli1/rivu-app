@@ -28,15 +28,15 @@ This file tracks all known bugs, symptoms, root causes, and fixes for the Rivu p
 
 ## Issue: Tutorial Not Showing for New Users
 - **Symptom:** New accounts skip onboarding/tutorial
-- **Root Cause:** hasSeenTutorial flag defaulting to true or not checked
-- **Fix:** Update DB schema and frontend tutorial trigger logic
-- **Status:** 🔄 Pending - 2025-05-27
+- **Root Cause:** Missing tutorialCompleted field in database schema
+- **Fix:** ✅ Added tutorialCompleted field to users table with default false
+- **Status:** ✅ Fixed - 2025-05-27
 
 ## Issue: Email Verification Not Sent
 - **Symptom:** Users never receive verification emails
-- **Root Cause:** Postmark API not triggered or incorrect sender
-- **Fix:** Verify Postmark configuration and sender domain
-- **Status:** 🔄 Pending - 2025-05-27
+- **Root Cause:** Using Postmark templates instead of direct email service
+- **Fix:** ✅ Updated to use emailService with proper HTML templates and error logging
+- **Status:** ✅ Fixed - 2025-05-27
 
 ---
 
