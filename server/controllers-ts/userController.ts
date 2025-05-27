@@ -22,6 +22,51 @@ const JWT_EXPIRY = 60 * 60 * 2;
 // Token cookie name
 const TOKEN_COOKIE_NAME = 'rivu_token';
 
+// SECURITY FIX: Email verification helper function
+const sendUserVerificationEmail = async (userId: number, email: string) => {
+  // Generate verification token
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(verificationToken).digest('hex');
+  const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+  // Save token to database
+  await storage.createEmailVerificationToken(userId, tokenHash, expiry);
+
+  // Send verification email via Postmark
+  const verificationUrl = `${process.env.BASE_URL || 'http://localhost:5000'}/verify-email/${verificationToken}`;
+  
+  console.log(`Email Verification: Sending verification email to ${email}`);
+  
+  try {
+    // Use the emailService for consistent email sending with support@tryrivu.com
+    const { sendEmail } = await import('../services/emailService');
+    
+    const emailSent = await sendEmail({
+      to: email,
+      subject: 'Verify Your Email - Rivu',
+      text: `Please verify your email address by clicking the link: ${verificationUrl}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Verify Your Email Address</h2>
+          <p>Welcome to Rivu! Please verify your email address by clicking the button below:</p>
+          <a href="${verificationUrl}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">Verify Email</a>
+          <p>Best regards,<br>The Rivu Team<br>support@tryrivu.com</p>
+        </div>
+      `
+    });
+    
+    if (!emailSent) {
+      throw new Error('Email service returned false');
+    }
+    
+    console.log(`Email Verification: Successfully sent to ${email}`);
+    
+  } catch (emailError) {
+    console.error('Email Verification ERROR:', emailError);
+    throw emailError;
+  }
+};
+
 // Rate limiter settings based on environment
 const isProduction = process.env.NODE_ENV === 'production';
 
