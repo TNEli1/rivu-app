@@ -413,88 +413,21 @@ export default function LandingPage() {
                 const email = formData.get('email') as string;
                 const name = formData.get('name') as string;
                 
-                // Show loading state
-                const submitButton = e.currentTarget.querySelector('button[type="submit"]') as HTMLButtonElement;
-                if (submitButton) {
-                  const originalText = submitButton.textContent;
-                  submitButton.disabled = true;
-                  submitButton.textContent = 'Joining...';
+                try {
+                  const response = await fetch('/api/ios-waitlist', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, name }),
+                  });
                   
-                  try {
-                    // Clear any existing messages first
-                    const existingMessages = e.currentTarget.querySelectorAll('.mt-4.p-4');
-                    existingMessages.forEach(msg => msg.remove());
-                    
-                    const response = await fetch('/api/ios-waitlist', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({ email, name }),
-                    });
-                    
-                    const data = await response.json();
-                    console.log('Waitlist response:', { ok: response.ok, status: response.status, data });
-                    
-                    if (response.ok) {
-                      // Show success message
-                      const successDiv = document.createElement('div');
-                      successDiv.className = 'mt-4 p-4 bg-green-100 text-green-800 rounded-lg text-center';
-                      successDiv.textContent = data.message || "Thanks! We'll notify you when the iOS app is ready.";
-                      
-                      // Insert after the form safely
-                      const formParent = e.currentTarget.parentNode;
-                      if (formParent) {
-                        formParent.appendChild(successDiv);
-                      }
-                      e.currentTarget.reset();
-                      
-                      // Remove success message after 5 seconds
-                      setTimeout(() => {
-                        if (successDiv.parentNode) {
-                          successDiv.parentNode.removeChild(successDiv);
-                        }
-                      }, 5000);
-                    } else {
-                      console.error('Waitlist API error:', data);
-                      // Show error message
-                      const errorDiv = document.createElement('div');
-                      errorDiv.className = 'mt-4 p-4 bg-red-100 text-red-800 rounded-lg text-center';
-                      errorDiv.textContent = data.message || 'Failed to join waitlist. Please try again.';
-                      const formParent = e.currentTarget.parentNode;
-                      if (formParent) {
-                        formParent.appendChild(errorDiv);
-                      }
-                      
-                      // Remove error message after 5 seconds
-                      setTimeout(() => {
-                        if (errorDiv.parentNode) {
-                          errorDiv.parentNode.removeChild(errorDiv);
-                        }
-                      }, 5000);
-                    }
-                  } catch (error) {
-                    console.error('Waitlist error details:', error);
-                    // Show error message
-                    const errorDiv = document.createElement('div');
-                    errorDiv.className = 'mt-4 p-4 bg-red-100 text-red-800 rounded-lg text-center';
-                    errorDiv.textContent = 'Something went wrong. Please try again later.';
-                    const formParent = e.currentTarget.parentNode;
-                    if (formParent) {
-                      formParent.appendChild(errorDiv);
-                    }
-                    
-                    // Remove error message after 5 seconds
-                    setTimeout(() => {
-                      if (errorDiv.parentNode) {
-                        errorDiv.parentNode.removeChild(errorDiv);
-                      }
-                    }, 5000);
-                  } finally {
-                    // Reset button state
-                    submitButton.disabled = false;
-                    submitButton.textContent = originalText;
+                  if (response.ok) {
+                    alert("Thanks! We'll notify you when the iOS app is ready.");
+                    e.currentTarget.reset();
+                  } else {
+                    alert('Failed to join waitlist. Please try again.');
                   }
+                } catch (error) {
+                  alert('Something went wrong. Please try again later.');
                 }
               }}
               className="space-y-4"
