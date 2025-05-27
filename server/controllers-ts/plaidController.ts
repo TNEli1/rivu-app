@@ -1,5 +1,19 @@
 import { Request, Response } from 'express';
 import { Configuration, PlaidApi, PlaidEnvironments, Products, CountryCode } from 'plaid';
+import crypto from 'crypto';
+
+// In-memory store for OAuth state validation (use Redis in production)
+const oauthStateStore = new Map<string, { userId: number; timestamp: number; linkToken: string }>();
+
+// Clean up expired states (older than 10 minutes)
+setInterval(() => {
+  const now = Date.now();
+  for (const [stateId, data] of oauthStateStore.entries()) {
+    if (now - data.timestamp > 10 * 60 * 1000) { // 10 minutes
+      oauthStateStore.delete(stateId);
+    }
+  }
+}, 60 * 1000); // Run every minute
 
 // Initialize Plaid client
 const plaidConfig = new Configuration({

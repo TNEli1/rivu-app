@@ -88,9 +88,11 @@ export const googleCallback = [
         }
         
         console.log('Google OAuth: Session established for user ID:', user.id);
+        console.log('Google OAuth: req.isAuthenticated():', req.isAuthenticated());
+        console.log('Google OAuth: Session ID:', req.sessionID);
         
-        // Redirect to dashboard with auth token as backup
-        res.redirect(`/dashboard?auth=${authParam}`);
+        // Redirect directly to dashboard - session is now established
+        res.redirect('/dashboard');
       });
       
     } catch (error) {
