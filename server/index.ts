@@ -121,6 +121,43 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+// JWT Authentication middleware to extract user from token
+app.use('/api', async (req: any, res: any, next: any) => {
+  try {
+    // Skip authentication for public routes
+    const publicRoutes = ['/api/register', '/api/login', '/api/verify-email', '/api/health'];
+    if (publicRoutes.some(route => req.path.startsWith(route))) {
+      return next();
+    }
+
+    // Get token from cookie
+    const token = req.cookies['rivu_token'];
+    console.log('JWT Middleware - Token present:', !!token);
+    
+    if (token) {
+      const jwt = await import('jsonwebtoken');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'rivu_jwt_secret_dev') as any;
+      console.log('JWT Middleware - Decoded token:', decoded);
+      
+      // Set user in request object for route handlers
+      req.user = {
+        id: parseInt(decoded.id.toString(), 10),
+        email: decoded.email,
+        verified: true,
+        authMethod: decoded.authMethod || 'password'
+      };
+      
+      console.log('JWT Middleware - Set req.user:', req.user);
+    }
+    
+    next();
+  } catch (error) {
+    console.error('JWT Middleware - Error:', error);
+    // Continue without authentication for now - routes will handle auth requirements
+    next();
+  }
+});
+
 // Apply CSRF protection (disabled in development for testing)
 if (process.env.NODE_ENV === 'production') {
   app.use(setCsrfToken); // Set CSRF token for all routes

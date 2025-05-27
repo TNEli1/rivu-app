@@ -439,11 +439,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const getCurrentUserId = (req: any): number => {
     // Check if user is authenticated from session or token
     if (req.user && req.user.id) {
+      console.log(`Using authenticated user ID: ${req.user.id}`);
       return req.user.id;
     }
     
     // Fallback for development - use demo user ID
     console.warn('Using demo user ID for development - this should not happen in production');
+    console.log('req.user:', req.user);
     return DEMO_USER_ID;
   };
 
