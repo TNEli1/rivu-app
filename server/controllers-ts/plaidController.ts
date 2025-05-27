@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { Configuration, PlaidApi, PlaidEnvironments, Products, CountryCode } from 'plaid';
 import crypto from 'crypto';
+import { storage } from '../storage';
 
 // In-memory store for OAuth state validation (use Redis in production)
 const oauthStateStore = new Map<string, { userId: number; timestamp: number; linkToken: string }>();
@@ -21,13 +22,20 @@ setInterval(() => {
   });
 }, 60 * 1000); // Run every minute
 
-// Initialize Plaid client
+// Consolidated secret management
+const plaidSecret = process.env.PLAID_ENV === 'production'
+  ? process.env.PLAID_SECRET_PRODUCTION
+  : process.env.PLAID_SECRET_SANDBOX || process.env.PLAID_SECRET;
+
+// Initialize Plaid client once with proper configuration
 const configuration = new Configuration({
-  basePath: process.env.PLAID_ENV === 'production' ? PlaidEnvironments.production : PlaidEnvironments.sandbox,
+  basePath: process.env.PLAID_ENV === 'production' 
+    ? PlaidEnvironments.production 
+    : PlaidEnvironments.sandbox,
   baseOptions: {
     headers: {
       'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
-      'PLAID-SECRET': process.env.PLAID_SECRET,
+      'PLAID-SECRET': plaidSecret,
     },
   },
 });
@@ -68,8 +76,14 @@ export const createLinkToken = async (req: Request, res: Response) => {
       environment: process.env.PLAID_ENV
     });
 
-    // CRITICAL: Do NOT include redirect_uri unless specifically needed for OAuth banks
-    // Including it forces ALL users into OAuth mode before bank selection
+    // OAuth redirect URI - only include when needed
+    const redirectUri = process.env.NODE_ENV === 'production'
+      ? 'https://www.tryrivu.com/api/plaid/oauth_redirect'
+      : 'http://localhost:5000/api/plaid/oauth_redirect';
+
+    // Check if OAuth is needed (you can add institution-specific logic here)
+    const needsOAuth = req.body.institution_id && ['ins_3'] || false; // Chase example
+
     const request = {
       user: {
         client_user_id: userId.toString(),
@@ -79,7 +93,8 @@ export const createLinkToken = async (req: Request, res: Response) => {
       country_codes: [CountryCode.Us],
       language: 'en',
       webhook: webhook,
-      // DO NOT include redirect_uri here - let Plaid handle OAuth internally when needed
+      // Only include redirect_uri when needed to avoid forcing OAuth mode
+      ...(needsOAuth ? { redirect_uri: redirectUri } : {})
     };
 
     console.log('PLAID_TOKEN_REQUEST: Link token request payload:', { 

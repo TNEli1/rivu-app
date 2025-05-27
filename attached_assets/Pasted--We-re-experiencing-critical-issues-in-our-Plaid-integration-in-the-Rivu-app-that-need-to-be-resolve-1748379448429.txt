@@ -1,0 +1,87 @@
+
+We’re experiencing critical issues in our Plaid integration in the Rivu app that need to be resolved immediately. Please apply the following fixes and confirm completion:
+
+⸻
+
+[1] Consolidate Plaid Controller
+	•	We currently have two versions of our PlaidController file in the codebase.
+	•	Remove the duplicate and ensure that only one clean, correct PlaidController.ts remains.
+	•	Confirm all route imports reference this single controller file.
+	•	Use this structure for secret management:
+
+const plaidSecret = process.env.PLAID_ENV === 'production'
+  ? process.env.PLAID_SECRET_PRODUCTION
+  : process.env.PLAID_SECRET_SANDBOX || process.env.PLAID_SECRET;
+
+2] Fix Missing secret Error
+	•	Ensure that the Plaid client is initialized once using the consolidated secret logic:
+
+const configuration = new Configuration({
+  basePath: process.env.PLAID_ENV === 'production' 
+    ? PlaidEnvironments.production 
+    : PlaidEnvironments.sandbox,
+  baseOptions: {
+    headers: {
+      'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
+      'PLAID-SECRET': plaidSecret,
+    },
+  },
+});
+const plaidClient = new PlaidApi(configuration);
+
+•	Replace any other PlaidApi instances with this one to avoid misconfiguration.
+
+⸻
+
+[3] Fix OAuth redirect behavior
+	•	Ensure that redirect_uri is only added conditionally in createLinkToken:
+
+...(needsOAuth ? { redirect_uri } : {})
+
+•	Do not include redirect_uri by default unless required. Including it universally causes users to skip bank selection and get redirected straight to the phone verification page.
+
+⸻
+
+[4] Upgrade Webhook Security
+	•	Implement Plaid webhook signature verification:
+	•	Use PLAID_WEBHOOK_SECRET and compare HMAC-SHA256 hash with plaid-verification header.
+	•	Make sure Express is configured to preserve the raw request body:
+
+app.use('/api/plaid/webhook', express.raw({ type: 'application/json' }));
+
+Add verifyPlaidSignature(req) in the webhook controller before proceeding with processing.
+
+⸻
+
+[5] Fix syncTransactionsForItem
+	•	Persist fetched transactions using storage.saveTransactions().
+	•	Add deduplication by skipping existing transaction_ids already in the database.
+
+⸻
+
+[6] Handle TRANSACTIONS_REMOVED
+	•	Implement the following logic inside handleTransactionWebhook:
+
+case 'TRANSACTIONS_REMOVED':
+  const removedIds = body.removed_transactions;
+  await storage.deleteTransactionsByPlaidIds(removedIds);
+  break;
+
+⸻
+
+[7] Improve Error Logging
+	•	Replace any generic error logs with:
+
+console.error('Error message:', error.message);
+console.error('Stack:', error.stack);
+
+8] Add Internal Auditing
+	•	Log all webhook events to a logPlaidMetric() call for internal analytics:
+
+await storage.logPlaidMetric('webhook_received', {
+  type: body.webhook_type,
+  code: body.webhook_code,
+  item_id: body.item_id
+});
+
+9] Confirm Everything Works End-to-End
