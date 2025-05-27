@@ -1,0 +1,68 @@
+Please replace the current session configuration that uses `MemoryStore` with a production-ready implementation using `connect-pg-simple` and our existing Railway PostgreSQL database.
+
+**Tasks:**
+
+1. Install `connect-pg-simple` and use it as the store in the Express session middleware.
+
+2. Use the existing `DATABASE_URL` environment variable to connect to PostgreSQL.
+
+3. Update the session middleware to:
+
+```ts
+import session from 'express-session';
+import pgSession from 'connect-pg-simple';
+import pkg from 'pg';
+
+const { Pool } = pkg;
+const pgPool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+
+const PgStore = pgSession(session);
+
+app.use(session({
+  store: new PgStore({
+    pool: pgPool,
+    tableName: 'user_sessions',
+    pruneSessionInterval: 86400 // clean up expired sessions daily
+  }),
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: true,
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
+  }
+}));
+
+4.	Ensure SESSION_SECRET is defined in environment variables (both on Railway and locally).
+	5.	If the session table doesn’t exist, let connect-pg-simple auto-create it, or create manually using:
+
+CREATE TABLE "user_sessions" (
+  "sid" varchar NOT NULL COLLATE "default",
+  "sess" json NOT NULL,
+  "expire" timestamp(6) NOT NULL
+)
+WITH (OIDS=FALSE);
+
+ALTER TABLE "user_sessions" ADD CONSTRAINT "session_pkey" PRIMARY KEY ("sid");
+
+CREATE INDEX "IDX_session_expire" ON "user_sessions" ("expire");
+
+Important: This must fully replace the in-memory session store. Test login persistence and cross-restart session validity once deployed.
+
+
+
+Please fix the following for production deployment on Railway:
+	1.	Remove the npm warning about --omit=dev:
+Update the start script in package.json to use:
+
+"start": "npm install --omit=dev && NODE_ENV=production node dist/index.js"
+
+This ensures devDependencies aren’t installed in production, aligning with best practices for Node.js apps.
+
+	2.	Ensure this runs cleanly in Railway without triggering any warnings or unnecessary installs. If needed, adjust build or deploy commands accordingly.
+	3.	Audit for any other dev-only dependencies that may be leaking into production. Clean up anything unnecessary in the final build.
