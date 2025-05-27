@@ -195,8 +195,10 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
     }
   }, []);
 
-  // Always use production redirect URI since we're in production mode
-  const oauthRedirectUri = 'https://tryrivu.com/plaid-callback';
+  // Use environment-appropriate redirect URI
+  const oauthRedirectUri = process.env.NODE_ENV === 'production' 
+    ? 'https://tryrivu.com/plaid-callback'
+    : 'http://localhost:5000/plaid-callback';
     
   const config = {
     token: linkToken || '',

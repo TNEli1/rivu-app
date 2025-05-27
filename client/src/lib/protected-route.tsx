@@ -60,12 +60,14 @@ export function ProtectedRoute({
     );
   }
 
-  // If user has not completed onboarding and is trying to access a page other than onboarding
-  // redirect to onboarding page, but only if they haven't chosen to skip permanently
+  // Google/OAuth users should bypass onboarding and go directly to dashboard
+  // Only redirect to onboarding for non-Google users who haven't completed it
+  const isGoogleUser = user.emailVerified && user.email && !user.demographics?.completed;
   if (
     user.demographics && 
     !user.demographics.completed && 
     !user.demographics.skipPermanently &&
+    !isGoogleUser && // Skip onboarding for verified users (likely Google)
     path !== "/onboarding"
   ) {
     return (

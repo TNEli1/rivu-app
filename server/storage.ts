@@ -10,7 +10,9 @@ import {
   Subcategory, InsertSubcategory,
   PlaidItem, InsertPlaidItem,
   PlaidAccount, InsertPlaidAccount,
-  PlaidWebhookEvent, InsertPlaidWebhookEvent
+  PlaidWebhookEvent, InsertPlaidWebhookEvent,
+  CoachConversation, InsertCoachConversation,
+  UserBehaviorAnalytics, InsertUserBehaviorAnalytics
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lt, isNull, sql, or, between } from "drizzle-orm";
@@ -26,7 +28,9 @@ import {
   subcategories,
   plaidItems,
   plaidAccounts,
-  plaidWebhookEvents
+  plaidWebhookEvents,
+  coachConversations,
+  userBehaviorAnalytics
 } from "@shared/schema";
 // Import direct database access
 // We'll modify the getSavingsGoals function to handle in-memory goals

@@ -54,6 +54,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
   lastName: true,
   avatarInitials: true,
   themePreference: true,
+  authMethod: true,
+  emailVerified: true,
   onboardingStage: true,
   onboardingCompleted: true,
   accountCreationDate: true,
@@ -357,3 +359,49 @@ export type InsertPlaidAccount = z.infer<typeof insertPlaidAccountSchema>;
 
 export type PlaidWebhookEvent = typeof plaidWebhookEvents.$inferSelect;
 export type InsertPlaidWebhookEvent = z.infer<typeof insertPlaidWebhookEventSchema>;
+
+// Coach Conversations - Premium feature for memory system
+export const coachConversations = pgTable("coach_conversations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  userMessage: text("user_message").notNull(),
+  coachResponse: text("coach_response").notNull(),
+  context: text("context"), // JSON string with financial context at time of conversation
+  behaviorInsights: text("behavior_insights"), // JSON string with behavior patterns identified
+  isPremium: boolean("is_premium").default(false), // Whether this conversation is accessible in history
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertCoachConversationSchema = createInsertSchema(coachConversations).pick({
+  userId: true,
+  userMessage: true,
+  coachResponse: true,
+  context: true,
+  behaviorInsights: true,
+  isPremium: true,
+});
+
+// User Behavior Analytics - Track patterns for intelligent coaching
+export const userBehaviorAnalytics = pgTable("user_behavior_analytics", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  behaviorType: text("behavior_type").notNull(), // 'savings_consistency', 'budget_adherence', 'spending_volatility', 'goal_progress', 'nudge_response'
+  metricValue: decimal("metric_value", { precision: 10, scale: 2 }).notNull(),
+  timeframe: text("timeframe").notNull(), // 'weekly', 'monthly', 'quarterly'
+  calculatedAt: timestamp("calculated_at").defaultNow().notNull(),
+  metadata: text("metadata"), // JSON string with additional context
+});
+
+export const insertUserBehaviorAnalyticsSchema = createInsertSchema(userBehaviorAnalytics).pick({
+  userId: true,
+  behaviorType: true,
+  metricValue: true,
+  timeframe: true,
+  metadata: true,
+});
+
+export type CoachConversation = typeof coachConversations.$inferSelect;
+export type InsertCoachConversation = z.infer<typeof insertCoachConversationSchema>;
+
+export type UserBehaviorAnalytics = typeof userBehaviorAnalytics.$inferSelect;
+export type InsertUserBehaviorAnalytics = z.infer<typeof insertUserBehaviorAnalyticsSchema>;
