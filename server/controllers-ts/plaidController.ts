@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { Configuration, PlaidApi, PlaidEnvironments, Products, CountryCode } from 'plaid';
 import crypto from 'crypto';
-import { storage } from '../storage';
 
 // In-memory store for OAuth state validation (use Redis in production)
 const oauthStateStore = new Map<string, { userId: number; timestamp: number; linkToken: string }>();
@@ -22,25 +21,23 @@ setInterval(() => {
   });
 }, 60 * 1000); // Run every minute
 
-// Initialize Plaid client with proper configuration
+// Initialize Plaid client
 const configuration = new Configuration({
   basePath: process.env.PLAID_ENV === 'production' ? PlaidEnvironments.production : PlaidEnvironments.sandbox,
   baseOptions: {
     headers: {
       'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
-      'PLAID-SECRET': process.env.PLAID_ENV === 'production' 
-        ? process.env.PLAID_SECRET_PRODUCTION 
-        : process.env.PLAID_SECRET_SANDBOX || process.env.PLAID_SECRET,
+      'PLAID-SECRET': process.env.PLAID_SECRET,
     },
   },
 });
 
 export const plaidClient = new PlaidApi(configuration);
 
-// Create Link Token for Plaid Link initialization with proper OAuth handling
+// Create Link Token for Plaid Link initialization
 export const createLinkToken = async (req: Request, res: Response) => {
   try {
-    console.log('Creating Plaid link token for user:', (req.user as any)?.id);
+    console.log('Creating Plaid link token for user:', req.user?.id);
     
     // Validate environment variables
     if (!process.env.PLAID_CLIENT_ID) {
@@ -48,12 +45,10 @@ export const createLinkToken = async (req: Request, res: Response) => {
       return res.status(500).json({ error: 'Bank connection not configured - missing client ID' });
     }
     
-    const plaidSecret = process.env.PLAID_ENV === 'production' 
-      ? process.env.PLAID_SECRET_PRODUCTION 
-      : process.env.PLAID_SECRET_SANDBOX || process.env.PLAID_SECRET;
+    const plaidSecret = process.env.PLAID_SECRET_PRODUCTION;
       
     if (!plaidSecret) {
-      console.error('Plaid secret is missing');
+      console.error('Plaid production secret is missing');
       return res.status(500).json({ error: 'Bank connection not configured - missing secret' });
     }
 
@@ -62,28 +57,19 @@ export const createLinkToken = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    // Generate OAuth state for this session
-    const oauthStateId = crypto.randomUUID();
-    
     // Use webhook URL for transaction updates
     const webhook = process.env.NODE_ENV === 'production'
       ? 'https://www.tryrivu.com/api/plaid/webhook'
       : 'http://localhost:5000/api/plaid/webhook';
 
-    // OAuth redirect URI - CRITICAL for OAuth banks like Chase
-    const redirectUri = process.env.NODE_ENV === 'production'
-      ? 'https://www.tryrivu.com/api/plaid/oauth_redirect'
-      : 'http://localhost:5000/api/plaid/oauth_redirect';
-
     console.log('PLAID_TOKEN_CREATE: Starting link token creation:', {
       userId,
       webhook,
-      redirectUri,
-      oauthStateId,
       environment: process.env.PLAID_ENV
     });
 
-    // Create link token with OAuth support
+    // CRITICAL: Do NOT include redirect_uri unless specifically needed for OAuth banks
+    // Including it forces ALL users into OAuth mode before bank selection
     const request = {
       user: {
         client_user_id: userId.toString(),
@@ -93,8 +79,7 @@ export const createLinkToken = async (req: Request, res: Response) => {
       country_codes: [CountryCode.Us],
       language: 'en',
       webhook: webhook,
-      // CRITICAL: Include redirect_uri for OAuth banks
-      redirect_uri: redirectUri,
+      // DO NOT include redirect_uri here - let Plaid handle OAuth internally when needed
     };
 
     console.log('PLAID_TOKEN_REQUEST: Link token request payload:', { 
