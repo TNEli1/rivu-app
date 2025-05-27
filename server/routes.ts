@@ -383,7 +383,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // 8. Delete Plaid items (accounts will be handled by cascade if configured)
           await tx.delete(plaidItems).where(eq(plaidItems.userId, userIdNum));
           
-          console.log(`Successfully deleted all data for user ${userIdNum}`);
+          // 9. Finally, delete the user account itself
+          await tx.delete(users).where(eq(users.id, userIdNum));
+          
+          console.log(`Successfully deleted all data and user account for user ${userIdNum}`);
         });
         
         // Log success to troubleshooting
@@ -391,7 +394,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Delete All User Data SUCCESS: User ${userIdNum} - All data deleted at ${timestamp}`);
         
         res.json({
-          message: 'All user data deleted successfully',
+          message: 'Account and all data deleted successfully',
           success: true,
           timestamp
         });
