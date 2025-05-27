@@ -231,15 +231,14 @@ export default function AuthPage() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label htmlFor="login-password">Password</Label>
-                        <Link href="/forgot-password">
-                          <Button 
-                            variant="link" 
-                            className="p-0 h-auto text-xs"
-                            type="button"
-                          >
-                            Forgot password?
-                          </Button>
-                        </Link>
+                        <Button 
+                          variant="link" 
+                          className="p-0 h-auto text-xs"
+                          type="button"
+                          onClick={() => window.location.href = '/forgot-password'}
+                        >
+                          Forgot password?
+                        </Button>
                       </div>
                       <Input 
                         id="login-password" 
@@ -247,15 +246,6 @@ export default function AuthPage() {
                         type="password" 
                         placeholder="••••••••" 
                         required 
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            const form = e.currentTarget.closest('form');
-                            if (form) {
-                              form.requestSubmit();
-                            }
-                          }
-                        }}
                       />
                     </div>
                     <Button 
