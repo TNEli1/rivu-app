@@ -1,0 +1,45 @@
+Please fix the following recurring issues that are affecting core functionality and blocking launch:
+
+⸻
+
+1. Login Form - Enter Key Misbehavior
+
+Issue: Pressing “Enter” after entering credentials redirects to the “Forgot Password” page instead of submitting the login form.
+Fix:
+	•	Ensure the login form has a <form> element with a proper onSubmit handler.
+	•	Make sure the password input is not capturing Enter and redirecting unless explicitly intended.
+	•	Confirm that type="submit" is used for the Sign In button, not just onClick.
+
+⸻
+
+2. Join iOS Waitlist Button – Still Throws Error
+
+Issue: Submitting the waitlist form shows “Thanks” then immediately displays an error.
+Fix:
+	•	Verify that the form submission logic is properly sending data to Postmark or the configured destination.
+	•	Ensure the EMAIL_TO value in the backend is set to support@tryrivu.com and not the EMAIL_FROM.
+	•	Check server logs for the actual error and log full stack trace in troubleshooting.md.
+
+⸻
+
+3. Tutorial Not Showing for New Users
+
+Issue: New users still aren’t seeing the onboarding tutorial.
+Fix:
+	•	Ensure tutorialCompleted is initialized as false in the DB schema for every new user.
+	•	Make sure the frontend checks this flag and triggers the tutorial modal accordingly after login.
+	•	Validate the DB migration ran successfully and is applied in the production environment.
+
+⸻
+
+4. Delete All My Data – Deletes User Before Data
+
+Issue: Clicking “Delete All My Data” deletes the user first, then tries to delete data, causing orphaned records or errors.
+Fix:
+	•	Update the flow to first delete all associated data (transactions, goals, nudges, sessions, etc.), then delete the user record.
+	•	Ensure the logic is wrapped in a transaction so partial deletes don’t leave corrupt state.
+	•	Add proper logging to confirm sequence and failures, and document the behavior in troubleshooting.md.
+
+⸻
+
+These bugs have resurfaced multiple times and require careful validation after fixing. Please test each fix on production before closing it out.

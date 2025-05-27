@@ -435,6 +435,7 @@ export default function LandingPage() {
                       alert(data.message || "Thanks! We'll notify you when the iOS app is ready.");
                       e.currentTarget.reset();
                     } else {
+                      console.error('Waitlist API error:', data);
                       alert(data.message || 'Failed to join waitlist. Please try again.');
                     }
                   } catch (error) {

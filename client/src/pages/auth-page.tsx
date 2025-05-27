@@ -235,6 +235,7 @@ export default function AuthPage() {
                           <Button 
                             variant="link" 
                             className="p-0 h-auto text-xs"
+                            type="button"
                           >
                             Forgot password?
                           </Button>
@@ -246,6 +247,15 @@ export default function AuthPage() {
                         type="password" 
                         placeholder="••••••••" 
                         required 
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const form = e.currentTarget.closest('form');
+                            if (form) {
+                              form.requestSubmit();
+                            }
+                          }
+                        }}
                       />
                     </div>
                     <Button 
