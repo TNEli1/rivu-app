@@ -251,24 +251,12 @@ export default function Dashboard() {
         setLocation('/onboarding');
       }
       
-      // Show tutorial for new users - FIXED to prevent showing twice
-      // Check both server state and localStorage to ensure consistency
-      const localTutorialCompleted = localStorage.getItem('rivu_tutorial_completed') === 'true';
+      // Show tutorial for new users - check server state as primary source of truth
+      const shouldShowTutorial = user.tutorialCompleted === false || user.tutorialCompleted === undefined;
       
-      if (!localTutorialCompleted && 
-          (user.tutorialCompleted === false || 
-          (user.loginCount === 1 && user.tutorialCompleted === undefined))) {
-        console.log('Showing tutorial based on user state:', user.tutorialCompleted);
+      if (shouldShowTutorial && user.loginCount <= 2) {
+        console.log('Showing tutorial for new user - tutorial completed:', user.tutorialCompleted);
         setShowTutorial(true);
-      } else {
-        // If tutorial is already completed according to localStorage, make sure user state is updated
-        if (localTutorialCompleted && user.tutorialCompleted === false) {
-          // Update user profile in the background to match localStorage
-          // Use the apiRequest method directly since we don't have updateProfileMutation here
-          apiRequest('PUT', '/api/user', { tutorialCompleted: true }).catch(err => {
-            console.error('Failed to update tutorial state:', err);
-          });
-        }
       }
     }
   }, [user, setLocation]);
