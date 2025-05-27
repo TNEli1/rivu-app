@@ -426,9 +426,11 @@ export default function LandingPage() {
                     alert("Thanks! We'll notify you when the iOS app is ready.");
                     e.currentTarget.reset();
                   } else {
-                    throw new Error('Failed to join waitlist');
+                    const errorData = await response.json().catch(() => ({}));
+                    alert(errorData.message || 'Failed to join waitlist. Please try again.');
                   }
                 } catch (error) {
+                  console.error('Waitlist error:', error);
                   alert('Something went wrong. Please try again.');
                 }
               }}

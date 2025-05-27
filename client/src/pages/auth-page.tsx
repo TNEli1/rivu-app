@@ -354,6 +354,7 @@ export default function AuthPage() {
                         username: formData.get('username') as string,
                         email: formData.get('email') as string,
                         password: formData.get('password') as string,
+                        confirmPassword: formData.get('confirmPassword') as string,
                         firstName: formData.get('firstName') as string || undefined,
                         lastName: formData.get('lastName') as string || undefined
                       });
@@ -532,11 +533,11 @@ export default function AuthPage() {
                         className="text-sm font-normal leading-5 peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                       >
                         I agree to the{" "}
-                        <Link href="/terms-of-service" className="text-primary hover:underline" target="_blank">
+                        <Link href="/terms" className="text-primary hover:underline" target="_blank">
                           Terms of Service
                         </Link>{" "}
                         and{" "}
-                        <Link href="/privacy-policy" className="text-primary hover:underline" target="_blank">
+                        <Link href="/privacy" className="text-primary hover:underline" target="_blank">
                           Privacy Policy
                         </Link>. I understand this app uses behavioral data and AI for educational guidance only.
                       </Label>
