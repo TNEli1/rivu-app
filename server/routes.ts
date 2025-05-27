@@ -1708,7 +1708,7 @@ User profile:
           
           await client.sendEmail({
             From: process.env.EMAIL_FROM,
-            To: process.env.EMAIL_FROM, // Send to verified sender address
+            To: 'support@tryrivu.com', // Send to support team
             Subject: 'New iOS Waitlist Signup - Rivu',
             HtmlBody: `
               <h2>New iOS Waitlist Signup</h2>
