@@ -67,9 +67,10 @@ export default function PlaidCallback() {
         
         if (storedSuccess) {
           // We have the public token from before OAuth redirect - complete the exchange
-          const { public_token, metadata } = JSON.parse(storedSuccess);
+          const successData = JSON.parse(storedSuccess);
+          const { public_token, metadata } = successData;
           
-          console.log('Found stored success data, completing token exchange');
+          console.log('Found stored success data, completing token exchange with OAuth state:', oauthStateId);
           const response = await apiRequest('POST', '/api/plaid/exchange_token', {
             public_token,
             metadata,

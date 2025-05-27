@@ -200,6 +200,29 @@ export default function Dashboard() {
     }
   });
   
+  // Handle Google OAuth auth token from URL parameter
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const authToken = urlParams.get('auth');
+    
+    if (authToken) {
+      try {
+        // Store the auth token as cookie for immediate authentication
+        document.cookie = `rivu_token=${decodeURIComponent(authToken)}; path=/; max-age=${60 * 60 * 2}; secure=${window.location.protocol === 'https:'}; samesite=lax`;
+        console.log('Google OAuth: Auth token stored from URL parameter');
+        
+        // Clean up the URL
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, '', cleanUrl);
+        
+        // Force page reload to trigger authentication
+        window.location.reload();
+      } catch (error) {
+        console.error('Error processing Google OAuth auth token:', error);
+      }
+    }
+  }, []);
+
   // Fetch data when component mounts
   useEffect(() => {
     // Fetch dashboard summary

@@ -68,11 +68,20 @@ export const googleCallback = [
       });
 
       console.log('Google OAuth: JWT token generated and cookie set for user ID:', user.id);
+      console.log('Google OAuth: Cookie settings:', {
+        name: TOKEN_COOKIE_NAME,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: JWT_EXPIRY * 1000
+      });
 
-      console.log('Google OAuth: Session created, redirecting to dashboard');
+      // Also set a backup authentication method via URL parameter for cross-domain issues
+      const authParam = encodeURIComponent(token);
       
-      // Redirect to dashboard on successful login
-      res.redirect('/dashboard');
+      console.log('Google OAuth: Session created, redirecting to dashboard with auth token');
+      
+      // Redirect to dashboard with auth token as backup
+      res.redirect(`/dashboard?auth=${authParam}`);
       
     } catch (error) {
       console.error('Google OAuth callback error:', error);

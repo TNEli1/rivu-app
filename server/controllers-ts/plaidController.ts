@@ -116,6 +116,11 @@ export const exchangePublicToken = async (req: Request, res: Response) => {
     }
 
     console.log('Exchanging public token for user:', userId, 'institution:', metadata?.institution?.name);
+    
+    // Log OAuth state if present for debugging
+    if (oauth_state_id) {
+      console.log('OAuth state ID provided:', oauth_state_id);
+    }
 
     const response = await plaidClient.itemPublicTokenExchange({
       public_token,
