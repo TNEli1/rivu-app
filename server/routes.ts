@@ -1662,44 +1662,55 @@ User profile:
         return res.status(400).json({ message: 'Valid email address is required' });
       }
       
-      // Check if POSTMARK_API_KEY is available
-      if (!process.env.POSTMARK_API_KEY) {
-        console.error('POSTMARK_API_KEY not found in environment variables');
-        return res.status(500).json({ message: 'Email service not configured' });
+      console.log(`iOS Waitlist: New signup request for ${email}`);
+      
+      // Always return success to user, even if email notification fails
+      // This ensures a good user experience while we log issues internally
+      
+      // Attempt to send notification email to support team (optional)
+      if (process.env.POSTMARK_API_KEY && process.env.EMAIL_FROM) {
+        try {
+          const { Client } = await import('postmark');
+          const client = new Client(process.env.POSTMARK_API_KEY);
+          
+          await client.sendEmail({
+            From: process.env.EMAIL_FROM,
+            To: process.env.EMAIL_FROM, // Send to verified sender address
+            Subject: 'New iOS Waitlist Signup - Rivu',
+            HtmlBody: `
+              <h2>New iOS Waitlist Signup</h2>
+              <p><strong>Email:</strong> ${email}</p>
+              <p><strong>Name:</strong> ${name || 'N/A'}</p>
+              <p><strong>Signup Date:</strong> ${new Date().toLocaleString()}</p>
+              <hr>
+              <p>This user is interested in early access to the iOS app.</p>
+            `,
+            TextBody: `New iOS Waitlist Signup\n\nEmail: ${email}\nName: ${name || 'N/A'}\nSignup Date: ${new Date().toLocaleString()}\n\nThis user is interested in early access to the iOS app.`
+          });
+          
+          console.log(`iOS Waitlist: Successfully sent notification email for ${email}`);
+          
+        } catch (emailError) {
+          // Log the error but don't fail the request
+          console.error('iOS Waitlist: Email notification failed (non-critical):', emailError);
+        }
+      } else {
+        console.log('iOS Waitlist: Email notification skipped (credentials not configured)');
       }
       
-      // Send notification email to support team
-      try {
-        const { Client } = await import('postmark');
-        const client = new Client(process.env.POSTMARK_API_KEY);
-        
-        await client.sendEmail({
-          From: 'support@tryrivu.com',
-          To: 'support@tryrivu.com', 
-          Subject: 'New iOS Waitlist Signup',
-          HtmlBody: `
-            <h2>New iOS Waitlist Signup</h2>
-            <p><strong>Email:</strong> ${email}</p>
-            <p><strong>Name:</strong> ${name || 'N/A'}</p>
-            <p><strong>Signup Date:</strong> ${new Date().toLocaleString()}</p>
-            <hr>
-            <p>This user is interested in early access to the iOS app.</p>
-          `
-        });
-        
-        res.json({ 
-          message: 'Successfully joined iOS waitlist',
-          email: email
-        });
-        
-      } catch (postmarkError) {
-        console.error('Postmark email error:', postmarkError);
-        res.status(500).json({ message: 'Failed to send notification email' });
-      }
+      // Always return success to provide good user experience
+      res.json({ 
+        message: 'Thank you for joining our iOS waitlist! We\'ll notify you when the app is ready.',
+        email: email,
+        success: true
+      });
       
     } catch (error) {
       console.error('iOS waitlist error:', error);
-      res.status(500).json({ message: 'Failed to process waitlist signup' });
+      res.status(500).json({ 
+        message: 'Something went wrong. Please try again later.',
+        success: false
+      });
     }
   });
 

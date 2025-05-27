@@ -413,25 +413,38 @@ export default function LandingPage() {
                 const email = formData.get('email') as string;
                 const name = formData.get('name') as string;
                 
-                try {
-                  const response = await fetch('/api/ios-waitlist', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ email, name }),
-                  });
+                // Show loading state
+                const submitButton = e.currentTarget.querySelector('button[type="submit"]') as HTMLButtonElement;
+                if (submitButton) {
+                  const originalText = submitButton.textContent;
+                  submitButton.disabled = true;
+                  submitButton.textContent = 'Joining...';
                   
-                  if (response.ok) {
-                    alert("Thanks! We'll notify you when the iOS app is ready.");
-                    e.currentTarget.reset();
-                  } else {
-                    const errorData = await response.json().catch(() => ({}));
-                    alert(errorData.message || 'Failed to join waitlist. Please try again.');
+                  try {
+                    const response = await fetch('/api/ios-waitlist', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({ email, name }),
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok && data.success) {
+                      alert(data.message || "Thanks! We'll notify you when the iOS app is ready.");
+                      e.currentTarget.reset();
+                    } else {
+                      alert(data.message || 'Failed to join waitlist. Please try again.');
+                    }
+                  } catch (error) {
+                    console.error('Waitlist error:', error);
+                    alert('Something went wrong. Please try again later.');
+                  } finally {
+                    // Reset button state
+                    submitButton.disabled = false;
+                    submitButton.textContent = originalText;
                   }
-                } catch (error) {
-                  console.error('Waitlist error:', error);
-                  alert('Something went wrong. Please try again.');
                 }
               }}
               className="space-y-4"
