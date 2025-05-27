@@ -355,12 +355,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log(`Delete All User Data: Starting comprehensive deletion for user ID: ${userIdNum}`);
         
-        // Use storage method for comprehensive deletion
-        const deletionResult = await storage.deleteAllUserData(userIdNum);
-        
-        if (!deletionResult) {
-          throw new Error('Failed to delete all user data');
-        }
+        // Simple approach: Delete user data in correct order without complex SQL
+        await db.transaction(async (tx) => {
+          // Delete in order to respect foreign key constraints
+          
+          // 1. Delete transactions first (no dependencies)
+          await tx.delete(transactions).where(eq(transactions.userId, userIdNum));
+          
+          // 2. Delete budget categories
+          await tx.delete(budgetCategories).where(eq(budgetCategories.userId, userIdNum));
+          
+          // 3. Delete savings goals
+          await tx.delete(savingsGoals).where(eq(savingsGoals.userId, userIdNum));
+          
+          // 4. Delete Rivu scores
+          await tx.delete(rivuScores).where(eq(rivuScores.userId, userIdNum));
+          
+          // 5. Delete nudges
+          await tx.delete(nudges).where(eq(nudges.userId, userIdNum));
+          
+          // 6. Delete transaction accounts
+          await tx.delete(transactionAccounts).where(eq(transactionAccounts.userId, userIdNum));
+          
+          // 7. Delete categories (subcategories will be handled by cascade if configured)
+          await tx.delete(categories).where(eq(categories.userId, userIdNum));
+          
+          // 8. Delete Plaid items (accounts will be handled by cascade if configured)
+          await tx.delete(plaidItems).where(eq(plaidItems.userId, userIdNum));
+          
+          console.log(`Successfully deleted all data for user ${userIdNum}`);
+        });
         
         // Log success to troubleshooting
         const timestamp = new Date().toISOString();
