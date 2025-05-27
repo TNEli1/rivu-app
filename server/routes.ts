@@ -1729,7 +1729,7 @@ User profile:
         const { sendEmail } = await import('./services/emailService');
         
         const emailSent = await sendEmail({
-          to: 'support@tryrivu.com',
+          to: process.env.WAITLIST_NOTIFICATION_EMAIL || 'eliharris@tryrivu.com',
           subject: 'New iOS Waitlist Signup - Rivu',
           text: `New iOS Waitlist Signup\n\nEmail: ${email}\nName: ${name || 'N/A'}\nSignup Date: ${new Date().toLocaleString()}\n\nThis user is interested in early access to the iOS app.`,
           html: `
