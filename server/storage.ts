@@ -145,6 +145,15 @@ export interface IStorage {
   createPlaidWebhookEvent(event: InsertPlaidWebhookEvent): Promise<PlaidWebhookEvent>;
   markPlaidWebhookEventAsProcessed(id: number): Promise<PlaidWebhookEvent | undefined>;
   
+  // Coach Conversation operations
+  getCoachConversations(userId: number, dayLimit?: number): Promise<CoachConversation[]>;
+  getRecentCoachConversations(userId: number, limit?: number): Promise<CoachConversation[]>;
+  saveCoachConversation(conversation: InsertCoachConversation): Promise<CoachConversation>;
+  
+  // Behavior Analytics operations
+  saveBehaviorAnalytics(analytics: InsertUserBehaviorAnalytics): Promise<UserBehaviorAnalytics>;
+  getBehaviorAnalytics(userId: number, behaviorType?: string): Promise<UserBehaviorAnalytics[]>;
+  
   // Helper methods
   calculateRivuScore(userId: number): Promise<number>;
   updateOnboardingStage(userId: number, stage: string): Promise<User | undefined>;

@@ -1604,76 +1604,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Financial advice API using OpenAI - SECURE GPT TOKEN USAGE CONTROL
+  // Enhanced AI Coach API - Behavior-Aware Financial Assistant
   app.post("/api/advice", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
-      
-      // CRITICAL: Enforce explicit user consent for GPT usage
-      // GPT must ONLY be called when user explicitly requests coaching
-      const { userPrompt, nudgeConfirmed } = req.body;
-      
-      // Validate that this is an explicit user request for AI coaching
+      const { userPrompt } = req.body;
+
+      // Validate user request
       if (!userPrompt || typeof userPrompt !== 'string' || userPrompt.trim().length === 0) {
         return res.status(400).json({ 
           error: "INVALID_REQUEST",
-          message: "AI coaching requires an explicit user prompt. GPT usage is restricted to user-initiated coaching requests only." 
+          message: "Please ask me a specific question about your finances!" 
         });
       }
-      
-      // Additional validation for nudge-triggered requests
-      if (req.body.nudgeConfirmed !== undefined && !nudgeConfirmed) {
-        return res.status(400).json({ 
-          error: "CONSENT_REQUIRED",
-          message: "User consent required for AI coaching. GPT usage only permitted with explicit user confirmation." 
-        });
-      }
-      
-      const transactions = await storage.getTransactions(userId);
-      const categories = await storage.getBudgetCategories(userId);
-      const rivuScore = await storage.getRivuScore(userId);
-      
-      // Get user demographic data
-      const user = await storage.getUser(userId);
-      
-      // Extract relevant financial information
-      const financialContext = {
-        rivuScore: rivuScore?.score,
-        demographics: {
-          ageRange: user?.ageRange || 'Not specified',
-          incomeBracket: user?.incomeBracket || 'Not specified',
-          riskTolerance: user?.riskTolerance || 'Not specified',
-          experienceLevel: user?.experienceLevel || 'Not specified',
-          financialGoals: user?.goals || 'Not specified'
-        },
-        budgetCategories: categories.map(c => ({
-          name: c.name,
-          budgeted: c.budgetAmount,
-          spent: c.spentAmount,
-          percentUsed: ((parseFloat(c.spentAmount.toString()) / parseFloat(c.budgetAmount.toString())) * 100).toFixed(0) + '%'
-        })),
-        recentTransactions: transactions.slice(0, 5).map(t => ({
-          date: new Date(t.date).toLocaleDateString(),
-          merchant: t.merchant,
-          amount: t.amount,
-          category: t.category,
-          type: t.type
-        }))
-      };
-      
-      // Use the validated userPrompt from the security check above
-      
-      // Create formatted budget categories string
-      const budgetCategoriesText = financialContext.budgetCategories.map(cat => 
-        `${cat.name} | Budgeted: $${cat.budgeted} | Spent: $${cat.spent} | ${cat.percentUsed}`
-      ).join('\n- ');
-      
-      // Format transactions
-      const transactionsText = financialContext.recentTransactions.map(tx => 
-        `${tx.date} | ${tx.merchant} | $${tx.amount} | ${tx.category}`
-      ).join('\n- ');
-      
-      // Determine activity level based on recent transactions
+
+      // Get comprehensive user data for behavior analysis
+      const [user, transactions, goals, rivuScore] = await Promise.all([
+        storage.getUser(userId),
+        storage.getTransactions(userId),
+        storage.getSavingsGoals(userId),
+        storage.getRivuScore(userId)
+      ]);
+
+      // Calculate financial context
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+      const recentTransactions = transactions.filter(t => new Date(t.date) >= thirtyDaysAgo);
+
+      const monthlyIncome = recentTransactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount || '0')), 0);
+
+      const monthlyExpenses = recentTransactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount || '0')), 0);
+
+      const surplus = monthlyIncome - monthlyExpenses;
+      const savingsRate = monthlyIncome > 0 ? (surplus / monthlyIncome) * 100 : 0;
+
+      // Top spending categories
+      const categorySpending = recentTransactions
+        .filter(t => t.type === 'expense')
+        .reduce((acc, t) => {
+          const category = t.category || 'Other';
+          acc[category] = (acc[category] || 0) + Math.abs(parseFloat(t.amount || '0'));
+          return acc;
+        }, {} as Record<string, number>);
+
+      const topSpendingCategories = Object.entries(categorySpending)
+        .sort(([,a], [,b]) => (b as number) - (a as number))
+        .slice(0, 3)
+        .map(([category]) => category);
+
+      // Build intelligent prompt with real user data
+      const intelligentPrompt = `You are Rivu, a personal and friendly AI financial coach. Be warm, direct, and use the user's real financial data to give specific advice.
+
+USER QUESTION: "${userPrompt}"
+
+REAL FINANCIAL SNAPSHOT:
+- Monthly surplus: $${surplus.toFixed(0)} ${surplus > 0 ? '(Good! You have money left over)' : '(Warning: You are overspending)'}
+- Savings rate: ${savingsRate.toFixed(1)}%
+- Income: $${monthlyIncome.toFixed(0)}/month
+- Expenses: $${monthlyExpenses.toFixed(0)}/month
+- Top spending: ${topSpendingCategories.join(', ') || 'No major categories yet'}
+- Rivu Score: ${rivuScore?.score || 'Not calculated yet'}
+
+COACHING GUIDELINES:
+1. Be personal and friendly - reference their actual numbers
+2. Give specific, actionable advice based on their real financial situation
+3. If they have surplus money, suggest specific dollar amounts to allocate
+4. Keep responses under 150 words and conversational
+5. Be encouraging but honest about their financial health
+
+Respond as their personal financial coach:`;
+
+      // Generate AI response
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [{ role: "user", content: intelligentPrompt }],
+        max_tokens: 400,
+        temperature: 0.7,
+      });
+
+      const coachResponse = completion.choices[0]?.message?.content || 
+        "I'm having trouble connecting right now. Please try again in a moment!";
+
+      res.json({
+        message: coachResponse,
+        financialSnapshot: {
+          surplus: surplus,
+          savingsRate: savingsRate.toFixed(1),
+          topSpending: topSpendingCategories[0] || 'No major expenses'
+        }
+      });
+
+    } catch (error) {
+      console.error('Error generating coach response:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate coaching response',
+        message: 'I apologize, but I\'m having trouble right now. Please try again!' 
+      });
+    }
+  });
       let activityLevel = "Low";
       if (financialContext.recentTransactions.length >= 5) {
         activityLevel = "High";
