@@ -26,6 +26,7 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasPlaidKeys, setHasPlaidKeys] = useState(true);
+  const [plaidInitialized, setPlaidInitialized] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -233,23 +234,29 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
     }
   }, []);
 
-  // CRITICAL: Do NOT include ANY OAuth configuration on initial launch
-  // This forces users into OAuth mode before they can even select a bank
-  const config = {
-    token: linkToken || '',
+  // CRITICAL: Only initialize Plaid Link when we have a valid token
+  // This prevents multiple initializations and mobile rendering issues
+  const config = linkToken ? {
+    token: linkToken,
     onSuccess,
     onExit,
     // DO NOT include oauthRedirectUri, receivedRedirectUri, or any OAuth config here
     // Let Plaid handle OAuth internally only when user selects an OAuth-required bank
-  };
+    
+    // Mobile Safari specific configurations
+    env: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox',
+    clientName: 'Rivu',
+    // Ensure proper mobile rendering
+    selectAccount: false, // Let users select accounts after connection
+  } : null;
   
   console.log('Plaid Link config:', { 
-    ...config, 
     hasToken: !!linkToken,
-    tokenPreview: linkToken ? `${linkToken.substring(0, 10)}...` : 'none' 
+    tokenPreview: linkToken ? `${linkToken.substring(0, 10)}...` : 'none',
+    configReady: !!config
   });
   
-  const { open, ready } = usePlaidLink(config);
+  const { open, ready } = usePlaidLink(config || { token: '', onSuccess: () => {}, onExit: () => {} });
 
   // Trigger Plaid Link when button is clicked
   const handlePlaidLinkClick = useCallback(() => {
@@ -266,14 +273,32 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
       return;
     }
     
-    // Everything is ready, open the Plaid Link
-    console.log('Opening Plaid Link with token:', linkToken.substring(0, 10) + '...');
-    open();
+    // MOBILE SAFARI FIX: Ensure DOM is stable before opening Plaid
+    // Use requestAnimationFrame to ensure next paint cycle
+    requestAnimationFrame(() => {
+      try {
+        console.log('Opening Plaid Link with token:', linkToken.substring(0, 10) + '...');
+        open();
+      } catch (err) {
+        console.error('Error opening Plaid Link:', err);
+        setError('Failed to open bank connection. Please try again.');
+      }
+    });
   }, [ready, linkToken, open]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md mx-auto w-[92%] md:w-[480px] max-h-[85vh] flex flex-col">
+      <DialogContent className="sm:max-w-md mx-auto w-[95%] sm:w-[480px] max-h-[90vh] overflow-hidden" 
+        style={{ 
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 9999,
+          // Ensure proper mobile Safari rendering
+          WebkitTransform: 'translate(-50%, -50%)',
+          backgroundColor: 'white'
+        }}>
         <DialogHeader className="px-2">
           <DialogTitle>Connect Bank Account</DialogTitle>
           <DialogDescription className="break-words">
