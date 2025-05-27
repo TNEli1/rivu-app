@@ -132,6 +132,13 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
         }) : 'No metadata'
       );
       
+      // Store success data in case we need it for OAuth flow
+      sessionStorage.setItem('plaid_link_success', JSON.stringify({
+        public_token,
+        metadata,
+        timestamp: Date.now()
+      }));
+      
       // Exchange the public token for an access token
       const response = await apiRequest('POST', '/api/plaid/exchange_token', {
         public_token,
@@ -186,15 +193,15 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
     }
   }, []);
 
-  // Configure the Plaid Link hook with proper configuration
+  // Configure the Plaid Link hook with proper OAuth configuration
   const config = {
     token: linkToken || '',
     onSuccess,
     onExit,
-    // Add OAuth required options
+    // OAuth configuration for production banks like Chase
     receivedRedirectUri: window.location.href,
-    oauthRedirectUri: window.location.origin + '/callback',
-    oauthNonce: Math.floor(Math.random() * 10000000).toString(), // Random nonce for security
+    oauthRedirectUri: 'https://tryrivu.com/plaid-callback',
+    oauthNonce: Math.floor(Math.random() * 10000000).toString(),
   };
   
   console.log('Plaid Link config:', { 
