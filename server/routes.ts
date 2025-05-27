@@ -163,8 +163,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.put(`${apiPath}/nudges/:id/complete`, protect, completeNudge);
     app.put(`${apiPath}/onboarding-stage`, protect, updateOnboardingStage);
     
-    // CSV import functionality temporarily disabled for Railway deployment
-    // TODO: Re-enable CSV imports after deployment stabilization
+    // Import CSV controller for transaction uploads
+    const { uploadCSV, importCSV } = await import('./controllers-ts/csvController');
+    const { createTransactionsBatch } = await import('./controllers-ts/transactionController');
+    
+    // CSV upload routes
+    app.post(`${apiPath}/transactions/upload`, protect, uploadCSV, importCSV);
+    app.post(`${apiPath}/transactions/batch`, protect, createTransactionsBatch);
     
     // Delete all transactions route
     app.delete(`${apiPath}/transactions/all`, protect, async (req: any, res) => {
@@ -278,11 +283,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.put(`${apiPath}/subcategories/:id`, protect, updateSubcategory);
     app.delete(`${apiPath}/subcategories/:id`, protect, deleteSubcategory);
     
-    // Plaid functionality temporarily disabled for Railway deployment
-    // TODO: Re-enable Plaid integration after deployment stabilization
-    
-    // Register Plaid routes
-    // Add a route to check Plaid API configuration status
+    // Register Plaid status route (Plaid controller will be re-enabled after deployment)
     app.get(`${apiPath}/plaid/status`, (req, res) => {
       const hasCredentials = process.env.PLAID_CLIENT_ID && process.env.PLAID_SECRET_PRODUCTION;
       if (!hasCredentials) {
@@ -291,17 +292,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(200).json({ status: 'ready' });
     });
     
-    // Plaid routes disabled for Railway deployment
-    // app.post(`${apiPath}/plaid/create_link_token`, protect, createLinkToken);
-    // app.post(`${apiPath}/plaid/exchange_token`, protect, exchangeToken);
-    // app.post(`${apiPath}/plaid/oauth_callback`, protect, handleOAuthCallback);
-    // app.post(`${apiPath}/plaid/accounts`, protect, getPlaidAccounts);
-    // app.post(`${apiPath}/plaid/item/remove`, protect, removeItem);
-    // app.post(`${apiPath}/plaid/webhook`, handleWebhook);
-    // app.get(`${apiPath}/plaid/items`, protect, getPlaidItems);
-    // app.get(`${apiPath}/plaid/items/:id`, protect, getPlaidItemById);
-    // app.post(`${apiPath}/plaid/refresh/:id`, protect, refreshPlaidItem);
-    // app.delete(`${apiPath}/plaid/disconnect/:id`, protect, disconnectPlaidItem);
+    // Plaid routes temporarily disabled - controller file needs to be created
+    // TODO: Create plaidController.ts and re-enable these routes
     
     console.log('✅ Auth routes successfully mounted at /api');
     console.log('✅ Plaid routes successfully mounted at /api/plaid');
