@@ -1,0 +1,101 @@
+We need deep fixes to the following production bugs in the Rivu app (Node.js, Express, PostgreSQL, Railway):
+
+⸻
+
+1. 500 Error on “Clear All Transactions”
+
+Symptom: Pressing “Clear All” button returns 500 internal server error
+Root Cause: Likely trying to delete transactions after user/session is revoked
+Fix:
+	•	In /clear-all route:
+	•	Use transaction: first delete transactions, goals, budgets tied to user ID
+	•	Then delete user
+	•	Finally, revoke session
+	•	Wrap in try/catch, log exact error to troubleshooting.md
+
+⸻
+
+2. Plaid: Unable to Initialize Connection
+
+Symptom: Plaid Connect button fails — returns initialization error
+Root Cause: Plaid OAuth redirect URI is not yet whitelisted for tryrivu.com
+Fix:
+	•	Add https://tryrivu.com and https://www.tryrivu.com to Plaid’s allowed redirect URIs
+	•	Update any frontend Plaid redirect_uri calls if hardcoded
+
+⸻
+
+3. CSV Upload: No Data Saved
+
+Symptom: Upload UI shows success toast, but:
+	•	No transactions appear
+	•	No rows saved in DB
+Root Cause:
+	•	Backend not saving parsed rows
+	•	Possible missing DB transaction or improper schema field mapping
+Fix:
+	•	Ensure /upload-csv API:
+	•	Parses rows with correct date, category, amount format
+	•	Maps to correct user_id
+	•	Inserts into transactions with confirmation
+	•	Logs count of inserted rows in console + troubleshooting.md
+
+⸻
+
+4. Account Deletion Logic: Data Still Exists
+
+Symptom: Deleting account triggers logout, but user data remains
+Root Cause: Deletion order is wrong — user is deleted before related data
+Fix:
+	•	Fix /delete-user to:
+	1.	Auth → Confirm session or token
+	2.	Delete transactions, goals, budget, etc.
+	3.	Then delete from users
+	4.	Destroy session at the end
+	•	Verify all deletions using rowCount or returning clauses
+
+⸻
+
+5. Tutorial Does Not Show for New Users
+
+Symptom: New accounts skip the onboarding/tutorial
+Root Cause: Likely hasSeenTutorial flag is either:
+	•	Defaulting to true
+	•	Not being checked on first login
+Fix:
+	•	In DB users table, ensure default: has_seen_tutorial = false
+	•	In frontend:
+	•	On login success, check has_seen_tutorial
+	•	If false, launch tutorial component
+	•	After completion, PATCH user with has_seen_tutorial = true
+
+⸻
+
+6. Email Verification Not Sent
+
+Symptom: No email ever received after registration
+Root Cause: Backend not sending POST request to Postmark or using incorrect from address
+Fix:
+	•	Check sendVerificationEmail():
+	•	Confirm it’s hitting Postmark API with correct from, to, and template ID
+	•	Set support@tryrivu.com as verified sender in Postmark dashboard
+	•	Log Postmark response in console + troubleshooting.md
+	•	Temporarily log generated token in console for manual verification test
+
+⸻
+
+7. Add a Persistent troubleshooting.md File
+
+Purpose: Track all known bugs, symptoms, root causes, and date of fix
+Format:
+
+## Issue: Email Verification Not Sent
+- **Symptom:** Users never receive verification
+- **Root Cause:** Postmark not triggered
+- **Fix:** Updated sendVerificationEmail() and verified sender domain
+- **Status:** ✅ Fixed 2025-05-27
+
+## Issue: Tutorial Not Launching
+- ...
+
+Location: Place in project root. Update automatically on critical errors, or at every build/deploy checkpoint.
