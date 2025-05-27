@@ -1706,14 +1706,11 @@ Respond as their personal financial coach:`;
       });
     }
   });
-      let activityLevel = "Low";
-      if (financialContext.recentTransactions.length >= 5) {
-        activityLevel = "High";
-      } else if (financialContext.recentTransactions.length >= 3) {
-        activityLevel = "Medium";
-      }
-      
-      // Format demographics for prompt
+
+  // Create server
+  const server = createServer(app);
+  return server;
+}
       const demographicsText = `
 - Age Range: ${financialContext.demographics.ageRange}
 - Income Bracket: ${financialContext.demographics.incomeBracket}
