@@ -1,0 +1,74 @@
+1. CSV Upload: API Endpoint Not Found
+	•	Ensure the /api/transactions/upload (or equivalent) endpoint is present and matches the frontend upload call.
+	•	Confirm it handles CSV files, parses them, and inserts transactions.
+	•	If missing, implement it using Multer (or similar) and validate schema before DB insert.
+
+⸻
+
+2. Bank Connect: Initialization Failure
+	•	The “Connect Bank” button throws a Connection error: Unable to initialize bank connection.
+	•	Check Plaid integration: likely due to redirect domain mismatch or missing Plaid environment variables.
+	•	Log and catch full Plaid error response server-side.
+	•	Prepare production-ready fallback message and retry logic.
+
+⸻
+
+3. “Clear All Transactions” Throws 500
+	•	Fix server crash when pressing “Clear All.”
+	•	Likely cause: no user ID passed, or mass delete call fails DB validation.
+	•	Validate authenticated user exists and confirm DELETE /api/transactions/clear route works with session context.
+
+⸻
+
+4. New User Tutorial Does Not Show
+	•	Ensure the onboarding flow displays once upon first login.
+	•	Check for missing hasSeenTutorial flag or incorrect default state.
+	•	Confirm logic isn’t blocked by missing or invalid user ID.
+
+⸻
+
+5. User Data Deletion Fails
+	•	When a user clicks “Delete all my data,” the app:
+	•	Logs them out.
+	•	Returns 401: No token provided afterward.
+	•	Fails to fully delete user data (re-creating the account shows previous data).
+
+Fix:
+	•	Ensure user deletion logic runs before logout.
+	•	Confirm it fully purges:
+	•	user table record
+	•	associated transactions
+	•	sessions
+	•	budgets/goals
+	•	Add a backend confirmation log and return status after deletion completes.
+
+⸻
+
+6. AI Coach Error: “Knowledge Base Unavailable”
+	•	Likely due to:
+	•	Broken OpenAI API call
+	•	Missing/inaccessible prompt logic
+	•	Confirm OPENAI_API_KEY is loaded.
+	•	Validate prompt construction and fallback handling when GPT fails.
+
+⸻
+
+7. Nudges Suggesting Already-Completed Tasks
+	•	Review logic that decides when a nudge is triggered.
+	•	Track nudge dismissal + goal/task completion flags per user.
+	•	Ensure nudges dynamically update based on real-time user data.
+
+⸻
+
+8. Re-Login Blocked with 403: Email Not Verified
+	•	After logout, trying to log in with a valid account returns 403: Email not verified.
+	•	But no verification email is ever sent.
+
+Fix:
+	•	Ensure Postmark is sending email verification link during registration.
+	•	Add UI confirmation to user post-register (“Check your inbox to verify email”).
+	•	Backend: ensure emailVerified field defaults to false and updates upon verification link click.
+
+⸻
+
+Deploy updated backend and frontend. Confirm all endpoints work under Railway production. Leave OAuth and domain config untouched. Confirm all fixes are live and stable.
