@@ -42,6 +42,20 @@
     <link rel="canonical" href="https://tryrivu.com/" />
   </head>
   <body>
+    <!-- Ensure light mode loads first to prevent flash -->
+    <script>
+      // Initialize theme before React loads to prevent flash
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        // Default to light mode
+        document.documentElement.classList.remove('dark');
+        if (!savedTheme) {
+          localStorage.setItem('theme', 'light');
+        }
+      }
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
 
