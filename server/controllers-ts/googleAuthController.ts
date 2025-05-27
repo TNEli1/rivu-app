@@ -34,10 +34,10 @@ export const googleCallback = [
         return res.redirect('/auth?error=authentication_failed');
       }
 
-      // Generate JWT token
+      // Generate JWT token - use 'id' field to match authentication middleware
       const token = jwt.sign(
         { 
-          userId: user.id, 
+          id: user.id, 
           email: user.email,
           authMethod: user.authMethod 
         },
