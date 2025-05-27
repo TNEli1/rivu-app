@@ -334,7 +334,7 @@ export default function Dashboard() {
     
     try {
       const response = await apiRequest('POST', '/api/advice', {
-        prompt: coachPrompt
+        userPrompt: coachPrompt
       });
       
       const data = await response.json();
