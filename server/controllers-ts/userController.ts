@@ -413,12 +413,12 @@ export const updateThemePreference = async (req: any, res: any) => {
 };
 
 /**
- * @desc    Update user profile
+ * @desc    Update user profile with enhanced security for Google/hybrid users
  */
 export const updateUserProfile = async (req: any, res: any) => {
   try {
     const userId = parseInt(req.user.id, 10);
-    const { username, email, firstName, lastName, password } = req.body;
+    const { username, email, firstName, lastName, password, currentPassword } = req.body;
     
     // Get user from PostgreSQL storage
     const user = await storage.getUser(userId);
@@ -430,11 +430,47 @@ export const updateUserProfile = async (req: any, res: any) => {
       });
     }
     
+    // For sensitive changes, require re-authentication
+    const isSensitiveChange = username || password || email;
+    if (isSensitiveChange) {
+      // If user has a password (local or hybrid auth), require current password
+      if (user.password && user.authMethod !== 'google') {
+        if (!currentPassword) {
+          return res.status(400).json({
+            message: 'Current password required for security verification',
+            code: 'CURRENT_PASSWORD_REQUIRED'
+          });
+        }
+        
+        const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+        if (!isCurrentPasswordValid) {
+          return res.status(401).json({
+            message: 'Current password is incorrect',
+            code: 'INVALID_CURRENT_PASSWORD'
+          });
+        }
+      }
+      // For Google-only users, we'll rely on session authentication
+    }
+    
     // Data to update
     const updateData: Partial<User> = {};
     
-    // If changing username, check if it's already in use
+    // If changing username, check if it's already in use and enforce rate limiting
     if (username && username !== user.username) {
+      // Rate limiting: Check if user has changed username recently (1 per day)
+      const lastUsernameChange = user.lastUsernameChange;
+      if (lastUsernameChange) {
+        const daysSinceLastChange = (Date.now() - new Date(lastUsernameChange).getTime()) / (1000 * 60 * 60 * 24);
+        if (daysSinceLastChange < 1) {
+          return res.status(429).json({
+            message: 'Username can only be changed once per day',
+            code: 'USERNAME_RATE_LIMITED',
+            nextAllowedChange: new Date(new Date(lastUsernameChange).getTime() + 24 * 60 * 60 * 1000)
+          });
+        }
+      }
+      
       const usernameExists = await storage.getUserByUsername(username);
       if (usernameExists) {
         return res.status(400).json({ 
@@ -443,6 +479,7 @@ export const updateUserProfile = async (req: any, res: any) => {
         });
       }
       updateData.username = username;
+      updateData.lastUsernameChange = new Date();
     }
     
     // Update other fields if provided
@@ -450,10 +487,16 @@ export const updateUserProfile = async (req: any, res: any) => {
     if (firstName !== undefined) updateData.firstName = firstName;
     if (lastName !== undefined) updateData.lastName = lastName;
     
-    // If password is provided, hash and update
+    // Handle password updates with hybrid auth support
     if (password) {
       const hashedPassword = await bcrypt.hash(password, 12);
       updateData.password = hashedPassword;
+      
+      // If this is a Google user adding a password, change to hybrid authentication
+      if (user.authMethod === 'google') {
+        updateData.authMethod = 'hybrid';
+        console.log(`User ${userId} (Google OAuth) added password - switched to hybrid authentication`);
+      }
     }
     
     // Only update if there are changes
@@ -476,11 +519,29 @@ export const updateUserProfile = async (req: any, res: any) => {
       });
     }
     
+    // Log security event for auth method changes
+    if (updateData.authMethod) {
+      await logSecurityEvent(
+        SecurityEventType.AUTH_METHOD_CHANGE,
+        userId,
+        user.username,
+        req,
+        { 
+          from: user.authMethod, 
+          to: updateData.authMethod,
+          hasPassword: !!updateData.password
+        }
+      );
+    }
+    
     // Return updated user without password
     const { password: updatedPass, ...updatedData } = updatedUser;
     res.json({
       _id: updatedData.id,
-      ...updatedData
+      ...updatedData,
+      message: updateData.authMethod === 'hybrid' ? 
+        'Profile updated. You can now use either Google or password to sign in.' : 
+        'Profile updated successfully.'
     });
   } catch (error: any) {
     console.error('Update profile error:', error);

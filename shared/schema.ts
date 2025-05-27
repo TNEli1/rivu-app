@@ -33,6 +33,7 @@ export const users = pgTable("users", {
   // Metrics
   loginCount: integer("login_count").default(0),
   lastLogin: timestamp("last_login"),
+  lastUsernameChange: timestamp("last_username_change"), // Rate limiting for username changes
   lastTransactionDate: timestamp("last_transaction_date"),
   lastGoalUpdateDate: timestamp("last_goal_update_date"),
   lastBudgetUpdateDate: timestamp("last_budget_update_date"),

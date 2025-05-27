@@ -65,6 +65,7 @@ export default function AccountPage() {
     const formData = new FormData(e.target as HTMLFormElement);
     
     const newUsername = formData.get('username') as string;
+    const currentPassword = formData.get('currentPassword') as string;
     
     // Only validate username if it changed
     if (newUsername !== user.username) {
@@ -86,6 +87,7 @@ export default function AccountPage() {
       lastName: formData.get('lastName') as string || undefined,
       email: formData.get('email') as string || undefined,
       username: newUsername !== user.username ? newUsername : undefined,
+      currentPassword: currentPassword || undefined,
     };
     
     updateProfileMutation.mutate(profileData);
@@ -199,10 +201,26 @@ export default function AccountPage() {
                   <p className="text-sm text-destructive">{usernameError}</p>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    Choose a unique username
+                    Username can be changed once per day
                   </p>
                 )}
               </div>
+              
+              {/* Current Password for security verification (only for sensitive changes) */}
+              {user.authMethod !== 'google' && (
+                <div className="space-y-2">
+                  <Label htmlFor="currentPassword">Current Password</Label>
+                  <Input 
+                    id="currentPassword"
+                    name="currentPassword"
+                    type="password"
+                    placeholder="Required for username/email changes"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Enter your current password to verify sensitive changes
+                  </p>
+                </div>
+              )}
               
               <Button type="submit" disabled={updateProfileMutation.isPending}>
                 {updateProfileMutation.isPending ? (
@@ -221,15 +239,31 @@ export default function AccountPage() {
         {/* Change Password */}
         <Card>
           <CardHeader>
-            <CardTitle>Change Password</CardTitle>
+            <CardTitle>
+              {user.authMethod === 'google' ? 'Add Fallback Password' : 'Change Password'}
+            </CardTitle>
             <CardDescription>
-              Update your password
+              {user.authMethod === 'google' 
+                ? 'Add a password as backup authentication method. You can continue using Google sign-in.'
+                : 'Update your password'
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handlePasswordUpdate} className="space-y-4">
+              {user.authMethod === 'google' && (
+                <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    <strong>Note:</strong> Adding a password will enable hybrid authentication. 
+                    You'll be able to sign in with either Google or your username/password.
+                  </p>
+                </div>
+              )}
+              
               <div className="space-y-2">
-                <Label htmlFor="newPassword">New Password</Label>
+                <Label htmlFor="newPassword">
+                  {user.authMethod === 'google' ? 'Create Password' : 'New Password'}
+                </Label>
                 <Input 
                   id="newPassword" 
                   name="newPassword" 
