@@ -1,12 +1,15 @@
 [build]
-builder = "nixpacks"
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "npm start"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 300
 restartPolicyType = "on_failure"
-restartPolicyMaxRetries = 10
-healthcheckPath = "/"
-healthcheckTimeout = 100
+restartPolicyMaxRetries = 3
 
 [env]
+# Build-time environment variables - these will be injected during build
+VITE_API_URL = "https://www.tryrivu.com"
+VITE_PLAID_ENV = "production"
 NODE_ENV = "production"
