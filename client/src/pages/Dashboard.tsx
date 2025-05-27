@@ -251,12 +251,16 @@ export default function Dashboard() {
         setLocation('/onboarding');
       }
       
-      // Show tutorial for new users - check server state as primary source of truth
+      // Show tutorial only for users who haven't completed it - use server state as source of truth
       const shouldShowTutorial = user.tutorialCompleted === false || user.tutorialCompleted === undefined;
       
-      if (shouldShowTutorial && user.loginCount <= 2) {
-        console.log('Showing tutorial for new user - tutorial completed:', user.tutorialCompleted);
-        setShowTutorial(true);
+      if (shouldShowTutorial) {
+        // Check localStorage to avoid showing tutorial again in same session if already dismissed
+        const tutorialDismissedThisSession = localStorage.getItem('tutorial_dismissed_session');
+        if (!tutorialDismissedThisSession) {
+          console.log('Showing tutorial for user - tutorial completed:', user.tutorialCompleted);
+          setShowTutorial(true);
+        }
       }
     }
   }, [user, setLocation]);

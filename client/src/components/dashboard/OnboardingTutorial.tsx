@@ -49,6 +49,9 @@ export default function OnboardingTutorial({ onClose }: { onClose: () => void })
 
   // Complete the tutorial - properly save completion state
   const completeTutorial = () => {
+    // Mark as dismissed in this session to prevent re-showing
+    localStorage.setItem('tutorial_dismissed_session', 'true');
+    
     // Immediately close the tutorial
     onClose();
     
@@ -64,6 +67,7 @@ export default function OnboardingTutorial({ onClose }: { onClose: () => void })
         },
         onError: (error) => {
           console.error('Failed to save tutorial completion:', error);
+          // Still mark as dismissed in session even if server update fails
         }
       }
     );
@@ -86,7 +90,17 @@ export default function OnboardingTutorial({ onClose }: { onClose: () => void })
   
   // Skip tutorial
   const skipTutorial = () => {
-    completeTutorial();
+    // Mark as dismissed in this session to prevent re-showing
+    localStorage.setItem('tutorial_dismissed_session', 'true');
+    
+    // Close tutorial immediately
+    onClose();
+    
+    // Don't mark as completed in database when skipping - let them see it again on next login
+    toast({
+      title: "Tutorial skipped",
+      description: "You can access the tutorial anytime from Settings"
+    });
   };
   
   return (
