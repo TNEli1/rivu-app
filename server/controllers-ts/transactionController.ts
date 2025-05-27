@@ -360,6 +360,19 @@ export const deleteTransaction = async (req: any, res: any) => {
  */
 export const createTransactionsBatch = async (req: any, res: any) => {
   try {
+    // CRITICAL FIX: Add detailed authentication logging
+    console.log('CSV Batch Upload: Authentication check starting');
+    console.log('CSV Batch Upload: req.user:', req.user);
+    console.log('CSV Batch Upload: req.user.id:', req.user?.id);
+    
+    if (!req.user || !req.user.id) {
+      console.error('CSV Batch Upload: No authenticated user found');
+      return res.status(401).json({
+        message: 'User not authenticated',
+        code: 'AUTH_ERROR'
+      });
+    }
+    
     const userId = parseInt(req.user.id, 10);
     
     if (isNaN(userId)) {
@@ -370,7 +383,7 @@ export const createTransactionsBatch = async (req: any, res: any) => {
       });
     }
     
-    console.log(`CSV Batch Upload: Processing batch for user ID: ${userId}`);
+    console.log(`CSV Batch Upload: CONFIRMED - Processing batch for authenticated user ID: ${userId}`);
     
     if (!req.body || !req.body.transactions || !Array.isArray(req.body.transactions)) {
       console.error('CSV Batch Upload: Invalid request format - missing transactions array');
@@ -486,15 +499,28 @@ export const createTransactionsBatch = async (req: any, res: any) => {
           source: 'csv', // Mark as CSV import
         };
         
-        console.log(`CSV Batch Upload: Creating transaction for user ${userId}:`, {
-          userId: transactionData.userId,
+        // CRITICAL FIX: Double-check user ID assignment
+        if (transactionData.userId !== userId) {
+          throw new Error(`User ID mismatch: expected ${userId}, got ${transactionData.userId}`);
+        }
+        
+        console.log(`CSV Batch Upload: Creating transaction ${i+1}/${transactions.length} for authenticated user ${userId}:`, {
+          authenticatedUserId: userId,
+          transactionUserId: transactionData.userId,
           amount: transactionData.amount,
           merchant: transactionData.merchant,
-          date: transactionData.date
+          date: transactionData.date,
+          source: transactionData.source
         });
         
         // Create the transaction using storage interface
         const newTransaction = await storage.createTransaction(transactionData);
+        
+        // CRITICAL FIX: Verify the created transaction has the correct user ID
+        if (newTransaction.userId !== userId) {
+          console.error(`CRITICAL ERROR: Transaction created with wrong user ID! Expected: ${userId}, Got: ${newTransaction.userId}`);
+          throw new Error(`Transaction saved with incorrect user ID: expected ${userId}, got ${newTransaction.userId}`);
+        }
         
         if (!newTransaction || !newTransaction.id) {
           throw new Error('Transaction creation failed - no ID returned');
