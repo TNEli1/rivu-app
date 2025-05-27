@@ -475,6 +475,12 @@ export class DatabaseStorage implements IStorage {
     // Make sure we have the required type field
     const typeValue = transaction.type || 'expense';
     
+    // CRITICAL FIX: Ensure category is never null for CSV transactions
+    const categoryValue = transaction.category || 'Uncategorized';
+    
+    // CRITICAL FIX: Ensure merchant/description is never null
+    const merchantValue = transaction.merchant || transaction.description || 'Unknown Transaction';
+    
     // Check for duplicate transactions
     const isDuplicate = await this.checkForDuplicateTransactions(transaction);
     
@@ -517,6 +523,8 @@ export class DatabaseStorage implements IStorage {
       .values({
         ...transaction,
         type: typeValue,
+        category: categoryValue,
+        merchant: merchantValue,
         date: dateValue,
         source: transaction.source || 'manual',
         isDuplicate: isDuplicate,
