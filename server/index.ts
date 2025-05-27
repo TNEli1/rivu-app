@@ -102,8 +102,9 @@ const PgSession = ConnectPgSimple(session);
 app.use(session({
   store: new PgSession({
     pool: pool,
-    tableName: 'session',
-    createTableIfMissing: true
+    tableName: 'user_sessions',
+    createTableIfMissing: true,
+    pruneSessionInterval: 86400 // clean up expired sessions daily (24 hours in seconds)
   }),
   secret: process.env.SESSION_SECRET || 'rivu_session_secret_dev',
   resave: false,
@@ -111,8 +112,8 @@ app.use(session({
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-    maxAge: 1000 * 60 * 60 * 24 // 24 hours
+    sameSite: 'lax',
+    maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
   }
 }));
 
