@@ -167,6 +167,50 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
+  // Generate clean username from email and name
+  private async generateCleanUsername(email: string, firstName: string, lastName: string): Promise<string> {
+    // Extract base from email (before @)
+    const emailBase = email.split('@')[0].toLowerCase();
+    
+    // Create clean version: remove numbers and special chars, keep only letters
+    const cleanEmailBase = emailBase.replace(/[^a-z]/g, '');
+    
+    // Create name-based alternative
+    const firstInitial = firstName.charAt(0).toLowerCase();
+    const cleanLastName = lastName.toLowerCase().replace(/[^a-z]/g, '');
+    
+    // Try different username patterns in order of preference
+    const patterns = [
+      cleanEmailBase,
+      `${firstInitial}_${cleanLastName}`,
+      `${firstName.toLowerCase()}_${cleanLastName}`,
+      `${cleanEmailBase}_${firstInitial}${cleanLastName}`,
+    ];
+    
+    // Check each pattern for availability
+    for (const pattern of patterns) {
+      if (pattern.length >= 3) { // Minimum length check
+        const existing = await this.getUserByUsername(pattern);
+        if (!existing) {
+          return pattern;
+        }
+        
+        // Try with numbers 1-999 if base pattern is taken
+        for (let i = 1; i <= 999; i++) {
+          const numbered = `${pattern}${i}`;
+          const existingNumbered = await this.getUserByUsername(numbered);
+          if (!existingNumbered) {
+            return numbered;
+          }
+        }
+      }
+    }
+    
+    // Fallback to timestamp-based username (should rarely happen)
+    const timestamp = Date.now().toString().slice(-6);
+    return `user_${timestamp}`;
+  }
+
   async createGoogleUser(userData: {
     googleId: string;
     email: string;
@@ -176,8 +220,8 @@ export class DatabaseStorage implements IStorage {
     authMethod: string;
     emailVerified: boolean;
   }): Promise<User> {
-    // Generate username from email
-    const username = userData.email.split('@')[0] + '_' + Math.random().toString(36).substring(7);
+    // Generate clean username from email and name
+    const username = await this.generateCleanUsername(userData.email, userData.firstName, userData.lastName);
     
     // Generate avatar initials
     const avatarInitials = (userData.firstName.charAt(0) + userData.lastName.charAt(0)).toUpperCase();

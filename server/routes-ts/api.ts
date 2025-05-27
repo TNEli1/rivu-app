@@ -173,9 +173,19 @@ async function initializeRoutes() {
     });
     
     // Plaid Integration Routes
-    router.post('/plaid/link-token', protect, createLinkToken);
-    router.post('/plaid/exchange-token', protect, exchangePublicToken);
+    const { 
+      createLinkToken, 
+      exchangePublicToken, 
+      getConnectedAccounts,
+      refreshAccountData,
+      disconnectAccount 
+    } = await import('../controllers-ts/plaidController.ts');
+    
+    router.post('/plaid/create_link_token', protect, createLinkToken);
+    router.post('/plaid/exchange_public_token', protect, exchangePublicToken);
+    router.post('/plaid/exchange_token', protect, exchangePublicToken); // Alternative endpoint name
     router.get('/plaid/accounts', protect, getConnectedAccounts);
+    router.post('/plaid/accounts', protect, getConnectedAccounts); // Support POST as well
     router.post('/plaid/refresh/:id', protect, refreshAccountData);
     router.delete('/plaid/disconnect/:id', protect, disconnectAccount);
     

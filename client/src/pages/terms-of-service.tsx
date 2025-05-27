@@ -2,12 +2,12 @@ import { Link } from "wouter";
 
 export default function TermsOfService() {
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: 'white', color: 'black' }}>
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white shadow-lg rounded-lg p-8">
+        <div className="bg-white shadow-lg rounded-lg p-8" style={{ backgroundColor: 'white', color: 'black' }}>
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Terms of Service</h1>
-            <p className="text-gray-600">Last updated: {new Date().toLocaleDateString()}</p>
+            <h1 className="text-3xl font-bold mb-4" style={{ color: 'black' }}>Terms of Service</h1>
+            <p style={{ color: '#4a5568' }}>Last updated: {new Date().toLocaleDateString()}</p>
           </div>
 
           <div className="prose max-w-none">
