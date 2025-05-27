@@ -514,7 +514,7 @@ export const createTransactionsBatch = async (req: any, res: any) => {
           merchant: txData.merchant || 'Unknown',
           category: txData.category || 'Uncategorized', // Always provide default category
           account: txData.account || 'Imported',
-          type: txData.type || 'expense',
+          type: transactionType, // Use the corrected transaction type based on amount
           notes: txData.notes || '',
           source: 'csv', // Mark as CSV import
         };
