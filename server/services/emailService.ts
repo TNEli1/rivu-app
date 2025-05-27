@@ -14,7 +14,24 @@ interface EmailData {
  */
 export async function sendEmail(emailData: EmailData): Promise<boolean> {
   try {
-    // CRITICAL FIX: Always use Postmark if API key is available, regardless of environment
+    // CRITICAL FIX: In development, skip Postmark for test emails and simulate success
+    if (process.env.NODE_ENV === 'development' && emailData.to.includes('example.com')) {
+      console.log('\n\n====== EMAIL VERIFICATION SIMULATION (DEV MODE) ======');
+      console.log(`To: ${emailData.to}`);
+      console.log(`Subject: ${emailData.subject}`);
+      console.log(`Text content: ${emailData.text.substring(0, 200)}...`);
+      
+      // Extract verification URL for easy testing
+      const verificationUrlMatch = emailData.html.match(/href="([^"]+verify-email[^"]*)/);
+      if (verificationUrlMatch && verificationUrlMatch[1]) {
+        console.log('\n✅ VERIFICATION LINK: ' + verificationUrlMatch[1]);
+      }
+      
+      console.log('====== EMAIL SIMULATED SUCCESSFULLY ======\n\n');
+      return true;
+    }
+    
+    // Use Postmark for production and real emails
     if (process.env.POSTMARK_API_KEY) {
       console.log('Sending email via Postmark API');
       console.log('Email configuration:');

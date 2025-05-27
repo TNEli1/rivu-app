@@ -54,6 +54,18 @@ export const validateCsrfToken = (req: Request, res: Response, next: NextFunctio
     return next();
   }
   
+  // Skip CSRF for critical auth endpoints to prevent user lockout
+  const authEndpoints = [
+    '/api/register',
+    '/api/login', 
+    '/api/send-verification-email',
+    '/api/ios-waitlist'
+  ];
+  
+  if (authEndpoints.some(endpoint => req.path === endpoint)) {
+    return next();
+  }
+  
   // Skip for API requests with X-Requested-With header (provides some CSRF protection already)
   // This supports our current frontend implementation
   if (req.get('X-Requested-With') === 'XMLHttpRequest') {

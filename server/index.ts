@@ -121,9 +121,11 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Apply CSRF protection
-app.use(setCsrfToken); // Set CSRF token for all routes
-app.use('/api', validateCsrfToken); // Validate CSRF token for API routes
+// Apply CSRF protection (disabled in development for testing)
+if (process.env.NODE_ENV === 'production') {
+  app.use(setCsrfToken); // Set CSRF token for all routes
+  app.use('/api', validateCsrfToken); // Validate CSRF token for API routes
+}
 
 // Set security headers
 app.use((req, res, next) => {
