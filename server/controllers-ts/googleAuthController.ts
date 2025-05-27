@@ -60,10 +60,9 @@ export const googleCallback = [
       res.cookie(TOKEN_COOKIE_NAME, token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax', // Keep as lax for production OAuth
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // CRITICAL: Use 'none' for cross-site OAuth in production
         maxAge: JWT_EXPIRY * 1000,
-        // Don't set domain in production to work with exact domain (www.tryrivu.com)
-        domain: process.env.NODE_ENV === 'production' ? undefined : undefined,
+        domain: process.env.NODE_ENV === 'production' ? '.tryrivu.com' : undefined, // Share cookies across subdomains
         path: '/' // Ensure cookie is available site-wide
       });
 
@@ -71,7 +70,8 @@ export const googleCallback = [
       console.log('Google OAuth: Cookie settings:', {
         name: TOKEN_COOKIE_NAME,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        domain: process.env.NODE_ENV === 'production' ? '.tryrivu.com' : undefined,
         maxAge: JWT_EXPIRY * 1000
       });
 
