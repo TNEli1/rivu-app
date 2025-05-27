@@ -83,16 +83,31 @@ export const googleCallback = [
       // CRITICAL: Call req.login() to establish Passport session
       req.login(user, (loginError) => {
         if (loginError) {
-          console.error('Google OAuth: Failed to establish session:', loginError);
+          console.error('GOOGLE_OAUTH_ERROR: Failed to establish session:', {
+            error: loginError,
+            userId: user.id,
+            email: user.email,
+            sessionID: req.sessionID
+          });
           return res.redirect('/auth?error=session_error');
         }
         
-        console.log('Google OAuth: Session established for user ID:', user.id);
-        console.log('Google OAuth: req.isAuthenticated():', req.isAuthenticated());
-        console.log('Google OAuth: Session ID:', req.sessionID);
+        console.log('GOOGLE_OAUTH_SUCCESS: Session established successfully:', {
+          userId: user.id,
+          email: user.email,
+          isAuthenticated: req.isAuthenticated(),
+          sessionID: req.sessionID,
+          cookieSet: !!res.getHeader('Set-Cookie'),
+          environment: process.env.NODE_ENV
+        });
         
-        // Redirect directly to dashboard - session is now established
-        res.redirect('/dashboard');
+        // CRITICAL: Force redirect to dashboard with explicit path
+        const redirectUrl = process.env.NODE_ENV === 'production' 
+          ? 'https://www.tryrivu.com/dashboard'
+          : 'http://localhost:5000/dashboard';
+          
+        console.log('GOOGLE_OAUTH_REDIRECT: Redirecting to:', redirectUrl);
+        res.redirect(redirectUrl);
       });
       
     } catch (error) {

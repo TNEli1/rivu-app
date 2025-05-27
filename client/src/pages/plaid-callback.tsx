@@ -37,7 +37,12 @@ export default function PlaidCallback() {
           console.log('Recovered OAuth state ID from sessionStorage:', oauthStateId);
         }
 
-        console.log('OAuth callback received with state ID:', oauthStateId);
+        console.log('PLAID_CALLBACK_START: OAuth callback initiated:', {
+          oauthStateId,
+          fullUrl: window.location.href,
+          searchParams: window.location.search,
+          timestamp: new Date().toISOString()
+        });
 
         // Wait for the auth check to complete
         if (isLoading) {

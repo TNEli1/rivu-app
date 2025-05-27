@@ -68,7 +68,11 @@ export const createLinkToken = async (req: Request, res: Response) => {
       ? 'https://www.tryrivu.com/api/plaid/webhook'
       : 'http://localhost:5000/api/plaid/webhook';
 
-    console.log('Creating Plaid link token with webhook URL:', webhook);
+    console.log('PLAID_TOKEN_CREATE: Starting link token creation:', {
+      userId,
+      webhook,
+      environment: process.env.PLAID_ENV
+    });
 
     // CRITICAL: Do NOT include redirect_uri unless specifically needed for OAuth banks
     // Including it forces ALL users into OAuth mode before bank selection
@@ -84,10 +88,12 @@ export const createLinkToken = async (req: Request, res: Response) => {
       // DO NOT include redirect_uri here - let Plaid handle OAuth internally when needed
     };
 
-    console.log('Plaid link token request:', { 
+    console.log('PLAID_TOKEN_REQUEST: Link token request payload:', { 
       ...request, 
       client_id: process.env.PLAID_CLIENT_ID,
-      environment: process.env.PLAID_ENV 
+      environment: process.env.PLAID_ENV,
+      hasRedirectUri: false,
+      hasInstitutionId: false
     });
 
     const response = await plaidClient.linkTokenCreate(request);
@@ -102,8 +108,13 @@ export const createLinkToken = async (req: Request, res: Response) => {
       linkToken: response.data.link_token
     });
     
-    console.log('Plaid link token created successfully with OAuth state:', oauthStateId);
-    console.log('Stored OAuth state for user:', userId);
+    console.log('PLAID_TOKEN_SUCCESS: Link token created successfully:', {
+      linkToken: response.data.link_token.substring(0, 20) + '...',
+      oauthStateId,
+      userId,
+      expiration: response.data.expiration,
+      requestId: response.data.request_id
+    });
     
     return res.json({ 
       link_token: response.data.link_token,

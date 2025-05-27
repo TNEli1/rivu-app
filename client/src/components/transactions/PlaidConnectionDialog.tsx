@@ -140,13 +140,15 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
   const onSuccess: PlaidLinkOnSuccess = useCallback(async (public_token, metadata) => {
     setLoading(true);
     try {
-      console.log('Plaid Link success with metadata:', 
-        metadata ? JSON.stringify({
-          institution_id: metadata.institution?.institution_id,
-          link_session_id: metadata.link_session_id,
-          accounts_connected: metadata.accounts?.length || 0
-        }) : 'No metadata'
-      );
+      console.log('PLAID_LINK_SUCCESS: Token received successfully:', {
+        hasPublicToken: !!public_token,
+        publicTokenPreview: public_token ? public_token.substring(0, 20) + '...' : 'none',
+        institutionId: metadata?.institution?.institution_id,
+        institutionName: metadata?.institution?.name,
+        linkSessionId: metadata?.link_session_id,
+        accountsConnected: metadata?.accounts?.length || 0,
+        timestamp: new Date().toISOString()
+      });
       
       // Store success data with OAuth state handling in localStorage
       const linkConfig = localStorage.getItem('plaid_link_config');
@@ -210,10 +212,24 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
   }, [onClose, queryClient, toast]);
 
   // Handle any errors from Plaid Link
-  const onExit: PlaidLinkOnExit = useCallback((err) => {
+  const onExit: PlaidLinkOnExit = useCallback((err, metadata) => {
+    console.log('PLAID_LINK_EXIT: User exited Plaid Link:', {
+      hasError: !!err,
+      errorType: err?.error_type,
+      errorCode: err?.error_code,
+      errorMessage: err?.error_message,
+      displayMessage: err?.display_message,
+      institutionId: metadata?.institution?.institution_id,
+      institutionName: metadata?.institution?.name,
+      linkSessionId: metadata?.link_session_id,
+      requestId: metadata?.request_id,
+      status: metadata?.status,
+      timestamp: new Date().toISOString()
+    });
+    
     if (err) {
-      console.error('Plaid Link error:', err);
-      setError(err.error_message || 'Error connecting to bank');
+      console.error('PLAID_LINK_ERROR: Error during bank connection:', err);
+      setError(err.error_message || err.display_message || 'Error connecting to bank');
     }
   }, []);
 
