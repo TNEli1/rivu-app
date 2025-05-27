@@ -136,7 +136,7 @@ app.use('/api', async (req: any, res: any, next: any) => {
     
     if (token) {
       const jwt = await import('jsonwebtoken');
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'rivu_jwt_secret_dev') as any;
+      const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'rivu_jwt_secret_dev') as any;
       console.log('JWT Middleware - Decoded token:', decoded);
       
       // Set user in request object for route handlers
