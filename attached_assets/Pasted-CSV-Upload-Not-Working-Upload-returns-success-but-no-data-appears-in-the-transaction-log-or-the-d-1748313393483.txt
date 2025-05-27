@@ -1,0 +1,62 @@
+CSV Upload Not Working
+	•	Upload returns success but no data appears in the transaction log or the database.
+	•	Fix: Backend must fully parse, validate, and insert CSV data. Add logging for CSV parse result, and ensure DB insert logic is triggered.
+
+⸻
+
+2. “Clear All” Transactions Button – 500 Error
+	•	Pressing “Clear All” results in a server error.
+	•	Fix: Check if user session is validated before delete. Ensure delete command is correctly scoped to the authenticated user’s transaction table.
+
+⸻
+
+3. Delete All User Data – Incomplete
+	•	UI says “data will be deleted and you will be logged out,” but:
+	•	User is logged out
+	•	Data is not deleted
+	•	Same email can be used again and old data reappears
+	•	Fix: Change order of operations to:
+	1.	Delete all data (transactions, goals, budgets, etc.)
+	2.	Then delete user record
+	3.	Then destroy session + redirect
+
+⸻
+
+4. Email Verification Not Sent
+	•	Registering shows “403 email not verified” on login
+	•	But no verification email is ever sent
+	•	Fix: Confirm Postmark API is being triggered on new user creation. Fallback to logging if API call fails.
+
+⸻
+
+5. AI Coach – Knowledge Base Error
+	•	AI assistant shows: “Trouble accessing knowledge base, try again later”
+	•	Fix: Ensure vector database or knowledge base index is mounted in production. Confirm fallback message renders only on genuine failure, not every time.
+
+⸻
+
+6. Nudges Still Show Completed Tasks
+	•	Users see nudges telling them to take actions they already completed.
+	•	Fix: Add real-time tracking of completed actions. Set flags in DB or state management to suppress completed nudges.
+
+⸻
+
+7. Tutorial Still Not Showing
+	•	New users are not shown the tutorial
+	•	Fix: Confirm default value tutorialCompleted = false is correctly applied on user creation. Confirm logic to trigger tutorial onboarding fires when this flag is false.
+
+⸻
+
+Plaid Error: Remove for Now
+	•	Plaid integration is failing due to callback redirect errors.
+	•	Skip fixing for now. This is expected until https://tryrivu.com is verified as a domain.
+	•	Leave all Plaid logic intact; just skip QA on this item for now.
+
+⸻
+
+BONUS: Create troubleshooting.md
+	•	This file should:
+	•	List all current known issues
+	•	Include symptoms, root cause, and fix status
+	•	Be updated with each deployment until stable
+	•	Include date + commit link for traceability
