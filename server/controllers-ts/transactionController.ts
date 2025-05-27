@@ -431,17 +431,37 @@ export const createTransactionsBatch = async (req: any, res: any) => {
         
         // Parse amount
         let amount: string;
+        let transactionType = txData.type || 'expense';
         try {
           // Handle amount as string or number
-          const parsedAmount = typeof txData.amount === 'string' 
+          let parsedAmount = typeof txData.amount === 'string' 
             ? parseFloat(txData.amount.replace(/[^0-9.-]/g, ''))
             : parseFloat(txData.amount);
             
-          if (isNaN(parsedAmount) || parsedAmount <= 0) {
+          if (isNaN(parsedAmount)) {
             console.error(`CSV Batch Upload: Invalid amount for transaction ${i}: ${txData.amount}`);
             errors.push({
               index: i,
-              message: 'Invalid amount: must be a positive number'
+              message: 'Invalid amount: not a valid number'
+            });
+            errorCount++;
+            continue;
+          }
+          
+          // Handle negative amounts - convert to positive and set type to expense
+          if (parsedAmount < 0) {
+            transactionType = 'expense';
+            parsedAmount = Math.abs(parsedAmount);
+          } else if (parsedAmount > 0 && txData.type === 'income') {
+            transactionType = 'income';
+          }
+          
+          // Ensure we have a positive amount value
+          if (parsedAmount === 0) {
+            console.error(`CSV Batch Upload: Zero amount for transaction ${i}: ${txData.amount}`);
+            errors.push({
+              index: i,
+              message: 'Amount cannot be zero'
             });
             errorCount++;
             continue;
