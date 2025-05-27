@@ -43,9 +43,9 @@ export const createLinkToken = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    // Use correct production redirect URIs that match Plaid dashboard configuration
+    // CRITICAL: Set proper redirect URI for production OAuth banks that matches your Plaid dashboard
     const redirectUri = process.env.NODE_ENV === 'production' 
-      ? 'https://www.tryrivu.com/plaid-callback'  // Use www subdomain for production
+      ? 'https://tryrivu.com/plaid-callback'  // Must match exactly what's configured in Plaid dashboard
       : 'http://localhost:5000/plaid-callback';
 
     // Use correct production webhook URL

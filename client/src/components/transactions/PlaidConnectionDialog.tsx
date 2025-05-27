@@ -210,6 +210,11 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
     ? 'https://tryrivu.com/plaid-callback'
     : 'http://localhost:5000/plaid-callback';
     
+  // Generate and store OAuth state for recovery
+  const oauthStateId = React.useMemo(() => {
+    return Math.floor(Math.random() * 10000000).toString();
+  }, [linkToken]);
+
   const config = {
     token: linkToken || '',
     onSuccess,
@@ -217,8 +222,17 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
     // OAuth configuration for production banks like Chase
     receivedRedirectUri: window.location.href,
     oauthRedirectUri,
-    oauthNonce: Math.floor(Math.random() * 10000000).toString(),
+    oauthNonce: oauthStateId,
   };
+
+  // CRITICAL: Store OAuth state and link token for recovery after redirect
+  React.useEffect(() => {
+    if (linkToken && oauthStateId) {
+      sessionStorage.setItem('plaid_oauth_state_id', oauthStateId);
+      sessionStorage.setItem('plaid_link_token', linkToken);
+      console.log('Stored OAuth state for recovery:', { oauthStateId, linkToken: linkToken.substring(0, 10) + '...' });
+    }
+  }, [linkToken, oauthStateId]);
   
   console.log('Plaid Link config:', { 
     ...config, 

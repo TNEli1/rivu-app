@@ -472,18 +472,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // GET route for Plaid OAuth callback (for production OAuth redirects)
     app.get('/plaid-callback', async (req: any, res: any) => {
       try {
-        const { oauth_state_id } = req.query;
+        const { oauth_state_id, link_token } = req.query;
+        
+        console.log('Plaid OAuth callback received:', { oauth_state_id, link_token });
         
         if (!oauth_state_id) {
-          console.error('Plaid OAuth callback: Missing oauth_state_id');
-          // Redirect to dashboard with error instead of failing completely
+          console.error('Plaid OAuth callback: Missing oauth_state_id, checking for link_token');
+          
+          // If oauth_state_id is missing but we have link_token, use that as fallback
+          if (link_token) {
+            console.log('Using link_token as fallback for oauth_state_id');
+            return res.redirect(`/plaid-callback?oauth_state_id=${encodeURIComponent(link_token)}`);
+          }
+          
+          // No state recovery possible
           return res.redirect('/dashboard?error=plaid_oauth_missing_state');
         }
         
         console.log('Processing Plaid OAuth callback for state:', oauth_state_id);
         
-        // Redirect to frontend callback page with the oauth_state_id
-        // This allows the frontend to handle the OAuth completion
+        // CRITICAL: Redirect to frontend callback page with the oauth_state_id
+        // This allows the frontend to handle the OAuth completion with proper state management
         res.redirect(`/plaid-callback?oauth_state_id=${encodeURIComponent(oauth_state_id)}`);
         
       } catch (error: any) {

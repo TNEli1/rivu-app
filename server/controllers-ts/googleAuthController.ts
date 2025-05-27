@@ -80,8 +80,18 @@ export const googleCallback = [
       
       console.log('Google OAuth: Session created, redirecting to dashboard with auth token');
       
-      // Redirect to dashboard with auth token as backup
-      res.redirect(`/dashboard?auth=${authParam}`);
+      // CRITICAL: Call req.login() to establish Passport session
+      req.login(user, (loginError) => {
+        if (loginError) {
+          console.error('Google OAuth: Failed to establish session:', loginError);
+          return res.redirect('/auth?error=session_error');
+        }
+        
+        console.log('Google OAuth: Session established for user ID:', user.id);
+        
+        // Redirect to dashboard with auth token as backup
+        res.redirect(`/dashboard?auth=${authParam}`);
+      });
       
     } catch (error) {
       console.error('Google OAuth callback error:', error);

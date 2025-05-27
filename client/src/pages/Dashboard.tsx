@@ -211,11 +211,14 @@ export default function Dashboard() {
         document.cookie = `rivu_token=${decodeURIComponent(authToken)}; path=/; max-age=${60 * 60 * 2}; secure=${window.location.protocol === 'https:'}; samesite=lax`;
         console.log('Google OAuth: Auth token stored from URL parameter');
         
+        // CRITICAL: Set login state flag for immediate frontend authentication
+        localStorage.setItem('rivuLoggedIn', 'true');
+        
         // Clean up the URL
         const cleanUrl = window.location.pathname;
         window.history.replaceState({}, '', cleanUrl);
         
-        // Force page reload to trigger authentication
+        // Force page reload to trigger authentication state update
         window.location.reload();
       } catch (error) {
         console.error('Error processing Google OAuth auth token:', error);
