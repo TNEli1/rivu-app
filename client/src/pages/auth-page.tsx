@@ -21,7 +21,10 @@ export default function AuthPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordsMatch, setPasswordsMatch] = useState(true);
   const [passwordStrength, setPasswordStrength] = useState(0);
-  const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    return saved === 'dark';
+  });
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [redirectPath, setRedirectPath] = useState("/dashboard");
   
