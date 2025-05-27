@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { ArrowRight, PieChart, Target, TrendingUp, BarChart2, Shield, FileSpreadsheet, Lock, Edit3, Brain, DollarSign, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,8 @@ export default function LandingPage() {
   const { theme } = useTheme();
   const { user } = useAuth();
   const [, setLocation] = useLocation();
+  const [waitlistMessage, setWaitlistMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Redirect authenticated users to dashboard
   useEffect(() => {
@@ -409,6 +411,9 @@ export default function LandingPage() {
             <form 
               onSubmit={async (e) => {
                 e.preventDefault();
+                setIsSubmitting(true);
+                setWaitlistMessage('');
+                
                 const formData = new FormData(e.currentTarget);
                 const email = formData.get('email') as string;
                 const name = formData.get('name') as string;
@@ -420,14 +425,18 @@ export default function LandingPage() {
                     body: JSON.stringify({ email, name }),
                   });
                   
+                  const data = await response.json();
+                  
                   if (response.ok) {
-                    alert("Thanks! We'll notify you when the iOS app is ready.");
+                    setWaitlistMessage("✅ Thanks! We'll notify you when the iOS app is ready.");
                     e.currentTarget.reset();
                   } else {
-                    alert('Failed to join waitlist. Please try again.');
+                    setWaitlistMessage("❌ Failed to join waitlist. Please try again.");
                   }
                 } catch (error) {
-                  alert('Something went wrong. Please try again later.');
+                  setWaitlistMessage("❌ Something went wrong. Please try again later.");
+                } finally {
+                  setIsSubmitting(false);
                 }
               }}
               className="space-y-4"
@@ -451,11 +460,22 @@ export default function LandingPage() {
                 type="submit"
                 size="lg" 
                 className="w-full bg-white text-purple-600 hover:bg-gray-100 font-semibold"
+                disabled={isSubmitting}
               >
-                Join iOS Early Access
-                <ArrowRight className="ml-2 h-4 w-4" />
+                {isSubmitting ? 'Joining...' : 'Join iOS Early Access'}
+                {!isSubmitting && <ArrowRight className="ml-2 h-4 w-4" />}
               </Button>
             </form>
+            
+            {waitlistMessage && (
+              <div className={`mt-4 p-4 rounded-lg text-center ${
+                waitlistMessage.includes('✅') 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                {waitlistMessage}
+              </div>
+            )}
           </div>
           
           <p className="text-sm mt-4 opacity-75">
