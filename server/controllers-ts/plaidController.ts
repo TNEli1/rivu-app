@@ -31,31 +31,23 @@ export const createLinkToken = async (req: Request, res: Response) => {
       return res.status(500).json({ error: 'Bank connection not configured - missing client ID' });
     }
     
-    const plaidSecret = process.env.PLAID_ENV === 'production' 
-      ? process.env.PLAID_SECRET_PRODUCTION 
-      : process.env.PLAID_SECRET_SANDBOX || process.env.PLAID_SECRET;
+    const plaidSecret = process.env.PLAID_SECRET_PRODUCTION;
       
     if (!plaidSecret) {
-      console.error('Plaid secret is missing for environment:', process.env.PLAID_ENV);
+      console.error('Plaid production secret is missing');
       return res.status(500).json({ error: 'Bank connection not configured - missing secret' });
     }
 
-    const userId = req.user?.id;
+    const userId = (req.user as any)?.id;
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    // Set redirect URI dynamically based on domain
-    const host = req.get('host') || '';
-    const isProductionDomain = host === 'tryrivu.com' || host === 'www.tryrivu.com';
-    const redirectUri = isProductionDomain
-      ? 'https://tryrivu.com/plaid-callback'
-      : `${req.protocol}://${host}/plaid-callback`;
+    // Always use production redirect URI since we're in production mode
+    const redirectUri = 'https://tryrivu.com/plaid-callback';
 
-    // Set webhook URL dynamically based on domain
-    const webhook = isProductionDomain
-      ? 'https://tryrivu.com/api/plaid/webhook'
-      : `${req.protocol}://${host}/api/plaid/webhook`;
+    // Always use production webhook URL since we're in production mode
+    const webhook = 'https://tryrivu.com/api/plaid/webhook';
 
     console.log('Creating Plaid link token with redirect URI:', redirectUri);
     console.log('Creating Plaid link token with webhook URL:', webhook);

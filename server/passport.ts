@@ -22,15 +22,24 @@ passport.use(new GoogleStrategy({
       if (!existingUser.googleId) {
         const updatedUser = await storage.linkGoogleAccount(existingUser.id, profile.id, profile.photos?.[0]?.value);
         // Mark email as verified since they used Google OAuth
-        await storage.updateUser(existingUser.id, { emailVerified: true });
+        await storage.updateUser(existingUser.id, { emailVerified: true, authMethod: 'google' });
         console.log('Linked Google account to existing user and verified email:', email);
-        return done(null, { ...updatedUser, emailVerified: true });
+        return done(null, { ...updatedUser, emailVerified: true, authMethod: 'google' });
       }
-      // User already has Google linked - ensure email is verified
+      // User already has Google linked - ensure email is verified and auth method is set
+      const updateData: any = {};
       if (!existingUser.emailVerified) {
-        await storage.updateUser(existingUser.id, { emailVerified: true });
-        existingUser.emailVerified = true;
+        updateData.emailVerified = true;
       }
+      if (existingUser.authMethod !== 'google') {
+        updateData.authMethod = 'google';
+      }
+      
+      if (Object.keys(updateData).length > 0) {
+        await storage.updateUser(existingUser.id, updateData);
+        Object.assign(existingUser, updateData);
+      }
+      
       console.log('Existing Google user logging in:', email);
       return done(null, existingUser);
     }

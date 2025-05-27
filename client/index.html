@@ -42,18 +42,27 @@
     <link rel="canonical" href="https://tryrivu.com/" />
   </head>
   <body>
-    <!-- Ensure light mode loads first to prevent flash -->
+    <!-- Initialize theme properly to respect system preferences -->
     <script>
       // Initialize theme before React loads to prevent flash
       const savedTheme = localStorage.getItem('theme');
-      if (savedTheme === 'dark') {
+      let themeToApply = 'light';
+      
+      if (savedTheme === 'dark' || savedTheme === 'light') {
+        themeToApply = savedTheme;
+      } else {
+        // Check system preference if no saved theme
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          themeToApply = 'dark';
+        }
+        // Save the detected preference
+        localStorage.setItem('theme', themeToApply);
+      }
+      
+      if (themeToApply === 'dark') {
         document.documentElement.classList.add('dark');
       } else {
-        // Default to light mode
         document.documentElement.classList.remove('dark');
-        if (!savedTheme) {
-          localStorage.setItem('theme', 'light');
-        }
       }
     </script>
     <div id="root"></div>
