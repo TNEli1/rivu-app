@@ -3,13 +3,15 @@ import { Configuration, PlaidApi, PlaidEnvironments, Products, CountryCode } fro
 
 // Initialize Plaid client
 const plaidConfig = new Configuration({
-  basePath: process.env.NODE_ENV === 'production' 
+  basePath: process.env.PLAID_ENV === 'production' 
     ? PlaidEnvironments.production 
-    : PlaidEnvironments.sandbox,
+    : process.env.PLAID_ENV === 'sandbox'
+    ? PlaidEnvironments.sandbox
+    : PlaidEnvironments.development,
   baseOptions: {
     headers: {
       'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
-      'PLAID-SECRET': process.env.NODE_ENV === 'production' 
+      'PLAID-SECRET': process.env.PLAID_ENV === 'production' 
         ? process.env.PLAID_SECRET_PRODUCTION 
         : process.env.PLAID_SECRET_SANDBOX || process.env.PLAID_SECRET,
     },
@@ -29,12 +31,10 @@ export const createLinkToken = async (req: Request, res: Response) => {
       return res.status(500).json({ error: 'Bank connection not configured - missing client ID' });
     }
     
-    const plaidSecret = process.env.NODE_ENV === 'production' 
-      ? process.env.PLAID_SECRET_PRODUCTION 
-      : process.env.PLAID_SECRET_SANDBOX || process.env.PLAID_SECRET;
+    const plaidSecret = process.env.PLAID_SECRET_PRODUCTION;
       
     if (!plaidSecret) {
-      console.error('Plaid secret is missing for environment:', process.env.NODE_ENV);
+      console.error('Plaid production secret is missing');
       return res.status(500).json({ error: 'Bank connection not configured - missing secret' });
     }
 
