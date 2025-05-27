@@ -277,14 +277,15 @@ export default function Dashboard() {
         setLocation('/onboarding');
       }
       
-      // Show tutorial only for users who haven't completed it - use server state as source of truth
-      const shouldShowTutorial = user.tutorialCompleted === false || user.tutorialCompleted === undefined;
+      // Show tutorial only for users who explicitly haven't completed it (false)
+      // Don't show for undefined (existing users) - they must manually access from settings
+      const shouldShowTutorial = user.tutorialCompleted === false;
       
       if (shouldShowTutorial) {
         // Check localStorage to avoid showing tutorial again in same session if already dismissed
         const tutorialDismissedThisSession = localStorage.getItem('tutorial_dismissed_session');
         if (!tutorialDismissedThisSession) {
-          console.log('Showing tutorial for user - tutorial completed:', user.tutorialCompleted);
+          console.log('Showing tutorial for new user - tutorial completed:', user.tutorialCompleted);
           setShowTutorial(true);
         }
       }

@@ -96,11 +96,26 @@ export default function OnboardingTutorial({ onClose }: { onClose: () => void })
     // Close tutorial immediately
     onClose();
     
-    // Don't mark as completed in database when skipping - let them see it again on next login
-    toast({
-      title: "Tutorial skipped",
-      description: "You can access the tutorial anytime from Settings"
-    });
+    // Mark as completed in database when skipping to prevent future showings
+    // User can always access tutorial again from settings
+    updateProfileMutation.mutate(
+      { tutorialCompleted: true },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Tutorial skipped",
+            description: "You can always view it again from the settings page"
+          });
+        },
+        onError: (error) => {
+          console.error('Failed to save tutorial skip:', error);
+          toast({
+            title: "Tutorial skipped",
+            description: "You can access the tutorial anytime from Settings"
+          });
+        }
+      }
+    );
   };
   
   return (
