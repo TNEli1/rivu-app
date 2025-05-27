@@ -28,7 +28,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       updateUserProfile,
       updateDemographics,
       updateLoginMetrics,
-      protect,
       protect
     } = await import('./controllers-ts/userController');
     
@@ -777,7 +776,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Transactions API with enhanced categorization
-  app.get("/api/transactions", protect, async (req, res) => {
+  app.get("/api/transactions", async (req, res) => {
     const userId = getCurrentUserId(req);
     const transactions = await storage.getTransactions(userId);
     
