@@ -96,15 +96,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           db.delete(plaidItems).where(eq(plaidItems.userId, userId))
         ]);
         
-        // Finally delete the user account
-        await db.delete(users).where(eq(users.id, userId));
-        
-        // Clear the user's session cookie
+        // Clear the user's session cookie FIRST to prevent 401 errors
         res.clearCookie('rivu_token');
+        
+        // Finally delete the user account
+        const deletedUser = await db.delete(users).where(eq(users.id, userId)).returning();
+        
+        console.log(`Successfully deleted user account and all data for user ID: ${userId}`);
         
         res.json({ 
           message: 'All user data has been permanently deleted',
-          deletedAt: new Date().toISOString()
+          deletedAt: new Date().toISOString(),
+          success: true
         });
       } catch (error) {
         console.error('Data deletion error:', error);
