@@ -26,33 +26,46 @@ export const googleCallback = [
   passport.authenticate('google', { 
     failureRedirect: '/auth?error=google_auth_failed' 
   }),
-  (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     try {
       const user = req.user as User;
       
       if (!user) {
+        console.error('Google OAuth: No user found after authentication');
         return res.redirect('/auth?error=authentication_failed');
       }
+
+      console.log('Google OAuth callback success for user:', user.email, 'ID:', user.id);
+
+      // Update login metrics
+      const { storage } = await import('../storage');
+      await storage.updateUser(user.id, {
+        loginCount: (user.loginCount || 0) + 1,
+        lastLogin: new Date()
+      });
 
       // Generate JWT token - use 'id' field to match authentication middleware
       const token = jwt.sign(
         { 
           id: user.id, 
           email: user.email,
-          authMethod: user.authMethod 
+          authMethod: user.authMethod || 'google'
         },
         JWT_SECRET,
         { expiresIn: JWT_EXPIRY }
       );
 
-      // Set secure cookie
+      // Set secure cookie for production domain
       res.cookie(TOKEN_COOKIE_NAME, token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: JWT_EXPIRY * 1000
+        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+        maxAge: JWT_EXPIRY * 1000,
+        domain: process.env.NODE_ENV === 'production' ? '.tryrivu.com' : undefined
       });
 
+      console.log('Google OAuth: Session created, redirecting to dashboard');
+      
       // Redirect to dashboard on successful login
       res.redirect('/dashboard');
       

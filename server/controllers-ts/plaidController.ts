@@ -45,6 +45,13 @@ export const createLinkToken = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
+    // Set redirect URI dynamically based on environment
+    const redirectUri = process.env.NODE_ENV === 'production'
+      ? 'https://tryrivu.com/plaid-callback'
+      : `${req.protocol}://${req.get('host')}/plaid-callback`;
+
+    console.log('Creating Plaid link token with redirect URI:', redirectUri);
+
     const request = {
       user: {
         client_user_id: userId.toString(),
@@ -53,8 +60,7 @@ export const createLinkToken = async (req: Request, res: Response) => {
       products: [Products.Transactions],
       country_codes: [CountryCode.Us],
       language: 'en',
-      // Use the correct redirect URI for your domain
-      redirect_uri: process.env.PLAID_REDIRECT_URI || `${req.protocol}://${req.get('host')}/plaid-callback`,
+      redirect_uri: redirectUri,
     };
 
     console.log('Plaid link token request:', { 

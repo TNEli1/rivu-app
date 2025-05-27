@@ -462,6 +462,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.post(`${apiPath}/plaid/create_link_token`, protect, createLinkToken);
     app.post(`${apiPath}/plaid/exchange_public_token`, protect, exchangePublicToken);
     app.post(`${apiPath}/plaid/exchange_token`, protect, exchangePublicToken);
+    
+    // GET route for Plaid OAuth callback (for production OAuth redirects)
+    app.get('/plaid-callback', async (req: any, res: any) => {
+      try {
+        const { oauth_state_id } = req.query;
+        
+        if (!oauth_state_id) {
+          console.error('Plaid OAuth callback: Missing oauth_state_id');
+          return res.status(400).send('Missing oauth_state_id parameter');
+        }
+        
+        console.log('Processing Plaid OAuth callback for state:', oauth_state_id);
+        
+        // Redirect to frontend callback page with the oauth_state_id
+        res.redirect(`/plaid-callback?oauth_state_id=${oauth_state_id}`);
+        
+      } catch (error: any) {
+        console.error('Plaid OAuth callback error:', error);
+        res.status(500).send('Error processing OAuth callback');
+      }
+    });
+    
     app.post(`${apiPath}/plaid/oauth_callback`, protect, async (req: any, res: any) => {
       try {
         const { oauth_state_id } = req.body;

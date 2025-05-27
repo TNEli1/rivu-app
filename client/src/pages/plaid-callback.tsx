@@ -56,24 +56,62 @@ export default function PlaidCallback() {
 
         // Check if we have stored Plaid Link success data from before OAuth redirect
         const storedSuccess = sessionStorage.getItem('plaid_link_success');
-        let response;
+        const storedLinkToken = sessionStorage.getItem('plaidLinkToken');
         
         if (storedSuccess) {
+          // We have the public token from before OAuth redirect - complete the exchange
           const { public_token, metadata } = JSON.parse(storedSuccess);
           
-          // Complete the token exchange with the stored data
-          response = await apiRequest('POST', '/api/plaid/exchange_token', {
+          console.log('Found stored success data, completing token exchange');
+          const response = await apiRequest('POST', '/api/plaid/exchange_token', {
             public_token,
             metadata,
             oauth_state_id: oauthStateId
           });
           
-          sessionStorage.removeItem('plaid_link_success');
+          if (response.ok) {
+            const data = await response.json();
+            setSuccess(true);
+            setInstitutionName(data.institution_name || 'Your Bank');
+            
+            // Clean up stored data
+            sessionStorage.removeItem('plaid_link_success');
+            sessionStorage.removeItem('plaidLinkToken');
+            
+            // Invalidate queries to refresh account data
+            queryClient.invalidateQueries({ queryKey: ['/api/accounts'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/plaid/accounts'] });
+            
+            toast({
+              title: "Bank Connected Successfully",
+              description: `${data.institution_name || 'Your bank'} has been connected to your account.`,
+            });
+            
+            // Redirect to dashboard after success
+            setTimeout(() => {
+              setLocation('/dashboard');
+            }, 2000);
+            
+          } else {
+            throw new Error('Failed to complete bank connection');
+          }
+          
+        } else if (storedLinkToken) {
+          // We have link token - recreate Plaid Link with OAuth state
+          console.log('Found stored link token, recreating Plaid Link flow');
+          
+          // Import Plaid Link dynamically
+          const { usePlaidLink } = await import('react-plaid-link');
+          
+          // This will handle the OAuth callback automatically
+          setError('Completing bank connection...');
+          setTimeout(() => {
+            setLocation('/connect?oauth_callback=true');
+          }, 1000);
+          
         } else {
-          // Handle the OAuth callback by sending the oauth_state_id to our backend
-          response = await apiRequest('POST', '/api/plaid/oauth_callback', {
-            oauth_state_id: oauthStateId
-          });
+          // No stored data - treat as error
+          throw new Error('No stored connection data found. Please try connecting your bank again.');
         }
 
         const data = await response.json();

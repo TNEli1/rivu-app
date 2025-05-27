@@ -10,33 +10,42 @@ passport.use(new GoogleStrategy({
   callbackURL: `${process.env.BASE_URL || 'http://localhost:5000'}/auth/google/callback`
 }, async (accessToken, refreshToken, profile, done) => {
   try {
-    // Check if user already exists with this Google ID
-    const existingUser = await storage.getUserByGoogleId(profile.id);
+    const email = profile.emails?.[0]?.value || '';
+    
+    // Check if user already exists with this email (most important check)
+    const existingUser = await storage.getUserByEmail(email);
     
     if (existingUser) {
+      // User exists - update with Google info if not already linked
+      if (!existingUser.googleId) {
+        const updatedUser = await storage.linkGoogleAccount(existingUser.id, profile.id, profile.photos?.[0]?.value);
+        console.log('Linked Google account to existing user:', email);
+        return done(null, updatedUser);
+      }
+      // User already has Google linked
+      console.log('Existing Google user logging in:', email);
       return done(null, existingUser);
     }
     
-    // Check if user exists with the same email
-    const userByEmail = await storage.getUserByEmail(profile.emails?.[0]?.value || '');
-    
-    if (userByEmail) {
-      // Link Google account to existing user
-      const updatedUser = await storage.linkGoogleAccount(userByEmail.id, profile.id, profile.photos?.[0]?.value);
-      return done(null, updatedUser);
+    // Check if user exists with Google ID (secondary check)
+    const userByGoogleId = await storage.getUserByGoogleId(profile.id);
+    if (userByGoogleId) {
+      console.log('Found user by Google ID:', email);
+      return done(null, userByGoogleId);
     }
     
     // Create new user with Google authentication
     const newUser = await storage.createGoogleUser({
       googleId: profile.id,
-      email: profile.emails?.[0]?.value || '',
-      firstName: profile.name?.givenName || '',
-      lastName: profile.name?.familyName || '',
+      email: email,
+      firstName: profile.name?.givenName || 'User',
+      lastName: profile.name?.familyName || 'Account',
       profilePic: profile.photos?.[0]?.value,
       authMethod: 'google',
       emailVerified: true
     });
     
+    console.log('Created new Google user:', email, 'with username:', newUser.username);
     return done(null, newUser);
   } catch (error) {
     console.error('Google OAuth error:', error);
