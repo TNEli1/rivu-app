@@ -80,7 +80,16 @@ export const googleCallback = [
       
       console.log('Google OAuth: Session created, redirecting to dashboard with auth token');
       
-      // CRITICAL: Call req.login() to establish Passport session
+      // Set secure cookie with JWT token for immediate authentication
+      res.cookie(TOKEN_COOKIE_NAME, token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+        maxAge: JWT_EXPIRY * 1000, // Convert to milliseconds
+        domain: process.env.NODE_ENV === 'production' ? '.tryrivu.com' : undefined
+      });
+
+      // CRITICAL: Establish Passport session AND set JWT cookie
       req.login(user, (loginError) => {
         if (loginError) {
           console.error('GOOGLE_OAUTH_ERROR: Failed to establish session:', {
@@ -97,17 +106,24 @@ export const googleCallback = [
           email: user.email,
           isAuthenticated: req.isAuthenticated(),
           sessionID: req.sessionID,
-          cookieSet: !!res.getHeader('Set-Cookie'),
+          jwtSet: true,
           environment: process.env.NODE_ENV
         });
         
-        // CRITICAL: Force redirect to dashboard with explicit path
-        const redirectUrl = process.env.NODE_ENV === 'production' 
-          ? 'https://www.tryrivu.com/dashboard'
-          : 'http://localhost:5000/dashboard';
+        // Save session explicitly before redirect
+        req.session.save((saveError) => {
+          if (saveError) {
+            console.error('Session save error:', saveError);
+          }
           
-        console.log('GOOGLE_OAUTH_REDIRECT: Redirecting to:', redirectUrl);
-        res.redirect(redirectUrl);
+          // Redirect to dashboard after successful authentication
+          const redirectUrl = process.env.NODE_ENV === 'production' 
+            ? 'https://www.tryrivu.com/dashboard'
+            : 'http://localhost:5000/dashboard';
+            
+          console.log('GOOGLE_OAUTH_REDIRECT: Redirecting to:', redirectUrl);
+          res.redirect(redirectUrl);
+        });
       });
       
     } catch (error) {

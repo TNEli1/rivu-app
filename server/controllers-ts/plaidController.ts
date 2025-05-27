@@ -22,23 +22,17 @@ setInterval(() => {
 }, 60 * 1000); // Run every minute
 
 // Initialize Plaid client
-const plaidConfig = new Configuration({
-  basePath: process.env.PLAID_ENV === 'production' 
-    ? PlaidEnvironments.production 
-    : process.env.PLAID_ENV === 'sandbox'
-    ? PlaidEnvironments.sandbox
-    : PlaidEnvironments.development,
+const configuration = new Configuration({
+  basePath: process.env.PLAID_ENV === 'production' ? PlaidEnvironments.production : PlaidEnvironments.sandbox,
   baseOptions: {
     headers: {
       'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
-      'PLAID-SECRET': process.env.PLAID_ENV === 'production' 
-        ? process.env.PLAID_SECRET_PRODUCTION 
-        : process.env.PLAID_SECRET_SANDBOX || process.env.PLAID_SECRET,
+      'PLAID-SECRET': process.env.PLAID_SECRET,
     },
   },
 });
 
-export const plaidClient = new PlaidApi(plaidConfig);
+export const plaidClient = new PlaidApi(configuration);
 
 // Create Link Token for Plaid Link initialization
 export const createLinkToken = async (req: Request, res: Response) => {
