@@ -63,19 +63,15 @@ export const createLinkToken = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    // CRITICAL: Set proper redirect URI for production OAuth banks that matches your Plaid dashboard
-    const redirectUri = process.env.NODE_ENV === 'production' 
-      ? 'https://tryrivu.com/plaid-callback'  // Must match exactly what's configured in Plaid dashboard
-      : 'http://localhost:5000/plaid-callback';
-
-    // Use correct production webhook URL
+    // Use webhook URL for transaction updates
     const webhook = process.env.NODE_ENV === 'production'
-      ? 'https://www.tryrivu.com/api/plaid/webhook'  // Use www subdomain for production
+      ? 'https://www.tryrivu.com/api/plaid/webhook'
       : 'http://localhost:5000/api/plaid/webhook';
 
-    console.log('Creating Plaid link token with redirect URI:', redirectUri);
     console.log('Creating Plaid link token with webhook URL:', webhook);
 
+    // CRITICAL: Do NOT include redirect_uri unless specifically needed for OAuth banks
+    // Including it forces ALL users into OAuth mode before bank selection
     const request = {
       user: {
         client_user_id: userId.toString(),
@@ -84,8 +80,8 @@ export const createLinkToken = async (req: Request, res: Response) => {
       products: [Products.Transactions],
       country_codes: [CountryCode.Us],
       language: 'en',
-      redirect_uri: redirectUri,
       webhook: webhook,
+      // DO NOT include redirect_uri here - let Plaid handle OAuth internally when needed
     };
 
     console.log('Plaid link token request:', { 

@@ -37,6 +37,12 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
       setSuccess(false);
       setLinkToken(null); // Reset link token to ensure fresh state
       
+      // CRITICAL: Clear any cached OAuth data that might force OAuth mode
+      localStorage.removeItem('plaid_link_token');
+      localStorage.removeItem('plaid_oauth_state_id');
+      localStorage.removeItem('plaid_link_config');
+      localStorage.removeItem('plaid_link_success');
+      
       const fetchLinkToken = async () => {
         try {
           console.log('Verifying bank connection service...');
@@ -211,20 +217,14 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
     }
   }, []);
 
-  // Use environment-appropriate redirect URI for OAuth banks
-  const oauthRedirectUri = process.env.NODE_ENV === 'production' 
-    ? 'https://www.tryrivu.com/plaid-callback'
-    : 'http://localhost:5000/plaid-callback';
-
-  // CRITICAL: Do NOT include receivedRedirectUri on initial launch - this causes OAuth state issues
-  // Only include it when resuming after OAuth redirect (handled in plaid-callback page)
+  // CRITICAL: Do NOT include ANY OAuth configuration on initial launch
+  // This forces users into OAuth mode before they can even select a bank
   const config = {
     token: linkToken || '',
     onSuccess,
     onExit,
-    // Include OAuth redirect URI for banks that require OAuth (like Chase)
-    oauthRedirectUri,
-    // DO NOT include receivedRedirectUri here - it confuses Plaid Link on initial launch
+    // DO NOT include oauthRedirectUri, receivedRedirectUri, or any OAuth config here
+    // Let Plaid handle OAuth internally only when user selects an OAuth-required bank
   };
   
   console.log('Plaid Link config:', { 
