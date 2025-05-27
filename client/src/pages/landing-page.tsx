@@ -429,7 +429,7 @@ export default function LandingPage() {
                   
                   if (response.ok) {
                     setWaitlistMessage("✅ Thanks! We'll notify you when the iOS app is ready.");
-                    e.currentTarget.reset();
+                    (e.target as HTMLFormElement).reset();
                   } else {
                     setWaitlistMessage("❌ Failed to join waitlist. Please try again.");
                   }
