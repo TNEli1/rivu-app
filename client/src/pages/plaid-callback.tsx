@@ -56,6 +56,14 @@ export default function PlaidCallback() {
         // Check if we have stored Plaid Link success data from before OAuth redirect
         const storedSuccess = sessionStorage.getItem('plaid_link_success');
         const storedLinkToken = sessionStorage.getItem('plaidLinkToken');
+        const storedLinkConfig = sessionStorage.getItem('plaidLinkConfig');
+        
+        console.log('OAuth callback storage check:', {
+          hasStoredSuccess: !!storedSuccess,
+          hasStoredLinkToken: !!storedLinkToken,
+          hasStoredLinkConfig: !!storedLinkConfig,
+          oauthStateId
+        });
         
         if (storedSuccess) {
           // We have the public token from before OAuth redirect - complete the exchange
@@ -106,8 +114,39 @@ export default function PlaidCallback() {
           }, 1000);
           
         } else {
-          // No stored data - treat as error
-          throw new Error('No stored connection data found. Please try connecting your bank again.');
+          // No stored data - try to complete OAuth flow with backend
+          console.log('No stored data, attempting OAuth completion with backend');
+          
+          try {
+            const response = await apiRequest('POST', '/api/plaid/oauth_callback', {
+              oauth_state_id: oauthStateId
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              setSuccess(true);
+              setInstitutionName(data.institution_name || 'Your Bank');
+              
+              // Invalidate queries to refresh account data
+              queryClient.invalidateQueries({ queryKey: ['/api/accounts'] });
+              queryClient.invalidateQueries({ queryKey: ['/api/plaid/accounts'] });
+              
+              toast({
+                title: "Bank Connected Successfully",
+                description: `Your bank has been connected to your account.`,
+              });
+              
+              // Redirect to dashboard after success
+              setTimeout(() => {
+                setLocation('/dashboard');
+              }, 2000);
+            } else {
+              throw new Error('Failed to complete OAuth flow');
+            }
+          } catch (oauthError: any) {
+            console.error('OAuth completion error:', oauthError);
+            throw new Error('OAuth callback received but connection could not be completed. Please try connecting your bank again.');
+          }
         }
 
       } catch (error: any) {

@@ -44,11 +44,12 @@ export const googleCallback = [
         lastLogin: new Date()
       });
 
-      // Generate JWT token - use string ID to match authentication middleware exactly
+      // Generate JWT token - ensure all required fields are present
       const token = jwt.sign(
         { 
           id: user.id.toString(), // Convert to string to match middleware expectations
           email: user.email,
+          verified: true, // Mark as verified since they used Google OAuth
           authMethod: user.authMethod || 'google'
         },
         JWT_SECRET,
@@ -59,9 +60,10 @@ export const googleCallback = [
       res.cookie(TOKEN_COOKIE_NAME, token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Use 'none' for cross-domain in production
         maxAge: JWT_EXPIRY * 1000,
-        domain: process.env.NODE_ENV === 'production' ? '.tryrivu.com' : undefined
+        domain: process.env.NODE_ENV === 'production' ? '.tryrivu.com' : undefined,
+        path: '/' // Ensure cookie is available site-wide
       });
 
       console.log('Google OAuth: JWT token generated and cookie set for user ID:', user.id);

@@ -101,8 +101,14 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
           if (data && data.link_token) {
             console.log('Successfully received link token');
             setLinkToken(data.link_token);
-            // Store link token in sessionStorage for OAuth redirects
+            // Store link token and metadata in sessionStorage for OAuth redirects
             sessionStorage.setItem('plaidLinkToken', data.link_token);
+            sessionStorage.setItem('plaidLinkConfig', JSON.stringify({
+              link_token: data.link_token,
+              expiration: data.expiration,
+              request_id: data.request_id,
+              timestamp: Date.now()
+            }));
           } else {
             setError('Cannot connect to banking service');
             console.error('Missing link token in response:', data);
