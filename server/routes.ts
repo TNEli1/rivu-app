@@ -330,6 +330,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
     
+    // Delete all user data route (comprehensive cascade delete)
+    app.delete(`${apiPath}/user/data/all`, protect, async (req: any, res) => {
+      try {
+        const userId = req.user.id;
+        
+        if (!userId) {
+          console.error('Delete All User Data: No user ID found in request');
+          return res.status(401).json({
+            message: 'User ID not found in request. Authentication may have failed.',
+            code: 'AUTH_ERROR'
+          });
+        }
+        
+        const userIdNum = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+        
+        if (isNaN(userIdNum)) {
+          console.error(`Delete All User Data: Invalid user ID format: ${userId}`);
+          return res.status(400).json({
+            message: 'Invalid user ID format',
+            code: 'INVALID_USER_ID'
+          });
+        }
+        
+        console.log(`Delete All User Data: Starting comprehensive deletion for user ID: ${userIdNum}`);
+        
+        // Use storage method for comprehensive deletion
+        const deletionResult = await storage.deleteAllUserData(userIdNum);
+        
+        if (!deletionResult) {
+          throw new Error('Failed to delete all user data');
+        }
+        
+        // Log success to troubleshooting
+        const timestamp = new Date().toISOString();
+        console.log(`Delete All User Data SUCCESS: User ${userIdNum} - All data deleted at ${timestamp}`);
+        
+        res.json({
+          message: 'All user data deleted successfully',
+          success: true,
+          timestamp
+        });
+        
+      } catch (error: any) {
+        console.error('Delete All User Data ERROR:', error);
+        console.error('Delete All User Data ERROR Stack:', error.stack);
+        
+        // Log to troubleshooting
+        const timestamp = new Date().toISOString();
+        console.log(`TROUBLESHOOTING LOG ${timestamp}: Delete All User Data failed - ${error.message}`);
+        
+        res.status(500).json({ 
+          message: error.message || 'Error deleting all user data',
+          code: 'SERVER_ERROR'
+        });
+      }
+    });
+    
     // Import category controller
     const {
       getCategories,
