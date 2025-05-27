@@ -52,7 +52,7 @@ export const googleCallback = [
           authMethod: user.authMethod || 'google'
         },
         JWT_SECRET,
-        { expiresIn: JWT_EXPIRY }
+        { expiresIn: `${JWT_EXPIRY}s` }
       );
 
       // Set secure cookie with correct name that middleware expects

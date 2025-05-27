@@ -43,11 +43,15 @@ export const createLinkToken = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    // Always use production redirect URI since we're in production mode
-    const redirectUri = 'https://tryrivu.com/plaid-callback';
+    // Use correct production redirect URIs that match Plaid dashboard configuration
+    const redirectUri = process.env.NODE_ENV === 'production' 
+      ? 'https://www.tryrivu.com/plaid-callback'  // Use www subdomain for production
+      : 'http://localhost:5000/plaid-callback';
 
-    // Always use production webhook URL since we're in production mode
-    const webhook = 'https://tryrivu.com/api/plaid/webhook';
+    // Use correct production webhook URL
+    const webhook = process.env.NODE_ENV === 'production'
+      ? 'https://www.tryrivu.com/api/plaid/webhook'  // Use www subdomain for production
+      : 'http://localhost:5000/api/plaid/webhook';
 
     console.log('Creating Plaid link token with redirect URI:', redirectUri);
     console.log('Creating Plaid link token with webhook URL:', webhook);

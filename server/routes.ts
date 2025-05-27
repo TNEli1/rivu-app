@@ -476,17 +476,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (!oauth_state_id) {
           console.error('Plaid OAuth callback: Missing oauth_state_id');
-          return res.status(400).send('Missing oauth_state_id parameter');
+          // Redirect to dashboard with error instead of failing completely
+          return res.redirect('/dashboard?error=plaid_oauth_missing_state');
         }
         
         console.log('Processing Plaid OAuth callback for state:', oauth_state_id);
         
         // Redirect to frontend callback page with the oauth_state_id
-        res.redirect(`/plaid-callback?oauth_state_id=${oauth_state_id}`);
+        // This allows the frontend to handle the OAuth completion
+        res.redirect(`/plaid-callback?oauth_state_id=${encodeURIComponent(oauth_state_id)}`);
         
       } catch (error: any) {
         console.error('Plaid OAuth callback error:', error);
-        res.status(500).send('Error processing OAuth callback');
+        res.redirect('/dashboard?error=plaid_oauth_error');
       }
     });
     
@@ -1068,6 +1070,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to delete transaction" });
     }
   });
+
+  // Helper function to get rating based on percentage
+  function getRating(percentage: number): string {
+    if (percentage >= 80) return "Excellent";
+    if (percentage >= 60) return "Good";
+    if (percentage >= 40) return "Fair";
+    if (percentage >= 20) return "Poor";
+    return "Very Poor";
+  }
 
   // Rivu Score API
   app.get("/api/rivu-score", async (req, res) => {
