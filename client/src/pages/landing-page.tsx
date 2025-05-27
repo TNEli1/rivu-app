@@ -421,6 +421,10 @@ export default function LandingPage() {
                   submitButton.textContent = 'Joining...';
                   
                   try {
+                    // Clear any existing messages first
+                    const existingMessages = e.currentTarget.querySelectorAll('.mt-4.p-4');
+                    existingMessages.forEach(msg => msg.remove());
+                    
                     const response = await fetch('/api/ios-waitlist', {
                       method: 'POST',
                       headers: {
@@ -430,13 +434,16 @@ export default function LandingPage() {
                     });
                     
                     const data = await response.json();
+                    console.log('Waitlist response:', { ok: response.ok, status: response.status, data });
                     
                     if (response.ok) {
-                      // Show success message without alert
+                      // Show success message
                       const successDiv = document.createElement('div');
                       successDiv.className = 'mt-4 p-4 bg-green-100 text-green-800 rounded-lg text-center';
                       successDiv.textContent = data.message || "Thanks! We'll notify you when the iOS app is ready.";
-                      e.currentTarget.appendChild(successDiv);
+                      
+                      // Insert after the form, not inside it
+                      e.currentTarget.parentNode.insertBefore(successDiv, e.currentTarget.nextSibling);
                       e.currentTarget.reset();
                       
                       // Remove success message after 5 seconds
@@ -447,11 +454,11 @@ export default function LandingPage() {
                       }, 5000);
                     } else {
                       console.error('Waitlist API error:', data);
-                      // Show error message without alert
+                      // Show error message
                       const errorDiv = document.createElement('div');
                       errorDiv.className = 'mt-4 p-4 bg-red-100 text-red-800 rounded-lg text-center';
                       errorDiv.textContent = data.message || 'Failed to join waitlist. Please try again.';
-                      e.currentTarget.appendChild(errorDiv);
+                      e.currentTarget.parentNode.insertBefore(errorDiv, e.currentTarget.nextSibling);
                       
                       // Remove error message after 5 seconds
                       setTimeout(() => {
@@ -461,12 +468,12 @@ export default function LandingPage() {
                       }, 5000);
                     }
                   } catch (error) {
-                    console.error('Waitlist error:', error);
-                    // Show error message without alert
+                    console.error('Waitlist error details:', error);
+                    // Show error message
                     const errorDiv = document.createElement('div');
                     errorDiv.className = 'mt-4 p-4 bg-red-100 text-red-800 rounded-lg text-center';
                     errorDiv.textContent = 'Something went wrong. Please try again later.';
-                    e.currentTarget.appendChild(errorDiv);
+                    e.currentTarget.parentNode.insertBefore(errorDiv, e.currentTarget.nextSibling);
                     
                     // Remove error message after 5 seconds
                     setTimeout(() => {
