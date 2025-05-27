@@ -442,8 +442,11 @@ export default function LandingPage() {
                       successDiv.className = 'mt-4 p-4 bg-green-100 text-green-800 rounded-lg text-center';
                       successDiv.textContent = data.message || "Thanks! We'll notify you when the iOS app is ready.";
                       
-                      // Insert after the form, not inside it
-                      e.currentTarget.parentNode.insertBefore(successDiv, e.currentTarget.nextSibling);
+                      // Insert after the form safely
+                      const formParent = e.currentTarget.parentNode;
+                      if (formParent) {
+                        formParent.appendChild(successDiv);
+                      }
                       e.currentTarget.reset();
                       
                       // Remove success message after 5 seconds
@@ -458,7 +461,10 @@ export default function LandingPage() {
                       const errorDiv = document.createElement('div');
                       errorDiv.className = 'mt-4 p-4 bg-red-100 text-red-800 rounded-lg text-center';
                       errorDiv.textContent = data.message || 'Failed to join waitlist. Please try again.';
-                      e.currentTarget.parentNode.insertBefore(errorDiv, e.currentTarget.nextSibling);
+                      const formParent = e.currentTarget.parentNode;
+                      if (formParent) {
+                        formParent.appendChild(errorDiv);
+                      }
                       
                       // Remove error message after 5 seconds
                       setTimeout(() => {
@@ -473,7 +479,10 @@ export default function LandingPage() {
                     const errorDiv = document.createElement('div');
                     errorDiv.className = 'mt-4 p-4 bg-red-100 text-red-800 rounded-lg text-center';
                     errorDiv.textContent = 'Something went wrong. Please try again later.';
-                    e.currentTarget.parentNode.insertBefore(errorDiv, e.currentTarget.nextSibling);
+                    const formParent = e.currentTarget.parentNode;
+                    if (formParent) {
+                      formParent.appendChild(errorDiv);
+                    }
                     
                     // Remove error message after 5 seconds
                     setTimeout(() => {
