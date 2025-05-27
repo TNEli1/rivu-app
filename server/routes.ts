@@ -17,9 +17,6 @@ const openai = new OpenAI({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup CORS
-  app.use(cors());
-  
   // Set up API routes using PostgreSQL database
   try {
     // Import our user controllers

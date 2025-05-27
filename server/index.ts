@@ -7,6 +7,8 @@ import rateLimit from "express-rate-limit";
 import cors from "cors";
 import { setCsrfToken, validateCsrfToken } from "./middleware/csrfProtection";
 import session from "express-session";
+import ConnectPgSimple from "connect-pg-simple";
+import { pool } from "./db";
 import passport from "./passport";
 
 // Load environment variables
@@ -93,14 +95,23 @@ app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser()); // Parse cookies
 
-// Session configuration for Google OAuth
+// Initialize PostgreSQL session store
+const PgSession = ConnectPgSimple(session);
+
+// Session configuration for Google OAuth with PostgreSQL store
 app.use(session({
+  store: new PgSession({
+    pool: pool,
+    tableName: 'session',
+    createTableIfMissing: true
+  }),
   secret: process.env.SESSION_SECRET || 'rivu_session_secret_dev',
   resave: false,
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
     maxAge: 1000 * 60 * 60 * 24 // 24 hours
   }
 }));
