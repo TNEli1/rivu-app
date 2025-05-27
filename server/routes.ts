@@ -75,43 +75,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const userId = req.user.id;
         
-        // Delete all user data across all tables
-        await Promise.all([
-          // Delete user's transactions
-          db.delete(transactions).where(eq(transactions.userId, userId)),
-          // Delete user's budget categories
-          db.delete(budgetCategories).where(eq(budgetCategories.userId, userId)),
-          // Delete user's savings goals
-          db.delete(savingsGoals).where(eq(savingsGoals.userId, userId)),
-          // Delete user's Rivu scores
-          db.delete(rivuScores).where(eq(rivuScores.userId, userId)),
-          // Delete user's nudges
-          db.delete(nudges).where(eq(nudges.userId, userId)),
-          // Delete user's transaction accounts
-          db.delete(transactionAccounts).where(eq(transactionAccounts.userId, userId)),
-          // Delete user's categories and subcategories
-          db.delete(categories).where(eq(categories.userId, userId)),
-          // Delete user's Plaid items and accounts
-          db.delete(plaidAccounts).where(eq(plaidAccounts.userId, userId)),
-          db.delete(plaidItems).where(eq(plaidItems.userId, userId))
-        ]);
+        if (!userId) {
+          console.error('Account Deletion: No user ID found in request');
+          return res.status(401).json({
+            message: 'User ID not found in request. Authentication may have failed.',
+            code: 'AUTH_ERROR'
+          });
+        }
         
-        // Clear the user's session cookie FIRST to prevent 401 errors
+        const userIdNum = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+        
+        console.log(`Account Deletion: Starting complete deletion for user ID: ${userIdNum}`);
+        
+        // Use database transaction to ensure all-or-nothing deletion
+        const deletionResult = await db.transaction(async (tx) => {
+          // 1. First verify user exists and session is valid
+          const userExists = await tx.select().from(users).where(eq(users.id, userIdNum)).limit(1);
+          if (userExists.length === 0) {
+            throw new Error('User not found or session invalid');
+          }
+          
+          console.log(`Account Deletion: User ${userIdNum} verified, proceeding with data deletion`);
+          
+          // 2. Delete all related data BEFORE deleting user (proper order)
+          const deletionCounts = {
+            transactions: 0,
+            budgetCategories: 0,
+            savingsGoals: 0,
+            rivuScores: 0,
+            nudges: 0,
+            transactionAccounts: 0,
+            categories: 0,
+            plaidAccounts: 0,
+            plaidItems: 0,
+            user: 0
+          };
+          
+          // Delete transactions
+          const deletedTransactions = await tx.delete(transactions).where(eq(transactions.userId, userIdNum)).returning();
+          deletionCounts.transactions = deletedTransactions.length;
+          
+          // Delete budget categories
+          const deletedBudgetCategories = await tx.delete(budgetCategories).where(eq(budgetCategories.userId, userIdNum)).returning();
+          deletionCounts.budgetCategories = deletedBudgetCategories.length;
+          
+          // Delete savings goals
+          const deletedSavingsGoals = await tx.delete(savingsGoals).where(eq(savingsGoals.userId, userIdNum)).returning();
+          deletionCounts.savingsGoals = deletedSavingsGoals.length;
+          
+          // Delete Rivu scores
+          const deletedRivuScores = await tx.delete(rivuScores).where(eq(rivuScores.userId, userIdNum)).returning();
+          deletionCounts.rivuScores = deletedRivuScores.length;
+          
+          // Delete nudges
+          const deletedNudges = await tx.delete(nudges).where(eq(nudges.userId, userIdNum)).returning();
+          deletionCounts.nudges = deletedNudges.length;
+          
+          // Delete transaction accounts
+          const deletedTransactionAccounts = await tx.delete(transactionAccounts).where(eq(transactionAccounts.userId, userIdNum)).returning();
+          deletionCounts.transactionAccounts = deletedTransactionAccounts.length;
+          
+          // Delete categories and subcategories
+          const deletedCategories = await tx.delete(categories).where(eq(categories.userId, userIdNum)).returning();
+          deletionCounts.categories = deletedCategories.length;
+          
+          // Delete Plaid accounts and items
+          const deletedPlaidAccounts = await tx.delete(plaidAccounts).where(eq(plaidAccounts.userId, userIdNum)).returning();
+          deletionCounts.plaidAccounts = deletedPlaidAccounts.length;
+          
+          const deletedPlaidItems = await tx.delete(plaidItems).where(eq(plaidItems.userId, userIdNum)).returning();
+          deletionCounts.plaidItems = deletedPlaidItems.length;
+          
+          // 3. Finally delete the user account (last step)
+          const deletedUser = await tx.delete(users).where(eq(users.id, userIdNum)).returning();
+          deletionCounts.user = deletedUser.length;
+          
+          console.log(`Account Deletion: Deletion counts:`, deletionCounts);
+          
+          if (deletionCounts.user === 0) {
+            throw new Error('Failed to delete user account');
+          }
+          
+          return deletionCounts;
+        });
+        
+        // 4. Clear session AFTER successful deletion
         res.clearCookie('rivu_token');
         
-        // Finally delete the user account
-        const deletedUser = await db.delete(users).where(eq(users.id, userId)).returning();
-        
-        console.log(`Successfully deleted user account and all data for user ID: ${userId}`);
+        // Log success to troubleshooting
+        const timestamp = new Date().toISOString();
+        console.log(`Account Deletion SUCCESS: User ${userIdNum} completely deleted at ${timestamp}`);
+        console.log(`Account Deletion: Deleted data counts:`, deletionResult);
         
         res.json({ 
           message: 'All user data has been permanently deleted',
-          deletedAt: new Date().toISOString(),
-          success: true
+          deletedAt: timestamp,
+          success: true,
+          deletionCounts: deletionResult
         });
-      } catch (error) {
-        console.error('Data deletion error:', error);
-        res.status(500).json({ message: 'Failed to delete user data' });
+        
+      } catch (error: any) {
+        console.error('Account Deletion ERROR:', error);
+        console.error('Account Deletion ERROR Stack:', error.stack);
+        
+        // Log to troubleshooting
+        const timestamp = new Date().toISOString();
+        console.log(`TROUBLESHOOTING LOG ${timestamp}: Account deletion failed - ${error.message}`);
+        
+        res.status(500).json({ 
+          message: error.message || 'Failed to delete user data',
+          code: 'DELETION_ERROR' 
+        });
       }
     });
     
@@ -181,6 +255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.user.id;
         
         if (!userId) {
+          console.error('Clear All Transactions: No user ID found in request');
           return res.status(401).json({
             message: 'User ID not found in request. Authentication may have failed.',
             code: 'AUTH_ERROR'
@@ -190,69 +265,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Convert to number if it's a string
         const userIdNum = typeof userId === 'string' ? parseInt(userId, 10) : userId;
         
-        console.log(`Attempting to delete all transactions for user ID: ${userIdNum}`);
-        
-        // IMPORTANT: Scan database for ALL transactions with any user ID to identify data inconsistency issues
-        const allTransactionsByUser = await db
-          .select({ userId: transactions.userId, count: sql`count(*)` })
-          .from(transactions)
-          .groupBy(transactions.userId);
-          
-        console.log('Transaction count by user ID before deletion:', allTransactionsByUser);
-        
-        // Find ALL transactions regardless of user ID to ensure we're seeing everything
-        const allTransactions = await db.select().from(transactions);
-        console.log(`Found ${allTransactions.length} total transactions in database`);
-        
-        // Delete transactions with both user IDs to handle mixed data issue
-        let totalDeleted = 0;
-        
-        // Delete for authenticated user ID
-        console.log(`Deleting transactions for user ID: ${userIdNum}`);
-        const userResult = await db
-          .delete(transactions)
-          .where(eq(transactions.userId, userIdNum))
-          .returning();
-        console.log(`Deleted ${userResult.length} transactions for user ID ${userIdNum}`);
-        totalDeleted += userResult.length;
-        
-        // Also delete for userID=1 (which appears to have transactions from the UI)
-        console.log('Deleting transactions for userID=1 (common inconsistency)');
-        const fallbackResult = await db
-          .delete(transactions)
-          .where(eq(transactions.userId, 1))
-          .returning();
-        console.log(`Deleted ${fallbackResult.length} transactions for user ID 1`);
-        totalDeleted += fallbackResult.length;
-        
-        // Verify all transactions deleted
-        const verifyResult = await db.select().from(transactions);
-        console.log(`After deletion: ${verifyResult.length} transactions remain in database`);
-        
-        // Return success status
-        if (totalDeleted > 0) {
-          res.json({
-            message: 'All transactions deleted successfully',
-            success: true,
-            count: totalDeleted
-          });
-        } else if (allTransactions.length === 0) {
-          res.json({
-            message: 'No transactions found to delete',
-            success: true,
-            count: 0
-          });
-        } else {
-          console.error('Failed to delete any transactions despite finding some');
-          res.status(500).json({
-            message: 'Failed to delete transactions',
-            code: 'DELETE_FAILED',
-            foundCount: allTransactions.length,
-            deletedCount: 0
+        if (isNaN(userIdNum)) {
+          console.error(`Clear All Transactions: Invalid user ID format: ${userId}`);
+          return res.status(400).json({
+            message: 'Invalid user ID format',
+            code: 'INVALID_USER_ID'
           });
         }
+        
+        console.log(`Clear All Transactions: Starting deletion for user ID: ${userIdNum}`);
+        
+        // Use database transaction to ensure atomicity
+        const deletionResult = await db.transaction(async (tx) => {
+          // First, verify user exists and session is valid
+          const userExists = await tx.select().from(users).where(eq(users.id, userIdNum)).limit(1);
+          if (userExists.length === 0) {
+            throw new Error('User not found or session invalid');
+          }
+          
+          // Count transactions before deletion
+          const countBefore = await tx.select({ count: sql`count(*)` })
+            .from(transactions)
+            .where(eq(transactions.userId, userIdNum));
+          
+          console.log(`Clear All Transactions: Found ${countBefore[0]?.count || 0} transactions to delete`);
+          
+          // Delete all transactions for this user
+          const deletedTransactions = await tx
+            .delete(transactions)
+            .where(eq(transactions.userId, userIdNum))
+            .returning();
+          
+          console.log(`Clear All Transactions: Successfully deleted ${deletedTransactions.length} transactions`);
+          
+          return {
+            deletedCount: deletedTransactions.length,
+            beforeCount: countBefore[0]?.count || 0
+          };
+        });
+        
+        // Log success to troubleshooting
+        console.log(`Clear All Transactions SUCCESS: User ${userIdNum} - Deleted ${deletionResult.deletedCount} transactions`);
+        
+        res.json({
+          message: deletionResult.deletedCount > 0 
+            ? 'All transactions deleted successfully' 
+            : 'No transactions found to delete',
+          success: true,
+          count: deletionResult.deletedCount
+        });
+        
       } catch (error: any) {
-        console.error('Error deleting all transactions:', error);
+        console.error('Clear All Transactions ERROR:', error);
+        console.error('Clear All Transactions ERROR Stack:', error.stack);
+        
+        // Log to troubleshooting
+        const timestamp = new Date().toISOString();
+        console.log(`TROUBLESHOOTING LOG ${timestamp}: Clear All Transactions failed - ${error.message}`);
+        
         res.status(500).json({ 
           message: error.message || 'Error deleting all transactions',
           code: 'SERVER_ERROR'

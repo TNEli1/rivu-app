@@ -361,9 +361,19 @@ export const deleteTransaction = async (req: any, res: any) => {
 export const createTransactionsBatch = async (req: any, res: any) => {
   try {
     const userId = parseInt(req.user.id, 10);
-    console.log(`Processing batch transaction creation for user ID: ${userId}`);
+    
+    if (isNaN(userId)) {
+      console.error(`CSV Batch Upload: Invalid user ID: ${req.user.id}`);
+      return res.status(401).json({
+        message: 'Invalid user authentication',
+        code: 'AUTH_ERROR'
+      });
+    }
+    
+    console.log(`CSV Batch Upload: Processing batch for user ID: ${userId}`);
     
     if (!req.body || !req.body.transactions || !Array.isArray(req.body.transactions)) {
+      console.error('CSV Batch Upload: Invalid request format - missing transactions array');
       return res.status(400).json({
         message: 'Invalid request format. Expected an array of transactions.',
         code: 'VALIDATION_ERROR'
@@ -373,13 +383,14 @@ export const createTransactionsBatch = async (req: any, res: any) => {
     const { transactions } = req.body;
     
     if (transactions.length === 0) {
+      console.error('CSV Batch Upload: Empty transactions array');
       return res.status(400).json({
         message: 'No transactions to import',
         code: 'EMPTY_DATA'
       });
     }
     
-    console.log(`Processing ${transactions.length} transactions in batch for user ${userId}`);
+    console.log(`CSV Batch Upload: Processing ${transactions.length} transactions for user ${userId}`);
     
     let successCount = 0;
     let errorCount = 0;
@@ -387,13 +398,16 @@ export const createTransactionsBatch = async (req: any, res: any) => {
     const errors: Array<{ index: number, message: string }> = [];
     const createdTransactions = [];
     
+    console.log(`CSV Batch Upload: Starting transaction processing for user ${userId}`);
+    
     // Process each transaction
     for (let i = 0; i < transactions.length; i++) {
-      const tx = transactions[i];
+      const txData = transactions[i];
       
       try {
         // Validate required fields
-        if (!tx.amount || !tx.merchant || !tx.date) {
+        if (!txData.amount || !txData.merchant || !txData.date) {
+          console.error(`CSV Batch Upload: Transaction ${i} missing required fields`);
           errors.push({
             index: i,
             message: 'Missing required fields (amount, merchant, date)'
@@ -406,11 +420,12 @@ export const createTransactionsBatch = async (req: any, res: any) => {
         let amount: string;
         try {
           // Handle amount as string or number
-          const parsedAmount = typeof tx.amount === 'string' 
-            ? parseFloat(tx.amount.replace(/[^0-9.-]/g, ''))
-            : parseFloat(tx.amount);
+          const parsedAmount = typeof txData.amount === 'string' 
+            ? parseFloat(txData.amount.replace(/[^0-9.-]/g, ''))
+            : parseFloat(txData.amount);
             
           if (isNaN(parsedAmount) || parsedAmount <= 0) {
+            console.error(`CSV Batch Upload: Invalid amount for transaction ${i}: ${txData.amount}`);
             errors.push({
               index: i,
               message: 'Invalid amount: must be a positive number'
@@ -421,6 +436,7 @@ export const createTransactionsBatch = async (req: any, res: any) => {
           
           amount = parsedAmount.toString();
         } catch (amountError) {
+          console.error(`CSV Batch Upload: Amount parsing error for transaction ${i}:`, amountError);
           errors.push({
             index: i,
             message: 'Failed to parse transaction amount'
@@ -432,25 +448,130 @@ export const createTransactionsBatch = async (req: any, res: any) => {
         // Parse date
         let transactionDate: Date;
         try {
-          if (typeof tx.date === 'string') {
+          if (typeof txData.date === 'string') {
             // If it's a simple date string like "2023-05-17"
-            if (tx.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-              const [year, month, day] = tx.date.split('-').map(Number);
+            if (txData.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+              const [year, month, day] = txData.date.split('-').map(Number);
               transactionDate = new Date(year, month - 1, day, 12, 0, 0, 0);
             } else {
-              transactionDate = new Date(tx.date);
+              transactionDate = new Date(txData.date);
             }
             
             if (isNaN(transactionDate.getTime())) {
               transactionDate = new Date(); // Fallback to current date
-              console.log(`Invalid date format at index ${i}, using current date instead`);
+              console.log(`CSV Batch Upload: Invalid date format at index ${i}, using current date`);
             }
-          } else if (tx.date instanceof Date) {
-            transactionDate = tx.date;
+          } else if (txData.date instanceof Date) {
+            transactionDate = txData.date;
           } else {
             transactionDate = new Date(); // Default to today
           }
         } catch (dateError) {
+          console.error(`CSV Batch Upload: Date parsing error for transaction ${i}:`, dateError);
+          transactionDate = new Date(); // Default to today if parsing fails
+        }
+        
+        console.log(`CSV Batch Upload: Processing transaction ${i} - Amount: ${amount}, Merchant: ${txData.merchant}, Date: ${transactionDate.toISOString()}`);
+        
+        // Create transaction data with explicit user ID
+        const transactionData: InsertTransaction = {
+          userId: userId, // CRITICAL: Explicitly set to authenticated user
+          amount,
+          date: transactionDate,
+          merchant: txData.merchant || 'Unknown',
+          category: txData.category || 'Uncategorized',
+          account: txData.account || 'Imported',
+          type: txData.type || 'expense',
+          notes: txData.notes || '',
+          source: 'csv', // Mark as CSV import
+        };
+        
+        console.log(`CSV Batch Upload: Creating transaction for user ${userId}:`, {
+          userId: transactionData.userId,
+          amount: transactionData.amount,
+          merchant: transactionData.merchant,
+          date: transactionData.date
+        });
+        
+        // Create the transaction using storage interface
+        const newTransaction = await storage.createTransaction(transactionData);
+        
+        if (!newTransaction || !newTransaction.id) {
+          throw new Error('Transaction creation failed - no ID returned');
+        }
+        
+        console.log(`CSV Batch Upload: Successfully created transaction ID ${newTransaction.id} for user ${userId}`);
+        
+        createdTransactions.push({
+          id: newTransaction.id,
+          amount: parseFloat(String(newTransaction.amount)),
+          merchant: newTransaction.merchant,
+          category: newTransaction.category,
+          date: newTransaction.date,
+          account: newTransaction.account,
+          type: newTransaction.type
+        });
+        
+        successCount++;
+        
+      } catch (txError) {
+        console.error(`CSV Batch Upload: Error processing transaction ${i}:`, txError);
+        errors.push({
+          index: i,
+          message: txError instanceof Error ? txError.message : 'Unknown error'
+        });
+        errorCount++;
+      }
+    }
+    
+    // Update user's lastTransactionDate if any transactions were created
+    if (successCount > 0) {
+      try {
+        await storage.updateUser(userId, {
+          lastTransactionDate: new Date()
+        });
+        
+        // Recalculate Rivu score to reflect the new transactions
+        await storage.calculateRivuScore(userId);
+        
+        console.log(`CSV Batch Upload: Updated user ${userId} lastTransactionDate and Rivu score`);
+      } catch (updateError) {
+        console.error('CSV Batch Upload: Error updating user data:', updateError);
+        // Don't fail the entire operation for this
+      }
+    }
+    
+    // Log final results to troubleshooting
+    const timestamp = new Date().toISOString();
+    console.log(`CSV Batch Upload SUCCESS: User ${userId} - ${successCount}/${transactions.length} transactions imported at ${timestamp}`);
+    
+    if (errorCount > 0) {
+      console.log(`TROUBLESHOOTING LOG ${timestamp}: CSV Upload had ${errorCount} errors out of ${transactions.length} transactions`);
+    }
+    
+    return res.status(200).json({
+      message: `Successfully imported ${successCount} of ${transactions.length} transactions`,
+      success: successCount,
+      errors: errorCount,
+      duplicates: duplicateCount,
+      errorDetails: errors.length > 0 ? errors : undefined,
+      transactions: createdTransactions
+    });
+    
+  } catch (error: any) {
+    console.error('CSV Batch Upload ERROR:', error);
+    console.error('CSV Batch Upload ERROR Stack:', error.stack);
+    
+    // Log to troubleshooting
+    const timestamp = new Date().toISOString();
+    console.log(`TROUBLESHOOTING LOG ${timestamp}: CSV batch upload failed - ${error.message}`);
+    
+    return res.status(500).json({
+      message: error.message || 'Failed to process batch transactions',
+      code: 'SERVER_ERROR'
+    });
+  }
+}
           console.error(`Date parsing error for transaction ${i}:`, dateError);
           transactionDate = new Date(); // Default to today if parsing fails
         }
