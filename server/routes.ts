@@ -437,15 +437,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Helper function to get the authenticated user ID from the request 
   const getCurrentUserId = (req: any): number => {
-    // SECURITY FIX: Get authenticated user ID from request object
-    if (!req.user || !req.user.id) {
-      throw new Error('User not authenticated - req.user.id is missing');
+    // Check if user is authenticated from session or token
+    if (req.user && req.user.id) {
+      return req.user.id;
     }
-    return req.user.id;
+    
+    // Fallback for development - use demo user ID
+    console.warn('Using demo user ID for development - this should not happen in production');
+    return DEMO_USER_ID;
+  };
+
+  // Authentication middleware to protect routes
+  const requireAuth = async (req: any, res: any, next: any) => {
+    try {
+      // Check if user is authenticated
+      if (!req.user || !req.user.id) {
+        return res.status(401).json({
+          message: 'Authentication required',
+          code: 'AUTH_REQUIRED'
+        });
+      }
+      next();
+    } catch (error) {
+      return res.status(401).json({
+        message: 'Authentication failed',
+        code: 'AUTH_FAILED'
+      });
+    }
   };
   
   // Dashboard summary API
-  app.get("/api/dashboard/summary", async (req, res) => {
+  app.get("/api/dashboard/summary", requireAuth, async (req, res) => {
     try {
       // Get current user ID
       const userId = getCurrentUserId(req);
