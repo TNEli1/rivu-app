@@ -124,8 +124,9 @@ app.use(session({
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    sameSite: 'lax',
-    maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Allow cross-site cookies in production
+    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    domain: process.env.NODE_ENV === 'production' ? '.tryrivu.com' : undefined // Share cookies across subdomains
   }
 }));
 
