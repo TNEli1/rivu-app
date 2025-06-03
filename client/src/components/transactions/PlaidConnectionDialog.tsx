@@ -39,8 +39,6 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
       
       // Clear any stale OAuth data to ensure fresh OAuth flows
       localStorage.removeItem('plaid_link_success');
-      localStorage.removeItem('plaid_link_token');
-      localStorage.removeItem('plaid_link_config');
       
       const fetchLinkToken = async () => {
         try {
@@ -106,17 +104,9 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
           if (data && data.link_token) {
             console.log('Successfully received fresh link token');
             setLinkToken(data.link_token);
-            // Store link token for OAuth flows - this is critical for OAuth banks
-            const tokenData = {
-              link_token: data.link_token,
-              expiration: data.expiration,
-              request_id: data.request_id,
-              timestamp: Date.now(),
-              ttl: Date.now() + (30 * 60 * 1000) // 30 minute TTL for OAuth flows
-            };
-            localStorage.setItem('plaid_link_token', data.link_token);
-            localStorage.setItem('plaid_link_config', JSON.stringify(tokenData));
-            console.log('Stored link token for potential OAuth redirect handling');
+            // Store link token for OAuth flows using the new hook
+            const { storeLinkTokenForOAuth } = await import('@/hooks/use-plaid-oauth');
+            storeLinkTokenForOAuth(data.link_token, data.expiration);
           } else {
             setError('Cannot connect to banking service');
             console.error('Missing link token in response:', data);
