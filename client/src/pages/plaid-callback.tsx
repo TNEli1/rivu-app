@@ -88,8 +88,8 @@ export default function PlaidCallback() {
 
     // Check if this is an OAuth redirect
     if (!isPlaidOAuthRedirect()) {
-      setError('Invalid OAuth callback. Please try connecting your bank again.');
-      setIsProcessing(false);
+      console.error('Not a valid Plaid OAuth redirect - redirecting to dashboard');
+      setLocation('/dashboard');
       return;
     }
 
@@ -115,6 +115,16 @@ export default function PlaidCallback() {
     
     console.log('Link token found, proceeding with OAuth redirect handling');
     
+    // CRITICAL: Ensure Plaid SDK is loaded before proceeding
+    if (typeof window === 'undefined' || !(window as any).Plaid) {
+      console.error('Plaid SDK not loaded - waiting for script to load');
+      setTimeout(() => {
+        // Retry after 1 second
+        window.location.reload();
+      }, 1000);
+      return;
+    }
+    
     // Handle the OAuth redirect
     const result = handleOAuthRedirect();
     
@@ -122,7 +132,7 @@ export default function PlaidCallback() {
       // Error handling is done inside the hook
       setIsProcessing(false);
     }
-  }, [user, isLoading, handleOAuthRedirect]);
+  }, [user, isLoading, handleOAuthRedirect, setLocation]);
 
   // Redirect to login if not authenticated
   if (!isLoading && !user) {

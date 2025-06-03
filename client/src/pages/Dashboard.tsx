@@ -211,9 +211,15 @@ export default function Dashboard() {
     
     if (authToken) {
       try {
-        // Store the auth token as cookie for immediate authentication
-        document.cookie = `rivu_token=${decodeURIComponent(authToken)}; path=/; max-age=${60 * 60 * 2}; secure=${window.location.protocol === 'https:'}; samesite=lax`;
-        console.log('Google OAuth: Auth token stored from URL parameter');
+        console.log('Google OAuth: Processing auth token from URL parameter');
+        
+        // CRITICAL: Store the auth token as cookie with proper settings for immediate authentication
+        const decodedToken = decodeURIComponent(authToken);
+        const isSecure = window.location.protocol === 'https:';
+        const cookieValue = `rivu_token=${decodedToken}; path=/; max-age=${60 * 60 * 2}; ${isSecure ? 'secure;' : ''} samesite=lax`;
+        document.cookie = cookieValue;
+        
+        console.log('Google OAuth: Auth token stored as cookie for immediate authentication');
         
         // Store user info if provided
         if (userParam) {
@@ -238,12 +244,13 @@ export default function Dashboard() {
         // CRITICAL: Set login state flag for immediate frontend authentication
         localStorage.setItem('rivuLoggedIn', 'true');
         
-        // Clean up the URL
+        // Clean up the URL parameters
         const cleanUrl = window.location.pathname;
         window.history.replaceState({}, '', cleanUrl);
         
-        // Force page reload to trigger authentication state update
-        window.location.reload();
+        // CRITICAL: Trigger auth state refresh without full page reload
+        window.dispatchEvent(new CustomEvent('authStateChanged'));
+        
       } catch (error) {
         console.error('Error processing Google OAuth auth token:', error);
       }

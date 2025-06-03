@@ -131,7 +131,17 @@ export function storeLinkTokenForOAuth(linkToken: string, expiration?: string) {
  */
 export function isPlaidOAuthRedirect(): boolean {
   const query = new URLSearchParams(window.location.search);
-  return query.has('oauth_state_id');
+  const hasOAuthState = query.has('oauth_state_id');
+  const isPlaidCallback = window.location.pathname.includes('plaid-callback');
+  
+  console.log('Checking for Plaid OAuth redirect:', {
+    hasOAuthState,
+    isPlaidCallback,
+    currentPath: window.location.pathname,
+    searchParams: window.location.search
+  });
+  
+  return hasOAuthState && isPlaidCallback;
 }
 
 /**
