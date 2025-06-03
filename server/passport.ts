@@ -51,7 +51,7 @@ passport.use(new GoogleStrategy({
       return done(null, userByGoogleId);
     }
     
-    // Create new user with Google authentication
+    // Create new user with Google authentication and auto-accept TOS
     const newUser = await storage.createGoogleUser({
       googleId: profile.id,
       email: email,
@@ -59,7 +59,8 @@ passport.use(new GoogleStrategy({
       lastName: profile.name?.familyName || 'Account',
       profilePic: profile.photos?.[0]?.value,
       authMethod: 'google',
-      emailVerified: true
+      emailVerified: true,
+      tosAcceptedAt: new Date() // Auto-accept TOS for Google OAuth users
     });
     
     console.log('Created new Google user:', email, 'with username:', newUser.username);

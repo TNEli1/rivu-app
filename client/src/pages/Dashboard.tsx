@@ -251,8 +251,12 @@ export default function Dashboard() {
         const cleanUrl = window.location.pathname;
         window.history.replaceState({}, '', cleanUrl);
         
-        // CRITICAL: Trigger auth state refresh without full page reload
-        window.dispatchEvent(new CustomEvent('authStateChanged'));
+        // CRITICAL: Force immediate auth state refresh and user data fetch
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('authStateChanged'));
+          // Force page refresh to ensure proper authentication state
+          window.location.reload();
+        }, 100);
         
       } catch (error) {
         console.error('Error processing Google OAuth auth token:', error);

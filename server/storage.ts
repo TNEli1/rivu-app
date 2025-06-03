@@ -52,6 +52,7 @@ export interface IStorage {
     profilePic?: string;
     authMethod: string;
     emailVerified: boolean;
+    tosAcceptedAt?: Date;
   }): Promise<User>;
   linkGoogleAccount(userId: number, googleId: string, profilePic?: string): Promise<User>;
   updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
@@ -232,6 +233,7 @@ export class DatabaseStorage implements IStorage {
     profilePic?: string;
     authMethod: string;
     emailVerified: boolean;
+    tosAcceptedAt?: Date;
   }): Promise<User> {
     // Generate clean username from email and name
     const username = await this.generateCleanUsername(userData.email, userData.firstName, userData.lastName);
@@ -252,6 +254,7 @@ export class DatabaseStorage implements IStorage {
         authMethod: userData.authMethod,
         emailVerified: userData.emailVerified,
         profilePic: userData.profilePic,
+        tosAcceptedAt: userData.tosAcceptedAt, // Auto-accept TOS for Google OAuth users
         loginCount: 0,
         createdAt: new Date(),
       })
