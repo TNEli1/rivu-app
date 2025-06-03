@@ -23,20 +23,13 @@ app.disable('x-powered-by');
 app.set('trust proxy', 1);
 
 // Domain redirect middleware for Plaid OAuth compliance
-// This ensures https://tryrivu.com redirects to https://www.tryrivu.com
+// Railway handles redirects from tryrivu.com to www.tryrivu.com automatically
 app.use((req, res, next) => {
   const host = req.headers.host;
   const protocol = req.headers['x-forwarded-proto'] || 'http';
   
-  // Handle non-www to www redirect for tryrivu.com domain
-  if (host === 'tryrivu.com') {
-    const redirectUrl = `https://www.tryrivu.com${req.originalUrl}`;
-    console.log(`🔄 Redirecting ${protocol}://${host}${req.originalUrl} → ${redirectUrl}`);
-    return res.redirect(301, redirectUrl);
-  }
-  
-  // Handle HTTP to HTTPS redirect in production
-  if (process.env.NODE_ENV === 'production' && protocol === 'http' && host && host.includes('tryrivu.com')) {
+  // Handle HTTP to HTTPS redirect in production for www.tryrivu.com
+  if (process.env.NODE_ENV === 'production' && protocol === 'http' && host === 'www.tryrivu.com') {
     const redirectUrl = `https://${host}${req.originalUrl}`;
     console.log(`🔒 Redirecting HTTP to HTTPS: ${redirectUrl}`);
     return res.redirect(301, redirectUrl);
