@@ -12,8 +12,9 @@ interface PlaidOAuthConfig {
  */
 export function usePlaidOAuth({ onSuccess, onExit }: PlaidOAuthConfig) {
   
-  const handleOAuthRedirect = useCallback(() => {
-    const query = new URLSearchParams(window.location.search);
+  const handleOAuthRedirect = useCallback((redirectUrl?: string) => {
+    const url = redirectUrl || window.location.href;
+    const query = new URLSearchParams(new URL(url).search);
     const oauthStateId = query.get('oauth_state_id');
     
     if (!oauthStateId) {
@@ -136,14 +137,15 @@ export function storeLinkTokenForOAuth(linkToken: string, expiration?: string) {
 /**
  * Checks if current URL is an OAuth redirect
  */
-export function isPlaidOAuthRedirect(): boolean {
-  const query = new URLSearchParams(window.location.search);
+export function isPlaidOAuthRedirect(redirectUrl?: string): boolean {
+  const url = redirectUrl || window.location.href;
+  const query = new URLSearchParams(new URL(url).search);
   const hasOAuthState = query.has('oauth_state_id');
   
   console.log('Checking for Plaid OAuth redirect:', {
     hasOAuthState,
-    currentPath: window.location.pathname,
-    searchParams: window.location.search,
+    currentPath: new URL(url).pathname,
+    searchParams: new URL(url).search,
     oauthStateId: query.get('oauth_state_id')
   });
   

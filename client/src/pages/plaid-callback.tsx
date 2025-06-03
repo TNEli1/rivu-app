@@ -87,7 +87,7 @@ export default function PlaidCallback() {
     }
 
     // Check if this is an OAuth redirect
-    if (!isPlaidOAuthRedirect()) {
+    if (!isPlaidOAuthRedirect(window.location.href)) {
       console.error('Not a valid Plaid OAuth redirect - redirecting to dashboard');
       setLocation('/dashboard');
       return;
@@ -120,7 +120,7 @@ export default function PlaidCallback() {
       }
       
       // Now handle the OAuth redirect
-      const handler = handleOAuthRedirect();
+      const handler = handleOAuthRedirect(window.location.href);
       if (!handler) {
         console.error('Failed to create OAuth handler');
         setError('Failed to resume bank connection. Please try connecting again.');
