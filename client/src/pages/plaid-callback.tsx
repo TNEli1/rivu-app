@@ -92,6 +92,43 @@ export default function PlaidCallback() {
       setLocation('/dashboard');
       return;
     }
+    
+    console.log('Starting Plaid OAuth redirect handling');
+    
+    // CRITICAL FIX: Add delay to ensure Plaid SDK is fully loaded
+    const initializeOAuth = async () => {
+      // Wait for Plaid SDK to be ready
+      let attempts = 0;
+      const maxAttempts = 20;
+      
+      while (attempts < maxAttempts) {
+        if (typeof window !== 'undefined' && (window as any).Plaid) {
+          console.log('Plaid SDK is ready, proceeding with OAuth');
+          break;
+        }
+        
+        console.log(`Waiting for Plaid SDK... attempt ${attempts + 1}/${maxAttempts}`);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      
+      if (attempts >= maxAttempts) {
+        console.error('Plaid SDK failed to load within timeout period');
+        setError('Bank connection service failed to load. Please try again.');
+        setIsProcessing(false);
+        return;
+      }
+      
+      // Now handle the OAuth redirect
+      const handler = handleOAuthRedirect();
+      if (!handler) {
+        console.error('Failed to create OAuth handler');
+        setError('Failed to resume bank connection. Please try connecting again.');
+        setIsProcessing(false);
+      }
+    };
+    
+    initializeOAuth();
 
     console.log('Processing Plaid OAuth redirect');
     

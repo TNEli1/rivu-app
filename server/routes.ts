@@ -51,6 +51,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.put(`${apiPath}/user/demographics`, protect, updateDemographics);
     app.post(`${apiPath}/user/login-metric`, protect, updateLoginMetrics);
     
+    // User profile endpoint that works with JWT cookies for OAuth flows
+    app.get(`${apiPath}/profile`, async (req: any, res) => {
+      try {
+        // Get token from rivu_token cookie (set by Google OAuth)
+        const token = req.cookies['rivu_token'];
+        
+        if (!token) {
+          return res.status(401).json({ 
+            message: 'Not authenticated',
+            code: 'NO_TOKEN'
+          });
+        }
+        
+        // Verify JWT token
+        const jwt = await import('jsonwebtoken');
+        const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'rivu_jwt_secret_dev') as any;
+        
+        // Get user from database
+        const user = await storage.getUserById(parseInt(decoded.id.toString(), 10));
+        
+        if (!user) {
+          return res.status(401).json({ 
+            message: 'User not found',
+            code: 'USER_NOT_FOUND'
+          });
+        }
+        
+        // Return user profile data (exclude sensitive fields)
+        const userProfile = {
+          _id: user.id.toString(),
+          username: user.username,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          profilePicture: user.profilePic,
+          authMethod: user.authMethod,
+          emailVerified: user.emailVerified,
+          createdAt: user.createdAt,
+          lastLogin: user.lastLogin,
+          loginCount: user.loginCount
+        };
+        
+        res.json(userProfile);
+        
+      } catch (error: any) {
+        console.error('Profile endpoint error:', error);
+        
+        if (error.name === 'TokenExpiredError') {
+          return res.status(401).json({ 
+            message: 'Token expired',
+            code: 'TOKEN_EXPIRED'
+          });
+        }
+        
+        return res.status(401).json({ 
+          message: 'Authentication failed',
+          code: 'AUTH_FAILED'
+        });
+      }
+    });
+    
     // TOS acceptance endpoint
     app.post(`${apiPath}/user/accept-tos`, protect, async (req: any, res) => {
       try {

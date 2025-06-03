@@ -119,10 +119,11 @@ app.use(session({
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax',
+    sameSite: 'lax', // Critical for OAuth redirects to work properly
     maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-    domain: undefined // No domain restriction for www.tryrivu.com
-  }
+    domain: process.env.NODE_ENV === 'production' ? '.tryrivu.com' : undefined // Share cookies across subdomains in production
+  },
+  name: 'rivu_session' // Explicit session cookie name
 }));
 
 // Initialize Passport

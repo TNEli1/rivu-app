@@ -167,7 +167,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       try {
-        const res = await fetch('/api/user', {
+        // Use the new profile endpoint that works with JWT cookies
+        const res = await fetch('/api/profile', {
           credentials: 'include' // Include HTTP-only cookies
         });
         

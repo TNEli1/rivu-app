@@ -59,21 +59,31 @@ export const createLinkToken = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    // Use BASE_URL from environment for production
+    // CRITICAL FIX: Use Railway production domain for OAuth redirect URIs
     let baseUrl;
     if (plaidEnvironment === 'production') {
-      // For production, strictly use www.tryrivu.com as the only valid domain
+      // For Railway production deployment, use the exact domain registered with Plaid
       baseUrl = 'https://www.tryrivu.com';
     } else {
-      // For sandbox/development
-      baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+      // For sandbox/development - handle both local and Railway preview deployments
+      const host = req.get('host') || 'localhost:5000';
+      baseUrl = host.includes('localhost') ? `http://${host}` : `https://${host}`;
     }
     
     // Log the host information for debugging
-    console.log("Link token creation host:", req.hostname);
+    console.log("Link token creation host:", req.hostname, "baseUrl:", baseUrl);
       
     const redirectUri = `${baseUrl}/plaid-callback`;
     const webhook = `${baseUrl}/api/plaid/webhook`;
+    
+    // CRITICAL: Validate redirect URI matches Plaid dashboard configuration
+    console.log('PLAID OAUTH CONFIGURATION:', {
+      environment: plaidEnvironment,
+      redirectUri,
+      webhook,
+      requestHost: req.hostname,
+      userAgent: req.get('User-Agent')
+    });
     
     console.log('Plaid configuration:', {
       environment: plaidEnvironment,
