@@ -387,3 +387,67 @@ export const disconnectAccount = async (req: Request, res: Response) => {
     return res.status(500).json({ error: 'Failed to disconnect bank account' });
   }
 };
+
+// CRITICAL DIAGNOSTIC: Railway configuration checker for Plaid OAuth
+export const diagnosePlaidConfiguration = async (req: Request, res: Response) => {
+  try {
+    const isProductionEnvironment = process.env.NODE_ENV === 'production' || 
+                                   process.env.RAILWAY_ENVIRONMENT === 'production' || 
+                                   process.env.PLAID_ENV === 'production';
+    
+    const diagnostics = {
+      timestamp: new Date().toISOString(),
+      railway: {
+        environment: process.env.RAILWAY_ENVIRONMENT || 'not_set',
+        nodeEnv: process.env.NODE_ENV || 'not_set',
+        port: process.env.PORT || 'not_set',
+        host: req.get('host'),
+        hostname: req.hostname,
+        protocol: req.protocol,
+        secure: req.secure,
+        origin: req.get('origin'),
+        referer: req.get('referer'),
+        userAgent: req.get('user-agent'),
+        xForwardedProto: req.get('x-forwarded-proto'),
+        xForwardedHost: req.get('x-forwarded-host'),
+        xForwardedFor: req.get('x-forwarded-for'),
+      },
+      plaid: {
+        environment: plaidEnvironment,
+        isProductionDetermined: isProductionEnvironment,
+        clientIdPresent: !!process.env.PLAID_CLIENT_ID,
+        productionSecretPresent: !!process.env.PLAID_SECRET_PRODUCTION,
+        sandboxSecretPresent: !!process.env.PLAID_SECRET_SANDBOX,
+        redirectUri: isProductionEnvironment && plaidEnvironment === 'production' 
+          ? 'https://www.tryrivu.com/plaid-callback'
+          : `${req.protocol}://${req.get('host')}/plaid-callback`,
+        webhook: isProductionEnvironment && plaidEnvironment === 'production'
+          ? 'https://www.tryrivu.com/api/plaid/webhook'
+          : `${req.protocol}://${req.get('host')}/api/plaid/webhook`
+      },
+      session: {
+        sessionId: req.sessionID,
+        sessionExists: !!req.session,
+        cookieSecure: req.session?.cookie?.secure || false,
+        cookieDomain: req.session?.cookie?.domain || 'not_set',
+        cookieSameSite: req.session?.cookie?.sameSite || 'not_set',
+        sessionSecret: process.env.SESSION_SECRET ? 'present' : 'using_default'
+      },
+      headers: {
+        host: req.get('host'),
+        origin: req.get('origin'),
+        referer: req.get('referer'),
+        contentType: req.get('content-type'),
+        authorization: req.get('authorization') ? 'present' : 'missing',
+        cookie: req.get('cookie') ? 'present' : 'missing'
+      }
+    };
+    
+    console.log('PLAID CONFIGURATION DIAGNOSTICS:', JSON.stringify(diagnostics, null, 2));
+    
+    return res.json(diagnostics);
+  } catch (error: any) {
+    console.error('Error in Plaid diagnostics:', error);
+    return res.status(500).json({ error: 'Failed to run diagnostics' });
+  }
+};
