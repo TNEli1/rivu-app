@@ -62,8 +62,8 @@ export const createLinkToken = async (req: Request, res: Response) => {
     // Use BASE_URL or fallback to environment-specific defaults
     let baseUrl;
     if (plaidEnvironment === 'production') {
-      // For production, use BASE_URL or the expected production domain
-      baseUrl = process.env.BASE_URL || process.env.EXPECTED_DOMAIN || 'https://www.tryrivu.com';
+      // For production, strictly use www.tryrivu.com as the only valid domain
+      baseUrl = process.env.BASE_URL || 'https://www.tryrivu.com';
     } else {
       // For sandbox/development
       baseUrl = process.env.BASE_URL || 'http://localhost:5000';
@@ -137,7 +137,7 @@ export const getPlaidEnvironment = async (req: Request, res: Response) => {
   try {
     let baseUrl;
     if (plaidEnvironment === 'production') {
-      baseUrl = process.env.BASE_URL || process.env.EXPECTED_DOMAIN || 'https://www.tryrivu.com';
+      baseUrl = process.env.BASE_URL || 'https://www.tryrivu.com';
     } else {
       baseUrl = process.env.BASE_URL || 'http://localhost:5000';
     }

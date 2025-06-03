@@ -74,7 +74,6 @@ if (process.env.NODE_ENV === 'production') {
 
 // Configure CORS with proper security settings for Railway
 const allowedOrigins = [
-  'https://tryrivu.com',
   'https://www.tryrivu.com',
   'https://rivu-core-production.up.railway.app',
   // Development origins
