@@ -29,24 +29,24 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Clean up URL on component mount to remove stale OAuth parameters
+  useEffect(() => {
+    const currentUrl = new URL(window.location.href);
+    if (currentUrl.searchParams.has('oauth_state_id')) {
+      // Remove OAuth parameters from URL to prevent interference with new connections
+      currentUrl.searchParams.delete('oauth_state_id');
+      window.history.replaceState({}, '', currentUrl.toString());
+      console.log('Cleaned up stale OAuth parameters from URL');
+    }
+  }, []);
+
   // Get a link token from our API when the dialog opens
   useEffect(() => {
     if (isOpen) {
       setLoading(true);
       setError(null);
       setSuccess(false);
-      
-      // CRITICAL FIX: Check if we're in an OAuth redirect scenario
-      const query = new URLSearchParams(window.location.search);
-      const isOAuthRedirect = query.has('oauth_state_id');
-      
-      if (isOAuthRedirect) {
-        console.log('OAuth redirect detected - should not create new link token');
-        setLoading(false);
-        return; // Exit early - let OAuth handler deal with this
-      }
-      
-      setLinkToken(null); // Reset link token to ensure fresh state for non-OAuth flows
+      setLinkToken(null); // Reset link token to ensure fresh state
       
       // Clear any stale OAuth data to ensure fresh OAuth flows
       localStorage.removeItem('plaid_link_success');
@@ -145,10 +145,9 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
       };
       
       fetchLinkToken();
-    } else {
-      // Reset state when dialog is closed
-      setLinkToken(null);
     }
+    // Note: Don't clear linkToken immediately when dialog closes
+    // to avoid interrupting Plaid initialization
   }, [isOpen]);
 
   // Handle the success callback from Plaid Link
@@ -218,6 +217,12 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
       console.error('Plaid Link error:', err);
       setError(err.error_message || 'Error connecting to bank');
     }
+    
+    // Clean up link token after Plaid exits cleanly
+    setTimeout(() => {
+      setLinkToken(null);
+      console.log('Cleaned up link token after Plaid exit');
+    }, 1000);
   }, []);
 
   // Use environment-appropriate redirect URI for OAuth banks - must match backend and Plaid dashboard

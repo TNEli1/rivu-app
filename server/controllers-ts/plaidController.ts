@@ -31,6 +31,37 @@ const plaidConfig = new Configuration({
 
 export const plaidClient = new PlaidApi(plaidConfig);
 
+// Plaid status check endpoint
+export const getPlaidStatus = async (req: Request, res: Response) => {
+  try {
+    // Check if required environment variables are present
+    const hasClientId = !!process.env.PLAID_CLIENT_ID;
+    const hasSecret = !!(plaidEnvironment === 'production' 
+      ? process.env.PLAID_SECRET_PRODUCTION 
+      : process.env.PLAID_SECRET_SANDBOX || process.env.PLAID_SECRET);
+
+    if (!hasClientId || !hasSecret) {
+      return res.status(503).json({ 
+        error: 'Plaid service not configured',
+        configured: false,
+        environment: plaidEnvironment
+      });
+    }
+
+    return res.json({ 
+      configured: true,
+      environment: plaidEnvironment,
+      status: 'ready'
+    });
+  } catch (error: any) {
+    console.error('Plaid status check error:', error);
+    return res.status(500).json({ 
+      error: 'Failed to check Plaid status',
+      configured: false
+    });
+  }
+};
+
 // Create Link Token for Plaid Link initialization
 export const createLinkToken = async (req: Request, res: Response) => {
   try {

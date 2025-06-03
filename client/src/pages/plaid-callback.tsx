@@ -92,6 +92,14 @@ export default function PlaidCallback() {
       setLocation('/dashboard');
       return;
     }
+
+    // Clean up URL immediately to prevent future interference
+    const currentUrl = new URL(window.location.href);
+    if (currentUrl.searchParams.has('oauth_state_id')) {
+      const cleanUrl = new URL(window.location.origin + window.location.pathname);
+      window.history.replaceState({}, '', cleanUrl.toString());
+      console.log('Cleaned up OAuth parameters from callback URL');
+    }
     
     console.log('Starting Plaid OAuth redirect handling');
     
