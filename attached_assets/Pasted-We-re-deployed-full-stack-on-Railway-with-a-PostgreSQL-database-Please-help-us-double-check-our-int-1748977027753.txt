@@ -1,0 +1,37 @@
+We’re deployed full stack on Railway with a PostgreSQL database. Please help us double-check our integration for the two following critical production issues:
+
+⸻
+
+✅ Issue 1: Google OAuth Login Failure
+	•	Google OAuth successfully creates the user account.
+	•	However, after redirect, the user is not logged in — they are returned to the login screen.
+	•	The user has no password or login credentials and is effectively locked out.
+
+🔍 Please review and help us verify for these common issues (without using any Replit dependencies):
+	•	Is passport.serializeUser() and passport.deserializeUser() implemented correctly?
+	•	Is the OAuth callback correctly generating a session or JWT after authentication?
+	•	Is the req.login() or equivalent being called after OAuth to persist the session?
+	•	Is the frontend consuming the login response properly and setting a cookie or session token?
+	•	Are we returning a correct 200 response from the OAuth callback handler?
+
+⸻
+
+✅ Issue 2: Plaid Always Shows Phone Number Screen (No Bank List)
+	•	After launching Plaid Link, users are taken directly to the OAuth phone number screen, even for banks that do not require OAuth.
+
+🔍 Please verify the following Plaid-related issues (again — no Replit dependencies):
+	•	Is our link_token being persisted properly across OAuth redirect using sessionStorage, cookies, or query params?
+	•	Are we checking for isPlaidOauthRedirect() before calling Plaid.create() and restoring the original token?
+	•	Are we accidentally creating a new link_token on every load, including during the OAuth return?
+	•	Is the redirect_uri exactly matching what is set in the Plaid dashboard?
+	•	Are the CORS or CSP headers blocking Plaid flow?
+
+⸻
+
+These issues are blocking production use, and we need permanent solutions today.
+
+⚠️ Important:
+	•	We are not using Replit for hosting — we are on Railway.
+	•	Do not use any Replit-only logic or packages.
+
+Please help confirm the best practice approach and common fixes so we can resolve these once and for all.
