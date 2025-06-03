@@ -274,16 +274,31 @@ export const loginUser = async (req: any, res: any) => {
       setTokenCookie(res, token);
 
       res.json({
-        _id: user.id,
+        id: user.id,
         username: user.username,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        profilePic: user.profilePic,
+        avatarInitials: user.avatarInitials,
+        authMethod: user.authMethod,
+        emailVerified: user.emailVerified,
+        tosAcceptedAt: user.tosAcceptedAt,
+        googleId: user.googleId,
         createdAt: user.createdAt,
         lastLogin,
         loginCount,
         onboardingStage: user.onboardingStage,
-        onboardingCompleted: user.onboardingCompleted
+        onboardingCompleted: user.onboardingCompleted,
+        demographics: {
+          ageRange: user.ageRange,
+          incomeBracket: user.incomeBracket,
+          goals: user.goals ? user.goals.split(',') : [],
+          riskTolerance: user.riskTolerance,
+          experienceLevel: user.experienceLevel,
+          completed: user.demographicsCompleted,
+          skipPermanently: user.skipDemographics
+        }
         // Token is already set in HTTP-only cookie for security
       });
     } else {

@@ -254,8 +254,6 @@ export default function Dashboard() {
         // CRITICAL: Force immediate auth state refresh and user data fetch
         setTimeout(() => {
           window.dispatchEvent(new CustomEvent('authStateChanged'));
-          // Force page refresh to ensure proper authentication state
-          window.location.reload();
         }, 100);
         
       } catch (error) {
