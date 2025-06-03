@@ -22,17 +22,28 @@ app.disable('x-powered-by');
 // Trust proxy - needed for rate limiting to work properly behind reverse proxies
 app.set('trust proxy', 1);
 
-// Skip domain redirects in production - Railway handles this
-if (process.env.NODE_ENV !== 'production') {
-  // Only redirect in development if needed
-  app.use((req, res, next) => {
-    const host = req.headers.host;
-    if (host === 'tryrivu.com') {
-      return res.redirect(301, 'https://www.tryrivu.com' + req.originalUrl);
-    }
-    next();
-  });
-}
+// Domain redirect middleware for Plaid OAuth compliance
+// This ensures https://tryrivu.com redirects to https://www.tryrivu.com
+app.use((req, res, next) => {
+  const host = req.headers.host;
+  const protocol = req.headers['x-forwarded-proto'] || 'http';
+  
+  // Handle non-www to www redirect for tryrivu.com domain
+  if (host === 'tryrivu.com') {
+    const redirectUrl = `https://www.tryrivu.com${req.originalUrl}`;
+    console.log(`🔄 Redirecting ${protocol}://${host}${req.originalUrl} → ${redirectUrl}`);
+    return res.redirect(301, redirectUrl);
+  }
+  
+  // Handle HTTP to HTTPS redirect in production
+  if (process.env.NODE_ENV === 'production' && protocol === 'http' && host && host.includes('tryrivu.com')) {
+    const redirectUrl = `https://${host}${req.originalUrl}`;
+    console.log(`🔒 Redirecting HTTP to HTTPS: ${redirectUrl}`);
+    return res.redirect(301, redirectUrl);
+  }
+  
+  next();
+});
 
 // Global rate limiter to prevent abuse
 const globalRateLimit = rateLimit({

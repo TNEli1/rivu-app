@@ -61,24 +61,23 @@ export const createLinkToken = async (req: Request, res: Response) => {
 
     // CRITICAL: Set proper redirect URI for production OAuth banks that matches your Plaid dashboard
     // Use environment-specific URLs that match your actual deployment
-    const replicDomains = process.env.REPLIT_DOMAINS;
+    const deploymentDomain = process.env.REPLIT_DOMAINS || process.env.RAILWAY_STATIC_URL || process.env.BASE_URL;
     
     let baseUrl;
     if (plaidEnvironment === 'production') {
-      // CRITICAL: For production, check if we're on the expected domain
+      // CRITICAL: For production, always use the www domain for Plaid OAuth compliance
       const expectedDomain = 'https://www.tryrivu.com';
-      const currentHost = `https://${replicDomains}`;
       
-      // If we're on tryrivu.com or www.tryrivu.com, use the configured domain
-      if (replicDomains && replicDomains.includes('tryrivu.com')) {
-        // Use the exact domain format that matches your Plaid dashboard
-        baseUrl = replicDomains.startsWith('www.') ? `https://${replicDomains}` : `https://www.${replicDomains}`;
-      } else if (!replicDomains) {
-        baseUrl = process.env.BASE_URL || expectedDomain;
+      // Check if we're on a tryrivu.com domain (with or without www)
+      if (deploymentDomain && deploymentDomain.includes('tryrivu.com')) {
+        // Always use the www version for Plaid OAuth compliance
+        baseUrl = expectedDomain;
+      } else if (!deploymentDomain) {
+        baseUrl = expectedDomain;
       } else {
         // We're on a different domain (like Replit), force sandbox mode
         console.warn('⚠️  FORCING SANDBOX MODE: Production Plaid on non-production domain');
-        console.warn(`   Current domain: ${currentHost}`);
+        console.warn(`   Current domain: ${deploymentDomain}`);
         console.warn(`   Expected domain: ${expectedDomain}`);
         console.warn('   Switching to sandbox to prevent phone verification screen');
         
@@ -97,7 +96,7 @@ export const createLinkToken = async (req: Request, res: Response) => {
         const { PlaidApi } = await import('plaid');
         const sandboxClient = new PlaidApi(sandboxConfig);
         
-        baseUrl = currentHost;
+        baseUrl = `https://${deploymentDomain}`;
         
         // Create link token with sandbox client
         const redirectUri = `${baseUrl}/plaid-callback`;
@@ -143,15 +142,15 @@ export const createLinkToken = async (req: Request, res: Response) => {
       baseUrl,
       redirectUri,
       webhook,
-      replicDomains,
-      currentHost: replicDomains ? `https://${replicDomains}` : 'unknown',
+      deploymentDomain,
+      currentHost: deploymentDomain ? `https://${deploymentDomain}` : 'unknown',
       clientId: process.env.PLAID_CLIENT_ID ? 'present' : 'missing',
       secret: plaidSecret ? 'present' : 'missing'
     });
     
     console.warn('🔍 PLAID REDIRECT URI DEBUG:');
     console.warn(`   Configured redirect URI: ${redirectUri}`);
-    console.warn(`   Current domain: ${replicDomains || 'unknown'}`);
+    console.warn(`   Current domain: ${deploymentDomain || 'unknown'}`);
     console.warn(`   Expected in Plaid dashboard: ${redirectUri}`);
     console.warn('   If phone verification appears, check your Plaid dashboard redirect URI exactly matches this');
     console.warn(`   Plaid Dashboard: https://dashboard.plaid.com/team/api`);
