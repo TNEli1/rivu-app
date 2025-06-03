@@ -41,6 +41,7 @@ function Router() {
       <Route path="/legal/privacy" component={PrivacyPage} />
       <Route path="/legal/terms" component={TermsPage} />
       <Route path="/callback" component={PlaidCallback} />
+      <Route path="/plaid-callback" component={PlaidCallback} />
       
       {/* Protected Routes */}
       <ProtectedRoute path="/dashboard" component={Dashboard} />
