@@ -19,6 +19,9 @@ const app = express();
 // Basic security - hide Express fingerprint
 app.disable('x-powered-by');
 
+// Determine if we're in production based on Railway environment or explicit NODE_ENV
+const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.PLAID_ENV === 'production';
+
 // Trust proxy - needed for rate limiting to work properly behind reverse proxies
 app.set('trust proxy', 1);
 
@@ -33,18 +36,18 @@ app.use((req, res, next) => {
 // Global rate limiter to prevent abuse
 const globalRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 500 : 2000, // Stricter in production
+  max: isProduction ? 500 : 2000, // Stricter in production
   message: {
     message: 'Too many requests from this IP, please try again after 15 minutes'
   },
   standardHeaders: true,
   legacyHeaders: false,
   // Skip rate limiting in development mode when special header is present
-  skip: (req, res) => process.env.NODE_ENV !== 'production' && req.get('X-Skip-Rate-Limit') === 'development'
+  skip: (req, res) => !isProduction && req.get('X-Skip-Rate-Limit') === 'development'
 });
 
 // Apply global rate limiting based on environment
-if (process.env.NODE_ENV === 'production') {
+if (isProduction) {
   // Always apply in production
   app.use(globalRateLimit);
   console.log('✅ Production rate limiting enabled');
@@ -104,9 +107,6 @@ app.use(cookieParser()); // Parse cookies
 
 // Initialize PostgreSQL session store
 const PgSession = ConnectPgSimple(session);
-
-// Determine if we're in production based on Railway environment or explicit NODE_ENV
-const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.PLAID_ENV === 'production';
 
 // Session configuration for OAuth with PostgreSQL store
 app.use(session({
@@ -172,7 +172,7 @@ app.use('/api', async (req: any, res: any, next: any) => {
 });
 
 // Apply CSRF protection (disabled in development for testing)
-if (process.env.NODE_ENV === 'production') {
+if (isProduction) {
   app.use(setCsrfToken); // Set CSRF token for all routes
   app.use('/api', validateCsrfToken); // Validate CSRF token for API routes
 }
