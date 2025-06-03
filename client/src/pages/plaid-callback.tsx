@@ -117,6 +117,19 @@ export default function PlaidCallback() {
           console.log('Found stored link token, reinitializing Plaid Link for OAuth completion');
           
           try {
+            // Check if stored token is expired
+            const storedConfig = storedLinkConfig ? JSON.parse(storedLinkConfig) : null;
+            const tokenExpired = storedConfig && Date.now() > (storedConfig.expiresAt || 0);
+            
+            if (tokenExpired) {
+              console.warn('Stored Plaid Link token has expired, redirecting to dashboard');
+              localStorage.removeItem('plaid_link_token');
+              localStorage.removeItem('plaid_link_config');
+              setError('Bank connection session expired. Please try connecting again.');
+              setTimeout(() => setLocation('/dashboard'), 3000);
+              return;
+            }
+            
             // Import Plaid Link to complete OAuth flow
             const { usePlaidLink } = await import('react-plaid-link');
             

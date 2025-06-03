@@ -15,6 +15,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { formatCurrency } from "@/lib/utils";
 import { useTheme } from "@/hooks/use-theme";
 import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
 // Helper functions for goal completion calculation - matches the logic on goals-page.tsx
@@ -185,6 +186,7 @@ export default function Dashboard() {
   const [summaryData, setSummaryData] = useState<DashboardSummary>(initialSummaryData);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [showTutorial, setShowTutorial] = useState(false);
+  const { toast } = useToast();
   
   // Fetch goals data for metrics
   const { data: goalsData = [], isLoading: isGoalsLoading } = useQuery<GoalData[]>({
