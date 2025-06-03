@@ -733,8 +733,27 @@ export const logoutUser = async (req: any, res: any) => {
       );
     }
     
-    // Clear the token cookie
+    // CRITICAL FIX: Clear all authentication methods to prevent cross-account mixups
+    
+    // 1. Clear JWT cookie
     clearTokenCookie(res);
+    
+    // 2. Destroy Passport session
+    req.session.destroy((err: any) => {
+      if (err) {
+        console.error('Session destruction error:', err);
+      }
+    });
+    
+    // 3. Clear user from request
+    req.user = null;
+    
+    // 4. Clear any OAuth state
+    if (req.session && req.session.plaidOAuth) {
+      delete req.session.plaidOAuth;
+    }
+    
+    console.log('User logged out - all sessions cleared');
     
     res.json({ message: 'Logged out successfully' });
   } catch (error) {

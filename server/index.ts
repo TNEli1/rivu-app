@@ -127,7 +127,7 @@ app.use(session({
   cookie: {
     secure: isProduction, // Force secure cookies in production
     httpOnly: true,
-    sameSite: 'lax', // Critical for OAuth redirects to work properly
+    sameSite: isProduction ? 'none' : 'lax', // Railway fix: use 'none' for cross-site redirects in production
     maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
     // CRITICAL FIX: Only set domain in production and ensure it matches Railway deployment
     domain: isProduction ? '.tryrivu.com' : undefined

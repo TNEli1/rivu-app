@@ -225,23 +225,22 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
   const currentHost = window.location.origin;
   const oauthRedirectUri = `${currentHost}/plaid-callback`;
 
-  // CRITICAL: Properly configure Plaid Link for OAuth flows
-  // NEVER include receivedRedirectUri on initial link creation - only for OAuth resumes
-  const config = {
-    token: linkToken || '',
-    onSuccess,
-    onExit,
-    // Only include OAuth redirect URI for banks that require OAuth (like Chase)
-    ...(linkToken && { oauthRedirectUri })
-  };
+  // CRITICAL FIX: Only configure usePlaidLink when link token is available
+  const config = linkToken
+    ? {
+        token: linkToken,
+        onSuccess,
+        onExit,
+        oauthRedirectUri,
+      }
+    : null;
+
+  const { open, ready } = usePlaidLink(config ?? { token: '', onSuccess, onExit }); // fallback is inert
   
-  console.log('Plaid Link config:', { 
-    ...config, 
-    hasToken: !!linkToken,
-    tokenPreview: linkToken ? `${linkToken.substring(0, 10)}...` : 'none' 
-  });
-  
-  const { open, ready } = usePlaidLink(config);
+  // Debug effect to track link token updates
+  useEffect(() => {
+    console.log("🔑 Link token updated:", linkToken);
+  }, [linkToken]);
 
   // Trigger Plaid Link when button is clicked
   const handlePlaidLinkClick = useCallback(() => {
@@ -249,14 +248,12 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
     setError(null);
     
     // CRITICAL FIX: Guard against empty or missing link token
-    if (!linkToken || linkToken.trim() === '') {
-      console.warn("Link token not ready, aborting Plaid launch.");
-      setError('Bank connection service is not ready. Please wait a moment and try again.');
+    if (!linkToken) {
+      setError('Link token is missing. Please try again later.');
       return;
     }
-    
     if (!ready) {
-      setError('Bank connection service is initializing. Please wait a moment.');
+      setError('Plaid is still initializing. Try again in a moment.');
       return;
     }
     

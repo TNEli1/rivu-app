@@ -46,6 +46,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.post(`${apiPath}/register`, loginLimiter, registerUser);
     app.post(`${apiPath}/login`, loginLimiter, loginUser);
     app.post(`${apiPath}/logout`, protect, logoutUser);
+    // CRITICAL FIX: Add GET logout route for easier frontend integration
+    app.get(`${apiPath}/logout`, logoutUser);
     app.get(`${apiPath}/user`, protect, getUserProfile);
     app.put(`${apiPath}/user`, protect, updateUserProfile);
     app.put(`${apiPath}/user/demographics`, protect, updateDemographics);
