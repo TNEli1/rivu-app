@@ -59,15 +59,18 @@ export const createLinkToken = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    // Use BASE_URL or fallback to environment-specific defaults
+    // Use BASE_URL from environment for production
     let baseUrl;
     if (plaidEnvironment === 'production') {
       // For production, strictly use www.tryrivu.com as the only valid domain
-      baseUrl = process.env.BASE_URL || 'https://www.tryrivu.com';
+      baseUrl = 'https://www.tryrivu.com';
     } else {
       // For sandbox/development
       baseUrl = process.env.BASE_URL || 'http://localhost:5000';
     }
+    
+    // Log the host information for debugging
+    console.log("Link token creation host:", req.hostname);
       
     const redirectUri = `${baseUrl}/plaid-callback`;
     const webhook = `${baseUrl}/api/plaid/webhook`;
@@ -137,7 +140,7 @@ export const getPlaidEnvironment = async (req: Request, res: Response) => {
   try {
     let baseUrl;
     if (plaidEnvironment === 'production') {
-      baseUrl = process.env.BASE_URL || 'https://www.tryrivu.com';
+      baseUrl = 'https://www.tryrivu.com';
     } else {
       baseUrl = process.env.BASE_URL || 'http://localhost:5000';
     }

@@ -23,18 +23,10 @@ app.disable('x-powered-by');
 app.set('trust proxy', 1);
 
 // Domain redirect middleware for Plaid OAuth compliance
-// Railway handles redirects from tryrivu.com to www.tryrivu.com automatically
 app.use((req, res, next) => {
-  const host = req.headers.host;
-  const protocol = req.headers['x-forwarded-proto'] || 'http';
-  
-  // Handle HTTP to HTTPS redirect in production for www.tryrivu.com
-  if (process.env.NODE_ENV === 'production' && protocol === 'http' && host === 'www.tryrivu.com') {
-    const redirectUrl = `https://${host}${req.originalUrl}`;
-    console.log(`🔒 Redirecting HTTP to HTTPS: ${redirectUrl}`);
-    return res.redirect(301, redirectUrl);
+  if (req.hostname === 'tryrivu.com') {
+    return res.redirect(301, `https://www.tryrivu.com${req.originalUrl}`);
   }
-  
   next();
 });
 
@@ -66,15 +58,16 @@ if (process.env.NODE_ENV === 'production') {
 // Remove the explicit import since we'll use registerRoutes to handle this
 
 // Configure CORS with proper security settings for Railway
-const allowedOrigins = [
-  'https://www.tryrivu.com',
-  'https://rivu-core-production.up.railway.app',
-  // Development origins
-  'http://localhost:5000',
-  'http://127.0.0.1:5000',
-  'http://localhost:3000',
-  'http://127.0.0.1:3000'
-];
+const allowedOrigins = process.env.NODE_ENV === 'production' 
+  ? ['https://www.tryrivu.com']
+  : [
+      'https://www.tryrivu.com',
+      'https://rivu-core-production.up.railway.app',
+      'http://localhost:5000',
+      'http://127.0.0.1:5000',
+      'http://localhost:3000',
+      'http://127.0.0.1:3000'
+    ];
 
 const corsOptions = {
   origin: (origin: any, callback: any) => {
@@ -127,9 +120,9 @@ app.use(session({
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Allow cross-site cookies in production
+    sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax',
     maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-    domain: process.env.NODE_ENV === 'production' ? '.tryrivu.com' : undefined // Share cookies across subdomains
+    domain: undefined // No domain restriction for www.tryrivu.com
   }
 }));
 
