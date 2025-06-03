@@ -68,6 +68,16 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
 
           console.log('Requesting fresh Plaid link token...');
           
+          // CRITICAL: Store the link token immediately when received for OAuth flows
+          const storeTokenForOAuth = (token: string) => {
+            localStorage.setItem('plaid_link_token', token);
+            localStorage.setItem('plaid_link_config', JSON.stringify({
+              timestamp: Date.now(),
+              token: token.substring(0, 20) + '...'
+            }));
+            console.log('Stored link token for potential OAuth redirect');
+          };
+          
           // Make the actual request for the link token
           const response = await fetch('/api/plaid/create_link_token', {
             method: 'POST',
@@ -103,10 +113,11 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
           
           if (data && data.link_token) {
             console.log('Successfully received fresh link token');
+            
+            // CRITICAL: Store token immediately for OAuth flows
+            storeTokenForOAuth(data.link_token);
+            
             setLinkToken(data.link_token);
-            // Store link token for OAuth flows using the new hook
-            const { storeLinkTokenForOAuth } = await import('@/hooks/use-plaid-oauth');
-            storeLinkTokenForOAuth(data.link_token, data.expiration);
           } else {
             setError('Cannot connect to banking service');
             console.error('Missing link token in response:', data);

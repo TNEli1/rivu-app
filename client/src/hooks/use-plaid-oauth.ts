@@ -20,6 +20,8 @@ export function usePlaidOAuth({ onSuccess, onExit }: PlaidOAuthConfig) {
       return null; // Not an OAuth redirect
     }
     
+    console.log('OAuth redirect detected with state ID:', oauthStateId);
+    
     // CRITICAL: Retrieve the previously stored link token - never create new one
     const linkToken = window.localStorage.getItem('plaid_link_token');
     

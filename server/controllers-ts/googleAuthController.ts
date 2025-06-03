@@ -70,12 +70,12 @@ export const googleCallback = [
       console.log('Google OAuth: Cookie settings:', {
         name: TOKEN_COOKIE_NAME,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        sameSite: 'lax',
         domain: process.env.NODE_ENV === 'production' ? '.tryrivu.com' : undefined,
         maxAge: JWT_EXPIRY * 1000
       });
 
-      // Also set a backup authentication method via URL parameter for cross-domain issues
+      // CRITICAL: Provide token via URL for immediate frontend authentication
       const authParam = encodeURIComponent(token);
       
       console.log('Google OAuth: Session created, redirecting to dashboard with auth token');
