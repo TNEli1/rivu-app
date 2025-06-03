@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import CSVUploadDialog from "@/components/transactions/CSVUploadDialog";
 import PlaidConnectionDialog from "@/components/transactions/PlaidConnectionDialog";
+import PlaidEnvironmentSwitcher from "@/components/transactions/PlaidEnvironmentSwitcher";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate, getCategoryIconAndColor } from "@/lib/utils";
 import { 
@@ -617,6 +618,9 @@ export default function TransactionsPage() {
 
       {/* Main Content */}
       <main className="flex-1 md:ml-64 p-4 md:p-8 pb-20 md:pb-8 overflow-y-auto max-h-screen">
+        {/* Plaid Environment Warning */}
+        <PlaidEnvironmentSwitcher />
+
         {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
           <div>

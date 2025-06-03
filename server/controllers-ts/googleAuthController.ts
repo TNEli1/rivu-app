@@ -96,7 +96,7 @@ export const googleCallback = [
         });
         
         // Store user info in session for frontend access
-        req.session.user = {
+        (req.session as any).user = {
           id: user.id,
           email: user.email,
           username: user.username,
