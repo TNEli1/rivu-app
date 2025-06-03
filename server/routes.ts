@@ -80,17 +80,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Return user profile data (exclude sensitive fields)
         const userProfile = {
-          _id: user.id.toString(),
+          id: user.id,
           username: user.username,
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
-          profilePicture: user.profilePic,
+          profilePic: user.profilePic,
+          avatarInitials: user.avatarInitials,
           authMethod: user.authMethod,
           emailVerified: user.emailVerified,
+          tosAcceptedAt: user.tosAcceptedAt,
+          googleId: user.googleId,
           createdAt: user.createdAt,
           lastLogin: user.lastLogin,
-          loginCount: user.loginCount
+          loginCount: user.loginCount,
+          demographics: {
+            ageRange: user.ageRange,
+            incomeBracket: user.incomeBracket,
+            goals: user.goals ? user.goals.split(',') : [],
+            riskTolerance: user.riskTolerance,
+            experienceLevel: user.experienceLevel,
+            completed: user.demographicsCompleted,
+            skipPermanently: user.skipDemographics
+          }
         };
         
         res.json(userProfile);

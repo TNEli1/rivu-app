@@ -26,12 +26,13 @@ export type Demographics = {
 
 // Main user type
 export type User = {
-  _id: string;
+  id: number;
   username: string;
   email: string;
   firstName: string;
   lastName: string;
-  profilePicture?: string;
+  profilePic?: string;
+  avatarInitials?: string;
   token?: string;
   themePreference?: 'light' | 'dark';
   coachTone?: 'encouraging' | 'direct' | 'strict'; // Coach tone preference
@@ -41,7 +42,10 @@ export type User = {
   lastLogin?: string;
   loginCount?: number;
   demographics?: Demographics;
-  tosAcceptedAt?: string;
+  tosAcceptedAt?: string | Date | null;
+  authMethod?: string;
+  emailVerified?: boolean;
+  googleId?: string;
 };
 
 // Auth context type

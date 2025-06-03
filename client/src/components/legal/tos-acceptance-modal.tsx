@@ -25,6 +25,7 @@ export default function TosAcceptanceModal({ open, onAccept }: TosAcceptanceModa
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
       onAccept();
       toast({
         title: "Terms Accepted",

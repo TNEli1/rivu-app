@@ -35,7 +35,8 @@ export function ProtectedRoute({
   }
 
   // Critical: Check TOS acceptance before any other checks
-  const needsTosAcceptance = user && !user.tosAcceptedAt;
+  // Google OAuth users should have tosAcceptedAt automatically set
+  const needsTosAcceptance = user && !user.tosAcceptedAt && user.authMethod !== 'google';
   
   if (needsTosAcceptance) {
     return (
