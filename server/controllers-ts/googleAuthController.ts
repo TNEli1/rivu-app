@@ -88,9 +88,36 @@ export const googleCallback = [
         }
         
         console.log('Google OAuth: Session established for user ID:', user.id);
+        console.log('Google OAuth: User details:', {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          authMethod: user.authMethod
+        });
         
-        // Redirect to dashboard with auth token as backup
-        res.redirect(`/dashboard?auth=${authParam}`);
+        // Store user info in session for frontend access
+        req.session.user = {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          authMethod: user.authMethod
+        };
+        
+        // Save session before redirect
+        req.session.save((saveError) => {
+          if (saveError) {
+            console.error('Google OAuth: Session save error:', saveError);
+          }
+          
+          // Redirect to dashboard with auth token and user info
+          const userParam = encodeURIComponent(JSON.stringify({
+            username: user.username,
+            email: user.email,
+            authMethod: user.authMethod
+          }));
+          
+          res.redirect(`/dashboard?auth=${authParam}&user=${userParam}`);
+        });
       });
       
     } catch (error) {

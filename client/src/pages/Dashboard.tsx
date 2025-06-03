@@ -200,16 +200,37 @@ export default function Dashboard() {
     }
   });
   
-  // Handle Google OAuth auth token from URL parameter
+  // Handle Google OAuth auth token and user info from URL parameters
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const authToken = urlParams.get('auth');
+    const userParam = urlParams.get('user');
     
     if (authToken) {
       try {
         // Store the auth token as cookie for immediate authentication
         document.cookie = `rivu_token=${decodeURIComponent(authToken)}; path=/; max-age=${60 * 60 * 2}; secure=${window.location.protocol === 'https:'}; samesite=lax`;
         console.log('Google OAuth: Auth token stored from URL parameter');
+        
+        // Store user info if provided
+        if (userParam) {
+          try {
+            const userInfo = JSON.parse(decodeURIComponent(userParam));
+            localStorage.setItem('rivu_user_info', JSON.stringify(userInfo));
+            console.log('Google OAuth: User info stored:', userInfo);
+            
+            // Show welcome message with username
+            setTimeout(() => {
+              toast({
+                title: "Welcome back!",
+                description: `Successfully logged in as ${userInfo.username || userInfo.email}`,
+                duration: 5000,
+              });
+            }, 1000);
+          } catch (parseError) {
+            console.error('Error parsing user info:', parseError);
+          }
+        }
         
         // CRITICAL: Set login state flag for immediate frontend authentication
         localStorage.setItem('rivuLoggedIn', 'true');

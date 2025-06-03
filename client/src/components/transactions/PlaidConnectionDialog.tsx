@@ -140,12 +140,13 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
         }) : 'No metadata'
       );
       
-      // Store success data with OAuth state handling in localStorage
+      // Store success data with OAuth state handling in localStorage with expiration
       const linkConfig = localStorage.getItem('plaid_link_config');
       const successData = {
         public_token,
         metadata,
         timestamp: Date.now(),
+        expiresAt: Date.now() + (30 * 60 * 1000), // 30 minutes
         link_config: linkConfig ? JSON.parse(linkConfig) : null
       };
       
@@ -206,9 +207,10 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
   }, []);
 
   // Use environment-appropriate redirect URI for OAuth banks - must match backend and Plaid dashboard
-  const oauthRedirectUri = import.meta.env.PROD 
-    ? 'https://tryrivu.com/plaid-callback'
-    : 'http://localhost:5000/plaid-callback';
+  const baseUrl = import.meta.env.PROD 
+    ? (import.meta.env.VITE_PRODUCTION_URL || 'https://tryrivu.com')
+    : 'http://localhost:5000';
+  const oauthRedirectUri = `${baseUrl}/plaid-callback`;
 
   // CRITICAL: Do NOT include receivedRedirectUri on initial launch - this causes OAuth state issues
   // Only include it when resuming after OAuth redirect (handled in plaid-callback page)

@@ -60,14 +60,22 @@ export const createLinkToken = async (req: Request, res: Response) => {
     }
 
     // CRITICAL: Set proper redirect URI for production OAuth banks that matches your Plaid dashboard
-    const redirectUri = plaidEnvironment === 'production' 
-      ? 'https://tryrivu.com/plaid-callback'  // Must match exactly what's configured in Plaid dashboard
-      : 'http://localhost:5000/plaid-callback';
-
-    // Use correct production webhook URL - consistent with redirect URI domain
-    const webhook = plaidEnvironment === 'production'
-      ? 'https://tryrivu.com/api/plaid/webhook'  // Use same domain as redirect_uri
-      : 'http://localhost:5000/api/plaid/webhook';
+    // Use environment-specific URLs that match your actual deployment
+    const baseUrl = plaidEnvironment === 'production' 
+      ? process.env.PRODUCTION_URL || 'https://tryrivu.com'
+      : 'http://localhost:5000';
+      
+    const redirectUri = `${baseUrl}/plaid-callback`;
+    const webhook = `${baseUrl}/api/plaid/webhook`;
+    
+    console.log('Plaid configuration:', {
+      environment: plaidEnvironment,
+      baseUrl,
+      redirectUri,
+      webhook,
+      clientId: process.env.PLAID_CLIENT_ID ? 'present' : 'missing',
+      secret: plaidSecret ? 'present' : 'missing'
+    });
 
     console.log('Creating Plaid link token with redirect URI:', redirectUri);
     console.log('Creating Plaid link token with webhook URL:', webhook);
