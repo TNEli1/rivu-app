@@ -1,0 +1,14 @@
+We are running a full-stack Node.js + PostgreSQL app deployed on Railway using a Railway-managed PostgreSQL database. We are not using any Replit-specific code or dependencies.
+
+We’re encountering two critical production issues:
+	1.	Plaid OAuth Loop Issue:
+After a user is redirected to Plaid and goes through authentication, they’re getting stuck on the phone number screen or redirected back to our app without ever seeing the bank selection UI. We are passing a valid link_token, oauthRedirectUri, and webhook, and can confirm the /api/plaid/create_link_token route is being hit and responds correctly. From the frontend logs, Plaid config is correct and hasToken: true, yet the Link experience is broken. We suspect session persistence or environment headers might be affecting OAuth state management. Can you confirm if anything about Replit’s preview proxy, CORS config, or middleware stack could be interfering with this flow?
+	2.	Google OAuth Session Issue:
+Google OAuth sign-in creates a new account successfully (we log it server-side), but the user is immediately redirected to the login screen, with no session or JWT token stored client-side. They’re left without a password and no way to log in. The server responds with a valid JWT, but it seems the frontend doesn’t store or persist it. Again, we want to confirm whether this could be related to any proxying, session middleware, or storage issues on Replit’s hosting environment—especially if tokens are being blocked or sanitized by default settings.
+
+Important:
+	•	Please confirm if any CORS-related headers, domain cookies, or Plaid/Google OAuth session handoffs might be affected by Replit’s environment.
+	•	We are deployed fully on Railway. We’re using https://www.tryrivu.com as our production domain and have Plaid + Google OAuth redirect URIs configured for that.
+	•	No Replit-specific packages or proxy middleware should be affecting behavior—but we’re debugging these flows as if Replit might still intercept something at runtime.
+
+Let us know if there’s anything on Replit’s side that would affect OAuth state, cross-origin redirects, or token persistence across a Railway-deployed app.
