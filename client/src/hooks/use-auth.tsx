@@ -147,50 +147,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [tokenExpired, setTokenExpired] = useState<boolean>(isTokenExpired(getToken()));
   const checkingInterval = useRef<number | null>(null);
 
-  // Set up token expiration checking
-  useEffect(() => {
-    // Check token expiration immediately
-    const checkTokenExpiration = () => {
-      const token = getToken();
-      const expired = isTokenExpired(token);
-      
-      // If token just expired and we thought it was valid
-      if (expired && !tokenExpired) {
-        setTokenExpired(true);
-        removeToken();
-        setUser(null);
-        
-        // Clear any user-related cached data
-        queryClient.invalidateQueries({ queryKey: ['/api/user'] });
-        
-        toast({
-          title: "Session expired",
-          description: "Your session has expired. Please log in again.",
-          variant: "default",
-        });
-        
-        // Redirect to login page
-        setLocation("/auth");
-      }
-      
-      // Update expired state
-      setTokenExpired(expired);
-    };
-    
-    // Check immediately
-    checkTokenExpiration();
-    
-    // Set up interval to check token expiration (every minute)
-    checkingInterval.current = window.setInterval(checkTokenExpiration, 60000);
-    
-    // Clean up interval on unmount
-    return () => {
-      if (checkingInterval.current) {
-        clearInterval(checkingInterval.current);
-      }
-    };
-  }, [toast, tokenExpired, queryClient, setLocation]);
-
   // Load user from API if token exists
   const {
     data: userData,
@@ -212,9 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       try {
         const res = await fetch('/api/user', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+          credentials: 'include' // Include HTTP-only cookies
         });
         
         if (!res.ok) {
@@ -267,6 +221,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
     }
   }, [userData, user]);
+
+  // Listen for OAuth authentication events
+  useEffect(() => {
+    const handleAuthStateChange = () => {
+      console.log('Auth state change detected, refetching user data');
+      refetch();
+    };
+
+    // Listen for custom auth state change events
+    window.addEventListener('authStateChanged', handleAuthStateChange);
+    
+    return () => {
+      window.removeEventListener('authStateChanged', handleAuthStateChange);
+    };
+  }, [refetch]);
+
+  // Set up token expiration checking
+  useEffect(() => {
+    // Check token expiration immediately
+    const checkTokenExpiration = () => {
+      const token = getToken();
+      const expired = isTokenExpired(token);
+      
+      // If token just expired and we thought it was valid
+      if (expired && !tokenExpired) {
+        setTokenExpired(true);
+        removeToken();
+        setUser(null);
+        
+        // Clear any user-related cached data
+        queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+        
+        toast({
+          title: "Session expired",
+          description: "Your session has expired. Please log in again.",
+          variant: "default",
+        });
+        
+        // Redirect to login page
+        setLocation("/auth");
+      }
+      
+      // Update expired state
+      setTokenExpired(expired);
+    };
+    
+    // Check immediately
+    checkTokenExpiration();
+    
+    // Set up interval to check token expiration (every minute)
+    checkingInterval.current = window.setInterval(checkTokenExpiration, 60000);
+    
+    // Clean up interval on unmount
+    return () => {
+      if (checkingInterval.current) {
+        clearInterval(checkingInterval.current);
+      }
+    };
+  }, [toast, tokenExpired, queryClient, setLocation]);
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
