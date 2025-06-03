@@ -5,6 +5,7 @@ import BudgetSection from "@/components/dashboard/BudgetSection";
 import RivuScore from "@/components/dashboard/RivuScore";
 import NudgesBanner from "@/components/dashboard/NudgesBanner";
 import OnboardingTutorial from "@/components/dashboard/OnboardingTutorial";
+import UserInfoBanner from "@/components/dashboard/UserInfoBanner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea"; 
@@ -415,6 +416,9 @@ export default function Dashboard() {
             Here's a summary of your finances this week
           </p>
         </header>
+
+        {/* User Info Banner for Google OAuth users */}
+        <UserInfoBanner user={user} />
 
         {/* Nudges Banner */}
         <NudgesBanner />

@@ -126,6 +126,36 @@ export const createLinkToken = async (req: Request, res: Response) => {
   }
 };
 
+// Get Plaid Environment Configuration for debugging
+export const getPlaidEnvironment = async (req: Request, res: Response) => {
+  try {
+    const baseUrl = plaidEnvironment === 'production' 
+      ? process.env.PRODUCTION_URL || 'https://tryrivu.com'
+      : 'http://localhost:5000';
+      
+    const redirectUri = `${baseUrl}/plaid-callback`;
+    const webhook = `${baseUrl}/api/plaid/webhook`;
+    
+    const envInfo = {
+      environment: plaidEnvironment,
+      isProduction: plaidEnvironment === 'production',
+      redirectUri,
+      webhook,
+      baseUrl,
+      clientIdPresent: !!process.env.PLAID_CLIENT_ID,
+      secretPresent: !!(plaidEnvironment === 'production' 
+        ? process.env.PLAID_SECRET_PRODUCTION 
+        : process.env.PLAID_SECRET_SANDBOX || process.env.PLAID_SECRET)
+    };
+    
+    console.log('Plaid environment info requested:', envInfo);
+    return res.json(envInfo);
+  } catch (error: any) {
+    console.error('Error fetching Plaid environment info:', error);
+    return res.status(500).json({ error: 'Failed to fetch environment information' });
+  }
+};
+
 // Exchange Public Token for Access Token
 export const exchangePublicToken = async (req: Request, res: Response) => {
   try {

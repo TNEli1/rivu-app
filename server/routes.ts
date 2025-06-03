@@ -455,7 +455,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       exchangePublicToken,
       getConnectedAccounts,
       refreshAccountData,
-      disconnectAccount
+      disconnectAccount,
+      getPlaidEnvironment
     } = await import('./controllers-ts/plaidController');
     
     // Import Plaid webhook handler
@@ -468,6 +469,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.post(`${apiPath}/plaid/create_link_token`, protect, createLinkToken);
     app.post(`${apiPath}/plaid/exchange_public_token`, protect, exchangePublicToken);
     app.post(`${apiPath}/plaid/exchange_token`, protect, exchangePublicToken);
+    app.get(`${apiPath}/plaid/environment`, protect, getPlaidEnvironment);
     
     // GET route for Plaid OAuth callback (for production OAuth redirects)
     app.get('/plaid-callback', async (req: any, res: any) => {
