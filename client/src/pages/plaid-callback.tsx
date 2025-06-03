@@ -11,88 +11,91 @@ export default function PlaidCallback() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [institutionName, setInstitutionName] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
   const { user, isLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
 
-  // Extract the OAuth state ID from the URL
+  // Handle OAuth callback with new simplified flow
   useEffect(() => {
     const handleOAuthCallback = async () => {
       try {
         // Get the OAuth state id from the URL
         const urlParams = new URLSearchParams(window.location.search);
-        let oauthStateId = urlParams.get('oauth_state_id');
+        const oauthStateId = urlParams.get('oauth_state_id');
         
-        // CRITICAL: If oauth_state_id is missing from URL, try to recover from sessionStorage
+        console.log('Plaid OAuth callback - Processing state ID:', oauthStateId);
+        setDebugInfo({ step: 'extracting_state_id', oauthStateId });
+
         if (!oauthStateId) {
-          console.log('OAuth state ID missing from URL, attempting recovery from sessionStorage');
-          oauthStateId = sessionStorage.getItem('plaid_oauth_state_id');
-          
-          if (!oauthStateId) {
-            setError('OAuth state lost. Please try connecting your bank again.');
-            setIsProcessing(false);
-            return;
-          }
-          console.log('Recovered OAuth state ID from sessionStorage:', oauthStateId);
-        }
-
-        console.log('OAuth callback received with state ID:', oauthStateId);
-
-        // Wait for the auth check to complete
-        if (isLoading) {
-          return;
-        }
-
-        // Check if user is logged in
-        if (!user) {
-          setError('You must be logged in to connect a bank account');
+          setError('OAuth state missing from callback. Please try connecting your bank again.');
           setIsProcessing(false);
-          toast({
-            title: "Authentication Required",
-            description: "Please log in to continue connecting your bank account.",
-            variant: "destructive"
-          });
-          // Redirect to login after a delay
-          setTimeout(() => {
-            setLocation('/auth');
-          }, 3000);
           return;
         }
 
-        // CRITICAL: Check localStorage for stored data (more persistent than sessionStorage)
-        const storedSuccess = localStorage.getItem('plaid_link_success');
-        const storedLinkToken = localStorage.getItem('plaid_link_token');
-        const storedLinkConfig = localStorage.getItem('plaid_link_config');
+        // Wait for authentication to complete
+        if (isLoading) {
+          setDebugInfo({ step: 'waiting_for_auth', oauthStateId });
+          return;
+        }
+
+        if (!user) {
+          setError('Please log in to connect your bank account.');
+          setIsProcessing(false);
+          return;
+        }
+
+        setDebugInfo({ step: 'retrieving_oauth_data', oauthStateId });
+        console.log('Retrieving OAuth callback data from session');
         
-        console.log('OAuth callback storage check:', {
-          hasStoredSuccess: !!storedSuccess,
-          hasStoredLinkToken: !!storedLinkToken,
-          hasStoredLinkConfig: !!storedLinkConfig,
-          oauthStateId
+        // Retrieve OAuth callback data from server session
+        const oauthResponse = await apiRequest('GET', `/api/plaid/oauth_state/${oauthStateId}`);
+        
+        if (!oauthResponse.ok) {
+          const errorData = await oauthResponse.json().catch(() => ({}));
+          console.error('Failed to retrieve OAuth state:', errorData);
+          
+          if (oauthResponse.status === 404) {
+            setError('OAuth session not found. Please try connecting your bank again.');
+          } else if (oauthResponse.status === 410) {
+            setError('OAuth session expired. Please try connecting your bank again.');
+          } else {
+            setError('Failed to retrieve OAuth session. Please try again.');
+          }
+          setIsProcessing(false);
+          return;
+        }
+        
+        const oauthData = await oauthResponse.json();
+        console.log('Retrieved OAuth data:', {
+          has_link_token: !!oauthData.link_token,
+          has_public_token: !!oauthData.public_token,
+          oauth_state_id: oauthData.oauth_state_id
         });
         
-        if (storedSuccess) {
-          // We have the public token from before OAuth redirect - complete the exchange
-          const successData = JSON.parse(storedSuccess);
-          const { public_token, metadata } = successData;
+        setDebugInfo({ 
+          step: 'oauth_data_retrieved', 
+          oauthStateId,
+          hasLinkToken: !!oauthData.link_token,
+          hasPublicToken: !!oauthData.public_token
+        });
+
+        // Check if we already have a public token from the OAuth callback
+        if (oauthData.public_token) {
+          console.log('Public token found in OAuth callback, completing exchange');
+          setDebugInfo({ step: 'exchanging_public_token', oauthStateId });
           
-          console.log('Found stored success data, completing token exchange with OAuth state:', oauthStateId);
-          const response = await apiRequest('POST', '/api/plaid/exchange_token', {
-            public_token,
-            metadata,
-            oauth_state_id: oauthStateId
+          const exchangeResponse = await apiRequest('POST', '/api/plaid/complete_oauth', {
+            oauth_state_id: oauthStateId,
+            public_token: oauthData.public_token,
+            metadata: oauthData.query_params?.metadata || {}
           });
           
-          if (response.ok) {
-            const data = await response.json();
+          if (exchangeResponse.ok) {
+            const data = await exchangeResponse.json();
             setSuccess(true);
             setInstitutionName(data.institution_name || 'Your Bank');
-            
-            // Clean up stored data
-            localStorage.removeItem('plaid_link_success');
-            localStorage.removeItem('plaid_link_token');
-            localStorage.removeItem('plaid_link_config');
             
             // Invalidate queries to refresh account data
             queryClient.invalidateQueries({ queryKey: ['/api/accounts'] });
@@ -107,56 +110,38 @@ export default function PlaidCallback() {
             setTimeout(() => {
               setLocation('/dashboard');
             }, 2000);
-            
           } else {
-            throw new Error('Failed to complete bank connection');
+            const errorData = await exchangeResponse.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to exchange public token');
           }
-          
-        } else if (storedLinkToken) {
-          // CRITICAL: Reinitialize Plaid Link with stored token and receivedRedirectUri
-          console.log('Found stored link token, reinitializing Plaid Link for OAuth completion');
+        } else if (oauthData.link_token) {
+          // We need to complete OAuth flow using Plaid Link with the received redirect URI
+          console.log('Link token found, completing OAuth flow with Plaid Link');
+          setDebugInfo({ step: 'completing_oauth_with_link', oauthStateId });
           
           try {
-            // Check if stored token is expired
-            const storedConfig = storedLinkConfig ? JSON.parse(storedLinkConfig) : null;
-            const tokenExpired = storedConfig && Date.now() > (storedConfig.expiresAt || 0);
-            
-            if (tokenExpired) {
-              console.warn('Stored Plaid Link token has expired, redirecting to dashboard');
-              localStorage.removeItem('plaid_link_token');
-              localStorage.removeItem('plaid_link_config');
-              setError('Bank connection session expired. Please try connecting again.');
-              setTimeout(() => setLocation('/dashboard'), 3000);
-              return;
-            }
-            
-            // Import Plaid Link to complete OAuth flow
+            // Import Plaid Link dynamically
             const { usePlaidLink } = await import('react-plaid-link');
             
-            // Configure Plaid Link for OAuth completion with receivedRedirectUri
+            // Configure Plaid Link for OAuth completion
             const linkConfig = {
-              token: storedLinkToken,
-              receivedRedirectUri: window.location.href, // CRITICAL: Include full redirect URI with oauth_state_id
+              token: oauthData.link_token,
+              receivedRedirectUri: window.location.href, // Current URL with oauth_state_id
               onSuccess: async (public_token: string, metadata: any) => {
                 try {
-                  console.log('Plaid Link OAuth completion success');
+                  console.log('Plaid Link OAuth completion success, exchanging token');
+                  setDebugInfo({ step: 'link_success_exchanging', oauthStateId });
                   
-                  // Exchange the public token
-                  const response = await apiRequest('POST', '/api/plaid/exchange_token', {
+                  const exchangeResponse = await apiRequest('POST', '/api/plaid/complete_oauth', {
+                    oauth_state_id: oauthStateId,
                     public_token,
-                    metadata,
-                    oauth_state_id: oauthStateId
+                    metadata
                   });
                   
-                  if (response.ok) {
-                    const data = await response.json();
+                  if (exchangeResponse.ok) {
+                    const data = await exchangeResponse.json();
                     setSuccess(true);
                     setInstitutionName(data.institution_name || metadata?.institution?.name || 'Your Bank');
-                    
-                    // Clean up stored data
-                    localStorage.removeItem('plaid_link_success');
-                    localStorage.removeItem('plaid_link_token');
-                    localStorage.removeItem('plaid_link_config');
                     
                     // Invalidate queries to refresh account data
                     queryClient.invalidateQueries({ queryKey: ['/api/accounts'] });
@@ -172,7 +157,8 @@ export default function PlaidCallback() {
                       setLocation('/dashboard');
                     }, 2000);
                   } else {
-                    throw new Error('Failed to exchange public token');
+                    const errorData = await exchangeResponse.json().catch(() => ({}));
+                    throw new Error(errorData.error || 'Failed to exchange public token');
                   }
                 } catch (error: any) {
                   console.error('Error exchanging public token after OAuth:', error);
@@ -183,136 +169,113 @@ export default function PlaidCallback() {
               onExit: (err: any) => {
                 if (err) {
                   console.error('Plaid Link OAuth completion error:', err);
-                  setError(err.error_message || 'Error completing bank connection');
+                  setError(err.error_message || 'OAuth flow was cancelled or failed');
+                } else {
+                  setError('OAuth flow was cancelled. Please try connecting your bank again.');
                 }
                 setIsProcessing(false);
               }
             };
             
-            // Initialize and auto-open Plaid Link for OAuth completion
+            // Initialize Plaid Link
             const { open, ready } = usePlaidLink(linkConfig);
             
-            // Wait for Link to be ready then auto-open
+            // Auto-open Link when ready
             const checkReady = setInterval(() => {
               if (ready) {
                 clearInterval(checkReady);
-                console.log('Auto-opening Plaid Link for OAuth completion');
+                console.log('Opening Plaid Link for OAuth completion');
+                setDebugInfo({ step: 'opening_plaid_link', oauthStateId });
                 open();
               }
             }, 100);
             
-            // Timeout after 10 seconds if Link doesn't become ready
+            // Timeout after 15 seconds
             setTimeout(() => {
               clearInterval(checkReady);
               if (!success && !error) {
-                setError('Timeout waiting for bank connection to initialize. Please try again.');
+                setError('Timeout waiting for bank connection. Please try again.');
                 setIsProcessing(false);
               }
-            }, 10000);
+            }, 15000);
             
           } catch (error: any) {
-            console.error('Error reinitializing Plaid Link for OAuth:', error);
-            setError('Error completing bank connection. Please try again.');
+            console.error('Error initializing Plaid Link for OAuth:', error);
+            setError('Error initializing bank connection. Please try again.');
             setIsProcessing(false);
           }
-          
         } else {
-          // No stored data - try to complete OAuth flow with backend
-          console.log('No stored data, attempting OAuth completion with backend');
-          
-          try {
-            const response = await apiRequest('POST', '/api/plaid/oauth_callback', {
-              oauth_state_id: oauthStateId
-            });
-            
-            if (response.ok) {
-              const data = await response.json();
-              setSuccess(true);
-              setInstitutionName(data.institution_name || 'Your Bank');
-              
-              // Invalidate queries to refresh account data
-              queryClient.invalidateQueries({ queryKey: ['/api/accounts'] });
-              queryClient.invalidateQueries({ queryKey: ['/api/plaid/accounts'] });
-              
-              toast({
-                title: "Bank Connected Successfully",
-                description: `Your bank has been connected to your account.`,
-              });
-              
-              // Redirect to dashboard after success
-              setTimeout(() => {
-                setLocation('/dashboard');
-              }, 2000);
-            } else {
-              throw new Error('Failed to complete OAuth flow');
-            }
-          } catch (oauthError: any) {
-            console.error('OAuth completion error:', oauthError);
-            throw new Error('OAuth callback received but connection could not be completed. Please try connecting your bank again.');
-          }
+          // No usable tokens found
+          console.error('No valid OAuth data found in session');
+          setError('Invalid OAuth session. Please try connecting your bank again.');
+          setIsProcessing(false);
         }
-
+        
       } catch (error: any) {
         console.error('OAuth callback handling error:', error);
-        setError(error.message || 'Failed to complete bank connection');
-        setIsProcessing(false);
-        
-        toast({
-          title: "Connection Failed",
-          description: error.message || "Unable to complete bank connection. Please try again.",
-          variant: "destructive"
-        });
-      } finally {
+        setError('Error processing bank connection. Please try again.');
         setIsProcessing(false);
       }
     };
 
     handleOAuthCallback();
-  }, [user, isLoading, toast, queryClient, setLocation]);
+  }, [user, isLoading, queryClient, toast, setLocation]);
 
-  // Redirect to dashboard when done processing (successful or not)
-  if (!isProcessing && !error && success) {
-    return <Redirect to="/dashboard" />;
-  }
-
-  if (!isProcessing && error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="max-w-md w-full mx-4 p-6 bg-card rounded-lg border shadow-lg text-center">
-          <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Connection Failed</h2>
-          <p className="text-muted-foreground mb-4">{error}</p>
-          <button
-            onClick={() => setLocation('/connect')}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
+  // Redirect to login if not authenticated
+  if (!isLoading && !user) {
+    return <Redirect to="/login" />;
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
-      <div className="max-w-md w-full mx-4 p-6 bg-card rounded-lg border shadow-lg text-center">
-        {success ? (
-          <>
-            <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Bank Connected!</h2>
-            <p className="text-muted-foreground mb-4">
-              {institutionName} has been successfully connected to your account.
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
+        {isProcessing && (
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Connecting Your Bank Account
+            </h2>
+            <p className="text-gray-600 mb-4">
+              Please wait while we complete your bank connection...
             </p>
-            <p className="text-sm text-muted-foreground">Redirecting to dashboard...</p>
-          </>
-        ) : (
-          <>
-            <Loader2 className="w-12 h-12 text-primary mx-auto mb-4 animate-spin" />
-            <h2 className="text-xl font-semibold mb-2">Completing Bank Connection</h2>
-            <p className="text-muted-foreground">
-              Please wait while we finalize your bank connection...
+            {debugInfo && (
+              <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded mt-4">
+                <p>Step: {debugInfo.step}</p>
+                {debugInfo.oauthStateId && <p>State: {debugInfo.oauthStateId.substring(0, 8)}...</p>}
+              </div>
+            )}
+          </div>
+        )}
+
+        {error && (
+          <div className="text-center">
+            <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Connection Failed
+            </h2>
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={() => setLocation('/dashboard')}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Return to Dashboard
+            </button>
+          </div>
+        )}
+
+        {success && (
+          <div className="text-center">
+            <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Bank Connected Successfully!
+            </h2>
+            <p className="text-gray-600 mb-4">
+              {institutionName} has been connected to your account.
             </p>
-          </>
+            <p className="text-sm text-gray-500">
+              Redirecting to dashboard...
+            </p>
+          </div>
         )}
       </div>
     </div>

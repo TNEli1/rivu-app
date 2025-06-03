@@ -61,9 +61,23 @@ const allowedOrigins = ['https://www.tryrivu.com'];
 
 const corsOptions = {
   origin: (origin: any, callback: any) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Allow requests with no origin (e.g., mobile apps, Postman)
+    if (!origin) {
       return callback(null, true);
     }
+    
+    // In development, allow localhost origins
+    if (process.env.NODE_ENV === 'development') {
+      if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('0.0.0.0')) {
+        return callback(null, true);
+      }
+    }
+    
+    // Always allow production origins
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
     console.warn('❌ CORS blocked:', origin);
     callback(new Error('Not allowed by CORS'));
   },

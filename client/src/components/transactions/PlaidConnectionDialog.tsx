@@ -37,6 +37,11 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
       setSuccess(false);
       setLinkToken(null); // Reset link token to ensure fresh state
       
+      // Clear any stale OAuth data to ensure fresh OAuth flows
+      localStorage.removeItem('plaid_link_success');
+      localStorage.removeItem('plaid_link_token');
+      localStorage.removeItem('plaid_link_config');
+      
       const fetchLinkToken = async () => {
         try {
           console.log('Verifying bank connection service...');
@@ -63,7 +68,7 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
             throw new Error('Your session has expired. Please log in again.');
           }
 
-          console.log('Requesting Plaid link token...');
+          console.log('Requesting fresh Plaid link token...');
           
           // Make the actual request for the link token
           const response = await fetch('/api/plaid/create_link_token', {
@@ -99,18 +104,19 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
           const data = await response.json();
           
           if (data && data.link_token) {
-            console.log('Successfully received link token');
+            console.log('Successfully received fresh link token');
             setLinkToken(data.link_token);
-            // Store link token with TTL check (10 minutes as suggested)
+            // Store link token for OAuth flows - this is critical for OAuth banks
             const tokenData = {
               link_token: data.link_token,
               expiration: data.expiration,
               request_id: data.request_id,
               timestamp: Date.now(),
-              ttl: Date.now() + (10 * 60 * 1000) // 10 minute TTL
+              ttl: Date.now() + (30 * 60 * 1000) // 30 minute TTL for OAuth flows
             };
             localStorage.setItem('plaid_link_token', data.link_token);
             localStorage.setItem('plaid_link_config', JSON.stringify(tokenData));
+            console.log('Stored link token for potential OAuth redirect handling');
           } else {
             setError('Cannot connect to banking service');
             console.error('Missing link token in response:', data);

@@ -474,28 +474,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // GET route for Plaid OAuth callback (for production OAuth redirects)
     app.get('/plaid-callback', async (req: any, res: any) => {
       try {
-        const { oauth_state_id, link_token } = req.query;
+        const { oauth_state_id, link_token, public_token, error } = req.query;
         
-        console.log('Plaid OAuth callback received:', { oauth_state_id, link_token });
+        console.log('Plaid OAuth callback received:', { 
+          oauth_state_id: oauth_state_id ? 'present' : 'missing',
+          link_token: link_token ? 'present' : 'missing', 
+          public_token: public_token ? 'present' : 'missing',
+          error: error ? error : 'none',
+          full_query: req.query,
+          session_id: req.sessionID
+        });
+        
+        // Handle OAuth errors first
+        if (error) {
+          console.error('Plaid OAuth error received:', error);
+          return res.redirect(`/dashboard?error=plaid_oauth_error&message=${encodeURIComponent(error)}`);
+        }
         
         if (!oauth_state_id) {
-          console.error('Plaid OAuth callback: Missing oauth_state_id, checking for link_token');
-          
-          // If oauth_state_id is missing but we have link_token, use that as fallback
-          if (link_token) {
-            console.log('Using link_token as fallback for oauth_state_id');
-            return res.redirect(`/plaid-callback?oauth_state_id=${encodeURIComponent(link_token)}`);
-          }
-          
-          // No state recovery possible
+          console.error('Plaid OAuth callback: Missing oauth_state_id parameter');
           return res.redirect('/dashboard?error=plaid_oauth_missing_state');
         }
         
-        console.log('Processing Plaid OAuth callback for state:', oauth_state_id);
+        // Store OAuth callback data in session for frontend to retrieve
+        if (!req.session.plaidOAuth) {
+          req.session.plaidOAuth = {};
+        }
         
-        // CRITICAL: Redirect to frontend callback page with the oauth_state_id
-        // This allows the frontend to handle the OAuth completion with proper state management
-        res.redirect(`/plaid-callback?oauth_state_id=${encodeURIComponent(oauth_state_id)}`);
+        req.session.plaidOAuth[oauth_state_id] = {
+          oauth_state_id,
+          link_token,
+          public_token,
+          timestamp: Date.now(),
+          query_params: req.query,
+          user_agent: req.get('User-Agent'),
+          ip: req.ip
+        };
+        
+        // Save session before redirect
+        req.session.save((err: any) => {
+          if (err) {
+            console.error('Error saving session:', err);
+          }
+          console.log('Stored OAuth callback data in session for state:', oauth_state_id);
+          
+          // Redirect to frontend with oauth_state_id to complete the flow
+          res.redirect(`/plaid-callback?oauth_state_id=${encodeURIComponent(oauth_state_id)}`);
+        });
         
       } catch (error: any) {
         console.error('Plaid OAuth callback error:', error);
@@ -503,59 +528,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
     
-    app.post(`${apiPath}/plaid/oauth_callback`, protect, async (req: any, res: any) => {
+    // API endpoint to retrieve OAuth callback data from session
+    app.get(`${apiPath}/plaid/oauth_state/:oauth_state_id`, protect, async (req: any, res: any) => {
       try {
-        const { oauth_state_id } = req.body;
+        const { oauth_state_id } = req.params;
         
         if (!oauth_state_id) {
           return res.status(400).json({ error: 'Missing oauth_state_id parameter' });
         }
-
-        console.log('Processing Plaid OAuth callback for state:', oauth_state_id);
         
-        // For OAuth banks like Chase, we need to use the oauth_state_id to get the public token
-        // The OAuth flow should have been initiated with a link_token that supports OAuth
-        const { plaidClient } = await import('./controllers-ts/plaidController');
+        console.log('Retrieving OAuth state from session:', oauth_state_id);
         
-        try {
-          // Use the Plaid Link Token Get to retrieve the public token from oauth_state_id
-          const linkTokenGetResponse = await plaidClient.linkTokenGet({
-            link_token: oauth_state_id // oauth_state_id contains the link_token for OAuth flow
-          });
-          
-          if (!linkTokenGetResponse.data) {
-            throw new Error('Failed to retrieve link token data');
-          }
-          
-          // For OAuth flows, we need to check if there's a public token available
-          // The public token should be available after OAuth redirect
-          const userId = getCurrentUserId(req);
-          
-          // Store the OAuth state for this user temporarily
-          const tempStorage = new Map();
-          tempStorage.set(`oauth_${userId}`, {
-            oauth_state_id,
-            timestamp: Date.now(),
-            status: 'completed'
-          });
-          
-          return res.json({
-            success: true,
-            institution_name: 'Your Bank',
-            message: 'OAuth callback received successfully',
-            oauth_state_id
-          });
-          
-        } catch (plaidError: any) {
-          console.error('Plaid OAuth error:', plaidError);
-          return res.status(400).json({ 
-            error: 'OAuth flow failed',
-            details: plaidError.message
+        // Check if OAuth data exists in session
+        const oauthData = req.session.plaidOAuth?.[oauth_state_id];
+        
+        if (!oauthData) {
+          console.log('No OAuth data found in session for state:', oauth_state_id);
+          return res.status(404).json({ 
+            error: 'OAuth state not found or expired',
+            oauth_state_id 
           });
         }
         
+        // Check if data is not too old (30 minutes max)
+        const maxAge = 30 * 60 * 1000; // 30 minutes
+        if (Date.now() - oauthData.timestamp > maxAge) {
+          console.log('OAuth data expired for state:', oauth_state_id);
+          delete req.session.plaidOAuth[oauth_state_id];
+          return res.status(410).json({ 
+            error: 'OAuth state expired',
+            oauth_state_id 
+          });
+        }
+        
+        console.log('Found OAuth data in session:', {
+          oauth_state_id,
+          has_link_token: !!oauthData.link_token,
+          has_public_token: !!oauthData.public_token,
+          timestamp: oauthData.timestamp
+        });
+        
+        // Return the OAuth data
+        return res.json({
+          success: true,
+          oauth_state_id: oauthData.oauth_state_id,
+          link_token: oauthData.link_token,
+          public_token: oauthData.public_token,
+          query_params: oauthData.query_params,
+          timestamp: oauthData.timestamp
+        });
+        
       } catch (error: any) {
-        console.error('Plaid OAuth callback error:', error);
+        console.error('Error retrieving OAuth state:', error);
+        return res.status(500).json({ 
+          error: 'Failed to retrieve OAuth state',
+          details: error.message
+        });
+      }
+    });
+    
+    // API endpoint to complete OAuth flow with public token
+    app.post(`${apiPath}/plaid/complete_oauth`, protect, async (req: any, res: any) => {
+      try {
+        const { oauth_state_id, public_token, metadata } = req.body;
+        
+        if (!oauth_state_id) {
+          return res.status(400).json({ error: 'Missing oauth_state_id parameter' });
+        }
+        
+        if (!public_token) {
+          return res.status(400).json({ error: 'Missing public_token parameter' });
+        }
+        
+        console.log('Completing OAuth flow with public token for state:', oauth_state_id);
+        
+        // Use the existing exchange token functionality
+        const { exchangePublicToken } = await import('./controllers-ts/plaidController');
+        
+        // Create a mock request object with the required data
+        const mockReq = {
+          ...req,
+          body: {
+            public_token,
+            metadata,
+            oauth_state_id
+          }
+        };
+        
+        // Exchange the public token
+        await exchangePublicToken(mockReq as any, res);
+        
+        // Clean up session data after successful exchange
+        if (req.session.plaidOAuth?.[oauth_state_id]) {
+          delete req.session.plaidOAuth[oauth_state_id];
+        }
+        
+      } catch (error: any) {
+        console.error('Error completing OAuth flow:', error);
         return res.status(500).json({ 
           error: 'Failed to complete OAuth flow',
           details: error.message
