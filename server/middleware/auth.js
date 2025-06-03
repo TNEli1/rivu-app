@@ -1,5 +1,4 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
 
 // JWT secret and config - in production, this should be stored in environment variables
 const JWT_SECRET = process.env.JWT_SECRET || 'rivu-secret-key-change-in-production';
@@ -34,15 +33,18 @@ const protect = async (req, res, next) => {
         });
       }
 
-      // Get user from token (exclude password)
-      req.user = await User.findById(decoded.id).select('-password');
+      // Get user from token using the storage system
+      const { storage } = await import('../storage');
+      const user = await storage.getUserById(parseInt(decoded.id.toString(), 10));
 
-      if (!req.user) {
+      if (!user) {
         return res.status(401).json({ 
           message: 'Not authorized, user not found',
           code: 'USER_NOT_FOUND'
         });
       }
+
+      req.user = user;
 
       // Add decoded token data to the request
       req.token = decoded;

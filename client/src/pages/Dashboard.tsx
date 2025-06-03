@@ -213,13 +213,16 @@ export default function Dashboard() {
       try {
         console.log('Google OAuth: Processing auth token from URL parameter');
         
-        // CRITICAL: Store the auth token as cookie with proper settings for immediate authentication
+        // CRITICAL: Store the auth token in localStorage for frontend authentication
         const decodedToken = decodeURIComponent(authToken);
+        localStorage.setItem('rivu_token', decodedToken);
+        
+        // Also store as cookie for backend compatibility (httpOnly cookie already set by server)
         const isSecure = window.location.protocol === 'https:';
         const cookieValue = `rivu_token=${decodedToken}; path=/; max-age=${60 * 60 * 2}; ${isSecure ? 'secure;' : ''} samesite=lax`;
         document.cookie = cookieValue;
         
-        console.log('Google OAuth: Auth token stored as cookie for immediate authentication');
+        console.log('Google OAuth: Auth token stored in localStorage and cookie for immediate authentication');
         
         // Store user info if provided and force auth state refresh
         if (userParam) {

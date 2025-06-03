@@ -1,10 +1,8 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-// Helper to check if user is logged in
+// Helper to get auth token from localStorage
 const getAuthToken = (): string | null => {
-  // Now we rely on HTTP-only cookies for actual authentication
-  // This only checks if a user session is active based on localStorage flag
-  return localStorage.getItem('rivuLoggedIn') ? 'session-active' : null;
+  return localStorage.getItem('rivu_token');
 };
 
 async function throwIfResNotOk(res: Response) {
@@ -26,12 +24,15 @@ export async function apiRequest(
   };
   
   const csrfToken = getCsrfToken();
+  const token = getAuthToken();
   
   const headers: Record<string, string> = {
     ...(data ? { "Content-Type": "application/json" } : {}),
     // Add CSRF protection headers
     "X-Requested-With": "XMLHttpRequest",
-    ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {})
+    ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
+    // Add JWT token for authentication
+    ...(token ? { "Authorization": `Bearer ${token}` } : {})
   };
 
   const res = await fetch(url, {

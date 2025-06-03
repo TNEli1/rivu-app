@@ -124,9 +124,11 @@ export const getToken = (): string | null => {
   return localStorage.getItem('rivuLoggedIn') ? 'session-active' : null;
 };
 
-// Helper function to remove login state
+// Helper function to remove login state and JWT token
 const removeToken = () => {
   localStorage.removeItem('rivuLoggedIn');
+  localStorage.removeItem('rivu_token'); // Clear the JWT token from localStorage
+  localStorage.removeItem('rivu_user_info'); // Clear any cached user info
 };
 
 // Simplified method to check if we're logged in
