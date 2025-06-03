@@ -35,7 +35,18 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
       setLoading(true);
       setError(null);
       setSuccess(false);
-      setLinkToken(null); // Reset link token to ensure fresh state
+      
+      // CRITICAL FIX: Check if we're in an OAuth redirect scenario
+      const query = new URLSearchParams(window.location.search);
+      const isOAuthRedirect = query.has('oauth_state_id');
+      
+      if (isOAuthRedirect) {
+        console.log('OAuth redirect detected - should not create new link token');
+        setLoading(false);
+        return; // Exit early - let OAuth handler deal with this
+      }
+      
+      setLinkToken(null); // Reset link token to ensure fresh state for non-OAuth flows
       
       // Clear any stale OAuth data to ensure fresh OAuth flows
       localStorage.removeItem('plaid_link_success');

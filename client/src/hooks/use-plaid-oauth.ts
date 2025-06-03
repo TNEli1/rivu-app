@@ -52,15 +52,17 @@ export function usePlaidOAuth({ onSuccess, onExit }: PlaidOAuthConfig) {
         receivedRedirectUri,
         onSuccess: (publicToken: string, metadata: any) => {
           console.log('OAuth flow completed successfully');
-          // Clean up stored token after successful completion
+          // Clean up stored tokens after successful completion
           window.localStorage.removeItem('plaid_link_token');
+          window.sessionStorage.removeItem('plaid_link_token');
           window.localStorage.removeItem('plaid_link_config');
           onSuccess(publicToken, metadata);
         },
         onExit: (error?: any) => {
           console.log('OAuth flow exited', error ? 'with error:' : 'by user', error?.error_message || '');
-          // Clean up stored token on exit
+          // Clean up stored tokens on exit
           window.localStorage.removeItem('plaid_link_token');
+          window.sessionStorage.removeItem('plaid_link_token');
           window.localStorage.removeItem('plaid_link_config');
           onExit(error);
         }
@@ -137,16 +139,17 @@ export function storeLinkTokenForOAuth(linkToken: string, expiration?: string) {
 export function isPlaidOAuthRedirect(): boolean {
   const query = new URLSearchParams(window.location.search);
   const hasOAuthState = query.has('oauth_state_id');
-  const isPlaidCallback = window.location.pathname.includes('plaid-callback');
   
   console.log('Checking for Plaid OAuth redirect:', {
     hasOAuthState,
-    isPlaidCallback,
     currentPath: window.location.pathname,
-    searchParams: window.location.search
+    searchParams: window.location.search,
+    oauthStateId: query.get('oauth_state_id')
   });
   
-  return hasOAuthState && isPlaidCallback;
+  // CRITICAL FIX: Only check for oauth_state_id parameter, not path
+  // OAuth redirects can happen on any page configured in Plaid dashboard
+  return hasOAuthState;
 }
 
 /**
