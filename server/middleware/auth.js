@@ -74,8 +74,12 @@ const protect = async (req, res, next) => {
 };
 
 // Generate JWT for a user
-const generateToken = (id) => {
-  return jwt.sign({ id }, JWT_SECRET, {
+const generateToken = (id, email) => {
+  return jwt.sign({ 
+    id, 
+    email,
+    authMethod: 'password'
+  }, JWT_SECRET, {
     expiresIn: JWT_EXPIRES_IN
   });
 };

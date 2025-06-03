@@ -87,8 +87,12 @@ export const loginLimiter = rateLimit({
 });
 
 // Generate JWT Token
-const generateToken = (id: string) => {
-  return jwt.sign({ id }, JWT_SECRET, {
+const generateToken = (id: string, email: string) => {
+  return jwt.sign({ 
+    id, 
+    email,
+    authMethod: 'password'
+  }, JWT_SECRET, {
     expiresIn: JWT_EXPIRY,
   });
 };
@@ -264,7 +268,7 @@ export const loginUser = async (req: any, res: any) => {
       }
       
       // Generate JWT token
-      const token = generateToken(user.id.toString());
+      const token = generateToken(user.id.toString(), user.email);
       
       // Set HTTP-only cookie with the token
       setTokenCookie(res, token);
@@ -849,7 +853,7 @@ export const resetPassword = async (req: any, res: any) => {
     await user.save();
     
     // Generate a new JWT token and log the user in
-    const authToken = generateToken(user._id);
+    const authToken = generateToken(user._id, user.email);
     setTokenCookie(res, authToken);
     
     res.status(200).json({

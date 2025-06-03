@@ -57,37 +57,21 @@ if (process.env.NODE_ENV === 'production') {
 
 // Remove the explicit import since we'll use registerRoutes to handle this
 
-// Configure CORS with proper security settings for Railway
-const allowedOrigins = process.env.NODE_ENV === 'production' 
-  ? ['https://www.tryrivu.com']
-  : [
-      'https://www.tryrivu.com',
-      'https://rivu-core-production.up.railway.app',
-      'http://localhost:5000',
-      'http://127.0.0.1:5000',
-      'http://localhost:3000',
-      'http://127.0.0.1:3000'
-    ];
+const allowedOrigins = ['https://www.tryrivu.com'];
 
 const corsOptions = {
   origin: (origin: any, callback: any) => {
-    // In development, be more permissive
-    if (process.env.NODE_ENV !== 'production') {
-      callback(null, true);
-      return;
-    }
-    
     if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+      return callback(null, true);
     }
+    console.warn('❌ CORS blocked:', origin);
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: [
-    'Content-Type', 
-    'Authorization', 
+    'Content-Type',
+    'Authorization',
     'X-Requested-With',
     'CSRF-Token',
     'X-CSRF-Token'
