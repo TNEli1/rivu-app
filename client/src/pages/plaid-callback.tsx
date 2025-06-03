@@ -130,25 +130,7 @@ export default function PlaidCallback() {
     
     initializeOAuth();
 
-    console.log('Processing Plaid OAuth redirect');
-    
-    // CRITICAL: Ensure Plaid SDK is loaded before proceeding
-    if (typeof window === 'undefined' || !(window as any).Plaid) {
-      console.error('Plaid SDK not loaded - waiting for script to load');
-      setTimeout(() => {
-        // Retry after 1 second
-        window.location.reload();
-      }, 1000);
-      return;
-    }
-    
-    // Handle the OAuth redirect
-    const result = handleOAuthRedirect();
-    
-    if (!result) {
-      // Error handling is done inside the hook
-      setIsProcessing(false);
-    }
+    // OAuth handling is done in initializeOAuth function above
   }, [user, isLoading, handleOAuthRedirect, setLocation]);
 
   // Redirect to login if not authenticated
