@@ -56,23 +56,29 @@ export const googleCallback = [
         { expiresIn: `${JWT_EXPIRY}s` }
       );
 
-      // Set secure cookie with correct name that middleware expects
-      res.cookie(TOKEN_COOKIE_NAME, token, {
+      // CRITICAL FIX: Set secure cookie with Railway-compatible domain settings
+      const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT === 'production';
+      const cookieOptions = {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax', // CRITICAL: Use 'lax' for OAuth redirects to work properly
+        secure: isProduction, // Use secure cookies in production
+        sameSite: 'lax' as const, // CRITICAL: Use 'lax' for OAuth redirects
         maxAge: JWT_EXPIRY * 1000,
-        domain: process.env.NODE_ENV === 'production' ? '.tryrivu.com' : undefined, // Share cookies across subdomains
         path: '/' // Ensure cookie is available site-wide
-      });
+      };
+
+      // Only set domain for production on tryrivu.com, let Railway handle domain automatically otherwise
+      if (isProduction && req.get('host')?.includes('tryrivu.com')) {
+        (cookieOptions as any).domain = '.tryrivu.com';
+      }
+
+      res.cookie(TOKEN_COOKIE_NAME, token, cookieOptions);
 
       console.log('Google OAuth: JWT token generated and cookie set for user ID:', user.id);
       console.log('Google OAuth: Cookie settings:', {
         name: TOKEN_COOKIE_NAME,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        domain: process.env.NODE_ENV === 'production' ? '.tryrivu.com' : undefined,
-        maxAge: JWT_EXPIRY * 1000
+        ...cookieOptions,
+        host: req.get('host'),
+        isProduction
       });
 
       // CRITICAL: Provide token via URL for immediate frontend authentication

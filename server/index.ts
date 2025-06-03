@@ -69,12 +69,17 @@ const corsOptions = {
       return callback(null, true);
     }
     
-    // In development, allow localhost and Replit domains
-    if (process.env.NODE_ENV === 'development') {
+    // In development, allow localhost and Railway preview domains
+    if (process.env.NODE_ENV === 'development' || !isProduction) {
       if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('0.0.0.0') || 
-          origin.includes('.replit.dev') || origin.includes('.repl.co')) {
+          origin.includes('.railway.app') || origin.includes('.up.railway.app')) {
         return callback(null, true);
       }
+    }
+    
+    // Allow Railway domains in all environments
+    if (origin.includes('.railway.app') || origin.includes('.up.railway.app')) {
+      return callback(null, true);
     }
     
     // Always allow production origins

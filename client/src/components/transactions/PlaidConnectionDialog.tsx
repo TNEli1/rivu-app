@@ -248,8 +248,10 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
     // Reset any previous errors before attempting to open
     setError(null);
     
-    if (!linkToken) {
-      setError('Link token is missing. Please try again later.');
+    // CRITICAL FIX: Guard against empty or missing link token
+    if (!linkToken || linkToken.trim() === '') {
+      console.warn("Link token not ready, aborting Plaid launch.");
+      setError('Bank connection service is not ready. Please wait a moment and try again.');
       return;
     }
     
@@ -259,7 +261,7 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
     }
     
     // Everything is ready, open the Plaid Link
-    console.log('Opening Plaid Link with token:', linkToken.substring(0, 10) + '...');
+    console.log('Opening Plaid Link with valid token:', linkToken.substring(0, 10) + '...');
     open();
   }, [ready, linkToken, open]);
 
