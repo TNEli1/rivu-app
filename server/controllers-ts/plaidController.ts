@@ -2,16 +2,27 @@ import { Request, Response } from 'express';
 import { Configuration, PlaidApi, PlaidEnvironments, Products, CountryCode } from 'plaid';
 
 // Initialize Plaid client
+// Determine environment - prioritize PLAID_ENV for explicit control
+const isProduction = process.env.PLAID_ENV === 'production';
+const plaidEnvironment = process.env.PLAID_ENV || 'sandbox';
+
+console.log('Plaid environment configuration:', {
+  NODE_ENV: process.env.NODE_ENV,
+  PLAID_ENV: process.env.PLAID_ENV,
+  resolvedEnvironment: plaidEnvironment,
+  isProduction
+});
+
 const plaidConfig = new Configuration({
-  basePath: process.env.PLAID_ENV === 'production' 
+  basePath: plaidEnvironment === 'production' 
     ? PlaidEnvironments.production 
-    : process.env.PLAID_ENV === 'sandbox'
+    : plaidEnvironment === 'sandbox'
     ? PlaidEnvironments.sandbox
     : PlaidEnvironments.development,
   baseOptions: {
     headers: {
       'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
-      'PLAID-SECRET': process.env.PLAID_ENV === 'production' 
+      'PLAID-SECRET': plaidEnvironment === 'production' 
         ? process.env.PLAID_SECRET_PRODUCTION 
         : process.env.PLAID_SECRET_SANDBOX || process.env.PLAID_SECRET,
     },
@@ -31,12 +42,17 @@ export const createLinkToken = async (req: Request, res: Response) => {
       return res.status(500).json({ error: 'Bank connection not configured - missing client ID' });
     }
     
-    const plaidSecret = process.env.PLAID_SECRET_PRODUCTION;
+    // Use the correct secret based on resolved environment
+    const plaidSecret = plaidEnvironment === 'production' 
+      ? process.env.PLAID_SECRET_PRODUCTION 
+      : process.env.PLAID_SECRET_SANDBOX || process.env.PLAID_SECRET;
       
     if (!plaidSecret) {
-      console.error('Plaid production secret is missing');
-      return res.status(500).json({ error: 'Bank connection not configured - missing secret' });
+      console.error(`Plaid ${plaidEnvironment} secret is missing`);
+      return res.status(500).json({ error: `Bank connection not configured - missing ${plaidEnvironment} secret` });
     }
+
+    console.log('Using Plaid environment:', plaidEnvironment, 'with secret type:', plaidEnvironment === 'production' ? 'production' : 'sandbox');
 
     const userId = (req.user as any)?.id;
     if (!userId) {
@@ -44,13 +60,13 @@ export const createLinkToken = async (req: Request, res: Response) => {
     }
 
     // CRITICAL: Set proper redirect URI for production OAuth banks that matches your Plaid dashboard
-    const redirectUri = process.env.NODE_ENV === 'production' 
+    const redirectUri = plaidEnvironment === 'production' 
       ? 'https://tryrivu.com/plaid-callback'  // Must match exactly what's configured in Plaid dashboard
       : 'http://localhost:5000/plaid-callback';
 
-    // Use correct production webhook URL
+    // Use correct production webhook URL - consistent with redirect URI domain
     const webhook = process.env.NODE_ENV === 'production'
-      ? 'https://www.tryrivu.com/api/plaid/webhook'  // Use www subdomain for production
+      ? 'https://tryrivu.com/api/plaid/webhook'  // Use same domain as redirect_uri
       : 'http://localhost:5000/api/plaid/webhook';
 
     console.log('Creating Plaid link token with redirect URI:', redirectUri);
@@ -71,7 +87,8 @@ export const createLinkToken = async (req: Request, res: Response) => {
     console.log('Plaid link token request:', { 
       ...request, 
       client_id: process.env.PLAID_CLIENT_ID,
-      environment: process.env.PLAID_ENV 
+      environment: plaidEnvironment,
+      isProduction
     });
 
     const response = await plaidClient.linkTokenCreate(request);

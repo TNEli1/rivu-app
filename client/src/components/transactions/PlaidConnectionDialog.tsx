@@ -205,9 +205,9 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
     }
   }, []);
 
-  // Use environment-appropriate redirect URI for OAuth banks
-  const oauthRedirectUri = process.env.NODE_ENV === 'production' 
-    ? 'https://www.tryrivu.com/plaid-callback'
+  // Use environment-appropriate redirect URI for OAuth banks - must match backend and Plaid dashboard
+  const oauthRedirectUri = import.meta.env.PROD 
+    ? 'https://tryrivu.com/plaid-callback'
     : 'http://localhost:5000/plaid-callback';
 
   // CRITICAL: Do NOT include receivedRedirectUri on initial launch - this causes OAuth state issues
