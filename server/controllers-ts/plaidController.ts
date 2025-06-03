@@ -65,8 +65,14 @@ export const createLinkToken = async (req: Request, res: Response) => {
       // For production, strictly use www.tryrivu.com as the only valid domain
       baseUrl = 'https://www.tryrivu.com';
     } else {
-      // For sandbox/development
-      baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+      // For sandbox/development - detect Replit environment
+      if (process.env.REPLIT_DEV_DOMAIN) {
+        baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+      } else if (req.get('host')?.includes('.replit.dev')) {
+        baseUrl = `https://${req.get('host')}`;
+      } else {
+        baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+      }
     }
     
     // Log the host information for debugging
@@ -142,7 +148,14 @@ export const getPlaidEnvironment = async (req: Request, res: Response) => {
     if (plaidEnvironment === 'production') {
       baseUrl = 'https://www.tryrivu.com';
     } else {
-      baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+      // For sandbox/development - detect Replit environment
+      if (process.env.REPLIT_DEV_DOMAIN) {
+        baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+      } else if (req.get('host')?.includes('.replit.dev')) {
+        baseUrl = `https://${req.get('host')}`;
+      } else {
+        baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+      }
     }
       
     const redirectUri = `${baseUrl}/plaid-callback`;
