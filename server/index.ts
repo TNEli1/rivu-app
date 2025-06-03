@@ -69,16 +69,18 @@ const corsOptions = {
       return callback(null, true);
     }
     
-    // In development, allow localhost and Railway preview domains
+    // In development, allow localhost and Replit domains
     if (process.env.NODE_ENV === 'development' || !isProduction) {
       if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('0.0.0.0') || 
-          origin.includes('.railway.app') || origin.includes('.up.railway.app')) {
+          origin.includes('.railway.app') || origin.includes('.up.railway.app') ||
+          origin.includes('.replit.dev') || origin.includes('.replit.co')) {
         return callback(null, true);
       }
     }
     
-    // Allow Railway domains in all environments
-    if (origin.includes('.railway.app') || origin.includes('.up.railway.app')) {
+    // Allow Railway and Replit domains in all environments
+    if (origin.includes('.railway.app') || origin.includes('.up.railway.app') ||
+        origin.includes('.replit.dev') || origin.includes('.replit.co')) {
       return callback(null, true);
     }
     
