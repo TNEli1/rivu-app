@@ -515,14 +515,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.put(`${apiPath}/subcategories/:id`, protect, updateSubcategory);
     app.delete(`${apiPath}/subcategories/:id`, protect, deleteSubcategory);
     
-    // Register Plaid status route
-    app.get(`${apiPath}/plaid/status`, (req, res) => {
-      const hasCredentials = process.env.PLAID_CLIENT_ID && process.env.PLAID_SECRET_PRODUCTION;
-      if (!hasCredentials) {
-        return res.status(503).json({ error: 'Bank connection services not configured' });
-      }
-      return res.status(200).json({ status: 'ready' });
-    });
+    // Register Plaid status route - placeholder, will be replaced after import
     
     // Import and register Plaid routes
     const {
@@ -532,7 +525,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       refreshAccountData,
       disconnectAccount,
       getPlaidEnvironment,
-      diagnosePlaidConfiguration
+      diagnosePlaidConfiguration,
+      getPlaidStatus
     } = await import('./controllers-ts/plaidController');
     
     // Import Plaid webhook handler
@@ -542,6 +536,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.post(`${apiPath}/plaid/webhook`, handlePlaidWebhook);
     
     // Plaid Integration Routes
+    app.get(`${apiPath}/plaid/status`, getPlaidStatus);
     app.post(`${apiPath}/plaid/create_link_token`, protect, createLinkToken);
     app.post(`${apiPath}/plaid/exchange_public_token`, protect, exchangePublicToken);
     app.post(`${apiPath}/plaid/exchange_token`, protect, exchangePublicToken);
