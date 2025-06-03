@@ -109,11 +109,14 @@ export const googleCallback = [
             console.error('Google OAuth: Session save error:', saveError);
           }
           
-          // Redirect to dashboard with auth token and user info
+          // Redirect to dashboard with auth token and user info for immediate login
           const userParam = encodeURIComponent(JSON.stringify({
+            id: user.id,
             username: user.username,
             email: user.email,
-            authMethod: user.authMethod
+            authMethod: user.authMethod,
+            firstName: user.firstName,
+            lastName: user.lastName
           }));
           
           res.redirect(`/dashboard?auth=${authParam}&user=${userParam}`);

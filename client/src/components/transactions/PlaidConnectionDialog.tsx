@@ -73,9 +73,10 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
             localStorage.setItem('plaid_link_token', token);
             localStorage.setItem('plaid_link_config', JSON.stringify({
               timestamp: Date.now(),
-              token: token.substring(0, 20) + '...'
+              token: token.substring(0, 20) + '...',
+              redirectUri: `${window.location.origin}/plaid-callback`
             }));
-            console.log('Stored link token for potential OAuth redirect');
+            console.log('Stored link token for potential OAuth redirect with URI:', `${window.location.origin}/plaid-callback`);
           };
           
           // Make the actual request for the link token
@@ -211,8 +212,7 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
   const currentHost = window.location.origin;
   const oauthRedirectUri = `${currentHost}/plaid-callback`;
 
-  // CRITICAL: Do NOT include receivedRedirectUri on initial launch - this causes OAuth state issues
-  // Only include it when resuming after OAuth redirect (handled in plaid-callback page)
+  // CRITICAL: Properly configure Plaid Link for OAuth flows
   const config = {
     token: linkToken || '',
     onSuccess,

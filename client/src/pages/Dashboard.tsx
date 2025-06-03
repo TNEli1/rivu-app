@@ -221,21 +221,24 @@ export default function Dashboard() {
         
         console.log('Google OAuth: Auth token stored as cookie for immediate authentication');
         
-        // Store user info if provided
+        // Store user info if provided and force auth state refresh
         if (userParam) {
           try {
             const userInfo = JSON.parse(decodeURIComponent(userParam));
             localStorage.setItem('rivu_user_info', JSON.stringify(userInfo));
             console.log('Google OAuth: User info stored:', userInfo);
             
-            // Show welcome message with username
+            // CRITICAL: Force immediate auth state refresh to load user data
             setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('authStateChanged'));
+              
+              // Show welcome message with username
               toast({
                 title: "Welcome back!",
-                description: `Successfully logged in as ${userInfo.username || userInfo.email}`,
+                description: `Successfully logged in as ${userInfo.firstName || userInfo.username || userInfo.email}`,
                 duration: 5000,
               });
-            }, 1000);
+            }, 500);
           } catch (parseError) {
             console.error('Error parsing user info:', parseError);
           }
