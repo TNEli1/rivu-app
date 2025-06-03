@@ -70,7 +70,9 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
           
           // CRITICAL: Store the link token immediately when received for OAuth flows
           const storeTokenForOAuth = (token: string) => {
+            // Store in both localStorage and sessionStorage for maximum persistence
             localStorage.setItem('plaid_link_token', token);
+            sessionStorage.setItem('plaid_link_token', token);
             localStorage.setItem('plaid_link_config', JSON.stringify({
               timestamp: Date.now(),
               token: token.substring(0, 20) + '...',

@@ -23,10 +23,11 @@ export function usePlaidOAuth({ onSuccess, onExit }: PlaidOAuthConfig) {
     console.log('OAuth redirect detected with state ID:', oauthStateId);
     
     // CRITICAL: Retrieve the previously stored link token - never create new one
-    const linkToken = window.localStorage.getItem('plaid_link_token');
+    const linkToken = window.localStorage.getItem('plaid_link_token') || 
+                     sessionStorage.getItem('plaid_link_token');
     
     if (!linkToken) {
-      console.error('No stored link token found for OAuth redirect - localStorage may not have survived redirect');
+      console.error('No stored link token found for OAuth redirect - storage may not have survived redirect');
       onExit(new Error('OAuth session expired. Please try connecting your bank again.'));
       return null;
     }

@@ -10,16 +10,17 @@ const protect = async (req, res, next) => {
   let token;
 
   // Check for token in Authorization header or cookies
+  // CRITICAL FIX: Use rivu_token cookie name to match Google OAuth callback
   if (
     (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) ||
-    req.cookies.token
+    req.cookies.rivu_token
   ) {
     try {
       // Get token from Authorization header or cookie
       if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         token = req.headers.authorization.split(' ')[1];
-      } else if (req.cookies.token) {
-        token = req.cookies.token;
+      } else if (req.cookies.rivu_token) {
+        token = req.cookies.rivu_token;
       }
 
       // Verify token
@@ -86,18 +87,22 @@ const generateToken = (id, email) => {
 
 // Set JWT as a secure HTTP-only cookie
 const setTokenCookie = (res, token) => {
-  res.cookie('token', token, {
+  res.cookie('rivu_token', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV !== 'development', // True in production
-    sameSite: 'Strict',
-    maxAge: 2 * 60 * 60 * 1000 // 2 hours (matches JWT_EXPIRES_IN)
+    secure: process.env.NODE_ENV === 'production', // True in production
+    sameSite: 'lax', // Changed to 'lax' for OAuth compatibility
+    maxAge: 2 * 60 * 60 * 1000, // 2 hours (matches JWT_EXPIRES_IN)
+    domain: process.env.NODE_ENV === 'production' ? '.tryrivu.com' : undefined // Share across subdomains in production
   });
 };
 
 // Clear the token cookie (for logout)
 const clearTokenCookie = (res) => {
-  res.cookie('token', '', {
+  res.cookie('rivu_token', '', {
     httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    domain: process.env.NODE_ENV === 'production' ? '.tryrivu.com' : undefined,
     expires: new Date(0)
   });
 };
