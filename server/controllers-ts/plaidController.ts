@@ -65,7 +65,7 @@ export const createLinkToken = async (req: Request, res: Response) => {
       : 'http://localhost:5000/plaid-callback';
 
     // Use correct production webhook URL - consistent with redirect URI domain
-    const webhook = process.env.NODE_ENV === 'production'
+    const webhook = plaidEnvironment === 'production'
       ? 'https://tryrivu.com/api/plaid/webhook'  // Use same domain as redirect_uri
       : 'http://localhost:5000/api/plaid/webhook';
 
