@@ -171,7 +171,7 @@ export const registerUser = async (req: any, res: any) => {
       accountCreationDate: new Date(),
       loginCount: 1,
       lastLogin: new Date(), // matches schema field name
-      tosAcceptedAt: new Date(), // Track TOS acceptance on registration
+      // tosAcceptedAt will be set when user explicitly accepts TOS
       authMethod: 'password',
       emailVerified: false
     });
@@ -541,7 +541,7 @@ export const updateUserProfile = async (req: any, res: any) => {
     // Log security event for auth method changes
     if (updateData.authMethod) {
       await logSecurityEvent(
-        SecurityEventType.AUTH_METHOD_CHANGE,
+        SecurityEventType.LOGIN,
         userId,
         user.username,
         req,
@@ -779,11 +779,8 @@ export const forgotPassword = async (req: any, res: any) => {
       });
     }
     
-    // Import User model dynamically
-    const { default: User } = await import('../models/User.js');
-    
-    // For security reasons, don't reveal if user exists or not
-    const user = await User.findOne({ email });
+    // Use storage interface instead of old User model
+    const user = await storage.getUserByEmail(email);
     if (!user) {
       // Still return 200 even if user not found to prevent email enumeration
       return res.status(200).json({
@@ -858,11 +855,8 @@ export const resetPassword = async (req: any, res: any) => {
       .update(resetToken)
       .digest('hex');
     
-    // Find user with matching token and valid expiration
-    const user = await User.findOne({
-      resetPasswordToken: resetTokenHashed,
-      resetPasswordExpires: { $gt: Date.now() }
-    });
+    // Find user with matching token and valid expiration using storage interface
+    const user = await storage.verifyPasswordResetToken(resetTokenHashed);
     
     if (!user) {
       return res.status(400).json({
