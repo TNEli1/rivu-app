@@ -148,17 +148,8 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
         }) : 'No metadata'
       );
       
-      // Store success data with OAuth state handling in localStorage with expiration
-      const linkConfig = localStorage.getItem('plaid_link_config');
-      const successData = {
-        public_token,
-        metadata,
-        timestamp: Date.now(),
-        expiresAt: Date.now() + (30 * 60 * 1000), // 30 minutes
-        link_config: linkConfig ? JSON.parse(linkConfig) : null
-      };
-      
-      localStorage.setItem('plaid_link_success', JSON.stringify(successData));
+      // For non-OAuth flows, we can immediately exchange the token
+      // OAuth flows will handle token exchange in the callback page
       
       // Exchange the public token for an access token
       const response = await apiRequest('POST', '/api/plaid/exchange_token', {
