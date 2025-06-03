@@ -59,20 +59,14 @@ export const createLinkToken = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    // Use current host for redirect URLs to handle development environment
+    // Use BASE_URL from environment for production
     let baseUrl;
-    if (process.env.REPLIT_DEV_DOMAIN) {
-      // Running on Replit - use the Replit domain
-      baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
-    } else if (req.get('host')?.includes('.replit.dev')) {
-      // Fallback to host header if REPLIT_DEV_DOMAIN not set
-      baseUrl = `https://${req.get('host')}`;
-    } else if (plaidEnvironment === 'production' && process.env.BASE_URL) {
-      // Production deployment with BASE_URL set
-      baseUrl = process.env.BASE_URL;
+    if (plaidEnvironment === 'production') {
+      // For production, strictly use www.tryrivu.com as the only valid domain
+      baseUrl = 'https://www.tryrivu.com';
     } else {
-      // Local development fallback
-      baseUrl = 'http://localhost:5000';
+      // For sandbox/development
+      baseUrl = process.env.BASE_URL || 'http://localhost:5000';
     }
     
     // Log the host information for debugging
@@ -145,18 +139,10 @@ export const createLinkToken = async (req: Request, res: Response) => {
 export const getPlaidEnvironment = async (req: Request, res: Response) => {
   try {
     let baseUrl;
-    if (process.env.REPLIT_DEV_DOMAIN) {
-      // Running on Replit - use the Replit domain
-      baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
-    } else if (req.get('host')?.includes('.replit.dev')) {
-      // Fallback to host header if REPLIT_DEV_DOMAIN not set
-      baseUrl = `https://${req.get('host')}`;
-    } else if (plaidEnvironment === 'production' && process.env.BASE_URL) {
-      // Production deployment with BASE_URL set
-      baseUrl = process.env.BASE_URL;
+    if (plaidEnvironment === 'production') {
+      baseUrl = 'https://www.tryrivu.com';
     } else {
-      // Local development fallback
-      baseUrl = 'http://localhost:5000';
+      baseUrl = process.env.BASE_URL || 'http://localhost:5000';
     }
       
     const redirectUri = `${baseUrl}/plaid-callback`;

@@ -66,21 +66,15 @@ const corsOptions = {
       return callback(null, true);
     }
     
-    // In development, allow localhost origins and Replit domains
+    // In development, allow localhost origins
     if (process.env.NODE_ENV === 'development') {
-      if (origin.includes('localhost') || 
-          origin.includes('127.0.0.1') || 
-          origin.includes('0.0.0.0') ||
-          origin.includes('.replit.dev') ||
-          origin.includes('.repl.co')) {
+      if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('0.0.0.0')) {
         return callback(null, true);
       }
     }
     
-    // Always allow production origins and Replit domains
-    if (allowedOrigins.includes(origin) || 
-        origin.includes('.replit.dev') || 
-        origin.includes('.repl.co')) {
+    // Always allow production origins
+    if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
     
