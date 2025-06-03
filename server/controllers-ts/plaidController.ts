@@ -59,20 +59,20 @@ export const createLinkToken = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    // Use BASE_URL from environment for production
+    // Use current host for redirect URLs to handle development environment
     let baseUrl;
-    if (plaidEnvironment === 'production') {
-      // For production, strictly use www.tryrivu.com as the only valid domain
-      baseUrl = 'https://www.tryrivu.com';
+    if (process.env.REPLIT_DEV_DOMAIN) {
+      // Running on Replit - use the Replit domain
+      baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+    } else if (req.get('host')?.includes('.replit.dev')) {
+      // Fallback to host header if REPLIT_DEV_DOMAIN not set
+      baseUrl = `https://${req.get('host')}`;
+    } else if (plaidEnvironment === 'production' && process.env.BASE_URL) {
+      // Production deployment with BASE_URL set
+      baseUrl = process.env.BASE_URL;
     } else {
-      // For sandbox/development - detect Replit environment
-      if (process.env.REPLIT_DEV_DOMAIN) {
-        baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
-      } else if (req.get('host')?.includes('.replit.dev')) {
-        baseUrl = `https://${req.get('host')}`;
-      } else {
-        baseUrl = process.env.BASE_URL || 'http://localhost:5000';
-      }
+      // Local development fallback
+      baseUrl = 'http://localhost:5000';
     }
     
     // Log the host information for debugging
@@ -145,17 +145,18 @@ export const createLinkToken = async (req: Request, res: Response) => {
 export const getPlaidEnvironment = async (req: Request, res: Response) => {
   try {
     let baseUrl;
-    if (plaidEnvironment === 'production') {
-      baseUrl = 'https://www.tryrivu.com';
+    if (process.env.REPLIT_DEV_DOMAIN) {
+      // Running on Replit - use the Replit domain
+      baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+    } else if (req.get('host')?.includes('.replit.dev')) {
+      // Fallback to host header if REPLIT_DEV_DOMAIN not set
+      baseUrl = `https://${req.get('host')}`;
+    } else if (plaidEnvironment === 'production' && process.env.BASE_URL) {
+      // Production deployment with BASE_URL set
+      baseUrl = process.env.BASE_URL;
     } else {
-      // For sandbox/development - detect Replit environment
-      if (process.env.REPLIT_DEV_DOMAIN) {
-        baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
-      } else if (req.get('host')?.includes('.replit.dev')) {
-        baseUrl = `https://${req.get('host')}`;
-      } else {
-        baseUrl = process.env.BASE_URL || 'http://localhost:5000';
-      }
+      // Local development fallback
+      baseUrl = 'http://localhost:5000';
     }
       
     const redirectUri = `${baseUrl}/plaid-callback`;
