@@ -103,7 +103,7 @@ export const createLinkToken = async (req: Request, res: Response) => {
       user: {
         client_user_id: userId.toString(),
       },
-      client_name: 'Rivu',
+      client_name: 'RIVU',
       products: [Products.Transactions],
       country_codes: [CountryCode.Us],
       language: 'en',
