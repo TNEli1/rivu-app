@@ -60,9 +60,9 @@ export const googleCallback = [
       res.cookie(TOKEN_COOKIE_NAME, token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax', // CRITICAL: Use 'lax' for OAuth redirects to work properly
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // CRITICAL: Use 'none' for cross-origin OAuth in production
         maxAge: JWT_EXPIRY * 1000,
-        domain: process.env.NODE_ENV === 'production' ? '.tryrivu.com' : undefined, // Share cookies across subdomains
+        domain: process.env.NODE_ENV === 'production' ? 'tryrivu.com' : undefined, // Remove leading dot for Railway
         path: '/' // Ensure cookie is available site-wide
       });
 
