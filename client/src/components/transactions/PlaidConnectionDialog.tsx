@@ -38,19 +38,13 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
       
       // CRITICAL FIX: Check if we're in an OAuth redirect scenario
       const query = new URLSearchParams(window.location.search);
-      const isOAuthRedirect = query.has('oauth_state_id') || window.location.pathname.includes('plaid-callback');
+      const isOAuthRedirect = query.has('oauth_state_id');
       
       if (isOAuthRedirect) {
         console.log('OAuth redirect detected - should not create new link token');
         setLoading(false);
-        onClose(); // Close the dialog since OAuth is being handled elsewhere
         return; // Exit early - let OAuth handler deal with this
       }
-      
-      // Clear any existing tokens to prevent OAuth conflicts
-      localStorage.removeItem('plaid_link_token');
-      sessionStorage.removeItem('plaid_link_token');
-      localStorage.removeItem('plaid_link_config');
       
       setLinkToken(null); // Reset link token to ensure fresh state for non-OAuth flows
       
@@ -87,31 +81,15 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
           
           // CRITICAL: Store the link token immediately when received for OAuth flows
           const storeTokenForOAuth = (token: string) => {
-            try {
-              // Store in both localStorage and sessionStorage for maximum persistence
-              localStorage.setItem('plaid_link_token', token);
-              sessionStorage.setItem('plaid_link_token', token);
-              
-              const tokenConfig = {
-                timestamp: Date.now(),
-                token: token.substring(0, 20) + '...',
-                redirectUri: `${window.location.origin}/plaid-callback`,
-                fullToken: token, // Store full token for OAuth recovery
-                ttl: Date.now() + (30 * 60 * 1000) // 30 minute TTL
-              };
-              
-              localStorage.setItem('plaid_link_config', JSON.stringify(tokenConfig));
-              console.log('Stored link token for potential OAuth redirect with URI:', `${window.location.origin}/plaid-callback`);
-              
-              // Verify storage worked
-              const verified = localStorage.getItem('plaid_link_token') === token;
-              console.log('Token storage verification:', verified ? 'SUCCESS' : 'FAILED');
-              
-              return verified;
-            } catch (error) {
-              console.error('Failed to store Plaid token:', error);
-              return false;
-            }
+            // Store in both localStorage and sessionStorage for maximum persistence
+            localStorage.setItem('plaid_link_token', token);
+            sessionStorage.setItem('plaid_link_token', token);
+            localStorage.setItem('plaid_link_config', JSON.stringify({
+              timestamp: Date.now(),
+              token: token.substring(0, 20) + '...',
+              redirectUri: `${window.location.origin}/plaid-callback`
+            }));
+            console.log('Stored link token for potential OAuth redirect with URI:', `${window.location.origin}/plaid-callback`);
           };
           
           // Make the actual request for the link token

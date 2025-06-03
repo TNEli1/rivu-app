@@ -28,69 +28,12 @@ export default function AuthPage() {
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [redirectPath, setRedirectPath] = useState("/dashboard");
   
-  // Check for signup parameter and OAuth redirect data in URL
+  // Check for signup parameter in URL
   useEffect(() => {
     // Get URL parameters
     const params = new URLSearchParams(window.location.search);
     const signup = params.get('signup');
     const redirect = params.get('redirect');
-    const authToken = params.get('auth');
-    const userData = params.get('user');
-    const error = params.get('error');
-    
-    // Handle OAuth authentication success
-    if (authToken && userData) {
-      try {
-        // Parse user data from URL
-        const userInfo = JSON.parse(decodeURIComponent(userData));
-        
-        // Store session indicator (token is in HTTP-only cookie)
-        localStorage.setItem('rivu_token', 'session-active');
-        
-        // Trigger auth state change to refresh user data
-        window.dispatchEvent(new Event('authStateChanged'));
-        
-        toast({
-          title: "Login successful",
-          description: `Welcome back, ${userInfo.firstName || userInfo.username}!`,
-        });
-        
-        // Clean URL and redirect to dashboard
-        window.history.replaceState({}, '', '/dashboard');
-        return;
-      } catch (err) {
-        console.error('Failed to parse OAuth user data:', err);
-      }
-    }
-    
-    // Handle OAuth authentication errors
-    if (error) {
-      let errorMessage = "Authentication failed. Please try again.";
-      
-      switch (error) {
-        case 'google_auth_failed':
-          errorMessage = "Google authentication failed. Please try again.";
-          break;
-        case 'authentication_failed':
-          errorMessage = "Authentication failed. Please contact support if this continues.";
-          break;
-        case 'session_error':
-          errorMessage = "Session could not be established. Please try again.";
-          break;
-        case 'server_error':
-          errorMessage = "Server error occurred. Please try again later.";
-          break;
-      }
-      
-      toast({
-        title: "Authentication Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-      
-      // Clean URL
-      window.history.replaceState({}, '', '/auth');
-    }
     
     // Set active tab based on signup parameter
     if (signup === 'true') {
@@ -101,7 +44,7 @@ export default function AuthPage() {
     if (redirect) {
       setRedirectPath(redirect);
     }
-  }, [toast]);
+  }, []);
   const [passwordFeedback, setPasswordFeedback] = useState<{
     message: string;
     isValid: boolean;

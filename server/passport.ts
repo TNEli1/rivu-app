@@ -8,7 +8,7 @@ passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID!,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
   callbackURL: process.env.NODE_ENV === 'production' 
-    ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN || 'www.tryrivu.com'}/auth/google/callback`
+    ? 'https://www.tryrivu.com/auth/google/callback'
     : 'http://localhost:5000/auth/google/callback'
 }, async (accessToken, refreshToken, profile, done) => {
   try {

@@ -116,13 +116,12 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'rivu_session_secret_dev',
   resave: false,
   saveUninitialized: false,
-  rolling: true, // CRITICAL: Reset expiration on each request
   cookie: {
     secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // CRITICAL: Allow cross-site for OAuth
-    domain: process.env.NODE_ENV === 'production' ? 'tryrivu.com' : undefined, // Remove leading dot for Railway
     httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
+    sameSite: 'lax', // Critical for OAuth redirects to work properly
+    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    domain: process.env.NODE_ENV === 'production' ? '.tryrivu.com' : undefined // Share cookies across subdomains in production
   },
   name: 'rivu_session' // Explicit session cookie name
 }));
