@@ -66,9 +66,10 @@ const corsOptions = {
       return callback(null, true);
     }
     
-    // In development, allow localhost origins
+    // In development, allow localhost and Replit domains
     if (process.env.NODE_ENV === 'development') {
-      if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('0.0.0.0')) {
+      if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('0.0.0.0') || 
+          origin.includes('.replit.dev') || origin.includes('.repl.co')) {
         return callback(null, true);
       }
     }

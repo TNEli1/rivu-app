@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
-import { usePlaidOAuth, isPlaidOAuthRedirect } from '@/hooks/use-plaid-oauth';
+import { usePlaidOAuth, isPlaidOAuthRedirect, debugOAuthState } from '@/hooks/use-plaid-oauth';
 
 export default function PlaidCallback() {
   const [isProcessing, setIsProcessing] = useState(true);
@@ -94,6 +94,26 @@ export default function PlaidCallback() {
     }
 
     console.log('Processing Plaid OAuth redirect');
+    
+    // Debug OAuth state for troubleshooting
+    const debugInfo = debugOAuthState();
+    
+    if (!debugInfo.hasLinkToken) {
+      console.error('CRITICAL: No link token found in localStorage after OAuth redirect');
+      console.error('Debug info:', debugInfo);
+      setError('OAuth session lost during redirect. Please try connecting your bank again.');
+      setIsProcessing(false);
+      return;
+    }
+    
+    if (debugInfo.configExpired) {
+      console.error('CRITICAL: Stored link token has expired');
+      setError('OAuth session expired. Please try connecting your bank again.');
+      setIsProcessing(false);
+      return;
+    }
+    
+    console.log('Link token found, proceeding with OAuth redirect handling');
     
     // Handle the OAuth redirect
     const result = handleOAuthRedirect();
