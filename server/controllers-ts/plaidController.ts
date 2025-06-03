@@ -61,9 +61,25 @@ export const createLinkToken = async (req: Request, res: Response) => {
 
     // CRITICAL: Set proper redirect URI for production OAuth banks that matches your Plaid dashboard
     // Use environment-specific URLs that match your actual deployment
-    const baseUrl = plaidEnvironment === 'production' 
-      ? process.env.PRODUCTION_URL || 'https://tryrivu.com'
-      : 'http://localhost:5000';
+    const replicDomains = process.env.REPLIT_DOMAINS;
+    
+    let baseUrl;
+    if (plaidEnvironment === 'production') {
+      // CRITICAL: For Plaid production, you must use the EXACT redirect URI configured in your Plaid dashboard
+      // If you're testing on Replit, you need to temporarily switch to sandbox mode or update your Plaid dashboard
+      baseUrl = process.env.BASE_URL || 'https://www.tryrivu.com';
+      
+      // Log warning if there's a domain mismatch
+      if (replicDomains && !baseUrl.includes(replicDomains)) {
+        console.warn('⚠️  PLAID REDIRECT URI MISMATCH DETECTED:');
+        console.warn(`   Current Replit domain: https://${replicDomains}`);
+        console.warn(`   Plaid redirect URI: ${baseUrl}/plaid-callback`);
+        console.warn('   This will cause OAuth banks to show phone verification screen');
+        console.warn('   Solution: Update your Plaid dashboard redirect URI or switch to sandbox mode');
+      }
+    } else {
+      baseUrl = 'http://localhost:5000';
+    }
       
     const redirectUri = `${baseUrl}/plaid-callback`;
     const webhook = `${baseUrl}/api/plaid/webhook`;

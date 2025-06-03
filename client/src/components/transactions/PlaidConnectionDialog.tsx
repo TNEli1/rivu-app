@@ -207,10 +207,9 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
   }, []);
 
   // Use environment-appropriate redirect URI for OAuth banks - must match backend and Plaid dashboard
-  const baseUrl = import.meta.env.PROD 
-    ? (import.meta.env.VITE_PRODUCTION_URL || 'https://tryrivu.com')
-    : 'http://localhost:5000';
-  const oauthRedirectUri = `${baseUrl}/plaid-callback`;
+  // Get the current window location to ensure redirect URI matches actual deployment
+  const currentHost = window.location.origin;
+  const oauthRedirectUri = `${currentHost}/plaid-callback`;
 
   // CRITICAL: Do NOT include receivedRedirectUri on initial launch - this causes OAuth state issues
   // Only include it when resuming after OAuth redirect (handled in plaid-callback page)
