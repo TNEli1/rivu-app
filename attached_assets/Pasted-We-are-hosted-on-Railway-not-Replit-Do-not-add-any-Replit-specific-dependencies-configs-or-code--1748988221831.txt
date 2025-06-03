@@ -1,0 +1,88 @@
+We are hosted on Railway, not Replit. Do not add any Replit-specific dependencies, configs, or code. Keep all changes compatible with vanilla Node/Express/PostgreSQL + Plaid integration.
+
+⸻
+
+🔧 Fix 1: Plaid Link token race condition
+
+Problem: usePlaidLink() initializes before the Plaid link token is set, causing it to launch with token: ''. This leads to a static screen (e.g., phone number page or nothing rendered).
+
+Fix:
+In PlaidConnectionDialog.tsx, change how you configure the usePlaidLink() hook:
+
+const config = linkToken
+  ? {
+      token: linkToken,
+      onSuccess,
+      onExit,
+      oauthRedirectUri,
+    }
+  : null;
+
+const { open, ready } = usePlaidLink(config ?? { token: '', onSuccess, onExit }); // fallback is inert
+
+In the button click:
+
+if (!linkToken) {
+  setError('Link token is missing. Please try again later.');
+  return;
+}
+if (!ready) {
+  setError('Plaid is still initializing. Try again in a moment.');
+  return;
+}
+open();
+
+Add a useEffect(() => { console.log("🔑 Link token updated:", linkToken); }, [linkToken]) to verify timing.
+
+⸻
+
+🔧 Fix 2: Google OAuth - Account not logged in after redirect
+
+Problem: After logging in with Google OAuth, the account is created in the database, but the user is not authenticated in session.
+
+Fix: In your Google OAuth callback handler, confirm that:
+	•	A session cookie is set (req.session.userId = user.id)
+	•	res.redirect('/dashboard') sends the cookie correctly.
+	•	You’re not blocking cookies due to SameSite or Secure flags. These must be adjusted if using Railway + custom domain:
+
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: true,
+    sameSite: 'None', // allow cross-site redirect from Google
+    domain: '.tryrivu.com',
+  }
+}));
+
+🔧 Fix 3: Tutorial + TOS keep reappearing
+
+Problem: Even after accepting TOS and finishing tutorial, the prompts reappear.
+
+Fix:
+	•	Add a check in frontend to ensure you’re reading from the current user’s tutorial state.
+	•	Backend: user.tutorialComplete and user.termsAccepted should be stored per-account and fetched after login success, including OAuth logins.
+	•	Avoid caching old user state between logins if multiple accounts are accessed on the same device.
+
+⸻
+
+🔧 Fix 4: Cross-account mixup
+
+Problem: Logging into two different accounts with different emails but similar names causes behavior bleed (e.g. Eli vs elichillithai).
+
+Fix:
+	•	Never match users by name. Always enforce:
+	•	Unique user lookup by exact email OR exact username (not partial match).
+	•	Clear session between logins on the same machine:
+	•	Add a GET /logout route to destroy session
+	•	Warn devs to use different sessions per login in dev/debug
+
+⸻
+
+🧪 Test Environment Notes
+
+The app is being tested in Incognito Mode. Ensure:
+	•	Cookies are properly set (incognito can block third-party cookies)
+	•	OAuth redirects correctly complete with session cookies intact
+	•	Use domain: '.tryrivu.com' and sameSite: 'None' if on a custom domain
