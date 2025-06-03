@@ -101,14 +101,16 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
           if (data && data.link_token) {
             console.log('Successfully received link token');
             setLinkToken(data.link_token);
-            // Store link token in localStorage for OAuth redirects (more persistent than sessionStorage)
-            localStorage.setItem('plaid_link_token', data.link_token);
-            localStorage.setItem('plaid_link_config', JSON.stringify({
+            // Store link token with TTL check (10 minutes as suggested)
+            const tokenData = {
               link_token: data.link_token,
               expiration: data.expiration,
               request_id: data.request_id,
-              timestamp: Date.now()
-            }));
+              timestamp: Date.now(),
+              ttl: Date.now() + (10 * 60 * 1000) // 10 minute TTL
+            };
+            localStorage.setItem('plaid_link_token', data.link_token);
+            localStorage.setItem('plaid_link_config', JSON.stringify(tokenData));
           } else {
             setError('Cannot connect to banking service');
             console.error('Missing link token in response:', data);
