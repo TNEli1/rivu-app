@@ -555,7 +555,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           public_token: public_token ? 'present' : 'missing',
           error: error ? error : 'none',
           full_query: req.query,
-          session_id: req.sessionID
+          session_id: req.sessionID,
+          host: req.get('host'),
+          origin: req.get('origin'),
+          referer: req.get('referer')
         });
         
         // Handle OAuth errors first
@@ -564,9 +567,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.redirect(`/dashboard?error=plaid_oauth_error&message=${encodeURIComponent(error)}`);
         }
         
+        // CRITICAL FIX: If no oauth_state_id, this is not a valid OAuth callback
+        // Redirect to main app instead of treating as OAuth resume
         if (!oauth_state_id) {
-          console.error('Plaid OAuth callback: Missing oauth_state_id parameter');
-          return res.redirect('/dashboard?error=plaid_oauth_missing_state');
+          console.log('Plaid callback without oauth_state_id - redirecting to dashboard');
+          return res.redirect('/dashboard');
         }
         
         // Store OAuth callback data in session for frontend to retrieve

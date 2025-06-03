@@ -226,13 +226,13 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
   const oauthRedirectUri = `${currentHost}/plaid-callback`;
 
   // CRITICAL: Properly configure Plaid Link for OAuth flows
+  // NEVER include receivedRedirectUri on initial link creation - only for OAuth resumes
   const config = {
     token: linkToken || '',
     onSuccess,
     onExit,
-    // Include OAuth redirect URI for banks that require OAuth (like Chase)
-    oauthRedirectUri,
-    // DO NOT include receivedRedirectUri here - it confuses Plaid Link on initial launch
+    // Only include OAuth redirect URI for banks that require OAuth (like Chase)
+    ...(linkToken && { oauthRedirectUri })
   };
   
   console.log('Plaid Link config:', { 

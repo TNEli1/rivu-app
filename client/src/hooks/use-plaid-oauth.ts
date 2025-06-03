@@ -42,9 +42,9 @@ export function usePlaidOAuth({ onSuccess, onExit }: PlaidOAuthConfig) {
     }
     
     try {
-      // CRITICAL FIX: Clean the receivedRedirectUri to only include the callback path
-      // CRITICAL FIX: Use the exact current URL as receivedRedirectUri for OAuth flow
-      const receivedRedirectUri = window.location.href;
+      // CRITICAL FIX: Use only the callback path without query parameters for receivedRedirectUri
+      // This prevents Plaid from thinking this is a nested OAuth redirect
+      const receivedRedirectUri = `${window.location.origin}/plaid-callback`;
       
       // Create Plaid handler with stored token and exact redirect URI
       const linkConfig = {

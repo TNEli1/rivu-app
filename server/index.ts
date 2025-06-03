@@ -105,7 +105,10 @@ app.use(cookieParser()); // Parse cookies
 // Initialize PostgreSQL session store
 const PgSession = ConnectPgSimple(session);
 
-// Session configuration for Google OAuth with PostgreSQL store
+// Determine if we're in production based on Railway environment or explicit NODE_ENV
+const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.PLAID_ENV === 'production';
+
+// Session configuration for OAuth with PostgreSQL store
 app.use(session({
   store: new PgSession({
     pool: pool,
@@ -117,11 +120,12 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: isProduction, // Force secure cookies in production
     httpOnly: true,
     sameSite: 'lax', // Critical for OAuth redirects to work properly
     maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-    domain: process.env.NODE_ENV === 'production' ? '.tryrivu.com' : undefined // Share cookies across subdomains in production
+    // CRITICAL FIX: Only set domain in production and ensure it matches Railway deployment
+    domain: isProduction ? '.tryrivu.com' : undefined
   },
   name: 'rivu_session' // Explicit session cookie name
 }));
