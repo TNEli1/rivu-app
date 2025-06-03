@@ -1,0 +1,186 @@
+The Plaid integration uses a custom dialog (PlaidConnectionDialog.tsx), an OAuth helper hook (usePlaidOAuth.ts), and a dedicated callback page (plaid-callback.tsx). Below are relevant excerpts and observations.
+
+⸻
+
+1. Creating and storing the link token
+
+When the dialog opens, it fetches a fresh link token and immediately stores it in both localStorage and sessionStorage.
+Key lines:
+
+32  useEffect(() => {
+33    if (isOpen) {
+...
+82      // CRITICAL: Store the link token immediately when received for OAuth flows
+83      const storeTokenForOAuth = (token: string) => {
+84        // Store in both localStorage and sessionStorage for maximum persistence
+85        localStorage.setItem('plaid_link_token', token);
+86        sessionStorage.setItem('plaid_link_token', token);
+87        localStorage.setItem('plaid_link_config', JSON.stringify({
+88          timestamp: Date.now(),
+89          token: token.substring(0, 20) + '...',
+90          redirectUri: `${window.location.origin}/plaid-callback`
+91        }));
+92        console.log('Stored link token for potential OAuth redirect with URI:', `${window.location.origin}/plaid-callback`);
+93      };
+
+This correctly persists the token for OAuth redirects. However, any existing oauth_state_id query parameter causes the effect to skip token creation entirely:
+
+39        // CRITICAL FIX: Check if we're in an OAuth redirect scenario
+40        const query = new URLSearchParams(window.location.search);
+41        const isOAuthRedirect = query.has('oauth_state_id');
+
+42        if (isOAuthRedirect) {
+43          console.log('OAuth redirect detected - should not create new link token');
+44          setLoading(false);
+45          return; // Exit early - let OAuth handler deal with this
+46        }
+
+If the user accidentally lands on a page with a stale oauth_state_id still in the URL (e.g., via browser history), the dialog will never fetch a new token and linkToken stays null.
+
+⸻
+
+2. Configuring Plaid Link
+
+After obtaining the token, the component configures usePlaidLink only when linkToken is present:
+
+228    // CRITICAL FIX: Only configure usePlaidLink when link token is available
+229    const config = linkToken
+230      ? {
+231          token: linkToken,
+232          onSuccess,
+233          onExit,
+234          oauthRedirectUri,
+235        }
+236      : null;
+
+237    const { open, ready } = usePlaidLink(config ?? { token: '', onSuccess, onExit }); // fallback is inert
+
+The “fallback” call to usePlaidLink with token: '' occurs when linkToken is null. This creates a handler with an empty token. It is harmless if open() is never called in that state, but it can cause confusion in logs. The component guards against opening until ready and linkToken are truthy:
+
+250      // CRITICAL FIX: Guard against empty or missing link token
+251      if (!linkToken) {
+252        setError('Link token is missing. Please try again later.');
+253        return;
+254      }
+255      if (!ready) {
+256        setError('Plaid is still initializing. Try again in a moment.');
+257        return;
+258      }
+
+260      // Everything is ready, open the Plaid Link
+261      console.log('Opening Plaid Link with valid token:', linkToken.substring(0, 10) + '...');
+262      open();
+
+
+3. OAuth callback flow
+
+The dedicated OAuth hook resumes Link only if a stored token exists:
+
+
+26      // CRITICAL: Retrieve the previously stored link token - never create new one
+27      const linkToken = window.localStorage.getItem('plaid_link_token') ||
+28                       sessionStorage.getItem('plaid_link_token');
+
+30      if (!linkToken) {
+31        console.error('No stored link token found for OAuth redirect - storage may not have survived redirect');
+32        onExit(new Error('OAuth session expired. Please try connecting your bank again.'));
+33        return null;
+34      }
+
+It then creates a handler with receivedRedirectUri set to the callback path:
+
+46        // CRITICAL FIX: Use only the callback path without query parameters for receivedRedirectUri
+47        const receivedRedirectUri = `${window.location.origin}/plaid-callback`;
+...
+51        const linkConfig = {
+52          token: linkToken,
+53          receivedRedirectUri,
+...
+
+handleOAuthRedirect opens Link immediately. Failure to find the stored token or to load the Plaid SDK triggers an error and prevents the flow from resuming.
+
+⸻
+
+4. Callback page
+
+The callback page waits until authentication is known and then attempts to resume the OAuth flow:
+
+77    useEffect(() => {
+78      // Wait for authentication to complete
+79      if (isLoading) {
+80        return;
+81      }
+
+83      if (!user) {
+84        setError('Please log in to connect your bank account.');
+85        setIsProcessing(false);
+86        return;
+87      }
+
+89      // Check if this is an OAuth redirect
+90      if (!isPlaidOAuthRedirect(window.location.href)) {
+91        console.error('Not a valid Plaid OAuth redirect - redirecting to dashboard');
+92        setLocation('/dashboard');
+93        return;
+94      }
+
+95      console.log('Starting Plaid OAuth redirect handling');
+
+98      // CRITICAL FIX: Add delay to ensure Plaid SDK is fully loaded
+...
+123        const handler = handleOAuthRedirect(window.location.href);
+124        if (!handler) {
+125          console.error('Failed to create OAuth handler');
+126          setError('Failed to resume bank connection. Please try connecting again.');
+127          setIsProcessing(false);
+128        }
+
+If the stored token was cleared or expired before this code runs, handleOAuthRedirect will return null, leading to the blank or “phone number” screen.
+
+⸻
+
+5. Server-side link token creation
+
+The server uses environment variables to build the redirect URI:
+
+62      // CRITICAL FIX: Determine production state based on environment variables
+63      const isProductionEnvironment = process.env.NODE_ENV === 'production' ||
+64                                     process.env.RAILWAY_ENVIRONMENT === 'production' ||
+65                                     process.env.PLAID_ENV === 'production';
+
+67      // CRITICAL FIX: Use Railway production domain for OAuth redirect URIs
+68      let baseUrl;
+69      if (isProductionEnvironment && plaidEnvironment === 'production') {
+70        baseUrl = 'https://www.tryrivu.com';
+71      } else {
+72        const host = req.get('host') || 'localhost:5000';
+73        baseUrl = host.includes('localhost') ? `http://${host}` : `https://${host}`;
+74      }
+
+81      const redirectUri = `${baseUrl}/plaid-callback`;
+
+If isProductionEnvironment or PLAID_ENV is misconfigured (e.g., production link tokens generated but served from a different domain), Link may open without showing institutions.
+
+⸻
+
+Potential Problem Areas
+	1.	Skipping token creation because oauth_state_id remains in the URL
+If a user opens the dialog while the current URL still has oauth_state_id (perhaps from an earlier failed redirect), fetchLinkToken won’t run and linkToken stays null, resulting in the inert “phone number” screen when open() is invoked.
+	2.	Clearing the token before Link initializes
+setLinkToken(null) executes whenever the dialog closes (isOpen becomes false). If onClose fires too early—before Plaid finishes opening—linkToken may be reset, leaving the handler with an empty token.
+	3.	Missing or overwritten stored token for OAuth
+The OAuth handler relies on plaid_link_token in storage. If anything (e.g., another dialog open) clears this key before the user returns to /plaid-callback, handleOAuthRedirect cannot resume the flow, leading to an unresponsive screen.
+	4.	Environment mismatch
+Production link tokens require the exact redirect URI registered in Plaid. Ensure PLAID_ENV and the domain used in createLinkToken match the environment where the frontend is hosted. Any discrepancy will cause the Link UI to behave strangely or display the “phone number” page with no institutions.
+
+⸻
+
+Recommendations
+	•	Ensure URLs are clean before opening the dialog. After redirecting back from Plaid, remove the oauth_state_id query parameter before allowing users to reopen the dialog.
+	•	Double-check environment variables. Both frontend and backend must use the same value of PLAID_ENV, and the redirect URI sent in createLinkToken must exactly match oauthRedirectUri on the client.
+	•	Guard token removal. Consider delaying setLinkToken(null) until Plaid exits cleanly to avoid clearing the token mid-initialization.
+	•	Verify storage survival across redirects. Confirm that localStorage or sessionStorage isn’t being cleared by your deployment setup or by browser settings, especially on iOS/Safari where storage persistence after OAuth redirects can fail.
+
+These areas are the most likely culprits for “banks not showing,” the unresponsive phone screen, or OAuth not resuming even though tokens are generated correctly.
+
+Fix please 
