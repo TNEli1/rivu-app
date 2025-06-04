@@ -276,6 +276,46 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
     : null;
 
   const { open, ready } = usePlaidLink(config ?? { token: '', onSuccess, onExit }); // fallback is inert
+
+  // PlaidPortal component to render Plaid trigger outside modal DOM
+  const PlaidPortal = () => {
+    if (!plaidPortalContainer) return null;
+    
+    return createPortal(
+      <div 
+        id="plaid-trigger-portal"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          zIndex: 2147483647,
+          pointerEvents: 'auto'
+        }}
+      >
+        {/* Hidden trigger that can be activated programmatically */}
+        <button
+          id="plaid-portal-trigger"
+          style={{ 
+            position: 'absolute',
+            left: '-9999px',
+            opacity: 0,
+            pointerEvents: 'none'
+          }}
+          onClick={() => {
+            if (ready && linkToken) {
+              console.log('Portal trigger: Opening Plaid Link');
+              open();
+            }
+          }}
+        >
+          Hidden Plaid Trigger
+        </button>
+      </div>,
+      plaidPortalContainer
+    );
+  };
   
   // Debug effect to track link token updates
   useEffect(() => {
@@ -297,116 +337,128 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
       return;
     }
     
-    // CRITICAL FIX: Close modal first, then wait for DOM to settle before opening Plaid
+    // CRITICAL FIX: Close modal first, then trigger Plaid through portal
     onClose();
     
-    // Wait for modal to fully close and DOM to settle before launching Plaid
+    // Wait for modal to fully close, then trigger via portal to escape DOM stacking
     setTimeout(() => {
-      console.log('Opening Plaid Link with valid token:', linkToken.substring(0, 10) + '...');
-      open();
-    }, 150); // Increased timeout to ensure modal fully closes
+      console.log('Opening Plaid Link via portal with token:', linkToken.substring(0, 10) + '...');
+      const portalTrigger = document.getElementById('plaid-portal-trigger');
+      if (portalTrigger) {
+        portalTrigger.click();
+      } else {
+        // Fallback to direct open if portal not available
+        console.log('Portal not found, using direct open');
+        open();
+      }
+    }, 200); // Increased timeout to ensure modal fully closes and portal is ready
   }, [ready, linkToken, open, onClose]);
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md mx-auto w-[92%] md:w-[480px] max-h-[85vh] flex flex-col">
-        <DialogHeader className="px-2">
-          <DialogTitle>Connect Bank Account</DialogTitle>
-          <DialogDescription className="break-words">
-            Securely connect your bank accounts to automatically import transactions.
-          </DialogDescription>
-        </DialogHeader>
-        
-        {/* Main content - scrollable */}
-        <div className="py-4 overflow-y-auto flex-1 px-2">
-          {error && (
-            <Alert className="mb-4" variant="destructive">
-              <AlertCircle className="h-4 w-4 flex-shrink-0" />
-              <AlertTitle>Connection Error</AlertTitle>
-              <AlertDescription className="break-words whitespace-normal">{error}</AlertDescription>
-            </Alert>
-          )}
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-md mx-auto w-[92%] md:w-[480px] max-h-[85vh] flex flex-col">
+          <DialogHeader className="px-2">
+            <DialogTitle>Connect Bank Account</DialogTitle>
+            <DialogDescription className="break-words">
+              Securely connect your bank accounts to automatically import transactions.
+            </DialogDescription>
+          </DialogHeader>
           
-          {success ? (
-            <div className="flex flex-col items-center justify-center py-4 text-center">
-              <CheckCircle2 className="h-16 w-16 text-green-500 mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Connected Successfully!</h3>
-              <p className="text-muted-foreground break-words">
-                Your accounts have been connected. Transactions will begin syncing shortly.
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className="space-y-4 mb-5">
-                <p className="text-sm">
-                  Connect your bank accounts to Rivu to:
-                </p>
-                <ul className="list-disc pl-5 text-sm space-y-1">
-                  <li>Automatically import transactions</li>
-                  <li>Keep your transaction data up-to-date</li>
-                  <li>Track spending across all your accounts</li>
-                  <li>Get personalized insights</li>
-                </ul>
-              </div>
-              
-              <div className="bg-muted p-4 rounded-md mb-4">
-                <h4 className="font-medium mb-2">Security & Privacy</h4>
-                <p className="text-sm text-muted-foreground break-words whitespace-normal">
-                  Your credentials are never stored on our servers. We use Plaid's secure services
-                  to connect to your financial institutions.
-                </p>
-              </div>
-            </>
-          )}
-        </div>
-        
-        {/* Footer - fixed at bottom of dialog */}
-        <DialogFooter className="flex flex-col mt-auto border-t pt-4">
-          {/* Privacy link */}
-          <Button 
-            variant="link"
-            className="text-xs mb-3 w-full justify-start px-0 h-auto"
-            onClick={() => {
-              window.open('https://plaid.com/how-we-handle-data/', '_blank');
-            }}
-          >
-            How is my data protected? <ExternalLink className="h-3 w-3 ml-1" />
-          </Button>
-          
-          {/* Action buttons */}
-          <div className="flex justify-end gap-2 w-full flex-wrap">
-            <Button 
-              onClick={onClose} 
-              variant="outline" 
-              size="sm"
-              className="min-w-[80px]"
-            >
-              {success ? 'Close' : 'Cancel'}
-            </Button>
+          {/* Main content - scrollable */}
+          <div className="py-4 overflow-y-auto flex-1 px-2">
+            {error && (
+              <Alert className="mb-4" variant="destructive">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <AlertTitle>Connection Error</AlertTitle>
+                <AlertDescription className="break-words whitespace-normal">{error}</AlertDescription>
+              </Alert>
+            )}
             
-            {!success && (
-              <Button 
-                size="sm"
-                className="gap-1 min-w-[120px]"
-                disabled={!ready || loading || !linkToken}
-                onClick={handlePlaidLinkClick}
-              >
-                {loading ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 animate-spin flex-shrink-0" />
-                    <span>Connecting...</span>
-                  </>
-                ) : (
-                  <>
-                    <Building className="h-4 w-4 flex-shrink-0" /> 
-                    <span>Connect Bank</span>
-                  </>
-                )}
-              </Button>
+            {success ? (
+              <div className="flex flex-col items-center justify-center py-4 text-center">
+                <CheckCircle2 className="h-16 w-16 text-green-500 mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Connected Successfully!</h3>
+                <p className="text-muted-foreground break-words">
+                  Your accounts have been connected. Transactions will begin syncing shortly.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-4 mb-5">
+                  <p className="text-sm">
+                    Connect your bank accounts to Rivu to:
+                  </p>
+                  <ul className="list-disc pl-5 text-sm space-y-1">
+                    <li>Automatically import transactions</li>
+                    <li>Keep your transaction data up-to-date</li>
+                    <li>Track spending across all your accounts</li>
+                    <li>Get personalized insights</li>
+                  </ul>
+                </div>
+                
+                <div className="bg-muted p-4 rounded-md mb-4">
+                  <h4 className="font-medium mb-2">Security & Privacy</h4>
+                  <p className="text-sm text-muted-foreground break-words whitespace-normal">
+                    Your credentials are never stored on our servers. We use Plaid's secure services
+                    to connect to your financial institutions.
+                  </p>
+                </div>
+              </>
             )}
           </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          
+          {/* Footer - fixed at bottom of dialog */}
+          <DialogFooter className="flex flex-col mt-auto border-t pt-4">
+            {/* Privacy link */}
+            <Button 
+              variant="link"
+              className="text-xs mb-3 w-full justify-start px-0 h-auto"
+              onClick={() => {
+                window.open('https://plaid.com/how-we-handle-data/', '_blank');
+              }}
+            >
+              How is my data protected? <ExternalLink className="h-3 w-3 ml-1" />
+            </Button>
+            
+            {/* Action buttons */}
+            <div className="flex justify-end gap-2 w-full flex-wrap">
+              <Button 
+                onClick={onClose} 
+                variant="outline" 
+                size="sm"
+                className="min-w-[80px]"
+              >
+                {success ? 'Close' : 'Cancel'}
+              </Button>
+              
+              {!success && (
+                <Button 
+                  size="sm"
+                  className="gap-1 min-w-[120px]"
+                  disabled={!ready || loading || !linkToken}
+                  onClick={handlePlaidLinkClick}
+                >
+                  {loading ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 animate-spin flex-shrink-0" />
+                      <span>Connecting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Building className="h-4 w-4 flex-shrink-0" /> 
+                      <span>Connect Bank</span>
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Plaid Portal to escape modal DOM stacking */}
+      <PlaidPortal />
+    </>
   );
 }
