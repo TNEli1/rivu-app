@@ -127,18 +127,33 @@
 iframe[src*="plaid"],
 iframe[src*="cdn.plaid.com"],
 .plaid-link-modal,
-.plaid-link-overlay {
-  z-index: 999999 !important;
-  position: relative !important;
+.plaid-link-overlay,
+div[data-plaid-link-iframe],
+div[data-testid*="plaid"] {
+  z-index: 2147483647 !important;
+  position: fixed !important;
 }
 
 /* Override any modal or overlay that might conflict with Plaid */
-.plaid-link-container {
-  z-index: 999999 !important;
+.plaid-link-container,
+body > div[id*="plaid"],
+body > div[data-plaid] {
+  z-index: 2147483647 !important;
+  position: fixed !important;
 }
 
 /* Ensure Plaid's parent containers also have proper z-index */
 body > iframe[src*="plaid"],
-body > div > iframe[src*="plaid"] {
-  z-index: 999999 !important;
+body > div > iframe[src*="plaid"],
+body > div[style*="z-index"] iframe[src*="plaid"] {
+  z-index: 2147483647 !important;
+  position: fixed !important;
+}
+
+/* Force all Plaid-related elements to escape modal stacking */
+[id*="plaid-link"],
+[class*="plaid-link"],
+[data-testid*="plaid-link"] {
+  z-index: 2147483647 !important;
+  position: fixed !important;
 }

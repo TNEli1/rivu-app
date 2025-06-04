@@ -68,7 +68,7 @@ export function ProtectedRoute({
 
   // Google/OAuth users should bypass onboarding and go directly to dashboard
   // Only redirect to onboarding for non-Google users who haven't completed it
-  const isGoogleUser = user.emailVerified && user.email && !user.demographics?.completed;
+  const isGoogleUser = user?.emailVerified && user?.email && !user?.demographics?.completed;
   if (
     user.demographics && 
     !user.demographics.completed && 

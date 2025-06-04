@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -26,8 +27,32 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasPlaidKeys, setHasPlaidKeys] = useState(true);
+  const [plaidPortalContainer, setPlaidPortalContainer] = useState<HTMLElement | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Create portal container for Plaid to escape modal DOM stacking
+  useEffect(() => {
+    const container = document.createElement('div');
+    container.id = 'plaid-portal-container';
+    container.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2147483647;
+      pointer-events: none;
+    `;
+    document.body.appendChild(container);
+    setPlaidPortalContainer(container);
+
+    return () => {
+      if (document.body.contains(container)) {
+        document.body.removeChild(container);
+      }
+    };
+  }, []);
 
   // Clean up URL on component mount to remove stale OAuth parameters
   useEffect(() => {
@@ -272,12 +297,14 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
       return;
     }
     
-    // Close the modal immediately when Plaid Link opens to prevent overlay blocking
+    // CRITICAL FIX: Close modal first, then wait for DOM to settle before opening Plaid
     onClose();
     
-    // Everything is ready, open the Plaid Link
-    console.log('Opening Plaid Link with valid token:', linkToken.substring(0, 10) + '...');
-    open();
+    // Wait for modal to fully close and DOM to settle before launching Plaid
+    setTimeout(() => {
+      console.log('Opening Plaid Link with valid token:', linkToken.substring(0, 10) + '...');
+      open();
+    }, 150); // Increased timeout to ensure modal fully closes
   }, [ready, linkToken, open, onClose]);
 
   return (
