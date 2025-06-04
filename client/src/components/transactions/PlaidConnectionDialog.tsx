@@ -179,7 +179,7 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
         console.log(`Plaid Link successful - Connected to: ${bankName}`);
         
         // Get accounts for the connected bank
-        const accountsResponse = await apiRequest('POST', '/api/plaid/accounts', {});
+        const accountsResponse = await apiRequest('GET', '/api/plaid/accounts');
         
         // Invalidate any cached account data
         queryClient.invalidateQueries({ queryKey: ['/api/accounts'] });
