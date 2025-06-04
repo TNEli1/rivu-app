@@ -14,6 +14,11 @@ export function ProtectedRoute({
   const { user, isLoading, isTokenExpired } = useAuth();
   const [showTosModal, setShowTosModal] = useState(false);
 
+  // Detect OAuth token in query params to allow initial Dashboard load
+  const hasAuthParam =
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).has('auth');
+
   // Show loading spinner while checking authentication
   if (isLoading) {
     return (
@@ -26,7 +31,7 @@ export function ProtectedRoute({
   }
 
   // If authentication check fails or no user, redirect to auth page
-  if (isTokenExpired || !user) {
+  if ((isTokenExpired || !user) && !hasAuthParam) {
     return (
       <Route path={path}>
         <Redirect to="/auth" />
