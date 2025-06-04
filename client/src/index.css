@@ -118,3 +118,27 @@
     opacity: 0.8;
   }
 }
+
+/* Plaid Link Modal Z-Index Override */
+/* Ensure Plaid Link iframe and modals always appear on top */
+#plaid-link-iframe-1,
+#plaid-link-iframe,
+[data-plaid-link],
+iframe[src*="plaid"],
+iframe[src*="cdn.plaid.com"],
+.plaid-link-modal,
+.plaid-link-overlay {
+  z-index: 999999 !important;
+  position: relative !important;
+}
+
+/* Override any modal or overlay that might conflict with Plaid */
+.plaid-link-container {
+  z-index: 999999 !important;
+}
+
+/* Ensure Plaid's parent containers also have proper z-index */
+body > iframe[src*="plaid"],
+body > div > iframe[src*="plaid"] {
+  z-index: 999999 !important;
+}

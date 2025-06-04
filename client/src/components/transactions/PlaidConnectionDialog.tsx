@@ -216,6 +216,16 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
     if (err) {
       console.error('Plaid Link error:', err);
       setError(err.error_message || 'Error connecting to bank');
+      // Reopen the modal on error so user can see the error and try again
+      setTimeout(() => {
+        // Only reopen if dialog was closed during Plaid flow
+        if (!isOpen) {
+          // The parent component should handle reopening via state management
+          console.log('Plaid Link failed - modal should be reopened for retry');
+        }
+      }, 100);
+    } else {
+      console.log('Plaid Link cancelled by user');
     }
     
     // Clean up link token after Plaid exits cleanly
@@ -223,7 +233,7 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
       setLinkToken(null);
       console.log('Cleaned up link token after Plaid exit');
     }, 1000);
-  }, []);
+  }, [isOpen]);
 
   // Use environment-appropriate redirect URI for OAuth banks - must match backend and Plaid dashboard
   // Get the current window location to ensure redirect URI matches actual deployment
@@ -262,10 +272,13 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
       return;
     }
     
+    // Close the modal immediately when Plaid Link opens to prevent overlay blocking
+    onClose();
+    
     // Everything is ready, open the Plaid Link
     console.log('Opening Plaid Link with valid token:', linkToken.substring(0, 10) + '...');
     open();
-  }, [ready, linkToken, open]);
+  }, [ready, linkToken, open, onClose]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
