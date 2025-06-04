@@ -26,6 +26,7 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasPlaidKeys, setHasPlaidKeys] = useState(true);
+  const [plaidLinkOpen, setPlaidLinkOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -153,6 +154,8 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
   // Handle the success callback from Plaid Link
   const onSuccess: PlaidLinkOnSuccess = useCallback(async (public_token, metadata) => {
     setLoading(true);
+    setPlaidLinkOpen(false); // Plaid Link has completed, close it
+    
     try {
       console.log('Plaid Link success with metadata:', 
         metadata ? JSON.stringify({
@@ -213,6 +216,8 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
 
   // Handle any errors from Plaid Link
   const onExit: PlaidLinkOnExit = useCallback((err) => {
+    setPlaidLinkOpen(false); // Plaid Link has closed, whether successful or not
+    
     if (err) {
       console.error('Plaid Link error:', err);
       setError(err.error_message || 'Error connecting to bank');
@@ -262,13 +267,16 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
       return;
     }
     
+    // Set Plaid Link as open to hide the outer modal
+    setPlaidLinkOpen(true);
+    
     // Everything is ready, open the Plaid Link
     console.log('Opening Plaid Link with valid token:', linkToken.substring(0, 10) + '...');
     open();
   }, [ready, linkToken, open]);
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen && !plaidLinkOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md mx-auto w-[92%] md:w-[480px] max-h-[85vh] flex flex-col">
         <DialogHeader className="px-2">
           <DialogTitle>Connect Bank Account</DialogTitle>

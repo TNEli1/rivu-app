@@ -98,7 +98,21 @@
 
 .card-hover:hover {
   transform: translateY(-4px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+/* Ensure Plaid Link iframe has the highest z-index to appear above all modals */
+iframe[src*="link.plaid.com"],
+iframe[src*="cdn.plaid.com"],
+div[id*="plaid"],
+div[class*="plaid"] {
+  z-index: 99999 !important;
+}
+
+/* Plaid Link overlay container */
+#plaid-link-iframe-container,
+.plaid-link-iframe-container {
+  z-index: 99999 !important;
+  position: fixed !important;
 }
 
 .tab-active {
