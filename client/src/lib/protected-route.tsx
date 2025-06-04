@@ -14,11 +14,6 @@ export function ProtectedRoute({
   const { user, isLoading, isTokenExpired } = useAuth();
   const [showTosModal, setShowTosModal] = useState(false);
 
-  // Detect OAuth token in query params to allow initial Dashboard load
-  const hasAuthParam =
-    typeof window !== 'undefined' &&
-    new URLSearchParams(window.location.search).has('auth');
-
   // Show loading spinner while checking authentication
   if (isLoading) {
     return (
@@ -31,7 +26,7 @@ export function ProtectedRoute({
   }
 
   // If authentication check fails or no user, redirect to auth page
-  if ((isTokenExpired || !user) && !hasAuthParam) {
+  if (isTokenExpired || !user) {
     return (
       <Route path={path}>
         <Redirect to="/auth" />
@@ -68,7 +63,7 @@ export function ProtectedRoute({
 
   // Google/OAuth users should bypass onboarding and go directly to dashboard
   // Only redirect to onboarding for non-Google users who haven't completed it
-  const isGoogleUser = user?.emailVerified && user?.email && !user?.demographics?.completed;
+  const isGoogleUser = user.emailVerified && user.email && !user.demographics?.completed;
   if (
     user.demographics && 
     !user.demographics.completed && 

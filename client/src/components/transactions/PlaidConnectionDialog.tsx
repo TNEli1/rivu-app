@@ -1,5 +1,4 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -27,32 +26,8 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasPlaidKeys, setHasPlaidKeys] = useState(true);
-  const [plaidPortalContainer, setPlaidPortalContainer] = useState<HTMLElement | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  // Create portal container for Plaid to escape modal DOM stacking
-  useEffect(() => {
-    const container = document.createElement('div');
-    container.id = 'plaid-portal-container';
-    container.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 2147483647;
-      pointer-events: none;
-    `;
-    document.body.appendChild(container);
-    setPlaidPortalContainer(container);
-
-    return () => {
-      if (document.body.contains(container)) {
-        document.body.removeChild(container);
-      }
-    };
-  }, []);
 
   // Clean up URL on component mount to remove stale OAuth parameters
   useEffect(() => {
@@ -204,7 +179,7 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
         console.log(`Plaid Link successful - Connected to: ${bankName}`);
         
         // Get accounts for the connected bank
-        const accountsResponse = await apiRequest('GET', '/api/plaid/accounts');
+        const accountsResponse = await apiRequest('POST', '/api/plaid/accounts', {});
         
         // Invalidate any cached account data
         queryClient.invalidateQueries({ queryKey: ['/api/accounts'] });
@@ -241,16 +216,6 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
     if (err) {
       console.error('Plaid Link error:', err);
       setError(err.error_message || 'Error connecting to bank');
-      // Reopen the modal on error so user can see the error and try again
-      setTimeout(() => {
-        // Only reopen if dialog was closed during Plaid flow
-        if (!isOpen) {
-          // The parent component should handle reopening via state management
-          console.log('Plaid Link failed - modal should be reopened for retry');
-        }
-      }, 100);
-    } else {
-      console.log('Plaid Link cancelled by user');
     }
     
     // Clean up link token after Plaid exits cleanly
@@ -258,7 +223,7 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
       setLinkToken(null);
       console.log('Cleaned up link token after Plaid exit');
     }, 1000);
-  }, [isOpen]);
+  }, []);
 
   // Use environment-appropriate redirect URI for OAuth banks - must match backend and Plaid dashboard
   // Get the current window location to ensure redirect URI matches actual deployment
@@ -276,46 +241,6 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
     : null;
 
   const { open, ready } = usePlaidLink(config ?? { token: '', onSuccess, onExit }); // fallback is inert
-
-  // PlaidPortal component to render Plaid trigger outside modal DOM
-  const PlaidPortal = () => {
-    if (!plaidPortalContainer) return null;
-    
-    return createPortal(
-      <div 
-        id="plaid-trigger-portal"
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          zIndex: 2147483647,
-          pointerEvents: 'auto'
-        }}
-      >
-        {/* Hidden trigger that can be activated programmatically */}
-        <button
-          id="plaid-portal-trigger"
-          style={{ 
-            position: 'absolute',
-            left: '-9999px',
-            opacity: 0,
-            pointerEvents: 'none'
-          }}
-          onClick={() => {
-            if (ready && linkToken) {
-              console.log('Portal trigger: Opening Plaid Link');
-              open();
-            }
-          }}
-        >
-          Hidden Plaid Trigger
-        </button>
-      </div>,
-      plaidPortalContainer
-    );
-  };
   
   // Debug effect to track link token updates
   useEffect(() => {
@@ -337,128 +262,111 @@ export default function PlaidConnectionDialog({ isOpen, onClose }: PlaidConnecti
       return;
     }
     
-    // CRITICAL FIX: Close modal first, then trigger Plaid through portal
-    onClose();
-    
-    // Wait for modal to fully close, then trigger via portal to escape DOM stacking
-    setTimeout(() => {
-      console.log('Opening Plaid Link via portal with token:', linkToken.substring(0, 10) + '...');
-      const portalTrigger = document.getElementById('plaid-portal-trigger');
-      if (portalTrigger) {
-        portalTrigger.click();
-      } else {
-        // Fallback to direct open if portal not available
-        console.log('Portal not found, using direct open');
-        open();
-      }
-    }, 200); // Increased timeout to ensure modal fully closes and portal is ready
-  }, [ready, linkToken, open, onClose]);
+    // Everything is ready, open the Plaid Link
+    console.log('Opening Plaid Link with valid token:', linkToken.substring(0, 10) + '...');
+    open();
+  }, [ready, linkToken, open]);
 
   return (
-    <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-md mx-auto w-[92%] md:w-[480px] max-h-[85vh] flex flex-col">
-          <DialogHeader className="px-2">
-            <DialogTitle>Connect Bank Account</DialogTitle>
-            <DialogDescription className="break-words">
-              Securely connect your bank accounts to automatically import transactions.
-            </DialogDescription>
-          </DialogHeader>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md mx-auto w-[92%] md:w-[480px] max-h-[85vh] flex flex-col">
+        <DialogHeader className="px-2">
+          <DialogTitle>Connect Bank Account</DialogTitle>
+          <DialogDescription className="break-words">
+            Securely connect your bank accounts to automatically import transactions.
+          </DialogDescription>
+        </DialogHeader>
+        
+        {/* Main content - scrollable */}
+        <div className="py-4 overflow-y-auto flex-1 px-2">
+          {error && (
+            <Alert className="mb-4" variant="destructive">
+              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              <AlertTitle>Connection Error</AlertTitle>
+              <AlertDescription className="break-words whitespace-normal">{error}</AlertDescription>
+            </Alert>
+          )}
           
-          {/* Main content - scrollable */}
-          <div className="py-4 overflow-y-auto flex-1 px-2">
-            {error && (
-              <Alert className="mb-4" variant="destructive">
-                <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                <AlertTitle>Connection Error</AlertTitle>
-                <AlertDescription className="break-words whitespace-normal">{error}</AlertDescription>
-              </Alert>
-            )}
-            
-            {success ? (
-              <div className="flex flex-col items-center justify-center py-4 text-center">
-                <CheckCircle2 className="h-16 w-16 text-green-500 mb-4" />
-                <h3 className="text-xl font-semibold mb-2">Connected Successfully!</h3>
-                <p className="text-muted-foreground break-words">
-                  Your accounts have been connected. Transactions will begin syncing shortly.
+          {success ? (
+            <div className="flex flex-col items-center justify-center py-4 text-center">
+              <CheckCircle2 className="h-16 w-16 text-green-500 mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Connected Successfully!</h3>
+              <p className="text-muted-foreground break-words">
+                Your accounts have been connected. Transactions will begin syncing shortly.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-4 mb-5">
+                <p className="text-sm">
+                  Connect your bank accounts to Rivu to:
+                </p>
+                <ul className="list-disc pl-5 text-sm space-y-1">
+                  <li>Automatically import transactions</li>
+                  <li>Keep your transaction data up-to-date</li>
+                  <li>Track spending across all your accounts</li>
+                  <li>Get personalized insights</li>
+                </ul>
+              </div>
+              
+              <div className="bg-muted p-4 rounded-md mb-4">
+                <h4 className="font-medium mb-2">Security & Privacy</h4>
+                <p className="text-sm text-muted-foreground break-words whitespace-normal">
+                  Your credentials are never stored on our servers. We use Plaid's secure services
+                  to connect to your financial institutions.
                 </p>
               </div>
-            ) : (
-              <>
-                <div className="space-y-4 mb-5">
-                  <p className="text-sm">
-                    Connect your bank accounts to Rivu to:
-                  </p>
-                  <ul className="list-disc pl-5 text-sm space-y-1">
-                    <li>Automatically import transactions</li>
-                    <li>Keep your transaction data up-to-date</li>
-                    <li>Track spending across all your accounts</li>
-                    <li>Get personalized insights</li>
-                  </ul>
-                </div>
-                
-                <div className="bg-muted p-4 rounded-md mb-4">
-                  <h4 className="font-medium mb-2">Security & Privacy</h4>
-                  <p className="text-sm text-muted-foreground break-words whitespace-normal">
-                    Your credentials are never stored on our servers. We use Plaid's secure services
-                    to connect to your financial institutions.
-                  </p>
-                </div>
-              </>
-            )}
-          </div>
+            </>
+          )}
+        </div>
+        
+        {/* Footer - fixed at bottom of dialog */}
+        <DialogFooter className="flex flex-col mt-auto border-t pt-4">
+          {/* Privacy link */}
+          <Button 
+            variant="link"
+            className="text-xs mb-3 w-full justify-start px-0 h-auto"
+            onClick={() => {
+              window.open('https://plaid.com/how-we-handle-data/', '_blank');
+            }}
+          >
+            How is my data protected? <ExternalLink className="h-3 w-3 ml-1" />
+          </Button>
           
-          {/* Footer - fixed at bottom of dialog */}
-          <DialogFooter className="flex flex-col mt-auto border-t pt-4">
-            {/* Privacy link */}
+          {/* Action buttons */}
+          <div className="flex justify-end gap-2 w-full flex-wrap">
             <Button 
-              variant="link"
-              className="text-xs mb-3 w-full justify-start px-0 h-auto"
-              onClick={() => {
-                window.open('https://plaid.com/how-we-handle-data/', '_blank');
-              }}
+              onClick={onClose} 
+              variant="outline" 
+              size="sm"
+              className="min-w-[80px]"
             >
-              How is my data protected? <ExternalLink className="h-3 w-3 ml-1" />
+              {success ? 'Close' : 'Cancel'}
             </Button>
             
-            {/* Action buttons */}
-            <div className="flex justify-end gap-2 w-full flex-wrap">
+            {!success && (
               <Button 
-                onClick={onClose} 
-                variant="outline" 
                 size="sm"
-                className="min-w-[80px]"
+                className="gap-1 min-w-[120px]"
+                disabled={!ready || loading || !linkToken}
+                onClick={handlePlaidLinkClick}
               >
-                {success ? 'Close' : 'Cancel'}
+                {loading ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 animate-spin flex-shrink-0" />
+                    <span>Connecting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Building className="h-4 w-4 flex-shrink-0" /> 
+                    <span>Connect Bank</span>
+                  </>
+                )}
               </Button>
-              
-              {!success && (
-                <Button 
-                  size="sm"
-                  className="gap-1 min-w-[120px]"
-                  disabled={!ready || loading || !linkToken}
-                  onClick={handlePlaidLinkClick}
-                >
-                  {loading ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 animate-spin flex-shrink-0" />
-                      <span>Connecting...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Building className="h-4 w-4 flex-shrink-0" /> 
-                      <span>Connect Bank</span>
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Plaid Portal to escape modal DOM stacking */}
-      <PlaidPortal />
-    </>
+            )}
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

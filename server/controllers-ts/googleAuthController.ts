@@ -61,7 +61,7 @@ export const googleCallback = [
       const cookieOptions = {
         httpOnly: true,
         secure: isProduction, // Use secure cookies in production
-        sameSite: isProduction ? 'none' as const : 'lax' as const, // allow cross-site OAuth redirects
+        sameSite: 'lax' as const, // CRITICAL: Use 'lax' for OAuth redirects
         maxAge: JWT_EXPIRY * 1000,
         path: '/' // Ensure cookie is available site-wide
       };
@@ -86,18 +86,12 @@ export const googleCallback = [
       
       console.log('Google OAuth: Session created, redirecting to dashboard with auth token');
       
-      // Regenerate session to avoid fixation and then establish Passport session
-      req.session.regenerate((regenError) => {
-        if (regenError) {
-          console.error('Google OAuth: Session regenerate error:', regenError);
+      // CRITICAL: Call req.login() to establish Passport session
+      req.login(user, (loginError) => {
+        if (loginError) {
+          console.error('Google OAuth: Failed to establish session:', loginError);
+          return res.redirect('/auth?error=session_error');
         }
-
-        // Establish Passport session
-        req.login(user, (loginError) => {
-          if (loginError) {
-            console.error('Google OAuth: Failed to establish session:', loginError);
-            return res.redirect('/auth?error=session_error');
-          }
         
         console.log('Google OAuth: Session established for user ID:', user.id);
         console.log('Google OAuth: User details:', {
@@ -131,10 +125,9 @@ export const googleCallback = [
             lastName: user.lastName
           }));
           
-        res.redirect(`/dashboard?auth=${authParam}&user=${userParam}`);
+          res.redirect(`/dashboard?auth=${authParam}&user=${userParam}`);
         });
       });
-    });
       
     } catch (error) {
       console.error('Google OAuth callback error:', error);
